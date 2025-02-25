@@ -22,7 +22,7 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
     *   **Anaconda:** The full Anaconda distribution includes a large number of pre-installed scientific packages.  It's larger, but easier for beginners. Download it from: [https://www.anaconda.com/products/distribution](https://www.anaconda.com/products/distribution)
     *   **Miniconda:** A minimal installer for Conda.  It's smaller and faster to install, and you only install the packages you need.  This is generally recommended for more experienced users. Download it from: [https://docs.conda.io/en/latest/miniconda.html](https://docs.conda.io/en/latest/miniconda.html)
 
-    Choose the installer appropriate for your system (macOS, with the "Apple M1, M2, or M3" chip). Follow the installation instructions on the Anaconda or Miniconda website.  Make sure to initialize Conda during the installation process when prompted (it will ask if you want to run `conda init`).
+    Choose the installer appropriate for your system (e.g. macOS, with the "Apple M1, M2, or M3" chip). Follow the installation instructions on the Anaconda or Miniconda website.  Make sure to initialize Conda during the installation process when prompted (it will ask if you want to run `conda init`).
 
 *   **Visual Studio Code (VS Code):** VS Code is a popular, free, and powerful code editor that works very well with Jupyter Notebooks and Python. While you can use other editors, these instructions assume you're using VS Code. Download it from: [https://code.visualstudio.com/](https://code.visualstudio.com/)
 
