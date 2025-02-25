@@ -29,10 +29,10 @@ fi
 # Print friendly instructions
 echo ""
 echo "📣 ONE LAST IMPORTANT STEP:"
-echo "   If VS Code or Cursor is currently open, you'll need to:"
+echo "   If VS Code is currently open, you'll need to:"
 echo ""
-echo "   1. ❌ CLOSE VS Code / Cursor completely"
-echo "   2. 🟢 REOPEN VS Code / Cursor"
+echo "   1. ❌ CLOSE VS Code completely"
+echo "   2. 🟢 REOPEN VS Code"
 echo "   3. 📂 Open Plotbot.ipynb"
 echo "   4. 🔍 Select 'Python (Plotbot)' from the kernel list in the top right"
 echo ""
