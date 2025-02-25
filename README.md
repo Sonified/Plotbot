@@ -33,22 +33,23 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
 2.  **Run the Environment Setup Scripts**
 
     *   In the same Terminal window (inside the `Plotbot` directory), initialize Conda:
-
-        ```bash
+       
+       ```bash
         ./install_scripts/1_init_conda.sh
         ```
-
-    *   Create and activate the environment:
+        
+        This script initializes Conda for your shell (if it's not already initialized) and disables automatic activation of the `base` environment.
 
         ```bash
         ./install_scripts/2_setup_env.sh
         ```
-
-    *   Register the Jupyter kernel:
+        
+        This script creates a new Conda environment named `plotbot_env` using the `environment.yml` file and then activates that environment.
 
         ```bash
         ./install_scripts/3_register_kernel.sh
         ```
+        This script registers the `plotbot_env` environment as a kernel that you can select within Jupyter Notebook and VS Code.
 
 3.  **Open VS Code & Select the Environment**
 

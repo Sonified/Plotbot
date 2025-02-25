@@ -1,5 +1,41 @@
 #!/bin/bash
+echo "🚀 Setting up Plotbot in Jupyter..."
 
-echo "🔹 Registering 'plotbot_env' with Jupyter..."
-python -m ipykernel install --user --name=plotbot_env --display-name "Python (Plotbot)"
-echo "✅ Jupyter kernel registered! Open Plotbot.ipynb and select 'Python (Plotbot)'."
+# Find Conda's activate script
+if [ -z "$CONDA_EXE" ]; then
+  echo "❌ Oops! Conda not initialized. Please run 1_init_conda.sh first." >&2
+  exit 1
+fi
+CONDA_ROOT=$(dirname $(dirname "$CONDA_EXE"))
+source "$CONDA_ROOT/etc/profile.d/conda.sh"
+
+# Activate the environment
+conda activate plotbot_env
+
+# Remove any existing kernel with the same name
+jupyter kernelspec uninstall -f plotbot_env 2>/dev/null || true
+
+# Register the kernel
+python -m ipykernel install --user --name=plotbot_env --display-name="Python (Plotbot)"
+
+# Verify the kernel was correctly installed
+if jupyter kernelspec list | grep -q plotbot_env; then
+  echo "✅ Success! Plotbot is now registered with Jupyter!"
+else
+  echo "❌ Hmm, something went wrong with the Plotbot registration."
+  exit 1
+fi
+
+# Print friendly instructions
+echo ""
+echo "📣 ONE LAST IMPORTANT STEP:"
+echo "   If VS Code or Cursor is currently open, you'll need to:"
+echo ""
+echo "   1. ❌ CLOSE VS Code / Cursor completely"
+echo "   2. 🟢 REOPEN VS Code / Cursor"
+echo "   3. 📂 Open Plotbot.ipynb"
+echo "   4. 🔍 Select 'Python (Plotbot)' from the kernel list in the top right"
+echo ""
+echo "   This restart helps VS Code discover your shiny new Plotbot environment!"
+echo ""
+echo "🌟 Happy Plotbotting! 🌟"
