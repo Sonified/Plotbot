@@ -41,7 +41,7 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
 
 2.  **Run the Environment Setup Scripts**
 
-    *   First, initialize Conda for your shell and disable auto-activation of base:
+    *   First, initialize Conda for your shell:
        
         ```bash
         ./install_scripts/1_init_conda.sh
