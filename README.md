@@ -17,8 +17,7 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
 ## Installation (macOS Instructions Only, other OS instructions coming soon)
 
 1.  **Clone This Repository**
-
-    *   Open a new terminal window, create and navigate to a directory for your projects (e.g., `~/GitHub` - you can choose any location):
+    *   Open a terminal window and navigate to your desired directory for downloading the repository. You can use the command below to create a GitHub folder in your root directory and switch to it (recommended but not required):
 
         ```bash
         mkdir -p ~/GitHub && cd ~/GitHub
