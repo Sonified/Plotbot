@@ -14,3 +14,6 @@ elif [ -f ~/.bashrc ]; then
 fi
 
 echo "✅ Conda initialization complete."
+echo "" 
+echo "Copy and paste the following command, including the period, to run script #2: ./install_scripts/2_setup_env.sh"
+echo "" 
