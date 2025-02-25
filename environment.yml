@@ -1,4 +1,4 @@
-name: base
+name: plotbot_env
 channels:
   - conda-forge
   - defaults
@@ -721,4 +721,3 @@ dependencies:
       - webcolors==24.6.0
       - wget==3.2
       - widgetsnbextension==4.0.11
-prefix: /opt/anaconda3

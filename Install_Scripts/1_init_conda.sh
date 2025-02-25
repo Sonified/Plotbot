@@ -1,20 +1,21 @@
 #!/bin/bash
 
 echo "🔹 Initializing Conda..."
-conda init zsh 2>/dev/null || conda init bash  # Supports both Zsh and Bash
-echo "✅ Conda has been initialized."
+conda init zsh 2>/dev/null || conda init bash
+echo "✅ Conda has been initialized (if it wasn't already)."
 
 # Disable auto-activation of base environment
 echo "🔹 Disabling auto-activation of (base) environment..."
 conda config --set auto_activate_base false
 echo "✅ Auto-activation of (base) is now OFF."
 
-# Reload terminal settings without requiring manual restart
+# Reload terminal settings.  Source is enough.
 if [ -f ~/.zshrc ]; then
+    echo "✅ Reloading terminal settings..."
     source ~/.zshrc
 elif [ -f ~/.bashrc ]; then
+    echo "✅ Reloading terminal settings..."
     source ~/.bashrc
 fi
 
-echo "✅ Terminal session will now refresh automatically..."
-exec zsh  # Restart shell session automatically
+echo "✅ Conda initialization complete."
