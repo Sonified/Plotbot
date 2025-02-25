@@ -18,4 +18,4 @@ elif [ -f ~/.bashrc ]; then
     source ~/.bashrc
 fi
 
-echo "✅ Conda initialization complete."
+echo "✅ Conda initialization complete. Proceed to script #2."
