@@ -27,7 +27,7 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
     *   Clone this repository and change your working directory to the Plotbot directory:
 
         ```bash
-                unsetopt extended_glob && git clone https://github.com/Sonified/Plotbot.git && cd Plotbot && setopt extended_glob
+        unsetopt extended_glob && git clone https://github.com/Sonified/Plotbot.git && cd Plotbot && setopt extended_glob
         ```
 
 2.  **Run the Environment Setup Scripts**
