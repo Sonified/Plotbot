@@ -27,7 +27,7 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
 *   **Visual Studio Code (VS Code):** VS Code is a popular, free, and powerful code editor that works very well with Jupyter Notebooks and Python. While you can use other editors, these instructions assume you're using VS Code. Download it from: [https://code.visualstudio.com/](https://code.visualstudio.com/)
 
 1.  **Clone This Repository**
-    *   Open a terminal window and navigate to your desired directory for downloading the repository. You can use the command below to create a GitHub folder in your root directory and switch to it (recommended but not required):
+    *   Open a terminal window and navigate to your desired directory for downloading the repository. You can use the command below to create a GitHub folder in your root directory and switch to it (optional):
 
         ```bash
         mkdir -p ~/GitHub && cd ~/GitHub
