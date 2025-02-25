@@ -4,7 +4,7 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
 
 ## Features
 
-*   Automatic downloading and processing of data from PSP instruments including FIELDS, SWEPAM, and SPAN-I.
+*   Automatic downloading and processing of data from PSP instruments including FIELDS, SWEPAM, and SPAN-I
 *   Access to data variables in a straightforward class structure
     *   "mag_rtn.br" accesses FIELDS Mag Br data in RTN coordiantes
     *   "mag_rtn.br.color = 'blue'" sets the line color to blue
