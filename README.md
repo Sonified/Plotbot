@@ -36,7 +36,7 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
     *   Clone this repository and change your working directory to the Plotbot directory. After you run this command you can follow the instructions in the terminal to complete the installation 💻:
 
         ```bash
-        unsetopt extended_glob && git clone https://github.com/Sonified/Plotbot.git && cd Plotbot && setopt extended_glob && echo "✅ Download complete" && echo ""  && echo "Copy and paste the following command, including the period, to run script #1: ./install_scripts/1_init_conda.sh" && echo ""
+        unsetopt extended_glob && git clone https://github.com/Sonified/Plotbot.git && cd Plotbot && setopt extended_glob && echo "✅ Download complete" && echo ""  && echo "Copy and paste the following command, including the period, to initialize Conda for your shell: ./install_scripts/1_init_conda.sh" && echo ""
         ```
 
 2.  **Now Run the Environment Setup Scripts in the Same Terminal Window** 
