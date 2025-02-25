@@ -8,8 +8,8 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
 *   Access to data variables in a straightforward class structure
     *   "mag_rtn.br" accesses FIELDS Mag Br data in RTN coordinate system.
     *   "mag_rtn.br.color = 'blue'" sets the line color to blue.
-*   Rapid Time series visualization with the `plotbot` function.
-    *   "plotbot(trange, mag_sc.br, 1, proton.anisotropy, 2)" plots Br and proton Ta for your trange on panels 1 and 2 respectively
+*   Rapid Time series visualization with the `plotbot()` function.
+    *   "plotbot(trange, mag_sc.br, 1, proton.anisotropy, 2)" plots Br and proton Ta for your trange on panels 1 and 2 respectively.
 *   Rapid Hodogram visualization with the `showdahodo` function.
 *   Rapid Multi-panel comparisons ofa single variable using the `multiplot` function.
 *   Rapid Audio generation using the 'audifier' function.
