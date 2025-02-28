@@ -16,13 +16,27 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
 
 ## Installation (macOS Instructions Only, other OS instructions coming soon)
 
-**Prerequisite:**
+**Prerequisites:**
 
-*   **Anaconda or Miniconda:** Plotbot requires either Anaconda or Miniconda to be installed.  This provides the `conda` package and environment manager.
-    *   **Anaconda:** The full Anaconda distribution includes a large number of pre-installed scientific packages.  It's larger, but easier for beginners. Download it from: [https://www.anaconda.com/products/distribution](https://www.anaconda.com/products/distribution)
-    *   **Miniconda:** A minimal installer for Conda.  It's smaller and faster to install, and you only install the packages you need.  This is generally recommended for more experienced users. Download it from: [https://docs.conda.io/en/latest/miniconda.html](https://docs.conda.io/en/latest/miniconda.html)
+*   **Anaconda or Miniconda:** Plotbot requires either Anaconda or Miniconda to be installed. This provides the `conda` package and environment manager. You have two options for installation:
 
-    Choose the installer appropriate for your system (e.g. macOS, with the "Apple M1, M2, or M3" chip). Follow the installation instructions on the Anaconda or Miniconda website.  Make sure to initialize Conda during the installation process when prompted (it will ask if you want to run `conda init`).
+    **Option 1 (Recommended for Mac users) - Install via Homebrew:**
+    
+    First, install Homebrew if you don't have it already. Open a new terminal window and run this command:
+    ```bash
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    ```
+    
+    Then install miniconda and initialize it:
+    ```bash
+    brew install --cask miniconda && conda init "$(basename "${SHELL}")"
+    ```
+
+    **Option 2 - Manual Installation:**
+    *   **Anaconda:** The full Anaconda distribution includes many pre-installed scientific packages. Download from: [https://www.anaconda.com/products/distribution](https://www.anaconda.com/products/distribution)
+    *   **Miniconda:** A minimal installer for Conda. Smaller and faster to install. Download from: [https://docs.conda.io/en/latest/miniconda.html](https://docs.conda.io/en/latest/miniconda.html)
+
+    For manual installation, choose the installer appropriate for your system (e.g. macOS, with the "Apple M1, M2, or M3" chip). Follow the installation instructions on the website.
 
 *   **Visual Studio Code (VS Code):** VS Code is a popular, free, and powerful code editor that works very well with Jupyter Notebooks and Python. While you can use other editors, these instructions assume you're using VS Code. Download it from: [https://code.visualstudio.com/](https://code.visualstudio.com/)
 
@@ -212,7 +226,7 @@ Here's a list of the currently available data products and their components.
 **5. Other Plotting Functions**
 There are two other primary plotting methods in `Plotbot`:
 
-*    `multiplot()`: The `multiplot` function provides similar capability to `plotbot` but allows for automated generation of many subplots, e.g. around perihelion.  See the ‘Multiplotting Magic’ section of the notebook for details on usage.
+*    `multiplot()`: The `multiplot` function provides similar capability to `plotbot` but allows for automated generation of many subplots, e.g. around perihelion.  See the 'Multiplotting Magic' section of the notebook for details on usage.
 *   `showdahodo()`:  Creates a hodogram (scatter) plot of two variables.  This is useful for visualizing the relationship between, for example, two components of the magnetic field.  Examples are provided in the notebook.
 
 **6. Data Audification:**
