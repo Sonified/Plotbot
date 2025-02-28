@@ -16,7 +16,7 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
 
 ## Installation (macOS Instructions Only, other OS instructions coming soon)
 
-**Prerequisites:**
+### Prerequisites
 
 *   **Anaconda or Miniconda:** Plotbot requires either Anaconda or Miniconda to be installed. This provides the `conda` package and environment manager. You have two options for installation:
 
@@ -39,6 +39,8 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
     For manual installation, choose the installer appropriate for your system (e.g. macOS, with the "Apple M1, M2, or M3" chip). Follow the installation instructions on the website.
 
 *   **Visual Studio Code (VS Code):** VS Code is a popular, free, and powerful code editor that works very well with Jupyter Notebooks and Python. While you can use other editors, these instructions assume you're using VS Code. Download it from: [https://code.visualstudio.com/](https://code.visualstudio.com/)
+
+### PlotBot Setup
 
 1.  **Clone This Repository**
     *   Open a terminal window and navigate to your desired directory for downloading the repository. You can use the command below to create a GitHub folder in your root directory and switch to it (optional):
