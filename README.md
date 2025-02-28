@@ -20,7 +20,7 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
 
 1. **Install Homebrew Package Manager:**
     
-    First, we'll install Homebrew, which makes installing other tools much easier. Open a new terminal window and run:
+    First, we'll install Homebrew, which makes installing other tools much easier. Open a new terminal window (cmd+space and type "terminal") and run:
     ```bash
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     ```
@@ -40,11 +40,14 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
     brew install git
     ```
 
-4. **Visual Studio Code (VS Code):** 
+4. **Install Visual Studio Code (VS Code):** 
     
-    VS Code is a popular, free, and powerful code editor that works very well with Jupyter Notebooks and Python. While you can use other editors, these instructions assume you're using VS Code. Download it from: [https://code.visualstudio.com/](https://code.visualstudio.com/)
+    VS Code is a popular, free, and powerful code editor that works very well with Jupyter Notebooks and Python. While you can use other editors, these instructions assume you're using VS Code. Install in terminal with:
+    ```bash
+    brew install --cask visual-studio-code
+    ```
 
-### PlotBot Setup
+### PlotBot Download and Setup
 
 1.  **Clone This Repository**
     *   Open a terminal window and navigate to your desired directory for downloading the repository. You can use the command below to create a GitHub folder in your root directory and switch to it (optional):
