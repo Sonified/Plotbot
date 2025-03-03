@@ -18,14 +18,27 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
 
 ### Prerequisites
 
-1. **Install Homebrew Package Manager:**
+1. **Install Command Line Tools for Xcode:**
     
-    First, we'll install Homebrew, which makes installing other tools much easier. Open a new terminal window (cmd+space and type "terminal") and run:
+    Command Line Tools are required for Git, Homebrew, and other development utilities. To install, open Terminal (cmd+space and type "terminal") and run:
+    ```bash
+    xcode-select --install
+    ```
+    A popup will appear asking if you want to install the developer tools. Click "Install" and follow the prompts. This installation typically takes 5-10 minutes.
+    
+    If you skip this step, you might see this error when trying to use Git or Homebrew:
+    ```
+    xcrun: error: invalid active developer path (/Library/Developer/CommandLineTools), missing xcrun at: /Library/Developer/CommandLineTools/usr/bin/xcrun
+    ```
+
+2. **Install Homebrew Package Manager:**
+    
+    After Command Line Tools are installed, install Homebrew, which makes installing other tools much easier:
     ```bash
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     ```
 
-2. **Install Miniconda:**
+3. **Install Miniconda:**
     
     Plotbot uses Python and requires Miniconda to manage its dependencies. Install it with:
     ```bash
@@ -33,14 +46,14 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
     ```
     After running this command, close and reopen your terminal.
 
-3. **Install Git:**
+4. **Install Git:**
     
     Git is needed to download the Plotbot code. If you don't have it installed, run:
     ```bash
     brew install git
     ```
 
-4. **Install Visual Studio Code (VS Code):** 
+5. **Install Visual Studio Code (VS Code):** 
     
     VS Code is a popular, free, and powerful code editor that works very well with Jupyter Notebooks and Python. While you can use other editors, these instructions assume you're using VS Code. Install in terminal with:
     ```bash
@@ -59,7 +72,7 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
     *   Clone this repository and change your working directory to the Plotbot directory. After you run this command you can follow the instructions in the terminal to complete the installation 💻:
 
         ```bash
-        unsetopt extended_glob && git clone https://github.com/Sonified/Plotbot.git && cd Plotbot && setopt extended_glob && echo "✅ Download complete" && echo ""  && echo "Copy and paste the following command, including the period, to initialize Conda for your shell: ./install_scripts/1_init_conda.sh" && echo ""
+        git clone https://github.com/Sonified/Plotbot.git && cd Plotbot && echo "✅ Download complete" && echo "" && echo "Copy and paste the following command, including the period, to initialize Conda for your shell: ./install_scripts/1_init_conda.sh" && echo ""
         ```
 
 2.  **Now Run the Environment Setup Scripts in the Same Terminal Window** 
