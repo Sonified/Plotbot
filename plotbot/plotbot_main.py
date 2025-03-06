@@ -1,0 +1,469 @@
+print("\nImporting libraries, this may take a moment. Hold tight... \n")
+
+# --- STANDARD LIBRARIES AND UTILITIES ---
+import sys
+import os
+import re
+from getpass import getpass
+from collections import defaultdict, namedtuple
+from typing import Dict, List, Optional
+print("✅ Imported standard libraries and utilities.")
+
+# --- SCIENTIFIC COMPUTING LIBRARIES ---
+import numpy as np
+import pandas as pd
+import scipy
+from scipy import stats
+print("✅ Imported numpy, pandas, and scipy libraries.")
+
+# --- PLOTTING LIBRARIES ---
+import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+import matplotlib.dates as mdates
+import matplotlib.ticker as mticker
+print("✅ Imported matplotlib libraries.")
+
+# --- DATA HANDLING AND WEB ---
+import cdflib
+try:
+    from cdflib.epochs_astropy import CDFAstropy as cdfepoch
+except ImportError:
+    print("Using cdflib.cdfepoch")
+    from cdflib import cdfepoch
+import bs4  # Import the module for version checking
+from bs4 import BeautifulSoup  # Import the class for HTML parsing
+import requests
+import dateutil
+from dateutil.parser import parse
+from datetime import datetime, timedelta, timezone, time
+print("✅ Imported cdflib, BeautifulSoup, requests, dateutil, and datetime libraries.")
+# ----------------------------------------
+
+
+from .print_manager import print_manager
+
+from .print_manager import print_manager
+from .data_cubby import data_cubby
+from .ploptions import ploptions
+from .plot_manager import plot_manager
+from .server_access import server_access
+from .data_tracker import global_tracker
+from .get_encounter import get_encounter_number
+from .time_utils import get_needed_6hour_blocks, daterange
+from .plotbot_helpers import time_clip, parse_axis_spec, resample, debug_plot_variable
+
+from .psp_data_types import data_types
+from .psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
+from .psp_electron_classes import epad, epad_hr
+from .psp_proton_classes import proton, proton_hr
+from .data_download import download_new_psp_data
+from .data_import import import_data_function
+
+#====================================================================
+# FUNCTION: plotbot - Core plotting function for time series data
+#====================================================================
+def plotbot(trange, *args):
+    """Plot multiple time series with shared x-axis and optional right y-axes."""
+    from collections import defaultdict
+    
+    # Validate time range and ensure UTC timezone
+    start_time = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
+    end_time = datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
+    
+    if start_time >= end_time:    # Validate time range order
+        print(f"Oops! 🤗 Start time ({trange[0]}) must be before end time ({trange[1]})")
+        sys.exit("Plotbot stopped due to invalid time range")
+
+        # Validate argument pairs
+    if len(args) % 2 != 0:
+        print("\nOops! 🤗 Arguments must be in pairs of (data, axis_number).")
+        print("\nFor example:")
+        print("plotbot(trange,")
+        print("        data1, 1,")
+        print("        data2, 2,")
+        print("        data3, '2r')")  # Show that right axis is possible
+        print("\nCheck your arguments and try again!")
+        sys.exit("Plotbot stopped due to invalid argument pairs")  # Hard exit the program
+        
+    # Additional validation for data types
+    for i in range(0, len(args), 2):
+        if not hasattr(args[i], 'data_type'):
+            print(f"\nOops! 🤗 Argument {i+1} doesn't look like a plottable data object.")
+            print("Start with trange, then each odd-numbered argument must be a data class e.g. mag_rtn_4sa.br")
+            print("Each even-numbered argument must be an axis specification (number or string).")
+            print("Note: 1 for left axis, '1r' for right axis")
+            print("A well-structured example: plotbot(trange, mag_rtn_4sa.br, 1, mag_rtn_4sa.bt, 2, mag_rtn_4sa.bn, '2r')")
+            sys.exit("Plotbot stopped due to invalid argument pairs")
+            
+        if not (isinstance(args[i+1], (int, str))):
+            print(f"\nOops! 🤗 Axis specification at position {i+2} must be a number or string.")
+            print("Note: 1 for left axis, '1r' for right axis")
+            print("A well-structured example: plotbot(trange, mag_rtn_4sa.br, 1, mag_rtn_4sa.bt, 2, mag_rtn_4sa.bn, '2r')")
+            sys.exit("Plotbot stopped due to invalid argument pairs")
+
+    #====================================================================
+    # INITIALIZE DATA STRUCTURES
+    #====================================================================
+    plot_requests = []              # Stores metadata for each variable to be plotted (data type, class info, axis)
+    required_data_types = set()     # Tracks unique data types needed across all variables
+    subclasses_by_type = dict()     # Initialize empty dictionary to store subclass lists
+    subclasses_by_type = defaultdict(list, subclasses_by_type)  # Auto-creates empty lists for new data types
+    
+    #====================================================================
+    # PROCESS VARIABLE ARGUMENTS AND BUILD DATA STRUCTURES
+    #====================================================================
+    for i in range(0, len(args), 2):
+        var = args[i]
+        axis_spec = args[i+1]
+        # Store the request
+        plot_requests.append({
+            'data_type requested for plotbot': var.data_type,
+            'class_name': var.class_name,
+            'subclass_name': var.subclass_name,
+            'axis_spec': axis_spec
+        })
+        
+        required_data_types.add(var.data_type)
+        subclasses_by_type[var.data_type].append(var.subclass_name)
+    
+    #------------------ Print Data Summary -------------------------#
+    for data_type in required_data_types:    # Summarize variables by type
+        subclasses = subclasses_by_type[data_type]
+        print_manager.status(f"🛰️ {data_type} - acquiring variables: {', '.join(subclasses)}")
+
+    print_manager.status(" ")    # Add spacing between sections
+
+    #====================================================================
+    # DOWNLOAD AND PROCESS DATA
+    #====================================================================
+    
+    for data_type in required_data_types:
+        print_manager.debug(f"\nProcessing {data_type}...")
+        
+        download_new_psp_data(trange, data_type)
+        
+        class_name = next(r['class_name'] for r in plot_requests      # Get class instance 
+                         if r['data_type requested for plotbot'] == data_type)
+        class_instance = data_cubby.grab(class_name)                  # Load from cache
+        
+        # Check if we need to import or if cached data is outside our range
+        needs_import = global_tracker.is_import_needed(trange, data_type)
+        needs_refresh = False
+        
+        if hasattr(class_instance, 'datetime_array') and class_instance.datetime_array is not None:
+            cached_start = np.datetime64(class_instance.datetime_array[0], 's')
+            cached_end = np.datetime64(class_instance.datetime_array[-1], 's')
+            requested_start = np.datetime64(datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f'), 's')
+            requested_end = np.datetime64(datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f'), 's')
+            
+            print_manager.debug(f"Cached time range: {cached_start} to {cached_end}")
+            print_manager.debug(f"Requested time range: {requested_start} to {requested_end}")
+            
+            # Add 10s buffer to handle instrument timing differences
+            buffered_start = cached_start - np.timedelta64(10, 's')
+            buffered_end = cached_end + np.timedelta64(10, 's')
+            
+            print_manager.debug("Checking if cached data (with ±10s buffer for instrument timing differences) covers requested time range:")
+            print_manager.debug(f"Is earliest cached data ({buffered_start}) too late for request ({requested_start})? {buffered_start > requested_start}")
+            print_manager.debug(f"Is latest cached data ({buffered_end}) too early for request ({requested_end})? {buffered_end < requested_end}")
+            
+            if buffered_start > requested_start or buffered_end < requested_end:
+                print_manager.status(f"{data_type} - Requested time falls outside cached data range, updating...")
+                needs_refresh = True
+
+    #====================================================================
+    # IMPORT/UPDATE DATA IF NEEDED
+    #====================================================================
+        if needs_import or needs_refresh:
+            # Import new data
+            print_manager.debug(f"{data_type} - {'Import required' if needs_import else 'Refresh required'}")
+            data_obj = import_data_function(trange, data_type)
+            if needs_import:
+                global_tracker.update_imported_range(trange, data_type)
+            
+            # Update with new data
+            print_manager.status(f"📥 Updating {data_type}...")
+            class_instance.update(data_obj)
+            print_manager.status(" ")
+        else:
+            # Use existing data and calculations
+            print_manager.status(f"📤 Using existing variables, data update not needed for this time range")
+            print_manager.status(" ")
+
+    #------------------ Prepare Plot Variables ------------------#
+    plot_vars = []
+    
+    # Process plot requests and collect variables
+    for request in plot_requests:
+        class_instance = data_cubby.grab(request['class_name'])     # Retrieve class instance for this plot request
+        var = class_instance.get_subclass(request['subclass_name']) # Get specific component to plot
+        plot_vars.append((var, request['axis_spec']))               # Store variable and its axis specification
+        
+        debug_plot_variable(var, request, print_manager)
+
+    # Group variables by axis
+    from collections import defaultdict
+    axis_groups = defaultdict(list)
+    for var, axis_spec in plot_vars:
+        axis_num, is_right = parse_axis_spec(axis_spec)
+        axis_groups[(axis_num, is_right)].append(var)
+
+    # Create figure and axes
+    num_subplots = max(axis_num for axis_num, _ in axis_groups.keys())
+    fig, axs = plt.subplots(num_subplots, 1, sharex=True, figsize=(12, 2 * num_subplots))
+    if num_subplots == 1:
+        axs = [axs]
+    plt.subplots_adjust(right=0.75)
+
+    #====================================================================
+    # PLOT VARIABLES ON APPROPRIATE AXES
+    #====================================================================
+    for axis_index in range(1, num_subplots + 1):  # Iterate through each subplot (1-based indexing)
+        ax = axs[axis_index - 1]                   # Get current subplot axis (0-based array indexing)
+        ax_right = None                            # Secondary y-axis for dual-scale plots
+        legend_handles = []                        # Store plot lines for legend creation
+        legend_labels = []                         # Store corresponding legend text
+        has_right_axis = False                     # Track if we need a secondary y-axis
+        empty_plot = True                          # Assume empty until we successfully plot data
+
+        #====================================================================
+        # PROCESS EACH AXIS GROUP (PRIMARY/SECONDARY Y-AXIS)
+        #====================================================================
+        for (axis_num, is_right), variables in axis_groups.items():  # Process each group of variables for this axis
+            if axis_num != axis_index:  # Skip groups meant for other subplots
+                continue
+
+            if is_right and ax_right is None:  # Create secondary y-axis if needed
+                ax_right = ax.twinx()          # twinx() creates shared x-axis
+                has_right_axis = True
+            
+            #====================================================================
+            # PLOT INDIVIDUAL VARIABLES WITHIN AXIS GROUP
+            #====================================================================
+            for var in variables:              # Plot each variable in the group
+                plot_ax = ax_right if is_right else ax  # Choose primary or secondary y-axis
+                print_manager.status(f"📈 Plotting {var.class_name}.{var.subclass_name}")
+
+                # Validate data exists and has content
+                if var is None or (hasattr(var, 'data') and np.array(var).size == 0) or var.datetime_array is None:
+                    print_manager.status(f"No data available for {var.class_name}.{var.subclass_name} in time range")
+                    continue
+
+                empty_plot = False                # We have valid data to plot
+
+                #====================================================================
+                # PLOT TIME SERIES DATA (e.g. MAG, PROTON MOMENTS)
+                #====================================================================
+                if var.plot_type == 'time_series':  # Handle standard time series data
+                    
+                    #====================================================================
+                    # DATA VERIFICATION
+                    #====================================================================
+                    # Check if datetime array exists and has data
+                    if var.datetime_array is None or len(var.datetime_array) == 0:
+                        empty_plot = True
+                        print_manager.debug("No datetime array available - marking as empty plot")
+                        continue
+
+                    # Check if any data points fall within the specified time range
+                    time_indices = time_clip(var.datetime_array, trange[0], trange[1])
+                    if len(time_indices) == 0:
+                        empty_plot = True
+                        print_manager.debug("No valid time indices found - marking as empty plot")
+                        continue
+
+                    # Convert variable data to numpy array for processing
+                    data = np.array(var)
+
+                    #====================================================================
+                    # PROCEED WITH PLOTTING
+                    #====================================================================
+                    # Only continue if all verification checks passed
+                    if not empty_plot:
+                        datetime_clipped = var.datetime_array[time_indices]  # Get timestamps within range
+                        
+                        # Handle scalar quantities (single line)
+                        if data.ndim == 1:
+                            data_clipped = data[time_indices]  # Slice data for time range
+                            if np.all(np.isnan(data_clipped)):  # Skip if all data points are NaN
+                                empty_plot = True
+                                print_manager.debug("All data points are NaN - marking as empty plot")
+                                continue
+                                
+                            line, = plot_ax.plot(  # Create single line plot
+                                datetime_clipped,
+                                data_clipped,
+                                label=var.legend_label,
+                                color=var.color,
+                                linewidth=var.line_width,
+                                linestyle=var.line_style
+                            )
+                            legend_handles.append(line)  # Store line for legend
+                            legend_labels.append(var.legend_label)  # Store label for legend
+                            
+                        else:  # Handle vector quantities (e.g., 3D magnetic field)
+                            data_clipped = data[:,time_indices]  # Slice data for time range
+                            
+                            for i in range(data_clipped.shape[0]):  # Plot each vector component
+                                if np.all(np.isnan(data_clipped[i])):  # Skip components that are all NaN
+                                    print_manager.debug(f"Component {i} is all NaNs - skipping")
+                                    continue
+                                    
+                                line, = plot_ax.plot(  # Create line plot with component-specific styling
+                                    datetime_clipped,
+                                    data_clipped[i],
+                                    label=var.legend_label[i] if isinstance(var.legend_label, list) else var.legend_label,
+                                    color=var.color[i] if isinstance(var.color, list) else var.color,
+                                    linewidth=var.line_width[i] if isinstance(var.line_width, list) else var.line_width,
+                                    linestyle=var.line_style[i] if isinstance(var.line_style, list) else var.line_style
+                                )
+                                legend_handles.append(line)  # Store line for legend creation
+                                legend_labels.append(var.legend_label[i] if isinstance(var.legend_label, list) else var.legend_label)
+                        plot_ax.set_ylabel(var.y_label)  # Set y-axis label
+                        plot_ax.set_yscale(var.y_scale)  # Set linear/log scale
+                        if var.y_limit:  # Set y-axis limits if specified
+                            plot_ax.set_ylim(var.y_limit)
+
+                #====================================================================
+                # PLOT SPECTRAL DATA (e.g. ELECTRON PAD SPECTROGRAMS)
+                #====================================================================
+                elif var.plot_type == 'spectral':  # Handle spectral/colormap data
+                    #====================================================================
+                    # Verify data availability and validity
+                    #====================================================================
+                    if var.datetime_array is None or len(var.datetime_array) == 0:
+                        empty_plot = True
+                        print_manager.debug("No datetime array available - marking as empty plot")
+                        continue
+
+                    time_indices = time_clip(var.datetime_array, trange[0], trange[1])  # Get time range indices
+                    if len(time_indices) == 0:
+                        empty_plot = True
+                        print_manager.debug("No valid time indices found - marking as empty plot")
+                        continue
+                    
+                    data = np.array(var).view(np.ndarray)  # Convert to numpy array
+                    data_clipped = data[time_indices]  # Slice data for time range
+                    if np.all(np.isnan(data_clipped)):  # Check for all NaN values
+                        empty_plot = True
+                        print_manager.debug("All data points in time window are NaN - marking as empty plot")
+                        continue
+                        
+                    #====================================================================
+                    # Proceed with spectral plotting
+                    #====================================================================
+                    if not empty_plot:  # Create spectral plot only if we have valid data
+                        datetime_clipped = var.datetime_array[time_indices]
+                        additional_data_clipped = var.additional_data[time_indices]
+
+                        ax.set_ylabel(var.y_label)  # Set y-axis properties
+                        ax.set_yscale(var.y_scale)
+                        if var.y_limit:
+                            ax.set_ylim(var.y_limit)
+
+                        # Configure color scaling
+                        if var.colorbar_scale == 'log':  # Set up logarithmic color scaling
+                            norm = colors.LogNorm(vmin=var.colorbar_limits[0], vmax=var.colorbar_limits[1]) if var.colorbar_limits else colors.LogNorm()
+                        elif var.colorbar_scale == 'linear':  # Set up linear color scaling
+                            norm = colors.Normalize(vmin=var.colorbar_limits[0], vmax=var.colorbar_limits[1]) if var.colorbar_limits else None
+                        else:
+                            norm = None
+
+                        # Create spectral plot
+                        im = ax.pcolormesh(  # Create 2D color plot
+                            datetime_clipped,
+                            additional_data_clipped,
+                            data_clipped,
+                            norm=norm,
+                            cmap=var.colormap if hasattr(var, 'colormap') else None,
+                            shading='auto'
+                        )
+                        
+                        # Add and configure colorbar
+                        pos = ax.get_position()  # Get plot position
+                        cax = fig.add_axes([pos.x1 + 0.01, pos.y0, 0.02, pos.height])  # Create colorbar axes
+                        cbar = plt.colorbar(im, cax=cax)  # Add colorbar
+                        if hasattr(var, 'colorbar_label'):
+                            cbar.set_label(var.colorbar_label)  # Set colorbar label if specified
+
+            # ============================================================================
+            # Handle empty plots
+            # ============================================================================
+            if empty_plot:
+                print_manager.debug("Creating empty plot...")
+                ax.set_xlim(start_time, end_time)  # Set time range even if empty
+                ax.text(0.5, 0.5, 'No Data Available',  # Add centered "No Data" message
+                    horizontalalignment='center',
+                    verticalalignment='center',
+                    transform=ax.transAxes,
+                    fontsize=12,
+                    color='gray',
+                    style='italic')
+                
+                # Try to set y-label even for empty plots
+                print_manager.debug("Checking for y-label in variables...")
+                label_set = False
+                for (axis_num, is_right), variables in axis_groups.items():
+                    if axis_num != axis_index:
+                        continue
+                    print_manager.debug(f"Checking axis group {axis_num}, {is_right}")
+                    for var in variables:
+                        print_manager.debug(f"Checking var: {var}")
+                        print_manager.debug(f"Has y_label: {hasattr(var, 'y_label')}")
+                        if var is not None and hasattr(var, 'y_label'):
+                            print_manager.debug(f"Setting y-label to: {var.y_label}")
+                            ax.set_ylabel(var.y_label)             # Set y-label if available
+                            label_set = True
+                            break
+                    if label_set:
+                        break
+
+        # ============================================================================
+        # Add Legend
+        # ============================================================================
+        if legend_handles:                                         # Add legend if we have plot handles
+            if has_right_axis:                                     # Position legend based on axes layout
+                ax.legend(legend_handles, legend_labels,
+                          loc='center left', bbox_to_anchor=(1.095, 0.5))
+            else:
+                ax.legend(legend_handles, legend_labels,
+                          loc='center left', bbox_to_anchor=(1.02, 0.5))
+
+        # ============================================================================
+        # Final Axis Adjustments
+        # ============================================================================
+        ax.margins(x=0)                                           # Remove padding on x-axis
+        if ax_right:
+            ax_right.margins(x=0)                                 # Remove padding on secondary y-axis
+    
+        # ============================================================================
+        # Configure X-Axis
+        # ============================================================================
+        axs[-1].set_xlabel('Time')                                    # Add time label to bottom subplot
+    
+        def date_format(x, p):
+            dt = mdates.num2date(x)
+            
+            # Calculate the total time range in minutes
+            time_range_minutes = (end_time - start_time).total_seconds() / 60
+            
+            if dt.hour == 0 and dt.minute == 0:
+                return dt.strftime('%b-%d').upper()                   # Format: MMM-DD
+            elif time_range_minutes <= 5:  # For ranges <= 5 minutes
+                return dt.strftime('%H:%M:%S')                        # Format: HH:MM:SS
+            else:
+                return dt.strftime('%H:%M')                           # Format: HH:MM
+    
+        axs[-1].xaxis.set_major_formatter(mticker.FuncFormatter(date_format))
+
+        # ============================================================================
+        # Add Date Label to lower right corner of plot
+        # ============================================================================
+        plot_date = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f').strftime('%Y-%m-%d')
+        axs[-1].annotate(plot_date, xy=(1, -0.21), xycoords='axes fraction',  # Add date in lower right
+                         ha='right', va='top')
+
+    plt.show()                                                    # Display the complete figure
+
+print('\n🤖 Plotbot Initialized')
