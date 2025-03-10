@@ -72,7 +72,6 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
     *   If you've previously attempted to install Plotbot, remove any existing installation:
 
         ```bash
-        # Remove existing Plotbot directory if it exists
         rm -rf ~/GitHub/Plotbot
         ```
 
