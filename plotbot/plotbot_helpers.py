@@ -1,6 +1,10 @@
+from .multiplot_options import plt  # Import our enhanced plt with options
 import numpy as np
-import matplotlib.pyplot as plt
-from datetime import datetime
+import cdflib
+import os
+import warnings
+from datetime import datetime, timezone, timedelta
+import pandas as pd
 from dateutil.parser import parse
 from scipy import interpolate
 from .print_manager import print_manager

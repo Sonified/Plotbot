@@ -8,9 +8,9 @@ from .get_encounter import get_encounter_number
 from .plotbot_helpers import time_clip
 # Import specific functions from multiplot_helpers instead of using wildcard import
 from .multiplot_helpers import get_plot_colors, apply_panel_color, apply_bottom_axis_color
-from .multiplot_options import *
+from .multiplot_options import plt, MultiplotOptions
 
-import matplotlib.pyplot as plt
+# Import standard libraries
 import matplotlib.colors as colors
 import pandas as pd
 import numpy as np

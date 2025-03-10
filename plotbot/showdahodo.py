@@ -1,16 +1,21 @@
 # Import plotbot components with relative imports
+from .print_manager import print_manager
 from .data_cubby import data_cubby
 from .data_tracker import global_tracker  
 from .data_download import download_new_psp_data
 from .data_import import import_data_function
+from .plotbot_helpers import time_clip
+from .multiplot_options import plt  # Import our enhanced plt with options
 
 from matplotlib.colors import Normalize
-import matplotlib.pyplot as plt
 from scipy import stats
 import matplotlib.dates as mdates
-from datetime import datetime, timezone, timedelta
 import numpy as np
 from dateutil.parser import parse
+import pandas as pd
+import scipy.signal as signal
+import matplotlib.colors as colors
+from datetime import datetime, timezone, timedelta
 
 def showdahodo(trange, var1, var2, color_var=None, norm_ = None, xlim_ = None, ylim_ = None, 
                fname = None, s_ = None, alpha_ = None, xlabel_ = None, ylabel_ = None, 
