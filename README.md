@@ -69,6 +69,13 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
         mkdir -p ~/GitHub && cd ~/GitHub
         ```
 
+    *   If you've previously attempted to install Plotbot, remove any existing installation:
+
+        ```bash
+        # Remove existing Plotbot directory if it exists
+        rm -rf ~/GitHub/Plotbot
+        ```
+
     *   Clone this repository and change your working directory to the Plotbot directory. After you run this command you can follow the instructions in the terminal to complete the installation 💻:
 
         ```bash
