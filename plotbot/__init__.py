@@ -30,6 +30,9 @@ from .psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
 from .psp_electron_classes import epad
 from .psp_proton_classes import proton
 
+# Import audification module
+from .audifier import audifier
+
 # Import main plotting function
 # Use relative import to avoid confusion with the function name
 from .plotbot_main import plotbot
@@ -56,5 +59,6 @@ __all__ = [
     'mag_sc_4sa', 
     'mag_sc',
     'epad',
-    'proton'
+    'proton',
+    'audifier'
 ] 
