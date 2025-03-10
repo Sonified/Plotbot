@@ -2,11 +2,11 @@
 # This file exports all components to make them available when importing the package
 
 # Import and configure matplotlib first to ensure consistent styling
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as mpl_plt
 import numpy as np
 
 # Set global font settings for consistent plotting appearance
-plt.rcParams.update({
+mpl_plt.rcParams.update({
     'font.family': 'Arial',
     'font.sans-serif': ['Arial'],
     'axes.labelweight': 'normal',
@@ -33,8 +33,10 @@ from .psp_proton_classes import proton
 # Import audification module
 from .audifier import audifier
 
-# Import main plotting function
-# Use relative import to avoid confusion with the function name
+# Import our enhanced plt with options support
+from .multiplot_options import plt
+
+# Import main plotting functions
 from .plotbot_main import plotbot
 from .showdahodo import showdahodo
 from .multiplot import multiplot
@@ -42,7 +44,7 @@ from .multiplot_options import MultiplotOptions
 
 # Specify what gets imported with `from plotbot import *`
 __all__ = [
-    'plt',           # Make matplotlib.pyplot directly available
+    'plt',           # Now provides our enhanced plt with options support
     'np',            # Make numpy directly available
     'plotbot',
     'showdahodo', 

@@ -18,7 +18,7 @@ print("✅ Imported numpy, pandas, and scipy libraries.")
 
 # --- PLOTTING LIBRARIES ---
 import matplotlib
-import matplotlib.pyplot as plt
+# Enhanced plt with options is imported from __init__.py
 import matplotlib.colors as colors
 import matplotlib.dates as mdates
 import matplotlib.ticker as mticker
@@ -42,23 +42,21 @@ print("✅ Imported cdflib, BeautifulSoup, requests, dateutil, and datetime libr
 
 
 from .print_manager import print_manager
-
-from .print_manager import print_manager
-from .data_cubby import data_cubby
-from .ploptions import ploptions
-from .plot_manager import plot_manager
 from .server_access import server_access
 from .data_tracker import global_tracker
-from .get_encounter import get_encounter_number
-from .time_utils import get_needed_6hour_blocks, daterange
-from .plotbot_helpers import time_clip, parse_axis_spec, resample, debug_plot_variable
+from .data_cubby import data_cubby
+from .data_download import download_new_psp_data
+from .data_import import import_data_function
+from .plot_manager import plot_manager
+from .multiplot_options import plt  # Import our enhanced plt
 
 from .psp_data_types import data_types
 from .psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
 from .psp_electron_classes import epad, epad_hr
 from .psp_proton_classes import proton, proton_hr
-from .data_download import download_new_psp_data
-from .data_import import import_data_function
+from .get_encounter import get_encounter_number
+from .time_utils import get_needed_6hour_blocks, daterange
+from .plotbot_helpers import time_clip, parse_axis_spec, resample, debug_plot_variable
 
 #====================================================================
 # FUNCTION: plotbot - Core plotting function for time series data

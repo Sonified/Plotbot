@@ -1,7 +1,25 @@
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as mpl_plt
 from .print_manager import print_manager
 
-class MultiplotOptions:
+class MultiplotOptionsMeta(type):
+    """Metaclass that adds axis properties to MultiplotOptions."""
+    def __new__(mcs, name, bases, attrs):
+        # Add axis properties for axes 1-25
+        for i in range(1, 26):  # Generate properties for ax1 through ax25
+            property_name = f'ax{i}'
+            
+            # Create a property getter with proper closure for each axis number
+            def make_property(axis_num):
+                def getter(self):
+                    return self._get_axis_options(axis_num)
+                return property(getter)
+            
+            # Add the property to class attributes
+            attrs[property_name] = make_property(i)
+            
+        return super().__new__(mcs, name, bases, attrs)
+
+class MultiplotOptions(metaclass=MultiplotOptionsMeta):
     """Configuration options for the multiplot function, including per-axis customization."""
     
     # Make axes a class-level attribute
@@ -65,20 +83,23 @@ class MultiplotOptions:
         for attr in list(self.__dict__.keys()):
             if attr.startswith('ax'):
                 delattr(self, attr)
+    
+    def _get_axis_options(self, axis_number):
+        """Helper method to get or create axis options"""
+        print_manager.debug(f"Accessing axis ax{axis_number}")
+        if axis_number not in MultiplotOptions.axes:
+            print_manager.debug(f"Creating new axis options for ax{axis_number}")
+            MultiplotOptions.axes[axis_number] = self.AxisOptions()
+        else:
+            print_manager.debug(f"Using existing axis options for ax{axis_number}")
+        return MultiplotOptions.axes[axis_number]
                 
     def __getattr__(self, name):
-        """Dynamically create ax1, ax2, etc. as attributes when accessed."""
+        """Dynamically handle axis attributes beyond ax25."""
         if name.startswith('ax'):
             try:
                 axis_number = int(name[2:])
-                print_manager.debug(f"Accessing axis {name}")
-                if axis_number not in MultiplotOptions.axes:
-                    print_manager.debug(f"Creating new axis options for {name}")
-                    MultiplotOptions.axes[axis_number] = self.AxisOptions()
-                    setattr(self, name, MultiplotOptions.axes[axis_number])
-                else:
-                    print_manager.debug(f"Using existing axis options for {name}")
-                return MultiplotOptions.axes[axis_number]
+                return self._get_axis_options(axis_number)
             except ValueError:
                 pass
         raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
@@ -97,5 +118,18 @@ class MultiplotOptions:
             print(f"  right y_limit: {axis_opts.r.y_limit}")
             print(f"  right color: {axis_opts.r.color}")
 
-# Create global instance
-plt.options = MultiplotOptions()
+# Create a custom plt object that extends matplotlib.pyplot
+class EnhancedPlotting:
+    """Enhanced matplotlib.pyplot with custom options support"""
+    
+    def __init__(self):
+        # Copy all attributes from matplotlib.pyplot
+        for attr in dir(mpl_plt):
+            if not attr.startswith('_') and attr != 'options':  # Skip existing options if any
+                setattr(self, attr, getattr(mpl_plt, attr))
+        
+        # Add the options attribute
+        self.options = MultiplotOptions()
+
+# Create the global instance
+plt = EnhancedPlotting()
