@@ -1,3 +1,5 @@
+import matplotlib.colors as colors
+
 def get_plot_colors(n_panels, color_mode='default', single_color=None):
     """
     Get colors for multiplot panels based on color mode.
