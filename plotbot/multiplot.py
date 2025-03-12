@@ -7,7 +7,7 @@ from .print_manager import print_manager
 from .get_encounter import get_encounter_number
 from .plotbot_helpers import time_clip
 # Import specific functions from multiplot_helpers instead of using wildcard import
-from .multiplot_helpers import get_plot_colors, apply_panel_color, apply_bottom_axis_color
+from .multiplot_helpers import get_plot_colors, apply_panel_color, apply_bottom_axis_color, validate_log_scale_limits
 from .multiplot_options import plt, MultiplotOptions
 
 # Import standard libraries
@@ -41,11 +41,9 @@ def multiplot(plot_list, **kwargs):
     
     # Convert window to timedelta
     window_td = pd.Timedelta(options.window)
-    print_manager.debug(f"Window timedelta: {window_td}")
     
     # Calculate number of panels needed
     n_panels = len(plot_list)
-    print_manager.debug(f"Number of panels: {n_panels}")
     
     # Create figure with subplots
     print_manager.debug("\nCreating figure...")
@@ -177,15 +175,23 @@ def multiplot(plot_list, **kwargs):
         # Plot Variables (Multi-Variable) with Plot Type Handling
         # ====================================================================
         panel_color = color_scheme['panel_colors'][i] if color_scheme else None
+        axis_options = getattr(options, f'ax{i+1}')
         
         if isinstance(var, list):
-            axis_options = getattr(options, f'ax{i+1}')
-            
             for idx, single_var in enumerate(var):
                 indices = time_clip(single_var.datetime_array, trange[0], trange[1])
                 if len(indices) > 0:
+                    
+                    # Check how many non-NaN values we actually have
+                    valid_count = np.sum(~np.isnan(single_var.data[indices]))
+                    
+                    # Calculate min/max of actual data to compare with limits
+                    data_min = float(np.min(single_var.data[indices]))
+                    data_max = float(np.max(single_var.data[indices]))
+                    
                     if idx == 1 and options.second_variable_on_right_axis:
                         ax2 = axs[i].twinx()
+                        
                         if options.color_mode in ['rainbow', 'single'] and panel_color:
                             plot_color = panel_color
                         elif hasattr(axis_options, 'r') and axis_options.r.color is not None:
@@ -200,8 +206,33 @@ def multiplot(plot_list, **kwargs):
                                 label=single_var.legend_label,
                                 color=plot_color)
                         
+                        if hasattr(single_var, 'y_limit') and single_var.y_limit:
+                            # Keep this functionality but remove the debug print
+                            pass
+                        
                         if hasattr(axis_options, 'r') and axis_options.r.y_limit is not None:
-                            ax2.set_ylim(axis_options.r.y_limit)
+                            # Determine the y_scale for the right axis
+                            # This is tricky as right axis doesn't always have its own scale setting
+                            # We'll use the same scale as the main variable or a default
+                            right_y_scale = getattr(single_var, 'y_scale', 'linear')
+                            
+                            # Validate the y_limit if we're using a log scale
+                            validated_r_y_limit = validate_log_scale_limits(
+                                axis_options.r.y_limit, 
+                                right_y_scale, 
+                                f"right axis of panel {i+1}"
+                            )
+                            
+                            ax2.set_ylim(validated_r_y_limit)
+                        elif hasattr(single_var, 'y_limit') and single_var.y_limit:
+                            # Validate the y_limit if we're using a log scale
+                            right_y_scale = getattr(single_var, 'y_scale', 'linear')
+                            validated_r_y_limit = validate_log_scale_limits(
+                                single_var.y_limit, 
+                                right_y_scale, 
+                                f"right axis of panel {i+1}"
+                            )
+                            ax2.set_ylim(single_var.y_limit)
                         
                         if panel_color:
                             apply_panel_color(ax2, panel_color, options)
@@ -238,9 +269,19 @@ def multiplot(plot_list, **kwargs):
                     axs[i].legend(bbox_to_anchor=(1.025, 1),
                                   loc='upper left')
         else:
-            axis_options = getattr(options, f'ax{i+1}')
             indices = time_clip(var.datetime_array, trange[0], trange[1])
             if len(indices) > 0:
+                # # Check how many non-NaN values we actually have
+                # valid_count = np.sum(~np.isnan(var.data[indices]))
+                
+                # # Calculate min/max of actual data
+                # data_min = float(np.nanmin(var.data[indices]))
+                # data_max = float(np.nanmax(var.data[indices]))
+                
+                if hasattr(var, 'y_limit') and var.y_limit:
+                    # Keep functionality but remove debug print
+                    pass
+                
                 if hasattr(var, 'plot_type'):
                     if var.plot_type == 'time_series':
                         plot_color = panel_color
@@ -288,19 +329,43 @@ def multiplot(plot_list, **kwargs):
                     if panel_color:
                         apply_panel_color(axs[i], panel_color, options)
     
+        # # Handle y-axis limits
+        # if isinstance(var, list):
+        #     var_y_limits = [v.y_limit for v in var if hasattr(v, 'y_limit') and v.y_limit]
+        # else:
+        #     # Keep this code but remove the debug print
+        #     pass
+        
         if axis_options.y_limit:
-            axs[i].set_ylim(axis_options.y_limit)
+            # Determine the y_scale
+            current_y_scale = None
+            if isinstance(var, list):
+                if hasattr(var[0], 'y_scale') and var[0].y_scale:
+                    current_y_scale = var[0].y_scale
+            elif hasattr(var, 'y_scale') and var.y_scale:
+                current_y_scale = var.y_scale
+            
+            # Validate the y_limit if we're using a log scale
+            validated_y_limit = validate_log_scale_limits(
+                axis_options.y_limit, 
+                current_y_scale, 
+                f"axis {i+1}"
+            )
+            
+            axs[i].set_ylim(validated_y_limit)
         elif isinstance(var, list):
             all_data = []
             for single_var in var:
                 if hasattr(single_var, 'y_limit') and single_var.y_limit:
                     all_data.extend(single_var.y_limit)
             if all_data:
-                axs[i].set_ylim(min(all_data), max(all_data))
+                y_min, y_max = min(all_data), max(all_data)
+                axs[i].set_ylim(y_min, y_max)
         elif hasattr(var, 'y_limit') and var.y_limit:
             axs[i].set_ylim(var.y_limit)
         else:
-            print_manager.debug("Debug: 'additional_data' or 'datetime_array' attributes not found.")
+            # Auto-scaling happens by default
+            current_ylim = axs[i].get_ylim()
     
         axs[i].set_xlim(start_time, end_time)
     
@@ -405,6 +470,25 @@ def multiplot(plot_list, **kwargs):
                 axs[i].set_title(title, fontsize=options.title_fontsize, color=panel_color)
             else:
                 axs[i].set_title(title, fontsize=options.title_fontsize)
+    
+        # Check for global horizontal line
+        if plt.options.draw_horizontal_line:
+            axs[i].axhline(
+                y=plt.options.horizontal_line_value,
+                linewidth=plt.options.horizontal_line_width,
+                color=plt.options.horizontal_line_color,
+                linestyle=plt.options.horizontal_line_style
+            )
+    
+        # Check for axis-specific horizontal line
+        axis_options = getattr(options, f'ax{i+1}')
+        if axis_options and axis_options.draw_horizontal_line:
+            axs[i].axhline(
+                y=axis_options.horizontal_line_value,
+                linewidth=axis_options.horizontal_line_width,
+                color=axis_options.horizontal_line_color,
+                linestyle=axis_options.horizontal_line_style
+            )
     
     if not options.use_relative_time:
         for i, ax in enumerate(axs):
