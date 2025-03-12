@@ -93,6 +93,9 @@ def apply_panel_color(ax, color, options=None):
         color: The color to apply
         options: The MultiplotOptions instance (for accessing settings)
     """
+    # Store original y-limits before any modifications
+    original_ylim = ax.get_ylim()
+    
     # Color the y-axis label and make bold
     if ax.yaxis.label:
         ax.yaxis.label.set_color(color)
@@ -116,6 +119,12 @@ def apply_panel_color(ax, color, options=None):
             if line.get_linestyle() == '--':  # Assuming this identifies the vertical line
                 line.set_color(color)
                 line.set_linewidth(options.vertical_line_width)
+    
+    # Check if y-limits changed during the styling process
+    new_ylim = ax.get_ylim()
+    if new_ylim != original_ylim:
+        # Restore original y-limits if they were changed
+        ax.set_ylim(original_ylim)
 
 def apply_bottom_axis_color(ax, color):
     """
@@ -136,3 +145,34 @@ def apply_bottom_axis_color(ax, color):
     # Color bottom spine only
     ax.spines['bottom'].set_color(color)
     
+def validate_log_scale_limits(y_limit, y_scale, axis_name):
+    """
+    Validates that y-limits are appropriate for the chosen scale.
+    
+    Args:
+        y_limit: Tuple of (min, max) limits
+        y_scale: Scale type ('log', 'linear', etc.)
+        axis_name: Name of the axis for warning messages
+        
+    Returns:
+        Tuple of validated (min, max) limits
+    """
+    if y_scale != 'log' or y_limit is None:
+        return y_limit
+        
+    min_val, max_val = y_limit
+    validated_min = min_val
+    validated_max = max_val
+    
+    if min_val <= 0:
+        validated_min = 0.01
+        print(f"WARNING: {min_val} is not a valid minimum with logarithmic y-axis for {axis_name}. Setting to {validated_min}")
+    
+    if max_val <= 0:
+        validated_max = 1.0
+        print(f"WARNING: {max_val} is not a valid maximum with logarithmic y-axis for {axis_name}. Setting to {validated_max}")
+    
+    if validated_min != min_val or validated_max != max_val:
+        return (validated_min, validated_max)
+    else:
+        return y_limit
