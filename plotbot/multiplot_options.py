@@ -154,6 +154,9 @@ class MultiplotOptions:
         self.use_single_title = True
         self.single_title_text = None
         
+        # Border line width option
+        self.border_line_width = 1.0
+        
         # Vertical line options
         self.draw_vertical_line = False
         self.vertical_line_width = 1.0
