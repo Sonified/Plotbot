@@ -449,6 +449,15 @@ def multiplot(plot_list, **kwargs):
                         axs[i].set_xlabel(f"Relative Time ({options.relative_time_step_units} from Perihelion)", 
                                         fontweight='bold', fontsize=options.x_label_size)
     
+            # Add these two lines to set tick label sizes when using relative time
+            axs[i].tick_params(axis='x', labelsize=options.x_tick_label_size)
+            axs[i].tick_params(axis='y', labelsize=options.y_tick_label_size)
+    
+            # After setting tick sizes in the relative time section
+            # Apply border line width to all spines (top, bottom, left, right)
+            for spine_name, spine in axs[i].spines.items():
+                spine.set_linewidth(plt.options.border_line_width)
+    
         if options.draw_vertical_line:
             color_to_use = panel_color if panel_color else options.vertical_line_color
             axs[i].axvline(x=center_dt, 
