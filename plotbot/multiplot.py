@@ -490,6 +490,10 @@ def multiplot(plot_list, **kwargs):
                 linestyle=axis_options.horizontal_line_style
             )
     
+        # Apply border line width to all spines (top, bottom, left, right)
+        for spine_name, spine in axs[i].spines.items():
+            spine.set_linewidth(plt.options.border_line_width)
+    
     if not options.use_relative_time:
         for i, ax in enumerate(axs):
             if options.use_single_x_axis:
