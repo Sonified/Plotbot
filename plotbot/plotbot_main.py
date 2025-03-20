@@ -114,6 +114,9 @@ def plotbot(trange, *args):
     for i in range(0, len(args), 2):
         var = args[i]
         axis_spec = args[i+1]
+        # Add variable testing print to see data types being processed
+        print_manager.variable_testing(f"Processing variable: {var.class_name}.{var.subclass_name}, data_type: {var.data_type}")
+        
         # Store the request
         plot_requests.append({
             'data_type requested for plotbot': var.data_type,
@@ -124,6 +127,9 @@ def plotbot(trange, *args):
         
         required_data_types.add(var.data_type)
         subclasses_by_type[var.data_type].append(var.subclass_name)
+        
+    # Print the data types being requested
+    print_manager.variable_testing(f"Data types requested: {required_data_types}")
     
     #------------------ Print Data Summary -------------------------#
     for data_type in required_data_types:    # Summarize variables by type
@@ -138,18 +144,33 @@ def plotbot(trange, *args):
     
     for data_type in required_data_types:
         print_manager.debug(f"\nProcessing {data_type}...")
+        # Add variable testing print to track data type processing
+        print_manager.variable_testing(f"About to process data_type: {data_type}")
+        
+        # This is where we would check if data_type is 'derived' and handle differently
+        print_manager.variable_testing(f"Checking if {data_type} is in psp_data_types: {data_type in data_types}")
+        
+        if data_type.startswith('derived'):
+            # Skip download and import for derived variables
+            print_manager.variable_testing(f"CONFIRMED: {data_type} is a derived variable - SKIPPING download and import")
+            continue
         
         download_new_psp_data(trange, data_type)
         
         class_name = next(r['class_name'] for r in plot_requests      # Get class instance 
                          if r['data_type requested for plotbot'] == data_type)
+        print_manager.variable_testing(f"Class name for {data_type}: {class_name}")
+        
         class_instance = data_cubby.grab(class_name)                  # Load from cache
+        print_manager.variable_testing(f"Retrieved class instance from data_cubby: {class_instance.__class__.__name__}")
         
         # Check if we need to import or if cached data is outside our range
         needs_import = global_tracker.is_import_needed(trange, data_type)
         needs_refresh = False
+        print_manager.variable_testing(f"Import needed for {data_type}: {needs_import}")
         
         if hasattr(class_instance, 'datetime_array') and class_instance.datetime_array is not None:
+            print_manager.variable_testing(f"Class instance has datetime_array of length: {len(class_instance.datetime_array)}")
             cached_start = np.datetime64(class_instance.datetime_array[0], 's')
             cached_end = np.datetime64(class_instance.datetime_array[-1], 's')
             requested_start = np.datetime64(datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f'), 's')
@@ -176,12 +197,24 @@ def plotbot(trange, *args):
         if needs_import or needs_refresh:
             # Import new data
             print_manager.debug(f"{data_type} - {'Import required' if needs_import else 'Refresh required'}")
+            print_manager.variable_testing(f"About to call import_data_function for {data_type}")
+            
+            # This is where we could skip for derived data or handle it differently
+            print_manager.variable_testing(f"*** Key decision point for derived data: {data_type} ***")
+            
             data_obj = import_data_function(trange, data_type)
+            if data_obj is None:
+                print_manager.variable_testing(f"No data returned from import for {data_type}")
+                continue
+                
+            print_manager.variable_testing(f"Data object returned from import: {type(data_obj)}")
+            
             if needs_import:
                 global_tracker.update_imported_range(trange, data_type)
             
             # Update with new data
             print_manager.status(f"📥 Updating {data_type}...")
+            print_manager.variable_testing(f"About to update {class_name} with new data")
             class_instance.update(data_obj)
             print_manager.status(" ")
         else:
@@ -193,9 +226,19 @@ def plotbot(trange, *args):
     plot_vars = []
     
     # Process plot requests and collect variables
+    print_manager.variable_testing("\n=== Preparing variables for plotting ===")
     for request in plot_requests:
+        print_manager.variable_testing(f"Processing request: {request['class_name']}.{request['subclass_name']}")
         class_instance = data_cubby.grab(request['class_name'])     # Retrieve class instance for this plot request
+        print_manager.variable_testing(f"Retrieved class instance: {class_instance.__class__.__name__}")
+        
         var = class_instance.get_subclass(request['subclass_name']) # Get specific component to plot
+        print_manager.variable_testing(f"Retrieved variable: {request['class_name']}.{request['subclass_name']}, data_type: {getattr(var, 'data_type', 'unknown')}")
+        
+        # This is where we'd need to handle derived variables (ensure they have the right attributes)
+        if hasattr(var, 'data_type'):
+            print_manager.variable_testing(f"Variable data_type: {var.data_type}")
+        
         plot_vars.append((var, request['axis_spec']))               # Store variable and its axis specification
         
         debug_plot_variable(var, request, print_manager)

@@ -17,10 +17,16 @@ def download_new_psp_data(trange, data_type):
     #====================================================================
     # VALIDATE DATA TYPE AND GET CONFIG
     #====================================================================
+    print_manager.variable_testing(f"download_new_psp_data called with data_type: {data_type}")
+    
     if data_type not in data_types:                      # Verify the requested data type exists in our supported types dictionary
         print(f"Data type {data_type} is not recognized.")
+        print_manager.variable_testing(f"Unrecognized data_type: {data_type}, not in psp_data_types")
         return
+    
+    print_manager.variable_testing(f"Found {data_type} in psp_data_types, retrieving configuration")
     config = data_types[data_type]                       # Extract the specific configuration settings for this data type (URLs, paths, patterns etc.)
+    print_manager.variable_testing(f"Configuration keys for {data_type}: {list(config.keys())}")
         
     #====================================================================
     # PARSE TIME RANGE

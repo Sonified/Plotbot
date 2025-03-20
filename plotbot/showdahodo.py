@@ -214,6 +214,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
             var3 = None  # Fall back to time-based coloring
             var3_time_clipped = None
             var3_values_clipped = None
+        var3_values = None  # Explicitly initialize var3_values to None
     else:
         color_time_clipped = None
         color_values_clipped = None
@@ -223,6 +224,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
         var3_values_clipped = None
         var3_time_original_len = 0
         var3_time_clipped_len = 0
+        var3_values = None  # Explicitly initialize var3_values to None
     
     # Determine which time series has the lowest sampling rate for target_times
     lengths = {
@@ -319,6 +321,9 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     norm_ = Normalize() if norm_ is None else norm_
     cmap_ = 'plasma' if cmap_ is None else cmap_
     
+    # ===================================================================
+    # HANDLE SORT OPERATIONS FOR 3D AND COLOR VALUES
+    # ===================================================================
     # Sort data by color if requested
     if sort is not None:
         print("Sorting by ascending color value")
@@ -326,6 +331,8 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
         values1 = values1[sort_c]
         values2 = values2[sort_c]
         colors = colors[sort_c]
+        if var3 is not None and 'var3_values' in locals():
+            var3_values = var3_values[sort_c]
         
     if invsort is not None:
         print("Sorting by descending color value")
@@ -333,11 +340,13 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
         values1 = values1[sort_c]
         values2 = values2[sort_c]
         colors = colors[sort_c]
+        if var3 is not None and 'var3_values' in locals():
+            var3_values = var3_values[sort_c]
     
     # Create hodogram scatter plot
     fig = plt.figure()
     
-    if var3 is not None:
+    if var3 is not None and 'var3_values' in locals() and var3_values is not None:
         ax = fig.add_subplot(projection='3d')
         s = ax.scatter(values1, values2, var3_values, c=colors, cmap=cmap_, norm=norm_, s=s_, alpha=alpha_)
         cbar = plt.colorbar(s, label=color_label, pad = .1)
@@ -408,7 +417,10 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     if zlabel_ is not None:
         zlabel = zlabel_
     else:
-        zlabel = var3_instance.legend_label
+        if var3_instance is not None:
+            zlabel = var3_instance.legend_label
+        else:
+            zlabel = ""
 
     ax.set_xlabel(xlabel, fontsize=16)
     ax.set_ylabel(ylabel, fontsize=16)

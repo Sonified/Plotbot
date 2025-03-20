@@ -4,6 +4,7 @@ class PrintManager:
         self.show_debug = False
         self.show_status = True
         self.show_datacubby = False  # Add this line
+        self.show_variable_testing = False  # For tracking variable creation and processing
        
     def debug(self, message):
         """For detailed debugging information"""
@@ -22,6 +23,11 @@ class PrintManager:
         # print("self.show_datacubby: ", self.show_datacubby)
         if self.show_datacubby:  # Simplified since we know attribute exists
             print(message)
+            
+    def variable_testing(self, message):
+        """For tracking variable creation and handling operations"""
+        if self.show_variable_testing:
+            print(f"[VAR] {message}")
 
 # Create global instance
 print_manager = PrintManager()

@@ -15,6 +15,15 @@ def import_data_function(trange, data_type):
     
     print_manager.debug('Import data function called')
     print_manager.debug(f"Input trange: {trange}")
+    print_manager.variable_testing(f"import_data_function called for data_type: {data_type}")
+    
+    # Validate data type
+    if data_type not in data_types:
+        print_manager.variable_testing(f"Error: {data_type} not found in psp_data_types")
+        return None
+    
+    print_manager.variable_testing(f"Getting configuration for {data_type}")
+    config = data_types[data_type]
     
     # Parse times and ensure UTC timezone
     start_time = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f')
@@ -39,7 +48,6 @@ def import_data_function(trange, data_type):
     # INITIALIZATION AND CONFIGURATION 
     #====================================================================
     print_manager.debug(f"\n=== Starting import for {data_type} ===")
-    config = data_types[data_type]              # Get configuration for specified data type
     variables = config.get('data_vars', [])     # Get list of variables to extract, empty list if none specified
 
     #====================================================================
