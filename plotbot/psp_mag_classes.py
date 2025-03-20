@@ -83,6 +83,7 @@ class mag_rtn_4sa_class:
     def get_subclass(self, subclass_name):  # Dynamic component retrieval method
         """Retrieve a specific component"""
         print_manager.debug(f"Getting subclass: {subclass_name}")  # Log which component is requested
+        print_manager.variable_testing(f"Accessing subclass: mag_rtn_4sa.{subclass_name}")
         if subclass_name in self.raw_data.keys():  # Check if component exists in raw_data
             print_manager.debug(f"Returning {subclass_name} component")  # Log successful component find
             return getattr(self, subclass_name)  # Return the plot_manager instance
@@ -93,6 +94,7 @@ class mag_rtn_4sa_class:
 
     def __getattr__(self, name): # Prints a friendly error message if an attribute is not found
         print_manager.debug('mag_rtn_4sa getattr helper!')
+        print_manager.variable_testing(f"__getattr__ called for mag_rtn_4sa.{name}")
         available_attrs = list(self.raw_data.keys()) if self.raw_data else []  # Get list of valid attributes from raw_data
         print(f"'{name}' is not a recognized attribute, friend!")                
         print(f"Try one of these: {', '.join(available_attrs)}") # Show list of valid attributes to use
@@ -109,8 +111,9 @@ class mag_rtn_4sa_class:
             print(f"'{name}' is not a recognized attribute, friend!")
             available_attrs = list(self.raw_data.keys()) if self.raw_data else []
             print(f"Try one of these: {', '.join(available_attrs)}")
+            print_manager.variable_testing(f"Attempted to set unknown attribute: {name}")
+           
             # Do not set the attrib
-    
     def calculate_variables(self, imported_data):
         """Calculate the magnetic field components and derived quantities."""
         # Store only TT2000 times as numpy array
@@ -154,6 +157,8 @@ class mag_rtn_4sa_class:
         print_manager.debug(f"First TT2000 time: {self.time[0]}")
     
     def set_ploptions(self):
+        """Create plot managers for each component with default options"""
+        print_manager.variable_testing(f"Setting up plot options for mag_rtn_4sa variables")
         
         self.all = plot_manager(
             [self.raw_data['br'], self.raw_data['bt'], self.raw_data['bn']],
@@ -173,6 +178,8 @@ class mag_rtn_4sa_class:
                 line_style=['-', '-', '-'] # Line styles
             )
         )
+        print_manager.variable_testing(f"Created mag_rtn_4sa.all variable with {3 if self.raw_data['br'] is not None else 0} components")
+        
         self.br = plot_manager(
             self.raw_data['br'],
             plot_options=ploptions(
@@ -191,6 +198,7 @@ class mag_rtn_4sa_class:
                 line_style='-'             # Line style
             )
         )
+        print_manager.variable_testing(f"Created mag_rtn_4sa.br variable with data shape: {len(self.raw_data['br']) if self.raw_data['br'] is not None else 'None'}")
 
         self.bt = plot_manager(
             self.raw_data['bt'],

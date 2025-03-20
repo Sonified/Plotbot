@@ -12,6 +12,7 @@ class data_cubby:
         print_manager.datacubby("\n=== Stashing Debug (INSIDE DATA CUBBY)===")
         identifier = f"{class_name}.{subclass_name}" if class_name and subclass_name else class_name
         print_manager.datacubby(f"Stashing with identifier: {identifier}")
+        print_manager.variable_testing(f"Stashing variable in data_cubby: {identifier}")
         
         # Debug print object attributes before stashing
         print_manager.datacubby(f"Attributes before stash:")
@@ -45,10 +46,16 @@ class data_cubby:
         """Retrieve object by its identifier."""
         print_manager.datacubby("\n=== Retrieval Debug INSIDE DATA CUBBY===")
         print_manager.datacubby(f"Attempting to retrieve: {identifier}")
+        print_manager.variable_testing(f"Retrieving variable from data_cubby: {identifier}")
         
         result = (cls.cubby.get(identifier) or 
                  cls.class_registry.get(identifier) or 
                  cls.subclass_registry.get(identifier))
+        
+        if result is not None:
+            print_manager.variable_testing(f"Successfully retrieved {identifier} from data_cubby")
+        else:
+            print_manager.variable_testing(f"Failed to retrieve {identifier} from data_cubby")
                  
         if result is not None:
             # Print plot options for any component that has them
