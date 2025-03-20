@@ -16,12 +16,17 @@ import pandas as pd
 import scipy.signal as signal
 import matplotlib.colors as colors
 from datetime import datetime, timezone, timedelta
+#%matplotlib notebook
+from mpl_toolkits import mplot3d
+from mpl_toolkits.mplot3d import Axes3D
 
-def showdahodo(trange, var1, var2, color_var=None, norm_ = None, xlim_ = None, ylim_ = None, 
-               fname = None, s_ = None, alpha_ = None, xlabel_ = None, ylabel_ = None, 
-               clabel_ = None, xlog_ = None, ylog_ = None, cmap_ = None, sort = None, 
-               invsort = None, lumsort = None, brazil = None, corr = None, wvpow = None, 
-               rsun = None, noshow = None, face_c = None, face_a = None):
+def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None, 
+               xlim_ = None, ylim_ = None, zlim_ = None, s_ = None, alpha_ = None, 
+               xlabel_ = None, ylabel_ = None, zlabel_ = None, clabel_ = None, 
+               xlog_ = None, ylog_ = None, zlog_ = None, cmap_ = None, 
+               elev = None, azi = None, roll = None, sort = None, invsort = None, lumsort = None, 
+               brazil = None, corr = None, wvpow = None, rsun = None, noshow = None, 
+               face_c = None, face_a = None, fname = None):
     """
     Create a hodogram plot of two variables, optionally colored by a third variable.
     Also calculates and displays the correlation coefficient and plots a trend line.
@@ -43,6 +48,9 @@ def showdahodo(trange, var1, var2, color_var=None, norm_ = None, xlim_ = None, y
     
     # Identify required data types
     required_data_types = {var1.data_type, var2.data_type}
+
+    if var3 is not None:
+        required_data_types.add(var3.data_type)
     if color_var is not None:
         required_data_types.add(color_var.data_type)
     
@@ -59,6 +67,8 @@ def showdahodo(trange, var1, var2, color_var=None, norm_ = None, xlim_ = None, y
             class_name = var2.class_name
         elif color_var is not None and data_type == color_var.data_type:
             class_name = color_var.class_name
+        elif var3 is not None and data_type == var3.data_type:
+            class_name = var3.class_name
         
         class_instance = data_cubby.grab(class_name)
         
@@ -91,9 +101,11 @@ def showdahodo(trange, var1, var2, color_var=None, norm_ = None, xlim_ = None, y
     var1_instance = data_cubby.grab(var1.class_name).get_subclass(var1.subclass_name)
     var2_instance = data_cubby.grab(var2.class_name).get_subclass(var2.subclass_name)
     color_var_instance = None
+    var3_instance = None
     if color_var is not None:
         color_var_instance = data_cubby.grab(color_var.class_name).get_subclass(color_var.subclass_name)
-    
+    if var3 is not None:
+        var3_instance = data_cubby.grab(var3.class_name).get_subclass(var3.subclass_name)
     # ====================================================================
     # PART 2: HELPER FUNCTIONS (from original showdahodo)
     # ====================================================================
@@ -186,11 +198,31 @@ def showdahodo(trange, var1, var2, color_var=None, norm_ = None, xlim_ = None, y
             color_var = None  # Fall back to time-based coloring
             color_time_clipped = None
             color_values_clipped = None
+
+    # Prepare color data if provided
+    if var3 is not None:
+        var3_values_full = var3_instance.data
+        var3_time_full = var3_instance.datetime_array
+        var3_time_original_len = len(var3_time_full)
+        
+        # Apply time range to color data
+        var3_time_clipped, var3_values_clipped = apply_time_range(trange, var3_time_full, var3_values_full)
+        var3_time_clipped_len = len(var3_time_clipped)
+        
+        if len(var3_time_clipped) == 0:
+            print("No var3 data available in the specified time range")
+            var3 = None  # Fall back to time-based coloring
+            var3_time_clipped = None
+            var3_values_clipped = None
     else:
         color_time_clipped = None
         color_values_clipped = None
         color_time_original_len = 0
         color_time_clipped_len = 0
+        var3_time_clipped = None
+        var3_values_clipped = None
+        var3_time_original_len = 0
+        var3_time_clipped_len = 0
     
     # Determine which time series has the lowest sampling rate for target_times
     lengths = {
@@ -200,6 +232,9 @@ def showdahodo(trange, var1, var2, color_var=None, norm_ = None, xlim_ = None, y
     
     if color_var is not None:
         lengths['color_time'] = color_time_clipped_len
+
+    if var3 is not None:
+        lengths['var3_time'] = var3_time_clipped_len
         
     min_length = min(lengths.values())
     
@@ -209,6 +244,8 @@ def showdahodo(trange, var1, var2, color_var=None, norm_ = None, xlim_ = None, y
         target_times = time2_clipped
     elif color_var is not None and lengths['color_time'] == min_length:
         target_times = color_time_clipped
+    elif var3 is not None and lengths['var3_time'] == min_length:
+        target_times = var3_time_clipped
     
     # Check if time arrays are equal or need resampling
     time_arrays_equal = (len(time1_clipped) == len(target_times) and 
@@ -219,6 +256,10 @@ def showdahodo(trange, var1, var2, color_var=None, norm_ = None, xlim_ = None, y
     if color_var is not None:
         time_arrays_equal = time_arrays_equal and (len(color_time_clipped) == len(target_times) and 
                             np.array_equal(mdates.date2num(color_time_clipped), mdates.date2num(target_times)))
+
+    if var3 is not None:
+        time_arrays_equal = time_arrays_equal and (len(var3_time_clipped) == len(target_times) and 
+                            np.array_equal(mdates.date2num(var3_time_clipped), mdates.date2num(target_times)))
     
     # Resample data if needed
     if time_arrays_equal:
@@ -227,6 +268,8 @@ def showdahodo(trange, var1, var2, color_var=None, norm_ = None, xlim_ = None, y
         values2 = values2_clipped
         if color_var is not None:
             color_values = color_values_clipped
+        if var3 is not None:
+            var3_values = var3_values_clipped
     else:
         print("Resampling data to align time series")
         if not np.array_equal(mdates.date2num(time1_clipped), mdates.date2num(target_times)):
@@ -244,6 +287,12 @@ def showdahodo(trange, var1, var2, color_var=None, norm_ = None, xlim_ = None, y
                 color_values = downsample_time_based(color_time_clipped, color_values_clipped, target_times)
             else:
                 color_values = color_values_clipped
+
+        if var3 is not None:
+            if not np.array_equal(mdates.date2num(var3_time_clipped), mdates.date2num(target_times)):
+                var3_values = downsample_time_based(var3_time_clipped, var3_values_clipped, target_times)
+            else:
+                var3_values = var3_values_clipped
     
     # Prepare colors
     if color_var is None:
@@ -261,20 +310,14 @@ def showdahodo(trange, var1, var2, color_var=None, norm_ = None, xlim_ = None, y
     print("Creating hodogram plot...")
     
     # Create the plot
-    fig = plt.figure(figsize=(8, 6))
-    ax = fig.add_subplot(111)
+    #fig = plt.figure(figsize=(8, 6))
+    #ax = fig.add_subplot(111)
     
     # Set default values if not specified
     s_ = 20 if s_ is None else s_
     alpha_ = 0.7 if alpha_ is None else alpha_
     norm_ = Normalize() if norm_ is None else norm_
     cmap_ = 'plasma' if cmap_ is None else cmap_
-    
-    # Set background color if specified
-    if face_c is not None:
-        ax.patch.set_facecolor(face_c)
-    if face_a is not None:
-        ax.patch.set_alpha(face_a)
     
     # Sort data by color if requested
     if sort is not None:
@@ -292,9 +335,25 @@ def showdahodo(trange, var1, var2, color_var=None, norm_ = None, xlim_ = None, y
         colors = colors[sort_c]
     
     # Create hodogram scatter plot
-    scatter = plt.scatter(values1, values2, c=colors, cmap=cmap_, norm=norm_, s=s_, alpha=alpha_)
-    cbar = plt.colorbar(scatter, label=color_label)
+    fig = plt.figure()
+    
+    if var3 is not None:
+        ax = fig.add_subplot(projection='3d')
+        s = ax.scatter(values1, values2, var3_values, c=colors, cmap=cmap_, norm=norm_, s=s_, alpha=alpha_)
+        cbar = plt.colorbar(s, label=color_label, pad = .1)
+    else:
+        ax = fig.add_subplot()
+        s = ax.scatter(values1, values2, c=colors, cmap=cmap_, norm=norm_, s=s_, alpha=alpha_)
+        cbar = plt.colorbar(s, label=color_label)
+    
+    #set colorbar to no transparency
     cbar.solids.set(alpha=1)
+
+    # Set background color if specified
+    if face_c is not None:
+        ax.patch.set_facecolor(face_c)
+    if face_a is not None:
+        ax.patch.set_alpha(face_a)
     
     # Calculate correlation coefficient and add trend line
     corr_title = ''
@@ -330,7 +389,7 @@ def showdahodo(trange, var1, var2, color_var=None, norm_ = None, xlim_ = None, y
                 base_date = mdates.num2date(mdates.date2num(target_times[0]))
                 delta = timedelta(days=days_fraction)
                 date = base_date + delta
-                return date.strftime('%H:%M:%S')
+                return date.strftime('%Y-%m-%d/%H:%M:%S')
             return ''
             
         cbar.ax.yaxis.set_major_formatter(plt.FuncFormatter(time_formatter))
@@ -346,14 +405,23 @@ def showdahodo(trange, var1, var2, color_var=None, norm_ = None, xlim_ = None, y
     else:
         ylabel = var2_instance.legend_label
 
-    plt.xlabel(xlabel, fontsize=16)
-    plt.ylabel(ylabel, fontsize=16)
+    if zlabel_ is not None:
+        zlabel = zlabel_
+    else:
+        zlabel = var3_instance.legend_label
+
+    ax.set_xlabel(xlabel, fontsize=16)
+    ax.set_ylabel(ylabel, fontsize=16)
+    if var3 is not None:
+        ax.set_zlabel(zlabel, fontsize=16)
     
     # Set axis limits if specified
     if xlim_ is not None:
-        plt.xlim(xlim_)
+        ax.set_xlim(xlim_)
     if ylim_ is not None:
-        plt.ylim(ylim_)
+        ax.set_ylim(ylim_)
+    if zlim_ is not None:
+        ax.set_zlim(zlim_)
         
     # Handle brazil plot mode (instability thresholds)
     if brazil is not None:
@@ -371,9 +439,11 @@ def showdahodo(trange, var1, var2, color_var=None, norm_ = None, xlim_ = None, y
         
     # Set axis scales
     if xlog_ is not None:
-        plt.xscale('log')
+        ax.set_xscale('log')
     if ylog_ is not None:
-        plt.yscale('log')
+        ax.set_yscale('log')
+    if zlog_ is not None:
+        ax.set_zscale('log')
     
     # Build title
     tname = f"{trange[0]}" + ' - ' + f"{trange[1]}"
@@ -392,6 +462,9 @@ def showdahodo(trange, var1, var2, color_var=None, norm_ = None, xlim_ = None, y
     
     # Set plot title
     plt.title(rsun_title + corr_title + tname, fontsize=12)
+
+    if elev and azi and roll is not None:
+        ax.view_init(elev, azi, roll)
     
     # Save figure if filename provided
     if fname is not None:
