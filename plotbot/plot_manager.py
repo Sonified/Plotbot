@@ -2,6 +2,7 @@
 #SAFE! 
 
 import numpy as np
+import matplotlib.pyplot as plt
 from .ploptions import ploptions
 from .print_manager import print_manager
 from .data_cubby import data_cubby
@@ -12,7 +13,7 @@ class plot_manager(np.ndarray):
         'data', 'data_type', 'var_name', 'class_name', 'subclass_name', 'plot_type', 'datetime_array', 
         'y_label', 'legend_label', 'color', 'y_scale', 'y_limit', 'line_width',
         'line_style', 'colormap', 'colorbar_scale', 'colorbar_limits',
-        'additional_data', 'colorbar_label'
+        'additional_data', 'colorbar_label', 'is_derived', 'source_var', 'operation'
     ]
 
     def __new__(cls, input_array, plot_options=None):

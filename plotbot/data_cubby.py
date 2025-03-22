@@ -80,6 +80,75 @@ class data_cubby:
         print_manager.datacubby("=== End Retrieval Debug (LEAVING DATA CUBBY)===\n")
         return result
 
+    def make_globally_accessible(self, variable, name):
+        """
+        Make a variable accessible globally with the given name.
+        
+        Parameters
+        ----------
+        variable : Variable
+            The variable to make globally accessible
+        name : str
+            The name to use for the variable in the global scope
+        """
+        try:
+            import builtins
+            from .print_manager import print_manager
+            print_manager.variable_testing(f"Making variable '{name}' globally accessible with ID {id(variable)}")
+            setattr(builtins, name, variable)
+            
+            # Verify it was set correctly
+            if hasattr(builtins, name):
+                print_manager.variable_testing(f"Successfully made '{name}' globally accessible")
+                return variable
+            else:
+                print_manager.variable_testing(f"Failed to make '{name}' globally accessible")
+                return variable
+        except Exception as e:
+            from .print_manager import print_manager
+            print_manager.variable_testing(f"Error making variable globally accessible: {str(e)}")
+            return variable
+
+class Variable:
+    """
+    A variable class that can hold data and metadata, 
+    while also behaving like a numpy array.
+    """
+    def __init__(self, class_name, subclass_name):
+        self.class_name = class_name
+        self.subclass_name = subclass_name
+        self.datetime_array = None
+        self.time_values = None
+        self.values = None
+        self.data_type = None
+        self.internal_id = id(self)  # Add an internal ID for unique identification
+    
+    def __array__(self):
+        """Return the values array when used in numpy operations."""
+        if self.values is None:
+            import numpy as np
+            return np.array([])  # Return empty array if values is None
+        return self.values
+    
+    def __len__(self):
+        """Return length of the values array."""
+        if self.values is None:
+            return 0
+        try:
+            return len(self.values)
+        except TypeError:
+            return 0  # Handle case where values doesn't support len()
+    
+    def __getitem__(self, key):
+        """Support for indexing operations."""
+        if self.values is None:
+            raise ValueError("No values available in this variable.")
+        return self.values[key]
+    
+    def __repr__(self):
+        """String representation of the variable."""
+        return f"<Variable {self.class_name}.{self.subclass_name}, type={self.data_type}, id={self.internal_id}>"
+
 # Create global instance
 data_cubby = data_cubby() 
 print('initialized data_cubby')

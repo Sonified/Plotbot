@@ -114,6 +114,34 @@ def plotbot(trange, *args):
     for i in range(0, len(args), 2):
         var = args[i]
         axis_spec = args[i+1]
+        
+        # Debug information about the variable being processed
+        print_manager.variable_testing(f"DEBUG - Processing variable {i//2 + 1}:")
+        print_manager.variable_testing(f"  Type: {type(var)}")
+        print_manager.variable_testing(f"  Class name: {var.class_name}")
+        print_manager.variable_testing(f"  Subclass name: {var.subclass_name}")
+        print_manager.variable_testing(f"  Data type: {var.data_type}")
+        print_manager.variable_testing(f"  Is derived: {var.data_type == 'derived' or hasattr(var, 'is_derived') and var.is_derived}")
+        print_manager.variable_testing(f"  Variable ID: {id(var)}")
+        print_manager.variable_testing(f"  Has datetime_array: {hasattr(var, 'datetime_array')}")
+        
+        if hasattr(var, 'datetime_array') and var.datetime_array is not None:
+            try:
+                print_manager.variable_testing(f"  datetime_array length: {len(var.datetime_array)}")
+            except:
+                print_manager.variable_testing("  Could not get datetime_array length")
+        
+        # Try to display some data values directly without checking for a values attribute
+        try:
+            if len(var) > 0:
+                print_manager.variable_testing(f"  First few elements: {var[:3]}")
+        except Exception as e:
+            pass  # Silently ignore any errors when trying to show elements
+        
+        # Create a unique identifier that includes object identity
+        var_id = f"{var.class_name}.{var.subclass_name}_{id(var)}"
+        print_manager.variable_testing(f"  Unique identifier: {var_id}")
+        
         # Add variable testing print to see data types being processed
         print_manager.variable_testing(f"Processing variable: {var.class_name}.{var.subclass_name}, data_type: {var.data_type}")
         
@@ -124,6 +152,10 @@ def plotbot(trange, *args):
             'subclass_name': var.subclass_name,
             'axis_spec': axis_spec
         })
+        
+        # Also capture unique identity for later use
+        var_id = f"{var.class_name}.{var.subclass_name}_{id(var)}"
+        print_manager.variable_testing(f"  Variable unique ID: {var_id}")
         
         required_data_types.add(var.data_type)
         subclasses_by_type[var.data_type].append(var.subclass_name)
@@ -147,13 +179,15 @@ def plotbot(trange, *args):
         # Add variable testing print to track data type processing
         print_manager.variable_testing(f"About to process data_type: {data_type}")
         
-        # This is where we would check if data_type is 'derived' and handle differently
-        print_manager.variable_testing(f"Checking if {data_type} is in psp_data_types: {data_type in data_types}")
-        
-        if data_type.startswith('derived'):
-            # Skip download and import for derived variables
-            print_manager.variable_testing(f"CONFIRMED: {data_type} is a derived variable - SKIPPING download and import")
+        # Skip download and import for derived variables
+        if data_type == 'derived':
+            print_manager.variable_testing(f"DERIVED data type detected - SKIPPING download and import")
+            print_manager.status(f"📤 Using derived variable, no download/import needed")
+            print_manager.status(" ")
             continue
+            
+        # Check if data_type is in psp_data_types
+        print_manager.variable_testing(f"Checking if {data_type} is in psp_data_types: {data_type in data_types}")
         
         download_new_psp_data(trange, data_type)
         
