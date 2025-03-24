@@ -5,6 +5,7 @@ class PrintManager:
         self.show_status = True
         self.show_datacubby = False  # Add this line
         self.show_variable_testing = False  # For tracking variable creation and processing
+        self.show_variable_basic = False   # For basic variable creation and operation status
        
     def debug(self, message):
         """For detailed debugging information"""
@@ -27,6 +28,11 @@ class PrintManager:
     def variable_testing(self, message):
         """For tracking variable creation and handling operations"""
         if self.show_variable_testing:
+            print(f"[VAR] {message}")
+            
+    def variable_basic(self, message):
+        """For basic variable creation and operation status (can be toggled separately)"""
+        if self.show_variable_basic:
             print(f"[VAR] {message}")
 
 # Create global instance
