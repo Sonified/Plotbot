@@ -215,5 +215,5 @@ def get_data(trange: List[str], *variables):
             # Use existing data and calculations
             print_manager.status(f"📤 Using existing variables, data update not needed for this time range")
     
-    print_manager.status("✅ Data acquisition complete")
+    print_manager.status("✅ Data acquisition complete\n")
     return None 

@@ -23,23 +23,33 @@ class DerivedVariable(plot_manager):
         
         # Add derived variable specific attributes
         obj.is_derived = True
-        obj.source_var = source_var
+        # Use object.__setattr__ instead of direct assignment to avoid boolean evaluation
+        object.__setattr__(obj, 'source_var', source_var)
         obj.operation = operation
         
         # Return the new object
         return obj
         
     def __array_finalize__(self, obj):
+        """Ensure all attributes are properly maintained during array operations."""
         # First call parent's array_finalize
         super().__array_finalize__(obj)
         
         # Add derived-specific attributes if not already present
         if not hasattr(self, 'is_derived'):
             self.is_derived = getattr(obj, 'is_derived', True)
+        
+        # FIX: Use object.__setattr__ to avoid triggering boolean evaluation
         if not hasattr(self, 'source_var'):
-            self.source_var = getattr(obj, 'source_var', None)
+            source_var_ref = getattr(obj, 'source_var', None)
+            object.__setattr__(self, 'source_var', source_var_ref)
+            
         if not hasattr(self, 'operation'):
             self.operation = getattr(obj, 'operation', None)
+            
+        # Copy any color attributes
+        if hasattr(obj, 'color') and not hasattr(self, 'color'):
+            self.color = getattr(obj, 'color')
 
 
 # Create a class to hold derived variables separate from the original data classes
@@ -74,7 +84,7 @@ class derived_class:
         return None
 
 
-def store_derived_variable(result_array, var_name, source_var, operation=None):
+def store_derived_variable(result_array, var_name, source_var, operation=None, datetime_array=None, suppress_status=False):
     """
     Store a derived variable in the data_cubby and set up proper attributes.
     
@@ -88,7 +98,11 @@ def store_derived_variable(result_array, var_name, source_var, operation=None):
         The source variable that was used in the operation
     operation : str, optional
         Description of the operation used to create the variable
-    
+    datetime_array : array-like, optional
+        Explicitly provided datetime array to use for the result (typically from interpolation)
+    suppress_status : bool, optional
+        If True, don't print the status message (useful when called from store_data)
+        
     Returns
     -------
     DerivedVariable
@@ -107,26 +121,65 @@ def store_derived_variable(result_array, var_name, source_var, operation=None):
     plot_options.data_type = "derived"
     plot_options.class_name = "derived"  # Use our derived class instead of source class
     plot_options.subclass_name = var_name
-    # Set datetime array directly in plot_options
-    if hasattr(source_var, 'datetime_array'):
-        plot_options.datetime_array = source_var.datetime_array
+    
+    # SIMPLIFIED DATETIME ARRAY HANDLING:
+    # If datetime_array is explicitly provided, use it (after validation)
+    if datetime_array is not None:
+        print_manager.variable_testing(f"Using explicitly provided datetime_array (length: {len(datetime_array)})")
+        
+        # Ensure the datetime_array length matches the result_array length
+        if len(datetime_array) != len(result_array):
+            print_manager.variable_testing(f"WARNING: Provided datetime_array length ({len(datetime_array)}) doesn't match result_array length ({len(result_array)})")
+            # Always truncate to the shorter length to ensure consistency
+            min_length = min(len(datetime_array), len(result_array))
+            datetime_array = datetime_array[:min_length]
+            result_array = result_array[:min_length]
+            print_manager.variable_testing(f"Truncated both arrays to length: {min_length}")
+            
+        plot_options.datetime_array = datetime_array
+    
+    # If no datetime_array is provided, try to use source_var's datetime_array
+    elif hasattr(source_var, 'datetime_array'):
+        # Check if the lengths match
+        if len(source_var.datetime_array) == len(result_array):
+            print_manager.variable_testing(f"Using source_var's datetime_array (length: {len(source_var.datetime_array)})")
+            plot_options.datetime_array = source_var.datetime_array
+        else:
+            print_manager.variable_testing(f"WARNING: Source datetime_array length ({len(source_var.datetime_array)}) != result_array length ({len(result_array)})")
+            # Truncate the datetime_array to match the result_array length
+            min_length = min(len(source_var.datetime_array), len(result_array))
+            plot_options.datetime_array = source_var.datetime_array[:min_length]
+            result_array = result_array[:min_length]
+            print_manager.variable_testing(f"Truncated both arrays to length: {min_length}")
     
     # IMPORTANT: Create a fresh copy of the array to ensure it's distinct
     # This prevents the new array from being treated as the same as the source array
     result_array_copy = np.array(result_array).copy()
     
+    # FIX 1: Create a reference to source_var without triggering boolean evaluation
+    # Store source_var as a reference, not as a direct attribute to avoid boolean evaluation
+    source_var_reference = source_var
+    
     # Create the derived variable object
     derived_var = DerivedVariable(
         result_array_copy,
         plot_options=plot_options,
-        source_var=None,  # Set to None initially
+        source_var=None,  # Initially set to None to avoid the boolean evaluation
         operation=operation
     )
     
-    # Add source_var to _plot_state directly instead of using the property
-    if not hasattr(derived_var, '_plot_state'):
-        derived_var._plot_state = {}
-    derived_var._plot_state['source_var'] = source_var
+    # FINAL CHECK: Ensure the datetime_array length matches the data array length
+    if len(derived_var.datetime_array) != len(derived_var.data):
+        print_manager.variable_testing(f"ERROR: Length mismatch! datetime_array: {len(derived_var.datetime_array)}, data: {len(derived_var.data)}")
+        # Create a new datetime_array of the correct length as a last resort
+        min_length = min(len(derived_var.datetime_array), len(derived_var.data))
+        derived_var.datetime_array = derived_var.datetime_array[:min_length]
+        derived_var.data = derived_var.data[:min_length]
+        print_manager.variable_testing(f"Fixed by truncating both arrays to length: {min_length}")
+    
+    # FIX 2: Set source_var after initialization to avoid the boolean error
+    # This avoids the "truth value of an array is ambiguous" error
+    object.__setattr__(derived_var, 'source_var', source_var_reference)
     
     # IMPORTANT: Explicitly set these attributes to ensure proper plotting
     derived_var.data_type = "derived"
@@ -138,8 +191,8 @@ def store_derived_variable(result_array, var_name, source_var, operation=None):
     
     # Set legend, label, etc.
     if operation:
-        derived_var.legend_label = f"{var_name} ({operation})"
-        derived_var.y_label = f"{var_name} ({operation})"
+        derived_var.legend_label = f"{var_name}"  # Simplified name for readability
+        derived_var.y_label = f"{var_name}"
     else:
         derived_var.legend_label = var_name
         derived_var.y_label = var_name
@@ -162,15 +215,14 @@ def store_derived_variable(result_array, var_name, source_var, operation=None):
     print_manager.variable_testing(f"class_name: {derived_var.class_name}")
     print_manager.variable_testing(f"subclass_name: {derived_var.subclass_name}")
     print_manager.variable_testing(f"shape: {derived_var.shape}")
-    print_manager.variable_testing(f"datetime_array length: {len(derived_var.datetime_array) if hasattr(derived_var, 'datetime_array') else 'None'}")
-    print_manager.variable_testing("is derived array 100x larger? First value comparison:")
+    print_manager.variable_testing(f"datetime_array length: {len(derived_var.datetime_array) if hasattr(derived_var, 'datetime_array') and derived_var.datetime_array is not None else 'None'}")
+    print_manager.variable_testing(f"data array length: {len(derived_var.data)}")
+    print_manager.variable_testing(f"operation: {derived_var.operation}")
     
-    # Check the first few values to verify multiplication worked
-    if len(derived_var) > 0 and source_var is not None and len(source_var) > 0:
-        print_manager.variable_testing(f"  Source first value: {source_var[0]}")
+    # Check the first few values to verify operation worked
+    if len(derived_var) > 0 and source_var_reference is not None and len(source_var_reference) > 0:
+        print_manager.variable_testing(f"  Source first value: {source_var_reference[0]}")
         print_manager.variable_testing(f"  Derived first value: {derived_var[0]}")
-        if derived_var[0] != source_var[0] * 100 and operation and "100" in operation:
-            print_manager.variable_testing(f"  MISMATCH! Expected {source_var[0] * 100}, got {derived_var[0]}")
         
     # Verify the derived class has our variable
     derived_check = data_cubby.grab('derived')
@@ -187,10 +239,18 @@ def store_derived_variable(result_array, var_name, source_var, operation=None):
     else:
         print_manager.variable_testing("ERROR: derived class not found in data_cubby!")
     
-    print_manager.variable_testing(f"Created derived variable {var_name} successfully")
-    
     # Now make this variable accessible in the global scope by its name
     data_cubby.make_globally_accessible(derived_var, var_name)
+    
+    # STATUS PRINT: Show a user-friendly status message when a new variable is created
+    # Use print_manager.variable_basic and report full dimensions
+    array_shape = derived_var.shape
+    time_points = len(derived_var.datetime_array)
+    if not suppress_status:
+        if operation:
+            print_manager.variable_basic(f"✅ Created result from '{operation}' with size {array_shape} and {time_points} time points\n")
+        else:
+            print_manager.variable_basic(f"✅ Created derived variable with size {array_shape} and {time_points} time points\n")
     
     return derived_var
 
@@ -227,6 +287,18 @@ def store_data(name, data=None):
     
     print_manager.variable_testing(f"Creating derived variable: {name}")
     
+    # ENSURE TIME ARRAY AND DATA ARRAY HAVE MATCHING LENGTHS
+    if isinstance(y_values, np.ndarray) and isinstance(time_array, np.ndarray):
+        if len(time_array) != len(y_values):
+            print_manager.variable_testing(f"WARNING: Time array length ({len(time_array)}) != data array length ({len(y_values)})")
+            
+            # Adjust the arrays to match in length
+            min_length = min(len(time_array), len(y_values))
+            time_array = time_array[:min_length] 
+            y_values = y_values[:min_length]
+            
+            print_manager.variable_testing(f"Adjusted both arrays to length: {min_length}")
+    
     # Create plot options for the derived variable
     plot_options = ploptions()
     plot_options.data_type = "derived"
@@ -242,30 +314,42 @@ def store_data(name, data=None):
     plot_options.line_width = 1.0
     plot_options.line_style = "-"
     
-    # Create the plot_manager instance with the data array
-    # y_values becomes the data property of the plot_manager
-    derived_var = plot_manager(y_values, plot_options)
-    
-    # Flag as derived variable
-    derived_var.is_derived = True
-    
-    # Get the derived class instance and add this variable
-    derived_instance = data_cubby.grab('derived')
-    if derived_instance is None:
-        derived_instance = derived_class()
-        data_cubby.stash(derived_instance, 'derived')
-    
-    # Add the variable to the derived class and stash in data_cubby
-    setattr(derived_instance, name, derived_var)
-    print_manager.variable_testing(f"Adding {name} to derived class")
-    data_cubby.stash(derived_instance, 'derived')
-    
-    # Add to global scope for easy access
-    import builtins
-    setattr(builtins, name, derived_var)
+    # Check if input is already a DerivedVariable to preserve properties
+    if isinstance(y_values, plot_manager) or hasattr(y_values, 'is_derived'):
+        # Using the improved store_derived_variable approach
+        # with explicit datetime_array passing
+        derived_var = store_derived_variable(
+            y_values.data,  # Use the data directly
+            name,
+            y_values,
+            operation=f"store_data('{name}')",
+            datetime_array=time_array,  # Explicitly pass time_array
+            suppress_status=True
+        )
+        
+        # Copy color if it exists
+        if hasattr(y_values, 'color'):
+            derived_var.color = y_values.color
+    else:
+        # For non-derived inputs, use the improved store_derived_variable approach
+        derived_var = store_derived_variable(
+            y_values,
+            name,
+            None,
+            operation=f"store_data('{name}')",
+            datetime_array=time_array,  # Explicitly pass time_array
+            suppress_status=True
+        )
     
     # Print a message confirming the variable can now be used directly
     print_manager.variable_testing(f"Created variable '{name}' - you can now use it directly with plotbot")
-    print_manager.variable_testing(f"  First few values in data: {derived_var.data[:3] if len(derived_var) > 0 else []}")
+    print_manager.variable_testing(f"  Variable dimensions: data length: {len(derived_var.data)}, datetime_array length: {len(derived_var.datetime_array)}")
+    if len(derived_var) > 0:
+        print_manager.variable_testing(f"  First few values in data: {derived_var.data[:3] if len(derived_var) > 0 else []}")
+    
+    # Add user-friendly status message
+    array_shape = derived_var.shape
+    time_points = len(derived_var.datetime_array)
+    print_manager.variable_basic(f"✅ Created variable '{name}' with size {array_shape} and {time_points} time points\n")
     
     return derived_var 

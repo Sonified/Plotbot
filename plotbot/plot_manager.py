@@ -16,6 +16,9 @@ class plot_manager(np.ndarray):
         'additional_data', 'colorbar_label', 'is_derived', 'source_var', 'operation'
     ]
 
+    # Set up class-level interpolation settings
+    interp_method = 'nearest'  # Default interpolation method ('nearest' or 'linear')
+
     def __new__(cls, input_array, plot_options=None):
         obj = np.asarray(input_array).view(cls)
         # Add this new section for plot state
@@ -362,4 +365,922 @@ class plot_manager(np.ndarray):
             self.plot_options = ploptions()
         setattr(self.plot_options, attribute, value)
         
+    @staticmethod
+    def interpolate_to_times(source_times, source_values, target_times, method='nearest'):
+        """
+        Interpolate source values to align with target times.
+        
+        Parameters
+        ----------
+        source_times : array-like
+            Original datetime array (can be Python datetime or numpy.datetime64)
+        source_values : array-like
+            Original values to interpolate
+        target_times : array-like
+            Target datetime array to interpolate to
+        method : str
+            Interpolation method ('nearest' or 'linear')
+            
+        Returns
+        -------
+        numpy.ndarray
+            Values interpolated to match target_times
+        """
+        from scipy import interpolate
+        import matplotlib.dates as mdates
+        import numpy as np
+        from .print_manager import print_manager
+        
+        print_manager.variable_testing(f"Starting interpolation with method: {method}")
+        print_manager.variable_testing(f"Source times length: {len(source_times)}, Target times length: {len(target_times)}")
+        
+        # Convert datetime arrays to numeric for interpolation
+        # Handle both Python datetime and numpy.datetime64 objects
+        try:
+            # For Python datetime objects
+            source_numeric = mdates.date2num(source_times)
+            target_numeric = mdates.date2num(target_times)
+        except (ValueError, TypeError):
+            # For numpy.datetime64 objects
+            # Convert to seconds since epoch
+            source_numeric = source_times.astype('datetime64[s]').astype(np.float64)
+            target_numeric = target_times.astype('datetime64[s]').astype(np.float64)
+            print_manager.variable_testing("Using numpy datetime64 conversion to numeric")
+        
+        # Skip interpolation if the times are already aligned
+        if len(source_times) == len(target_times) and np.array_equal(source_numeric, target_numeric):
+            print_manager.variable_testing("Times already aligned, skipping interpolation")
+            return source_values
+        
+        # Handle NaN values in source data
+        valid_mask = ~np.isnan(source_values)
+        if not np.any(valid_mask):
+            print_manager.variable_testing("All source values are NaN, returning NaN array")
+            return np.full_like(target_numeric, np.nan)
+        
+        if not np.all(valid_mask):
+            print_manager.variable_testing(f"Removing {len(source_values) - np.sum(valid_mask)} NaN values from source data")
+            source_numeric = source_numeric[valid_mask]
+            source_values = source_values[valid_mask]
+            print_manager.variable_testing(f"Source data length after NaN removal: {len(source_values)}")
+        
+        # Create interpolation function
+        if method == 'nearest':
+            print_manager.variable_testing("Using nearest-neighbor interpolation")
+            f = interpolate.interp1d(
+                source_numeric, source_values,
+                kind='nearest',
+                bounds_error=False,
+                fill_value=np.nan
+            )
+        else:  # linear
+            print_manager.variable_testing("Using linear interpolation")
+            f = interpolate.interp1d(
+                source_numeric, source_values,
+                kind='linear',
+                bounds_error=False,
+                fill_value=np.nan
+            )
+        
+        # Perform interpolation
+        interpolated_values = f(target_numeric)
+        print_manager.variable_testing(f"Interpolation complete. Result length: {len(interpolated_values)}")
+        
+        # Check for NaNs in the result
+        nan_count = np.sum(np.isnan(interpolated_values))
+        if nan_count > 0:
+            print_manager.variable_testing(f"Warning: {nan_count} NaN values in interpolated result")
+        
+        return interpolated_values
+
+    def __add__(self, other):
+        """Add two plot_manager objects with time alignment."""
+        if isinstance(other, plot_manager):
+            # Get datetime arrays
+            self_times = self.datetime_array
+            other_times = other.datetime_array
+            
+            print_manager.variable_testing(f"Adding {self.class_name}.{self.subclass_name} and {other.class_name}.{other.subclass_name}")
+            print_manager.variable_testing(f"First array time points: {len(self_times)}, Second array time points: {len(other_times)}")
+            
+            # For user-friendly status message
+            first_var = f"{self.class_name}.{self.subclass_name}"
+            second_var = f"{other.class_name}.{other.subclass_name}"
+            interpolated_var = None
+            target_var = None
+            
+            # Check sampling rates if possible - handle numpy.datetime64 objects
+            if len(self_times) > 1 and len(other_times) > 1:
+                try:
+                    # Try with total_seconds() for Python datetime objects
+                    self_cadence = (self_times[1] - self_times[0]).total_seconds()
+                    other_cadence = (other_times[1] - other_times[0]).total_seconds()
+                except AttributeError:
+                    # For numpy.datetime64 objects
+                    import numpy as np
+                    self_cadence = (self_times[1] - self_times[0]) / np.timedelta64(1, 's')
+                    other_cadence = (other_times[1] - other_times[0]) / np.timedelta64(1, 's')
+                
+                print_manager.variable_testing(f"First array sampling cadence: {self_cadence} seconds")
+                print_manager.variable_testing(f"Second array sampling cadence: {other_cadence} seconds")
+            
+            # Determine which variable has fewer time points to use as target
+            if len(self_times) <= len(other_times):
+                # Use self's time points as the target (fewer points)
+                target_times = self_times
+                target_var = first_var
+                interpolated_var = second_var
+                print_manager.variable_testing(f"Using first array ({self.class_name}.{self.subclass_name}) time points as target (fewer points)")
+                print_manager.variable_testing(f"Interpolating {other.class_name}.{other.subclass_name} using method: {self.__class__.interp_method}")
+                
+                # Interpolate other's values to align with self's time points
+                interpolated_values = self.interpolate_to_times(
+                    other_times, other.data, target_times, self.__class__.interp_method)
+                
+                # Perform the addition with the interpolated values
+                result_array = self.data + interpolated_values
+            else:
+                # Use other's time points as the target (fewer points)
+                target_times = other_times
+                target_var = second_var
+                interpolated_var = first_var
+                print_manager.variable_testing(f"Using second array ({other.class_name}.{other.subclass_name}) time points as target (fewer points)")
+                print_manager.variable_testing(f"Interpolating {self.class_name}.{self.subclass_name} using method: {self.__class__.interp_method}")
+                
+                # Interpolate self's values to align with other's time points
+                interpolated_values = self.interpolate_to_times(
+                    self_times, self.data, target_times, self.__class__.interp_method)
+                
+                # Perform the addition with the interpolated values
+                result_array = interpolated_values + other.data
+            
+            print_manager.variable_testing(f"Addition complete. Result length: {len(result_array)}")
+            
+            # STATUS PRINT: Show interpolation details after the operation is complete
+            print_manager.variable_basic(f"📊 Operation complete: {first_var} + {second_var}")
+            print_manager.variable_basic(f"   → Interpolated {interpolated_var} to match {target_var}'s {len(target_times)} time points using '{self.__class__.interp_method}' method\n")
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{self.class_name}.{self.subclass_name} + {other.class_name}.{other.subclass_name}"
+            
+            # IMPROVED: Explicitly pass the target_times to store_derived_variable
+            # This ensures the datetime_array matches the result_array exactly
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=target_times,  # Explicitly pass the datetime_array
+                suppress_status=True  # Suppress redundant status message
+            )
+        else:
+            # Handle scalar or array addition
+            result_array = self.data + other
+            
+            # STATUS PRINT: Show operation complete message for scalar operation (no interpolation)
+            print_manager.variable_basic(f"📊 Operation complete: {self.class_name}.{self.subclass_name} + {other}")
+            print_manager.variable_basic(f"   → No interpolation needed for scalar operation\n")
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{self.class_name}.{self.subclass_name} + {other}"
+            
+            # IMPROVED: Explicitly pass our datetime_array to ensure consistency
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=self.datetime_array,  # Use our own datetime_array for scalar operations
+                suppress_status=True  # Suppress redundant status message
+            )
+
+    def __sub__(self, other):
+        """Subtract two plot_manager objects with time alignment."""
+        if isinstance(other, plot_manager):
+            # Get datetime arrays
+            self_times = self.datetime_array
+            other_times = other.datetime_array
+            
+            print_manager.variable_testing(f"Subtracting {other.class_name}.{other.subclass_name} from {self.class_name}.{self.subclass_name}")
+            print_manager.variable_testing(f"First array time points: {len(self_times)}, Second array time points: {len(other_times)}")
+            
+            # For user-friendly status message
+            first_var = f"{self.class_name}.{self.subclass_name}"
+            second_var = f"{other.class_name}.{other.subclass_name}"
+            interpolated_var = None
+            target_var = None
+            
+            # Check sampling rates if possible - handle numpy.datetime64 objects
+            if len(self_times) > 1 and len(other_times) > 1:
+                try:
+                    # Try with total_seconds() for Python datetime objects
+                    self_cadence = (self_times[1] - self_times[0]).total_seconds()
+                    other_cadence = (other_times[1] - other_times[0]).total_seconds()
+                except AttributeError:
+                    # For numpy.datetime64 objects
+                    import numpy as np
+                    self_cadence = (self_times[1] - self_times[0]) / np.timedelta64(1, 's')
+                    other_cadence = (other_times[1] - other_times[0]) / np.timedelta64(1, 's')
+                
+                print_manager.variable_testing(f"First array sampling cadence: {self_cadence} seconds")
+                print_manager.variable_testing(f"Second array sampling cadence: {other_cadence} seconds")
+            
+            # Determine which variable has fewer time points to use as target
+            if len(self_times) <= len(other_times):
+                # Use self's time points as the target (fewer points)
+                target_times = self_times
+                target_var = first_var
+                interpolated_var = second_var
+                print_manager.variable_testing(f"Using first array ({self.class_name}.{self.subclass_name}) time points as target (fewer points)")
+                print_manager.variable_testing(f"Interpolating {other.class_name}.{other.subclass_name} using method: {self.__class__.interp_method}")
+                
+                # Interpolate other's values to align with self's time points
+                interpolated_values = self.interpolate_to_times(
+                    other_times, other.data, target_times, self.__class__.interp_method)
+                
+                # Perform the subtraction with the interpolated values
+                result_array = self.data - interpolated_values
+            else:
+                # Use other's time points as the target (fewer points)
+                target_times = other_times
+                target_var = second_var
+                interpolated_var = first_var
+                print_manager.variable_testing(f"Using second array ({other.class_name}.{other.subclass_name}) time points as target (fewer points)")
+                print_manager.variable_testing(f"Interpolating {self.class_name}.{self.subclass_name} using method: {self.__class__.interp_method}")
+                
+                # Interpolate self's values to align with other's time points
+                interpolated_values = self.interpolate_to_times(
+                    self_times, self.data, target_times, self.__class__.interp_method)
+                
+                # Perform the subtraction with the interpolated values
+                result_array = interpolated_values - other.data
+            
+            print_manager.variable_testing(f"Subtraction complete. Result length: {len(result_array)}")
+            
+            # STATUS PRINT: Show interpolation details after the operation is complete
+            print_manager.variable_basic(f"📊 Operation complete: {first_var} - {second_var}")
+            print_manager.variable_basic(f"   → Interpolated {interpolated_var} to match {target_var}'s {len(target_times)} time points using '{self.__class__.interp_method}' method\n")
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{self.class_name}.{self.subclass_name} - {other.class_name}.{other.subclass_name}"
+            
+            # IMPROVED: Explicitly pass the target_times to store_derived_variable
+            # This ensures the datetime_array matches the result_array exactly
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=target_times,  # Explicitly pass the datetime_array
+                suppress_status=True  # Suppress redundant status message
+            )
+        else:
+            # Handle scalar or array subtraction
+            result_array = self.data - other
+            
+            # STATUS PRINT: Show operation complete message for scalar operation (no interpolation)
+            print_manager.variable_basic(f"📊 Operation complete: {self.class_name}.{self.subclass_name} - {other}")
+            print_manager.variable_basic(f"   → No interpolation needed for scalar operation\n")
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{self.class_name}.{self.subclass_name} - {other}"
+            
+            # IMPROVED: Explicitly pass our datetime_array to ensure consistency
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=self.datetime_array,  # Use our own datetime_array for scalar operations
+                suppress_status=True  # Suppress redundant status message
+            )
+
+    def __mul__(self, other):
+        """Multiply two plot_manager objects with time alignment."""
+        if isinstance(other, plot_manager):
+            # Get datetime arrays
+            self_times = self.datetime_array
+            other_times = other.datetime_array
+            
+            print_manager.variable_testing(f"Multiplying {self.class_name}.{self.subclass_name} and {other.class_name}.{other.subclass_name}")
+            print_manager.variable_testing(f"First array time points: {len(self_times)}, Second array time points: {len(other_times)}")
+            
+            # For user-friendly status message
+            first_var = f"{self.class_name}.{self.subclass_name}"
+            second_var = f"{other.class_name}.{other.subclass_name}"
+            interpolated_var = None
+            target_var = None
+            
+            # Check sampling rates if possible - handle numpy.datetime64 objects
+            if len(self_times) > 1 and len(other_times) > 1:
+                try:
+                    # Try with total_seconds() for Python datetime objects
+                    self_cadence = (self_times[1] - self_times[0]).total_seconds()
+                    other_cadence = (other_times[1] - other_times[0]).total_seconds()
+                except AttributeError:
+                    # For numpy.datetime64 objects
+                    import numpy as np
+                    self_cadence = (self_times[1] - self_times[0]) / np.timedelta64(1, 's')
+                    other_cadence = (other_times[1] - other_times[0]) / np.timedelta64(1, 's')
+                
+                print_manager.variable_testing(f"First array sampling cadence: {self_cadence} seconds")
+                print_manager.variable_testing(f"Second array sampling cadence: {other_cadence} seconds")
+            
+            # Determine which variable has fewer time points to use as target
+            if len(self_times) <= len(other_times):
+                # Use self's time points as the target (fewer points)
+                target_times = self_times
+                target_var = first_var
+                interpolated_var = second_var
+                print_manager.variable_testing(f"Using first array ({self.class_name}.{self.subclass_name}) time points as target (fewer points)")
+                print_manager.variable_testing(f"Interpolating {other.class_name}.{other.subclass_name} using method: {self.__class__.interp_method}")
+                
+                # Interpolate other's values to align with self's time points
+                interpolated_values = self.interpolate_to_times(
+                    other_times, other.data, target_times, self.__class__.interp_method)
+                
+                # Perform the multiplication with the interpolated values
+                result_array = self.data * interpolated_values
+            else:
+                # Use other's time points as the target (fewer points)
+                target_times = other_times
+                target_var = second_var
+                interpolated_var = first_var
+                print_manager.variable_testing(f"Using second array ({other.class_name}.{other.subclass_name}) time points as target (fewer points)")
+                print_manager.variable_testing(f"Interpolating {self.class_name}.{self.subclass_name} using method: {self.__class__.interp_method}")
+                
+                # Interpolate self's values to align with other's time points
+                interpolated_values = self.interpolate_to_times(
+                    self_times, self.data, target_times, self.__class__.interp_method)
+                
+                # Perform the multiplication with the interpolated values
+                result_array = interpolated_values * other.data
+            
+            print_manager.variable_testing(f"Multiplication complete. Result length: {len(result_array)}")
+            
+            # STATUS PRINT: Show interpolation details after the operation is complete
+            print_manager.variable_basic(f"📊 Operation complete: {first_var} * {second_var}")
+            print_manager.variable_basic(f"   → Interpolated {interpolated_var} to match {target_var}'s {len(target_times)} time points using '{self.__class__.interp_method}' method\n")
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{self.class_name}.{self.subclass_name} * {other.class_name}.{other.subclass_name}"
+            
+            # IMPROVED: Explicitly pass the target_times to store_derived_variable
+            # This ensures the datetime_array matches the result_array exactly
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=target_times,  # Explicitly pass the datetime_array
+                suppress_status=True  # Suppress redundant status message
+            )
+        else:
+            # Handle scalar or array multiplication
+            result_array = self.data * other
+            
+            # STATUS PRINT: Show operation complete message for scalar operation (no interpolation)
+            print_manager.variable_basic(f"📊 Operation complete: {self.class_name}.{self.subclass_name} * {other}")
+            print_manager.variable_basic(f"   → No interpolation needed for scalar operation\n")
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{self.class_name}.{self.subclass_name} * {other}"
+            
+            # IMPROVED: Explicitly pass our datetime_array to ensure consistency
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=self.datetime_array,  # Use our own datetime_array for scalar operations
+                suppress_status=True  # Suppress redundant status message
+            )
+
+    def __truediv__(self, other):
+        """Divide two plot_manager objects with time alignment."""
+        if isinstance(other, plot_manager):
+            # Get datetime arrays
+            self_times = self.datetime_array
+            other_times = other.datetime_array
+            
+            print_manager.variable_testing(f"Dividing {self.class_name}.{self.subclass_name} by {other.class_name}.{other.subclass_name}")
+            print_manager.variable_testing(f"First array time points: {len(self_times)}, Second array time points: {len(other_times)}")
+            
+            # For user-friendly status message
+            first_var = f"{self.class_name}.{self.subclass_name}"
+            second_var = f"{other.class_name}.{other.subclass_name}"
+            interpolated_var = None
+            target_var = None
+            
+            # Check sampling rates if possible - handle numpy.datetime64 objects
+            if len(self_times) > 1 and len(other_times) > 1:
+                try:
+                    # Try with total_seconds() for Python datetime objects
+                    self_cadence = (self_times[1] - self_times[0]).total_seconds()
+                    other_cadence = (other_times[1] - other_times[0]).total_seconds()
+                except AttributeError:
+                    # For numpy.datetime64 objects
+                    import numpy as np
+                    self_cadence = (self_times[1] - self_times[0]) / np.timedelta64(1, 's')
+                    other_cadence = (other_times[1] - other_times[0]) / np.timedelta64(1, 's')
+                
+                print_manager.variable_testing(f"First array sampling cadence: {self_cadence} seconds")
+                print_manager.variable_testing(f"Second array sampling cadence: {other_cadence} seconds")
+            
+            # Import numpy for handling division by zero
+            import numpy as np
+            
+            # Determine which variable has fewer time points to use as target
+            if len(self_times) <= len(other_times):
+                # Use self's time points as the target (fewer points)
+                target_times = self_times
+                target_var = first_var
+                interpolated_var = second_var
+                print_manager.variable_testing(f"Using first array ({self.class_name}.{self.subclass_name}) time points as target (fewer points)")
+                print_manager.variable_testing(f"Interpolating {other.class_name}.{other.subclass_name} using method: {self.__class__.interp_method}")
+                
+                # Interpolate other's values to align with self's time points
+                interpolated_other = self.interpolate_to_times(
+                    other_times, other.data, target_times, self.__class__.interp_method)
+                
+                # Avoid division by zero
+                interpolated_other = np.where(interpolated_other == 0, np.nan, interpolated_other)
+                
+                # Perform the division with the interpolated values
+                result_array = self.data / interpolated_other
+            else:
+                # Use other's time points as the target (fewer points)
+                target_times = other_times
+                target_var = second_var
+                interpolated_var = first_var
+                print_manager.variable_testing(f"Using second array ({other.class_name}.{other.subclass_name}) time points as target (fewer points)")
+                print_manager.variable_testing(f"Interpolating {self.class_name}.{self.subclass_name} using method: {self.__class__.interp_method}")
+                
+                # Interpolate self's values to align with other's time points
+                interpolated_self = self.interpolate_to_times(
+                    self_times, self.data, target_times, self.__class__.interp_method)
+                
+                # Avoid division by zero
+                other_data = np.where(other.data == 0, np.nan, other.data)
+                
+                # Perform the division with the interpolated values
+                result_array = interpolated_self / other_data
+            
+            print_manager.variable_testing(f"Division complete. Result length: {len(result_array)}")
+            
+            # STATUS PRINT: Show interpolation details after the operation is complete
+            print_manager.variable_basic(f"📊 Operation complete: {first_var} / {second_var}")
+            print_manager.variable_basic(f"   → Interpolated {interpolated_var} to match {target_var}'s {len(target_times)} time points using '{self.__class__.interp_method}' method")
+            print_manager.variable_basic(f"   → Any division by zero has been replaced with NaN values\n")
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{self.class_name}.{self.subclass_name} / {other.class_name}.{other.subclass_name}"
+            
+            # IMPROVED: Explicitly pass the target_times to store_derived_variable
+            # This ensures the datetime_array matches the result_array exactly
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=target_times,  # Explicitly pass the datetime_array
+                suppress_status=True  # Suppress redundant status message
+            )
+        else:
+            # Handle scalar or array division
+            result_array = self.data / other
+            
+            # STATUS PRINT: Show operation complete message for scalar operation (no interpolation)
+            print_manager.variable_basic(f"📊 Operation complete: {self.class_name}.{self.subclass_name} / {other}")
+            print_manager.variable_basic(f"   → No interpolation needed for scalar operation")
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{self.class_name}.{self.subclass_name} / {other}"
+            
+            # IMPROVED: Explicitly pass our datetime_array to ensure consistency
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=self.datetime_array,  # Use our own datetime_array for scalar operations
+                suppress_status=True  # Suppress redundant status message
+            )
+
+    def __pow__(self, other):
+        """Handle exponentiation (power) with automatic time alignment."""
+        if isinstance(other, plot_manager):
+            # Get datetime arrays
+            self_times = self.datetime_array
+            other_times = other.datetime_array
+            
+            print_manager.variable_testing(f"Calculating {self.class_name}.{self.subclass_name} raised to power of {other.class_name}.{other.subclass_name}")
+            print_manager.variable_testing(f"First array time points: {len(self_times)}, Second array time points: {len(other_times)}")
+            
+            # For user-friendly status message
+            first_var = f"{self.class_name}.{self.subclass_name}"
+            second_var = f"{other.class_name}.{other.subclass_name}"
+            interpolated_var = None
+            target_var = None
+            
+            # Check sampling rates if possible - handle numpy.datetime64 objects
+            if len(self_times) > 1 and len(other_times) > 1:
+                try:
+                    # Try with total_seconds() for Python datetime objects
+                    self_cadence = (self_times[1] - self_times[0]).total_seconds()
+                    other_cadence = (other_times[1] - other_times[0]).total_seconds()
+                except AttributeError:
+                    # For numpy.datetime64 objects
+                    import numpy as np
+                    self_cadence = (self_times[1] - self_times[0]) / np.timedelta64(1, 's')
+                    other_cadence = (other_times[1] - other_times[0]) / np.timedelta64(1, 's')
+                
+                print_manager.variable_testing(f"First array sampling cadence: {self_cadence} seconds")
+                print_manager.variable_testing(f"Second array sampling cadence: {other_cadence} seconds")
+            
+            # Determine which variable has fewer time points to use as target
+            if len(self_times) <= len(other_times):
+                # Use self's time points as the target (fewer points)
+                target_times = self_times
+                target_var = first_var
+                interpolated_var = second_var
+                print_manager.variable_testing(f"Using first array ({self.class_name}.{self.subclass_name}) time points as target (fewer points)")
+                print_manager.variable_testing(f"Interpolating {other.class_name}.{other.subclass_name} using method: {self.__class__.interp_method}")
+                
+                # Interpolate other's values to align with self's time points
+                interpolated_values = self.interpolate_to_times(
+                    other_times, other.data, target_times, self.__class__.interp_method)
+                
+                # Perform the exponentiation with the interpolated values
+                result_array = self.data ** interpolated_values
+            else:
+                # Use other's time points as the target (fewer points)
+                target_times = other_times
+                target_var = second_var
+                interpolated_var = first_var
+                print_manager.variable_testing(f"Using second array ({other.class_name}.{other.subclass_name}) time points as target (fewer points)")
+                print_manager.variable_testing(f"Interpolating {self.class_name}.{self.subclass_name} using method: {self.__class__.interp_method}")
+                
+                # Interpolate self's values to align with other's time points
+                interpolated_values = self.interpolate_to_times(
+                    self_times, self.data, target_times, self.__class__.interp_method)
+                
+                # Perform the exponentiation with the interpolated values
+                result_array = interpolated_values ** other.data
+            
+            print_manager.variable_testing(f"Exponentiation complete. Result length: {len(result_array)}")
+            
+            # STATUS PRINT: Show interpolation details after the operation is complete
+            print_manager.variable_basic(f"📊 Operation complete: {first_var} ** {second_var}")
+            print_manager.variable_basic(f"   → Interpolated {interpolated_var} to match {target_var}'s {len(target_times)} time points using '{self.__class__.interp_method}' method\n")
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{self.class_name}.{self.subclass_name} ** {other.class_name}.{other.subclass_name}"
+            
+            # IMPROVED: Explicitly pass the target_times to store_derived_variable
+            # This ensures the datetime_array matches the result_array exactly
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=target_times,  # Explicitly pass the datetime_array
+                suppress_status=True  # Suppress redundant status message
+            )
+        else:
+            # Handle scalar exponentiation
+            result_array = self.data ** other
+            
+            # STATUS PRINT: Show operation complete message for scalar operation (no interpolation)
+            print_manager.variable_basic(f"📊 Operation complete: {self.class_name}.{self.subclass_name} ** {other}")
+            print_manager.variable_basic(f"   → No interpolation needed for scalar operation\n")
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{self.class_name}.{self.subclass_name} ** {other}"
+            
+            # IMPROVED: Explicitly pass our datetime_array to ensure consistency
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=self.datetime_array,  # Use our own datetime_array for scalar operations
+                suppress_status=True  # Suppress redundant status message
+            )
+
+    def __neg__(self):
+        """Handle negation."""
+        print_manager.variable_testing(f"Negating {self.class_name}.{self.subclass_name}")
+        
+        result_array = -self.data
+        
+        # STATUS PRINT: Show operation details for __neg__
+        print_manager.variable_basic(f"📊 Operation complete: -{self.class_name}.{self.subclass_name}")
+        print_manager.variable_basic(f"   → Unary operation (no interpolation needed)\n")
+        
+        # Create new plot_manager with the result
+        from .derived_variable import store_derived_variable
+        operation = f"-{self.class_name}.{self.subclass_name}"
+        
+        # IMPROVED: Explicitly pass our datetime_array to ensure consistency
+        return store_derived_variable(
+            result_array,
+            operation,
+            self,
+            operation,
+            datetime_array=self.datetime_array,  # Explicitly pass our datetime_array
+            suppress_status=True  # Suppress redundant status message
+        )
+
+    def __abs__(self):
+        """Handle absolute value."""
+        print_manager.variable_testing(f"Taking absolute value of {self.class_name}.{self.subclass_name}")
+        
+        result_array = abs(self.data)
+        
+        # STATUS PRINT: Show operation details for __abs__
+        print_manager.variable_basic(f"📊 Operation complete: abs({self.class_name}.{self.subclass_name})")
+        print_manager.variable_basic(f"   → Unary operation (no interpolation needed)\n")
+        
+        # Create new plot_manager with the result
+        from .derived_variable import store_derived_variable
+        operation = f"abs({self.class_name}.{self.subclass_name})"
+        
+        # IMPROVED: Explicitly pass our datetime_array to ensure consistency
+        return store_derived_variable(
+            result_array,
+            operation,
+            self,
+            operation,
+            datetime_array=self.datetime_array,  # Explicitly pass our datetime_array
+            suppress_status=True  # Suppress redundant status message
+        )
+
+    def __floordiv__(self, other):
+        """Handle floor division with automatic time alignment."""
+        if isinstance(other, plot_manager):
+            # Get datetime arrays
+            self_times = self.datetime_array
+            other_times = other.datetime_array
+            
+            print_manager.variable_testing(f"Floor dividing {self.class_name}.{self.subclass_name} by {other.class_name}.{other.subclass_name}")
+            print_manager.variable_testing(f"First array time points: {len(self_times)}, Second array time points: {len(other_times)}")
+            
+            # For user-friendly status message
+            first_var = f"{self.class_name}.{self.subclass_name}"
+            second_var = f"{other.class_name}.{other.subclass_name}"
+            interpolated_var = None
+            target_var = None
+            
+            # Check sampling rates if possible - handle numpy.datetime64 objects
+            if len(self_times) > 1 and len(other_times) > 1:
+                try:
+                    # Try with total_seconds() for Python datetime objects
+                    self_cadence = (self_times[1] - self_times[0]).total_seconds()
+                    other_cadence = (other_times[1] - other_times[0]).total_seconds()
+                except AttributeError:
+                    # For numpy.datetime64 objects
+                    import numpy as np
+                    self_cadence = (self_times[1] - self_times[0]) / np.timedelta64(1, 's')
+                    other_cadence = (other_times[1] - other_times[0]) / np.timedelta64(1, 's')
+                
+                print_manager.variable_testing(f"First array sampling cadence: {self_cadence} seconds")
+                print_manager.variable_testing(f"Second array sampling cadence: {other_cadence} seconds")
+            
+            # Import numpy for handling division by zero
+            import numpy as np
+            
+            # Determine which variable has fewer time points to use as target
+            if len(self_times) <= len(other_times):
+                # Use self's time points as the target (fewer points)
+                target_times = self_times
+                target_var = first_var
+                interpolated_var = second_var
+                print_manager.variable_testing(f"Using first array ({self.class_name}.{self.subclass_name}) time points as target (fewer points)")
+                print_manager.variable_testing(f"Interpolating {other.class_name}.{other.subclass_name} using method: {self.__class__.interp_method}")
+                
+                # Interpolate other's values to align with self's time points
+                interpolated_other = self.interpolate_to_times(
+                    other_times, other.data, target_times, self.__class__.interp_method)
+                
+                # Avoid division by zero
+                interpolated_other = np.where(interpolated_other == 0, np.nan, interpolated_other)
+                
+                # Perform the floor division with the interpolated values
+                result_array = self.data // interpolated_other
+            else:
+                # Use other's time points as the target (fewer points)
+                target_times = other_times
+                target_var = second_var
+                interpolated_var = first_var
+                print_manager.variable_testing(f"Using second array ({other.class_name}.{other.subclass_name}) time points as target (fewer points)")
+                print_manager.variable_testing(f"Interpolating {self.class_name}.{self.subclass_name} using method: {self.__class__.interp_method}")
+                
+                # Interpolate self's values to align with other's time points
+                interpolated_self = self.interpolate_to_times(
+                    self_times, self.data, target_times, self.__class__.interp_method)
+                
+                # Avoid division by zero
+                other_data = np.where(other.data == 0, np.nan, other.data)
+                
+                # Perform the floor division with the interpolated values
+                result_array = interpolated_self // other_data
+            
+            print_manager.variable_testing(f"Floor division complete. Result length: {len(result_array)}")
+            
+            # STATUS PRINT: Show interpolation details after the operation is complete
+            print_manager.variable_basic(f"📊 Operation complete: {first_var} // {second_var}")
+            print_manager.variable_basic(f"   → Interpolated {interpolated_var} to match {target_var}'s {len(target_times)} time points using '{self.__class__.interp_method}' method")
+            print_manager.variable_basic(f"   → Any division by zero has been replaced with NaN values\n")
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{self.class_name}.{self.subclass_name} // {other.class_name}.{other.subclass_name}"
+            
+            # IMPROVED: Explicitly pass the target_times to store_derived_variable
+            # This ensures the datetime_array matches the result_array exactly
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=target_times,  # Explicitly pass the datetime_array
+                suppress_status=True  # Suppress redundant status message
+            )
+        else:
+            # Handle scalar floor division
+            result_array = self.data // other
+            
+            # STATUS PRINT: Show operation complete message for scalar operation (no interpolation)
+            print_manager.variable_basic(f"📊 Operation complete: {self.class_name}.{self.subclass_name} // {other}")
+            print_manager.variable_basic(f"   → No interpolation needed for scalar operation")
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{self.class_name}.{self.subclass_name} // {other}"
+            
+            # IMPROVED: Explicitly pass our datetime_array to ensure consistency
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=self.datetime_array,  # Use our own datetime_array for scalar operations
+                suppress_status=True  # Suppress redundant status message
+            )
+
+    def __radd__(self, other):
+        """Handle right-sided addition (other + self)."""
+        # For scalar + plot_manager
+        print_manager.variable_testing(f"Right-sided addition: {other} + {self.class_name}.{self.subclass_name}")
+        
+        if not isinstance(other, plot_manager):
+            result_array = other + self.data
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{other} + {self.class_name}.{self.subclass_name}"
+            
+            # IMPROVED: Explicitly pass our datetime_array to ensure consistency
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=self.datetime_array,  # Explicitly pass our datetime_array
+                suppress_status=True  # Suppress redundant status message
+            )
+        return NotImplemented  # Let the left operand handle it
+
+    def __rsub__(self, other):
+        """Handle right-sided subtraction (other - self)."""
+        # For scalar - plot_manager
+        print_manager.variable_testing(f"Right-sided subtraction: {other} - {self.class_name}.{self.subclass_name}")
+        
+        if not isinstance(other, plot_manager):
+            result_array = other - self.data
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{other} - {self.class_name}.{self.subclass_name}"
+            
+            # IMPROVED: Explicitly pass our datetime_array to ensure consistency
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=self.datetime_array,  # Explicitly pass our datetime_array
+                suppress_status=True  # Suppress redundant status message
+            )
+        return NotImplemented  # Let the left operand handle it
+
+    def __rmul__(self, other):
+        """Handle right-sided multiplication (other * self)."""
+        # For scalar * plot_manager
+        print_manager.variable_testing(f"Right-sided multiplication: {other} * {self.class_name}.{self.subclass_name}")
+        
+        if not isinstance(other, plot_manager):
+            result_array = other * self.data
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{other} * {self.class_name}.{self.subclass_name}"
+            
+            # IMPROVED: Explicitly pass our datetime_array to ensure consistency
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=self.datetime_array,  # Explicitly pass our datetime_array
+                suppress_status=True  # Suppress redundant status message
+            )
+        return NotImplemented  # Let the left operand handle it
+
+    def __rtruediv__(self, other):
+        """Handle right-sided division (other / self)."""
+        # For scalar / plot_manager
+        print_manager.variable_testing(f"Right-sided division: {other} / {self.class_name}.{self.subclass_name}")
+        
+        if not isinstance(other, plot_manager):
+            # Avoid division by zero
+            import numpy as np
+            safe_data = np.where(self.data == 0, np.nan, self.data)
+            result_array = other / safe_data
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{other} / {self.class_name}.{self.subclass_name}"
+            
+            # IMPROVED: Explicitly pass our datetime_array to ensure consistency
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=self.datetime_array,  # Explicitly pass our datetime_array
+                suppress_status=True  # Suppress redundant status message
+            )
+        return NotImplemented  # Let the left operand handle it
+
+    def __rpow__(self, other):
+        """Handle right-sided power (other ** self)."""
+        # For scalar ** plot_manager
+        print_manager.variable_testing(f"Right-sided power: {other} ** {self.class_name}.{self.subclass_name}")
+        
+        if not isinstance(other, plot_manager):
+            result_array = other ** self.data
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{other} ** {self.class_name}.{self.subclass_name}"
+            
+            # IMPROVED: Explicitly pass our datetime_array to ensure consistency
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=self.datetime_array,  # Explicitly pass our datetime_array
+                suppress_status=True  # Suppress redundant status message
+            )
+        return NotImplemented  # Let the left operand handle it
+
+    def __rfloordiv__(self, other):
+        """Handle right-sided floor division (other // self)."""
+        # For scalar // plot_manager
+        print_manager.variable_testing(f"Right-sided floor division: {other} // {self.class_name}.{self.subclass_name}")
+        
+        if not isinstance(other, plot_manager):
+            # Avoid division by zero
+            import numpy as np
+            safe_data = np.where(self.data == 0, np.nan, self.data)
+            result_array = other // safe_data
+            
+            # Create new plot_manager with the result
+            from .derived_variable import store_derived_variable
+            operation = f"{other} // {self.class_name}.{self.subclass_name}"
+            
+            # IMPROVED: Explicitly pass our datetime_array to ensure consistency
+            return store_derived_variable(
+                result_array,
+                operation,
+                self,
+                operation,
+                datetime_array=self.datetime_array,  # Explicitly pass our datetime_array
+                suppress_status=True  # Suppress redundant status message
+            )
+        return NotImplemented  # Let the left operand handle it
+    
 print('initialized plot_manager')
