@@ -3,6 +3,7 @@ import os
 import numpy as np
 from datetime import datetime, timezone
 from typing import List, Union, Optional, Dict, Any, Tuple
+from dateutil.parser import parse
 
 from .print_manager import print_manager
 from .data_tracker import global_tracker
@@ -44,7 +45,7 @@ def get_data(trange: List[str], *variables):
     Parameters
     ----------
     trange : list
-        Time range in the format ['YYYY-MM-DD/HH:MM:SS', 'YYYY-MM-DD/HH:MM:SS']
+        Time range in virtually any format: ['YYYY-MM-DD/HH:MM:SS', 'YYYY/MM/DD HH:MM:SS']
     *variables : object
         Variables to load (e.g., mag_rtn_4sa.bmag, proton.anisotropy)
         or entire data types (e.g., mag_rtn_4sa, proton)
@@ -64,8 +65,13 @@ def get_data(trange: List[str], *variables):
     get_data(trange, mag_rtn_4sa, proton)
     """
     # Validate time range and ensure UTC timezone
-    start_time = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
-    end_time = datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
+    try:
+        # Use dateutil.parser.parse instead of strptime - much more flexible!
+        start_time = parse(trange[0]).replace(tzinfo=timezone.utc)
+        end_time = parse(trange[1]).replace(tzinfo=timezone.utc)
+    except ValueError as e:
+        print(f"Error parsing time range: {e}")
+        return
     
     if start_time >= end_time:    # Validate time range order
         print(f"Oops! 🤗 Start time ({trange[0]}) must be before end time ({trange[1]})")
@@ -157,8 +163,8 @@ def get_data(trange: List[str], *variables):
             print_manager.variable_testing(f"Class instance has datetime_array of length: {len(class_instance.datetime_array)}")
             cached_start = np.datetime64(class_instance.datetime_array[0], 's')
             cached_end = np.datetime64(class_instance.datetime_array[-1], 's')
-            requested_start = np.datetime64(datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f'), 's')
-            requested_end = np.datetime64(datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f'), 's')
+            requested_start = np.datetime64(start_time, 's')
+            requested_end = np.datetime64(end_time, 's')
             
             # Add 10s buffer to handle instrument timing differences
             buffered_start = cached_start - np.timedelta64(10, 's')

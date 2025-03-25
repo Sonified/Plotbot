@@ -3,7 +3,8 @@ import numpy as np
 import os
 import re
 from collections import namedtuple
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+from dateutil.parser import parse
 from .print_manager import print_manager
 from .time_utils import daterange
 from .data_tracker import global_tracker
@@ -25,9 +26,13 @@ def import_data_function(trange, data_type):
     print_manager.variable_testing(f"Getting configuration for {data_type}")
     config = data_types[data_type]
     
-    # Parse times and ensure UTC timezone
-    start_time = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f')
-    end_time = datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f')
+    # Parse times using flexible parser and ensure UTC timezone
+    try:
+        start_time = parse(trange[0])
+        end_time = parse(trange[1])
+    except ValueError as e:
+        print(f"Error parsing time range: {e}")
+        return None
     
     # Format dates for TT2000 conversion
     start_tt2000 = cdflib.cdfepoch.compute_tt2000(
