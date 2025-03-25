@@ -1,6 +1,7 @@
 import os
 import re
 from datetime import datetime, timezone
+from dateutil.parser import parse
 from bs4 import BeautifulSoup
 from .print_manager import print_manager
 from .time_utils import daterange, get_needed_6hour_blocks
@@ -21,8 +22,12 @@ def check_local_files(trange: tuple, data_type: str) -> tuple[bool, list, list]:
     print_manager.debug("Local Files Time Debug")
     print_manager.debug(f"Input trange: {trange}")
     # Validate time range and ensure UTC timezone
-    start_time = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
-    end_time = datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
+    try:
+        start_time = parse(trange[0]).replace(tzinfo=timezone.utc)
+        end_time = parse(trange[1]).replace(tzinfo=timezone.utc)
+    except ValueError as e:
+        print(f"Error parsing time range: {e}")
+        return False, [], []
     print_manager.debug(f"Parsed start time: {start_time}")
     print_manager.debug(f"Parsed end time: {end_time}")
     print_manager.debug(f"Checking local files for time range: {trange} and data type: {data_type}")
@@ -31,8 +36,12 @@ def check_local_files(trange: tuple, data_type: str) -> tuple[bool, list, list]:
         return False, [], []                                           # Return empty results if invalid type
         
     config = data_types[data_type]                                    # Get configuration for requested data type
-    start_time = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f')   # Convert start time string to datetime
-    end_time = datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f')     # Convert end time string to datetime
+    try:
+        start_time = parse(trange[0]).replace(tzinfo=timezone.utc)   # Convert start time string to datetime
+        end_time = parse(trange[1]).replace(tzinfo=timezone.utc)     # Convert end time string to datetime
+    except ValueError as e:
+        print(f"Error parsing time range: {e}")
+        return False, [], []
     found_files = []                                                  # Initialize list to track existing files
     missing_files = []                                                # Initialize list to track missing files
 

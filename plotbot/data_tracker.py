@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from dateutil.parser import parse
 from .print_manager import print_manager
 
 class DataTracker:
@@ -16,10 +17,13 @@ class DataTracker:
         if data_type not in self.imported_ranges:
             return True
 
-        # Convert request times to datetime
-        # Validate time range and ensure UTC timezone
-        start_time = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
-        end_time = datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
+        # Convert request times to datetime using flexible parser
+        try:
+            start_time = parse(trange[0]).replace(tzinfo=timezone.utc)
+            end_time = parse(trange[1]).replace(tzinfo=timezone.utc)
+        except ValueError as e:
+            print(f"Error parsing time range: {e}")
+            return True  # If we can't parse, assume import is needed
         
         # Check if any stored range covers our request
         for stored_start, stored_end in self.imported_ranges[data_type]:
@@ -44,8 +48,12 @@ class DataTracker:
         """Record a new imported time range for a specific data type."""
         
         # Validate time range and ensure UTC timezone
-        start_time = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
-        end_time = datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
+        try:
+            start_time = parse(trange[0]).replace(tzinfo=timezone.utc)
+            end_time = parse(trange[1]).replace(tzinfo=timezone.utc)
+        except ValueError as e:
+            print(f"Error parsing time range: {e}")
+            return
         
         if data_type not in self.imported_ranges:                       # Create new list for data type if not exists
             self.imported_ranges[data_type] = []                        # Initialize empty list to store time ranges
@@ -79,8 +87,12 @@ class DataTracker:
     def _is_action_needed(self, trange, data_type, ranges_dict, action_type):
         """Determine if an action is needed by checking existing time ranges."""
         # Validate time range and ensure UTC timezone
-        start_time = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
-        end_time = datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
+        try:
+            start_time = parse(trange[0]).replace(tzinfo=timezone.utc)
+            end_time = parse(trange[1]).replace(tzinfo=timezone.utc)
+        except ValueError as e:
+            print(f"Error parsing time range: {e}")
+            return
 
         if data_type in ranges_dict:                                     # If we have existing ranges for this data
             for stored_start, stored_end in ranges_dict[data_type]:      # Check each stored time range
@@ -95,8 +107,12 @@ class DataTracker:
     def _update_range(self, trange, data_type, ranges_dict):
         """Update the stored time ranges for a specific data type."""
         # Validate time range and ensure UTC timezone
-        start_time = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
-        end_time = datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
+        try:
+            start_time = parse(trange[0]).replace(tzinfo=timezone.utc)
+            end_time = parse(trange[1]).replace(tzinfo=timezone.utc)
+        except ValueError as e:
+            print(f"Error parsing time range: {e}")
+            return
 
         if data_type not in ranges_dict:                                # If first range for this data type
             ranges_dict[data_type] = []                                 # Initialize empty list for ranges

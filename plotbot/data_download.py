@@ -2,6 +2,7 @@ import os
 import re
 from datetime import datetime, timezone, timedelta
 from bs4 import BeautifulSoup
+from dateutil.parser import parse
 from .print_manager import print_manager
 from .data_download_helpers import check_local_files, create_pattern_string, process_directory
 from .server_access import server_access
@@ -31,8 +32,13 @@ def download_new_psp_data(trange, data_type):
     #====================================================================
     # PARSE TIME RANGE
     #====================================================================
-    start_time = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)    # Convert string start time to datetime obj with UTC timezone
-    end_time = datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)      # Convert string end time to datetime obj with UTC timezone
+    try:
+        # Use dateutil.parser.parse for flexible time parsing
+        start_time = parse(trange[0]).replace(tzinfo=timezone.utc)
+        end_time = parse(trange[1]).replace(tzinfo=timezone.utc)
+    except ValueError as e:
+        print(f"Error parsing time range: {e}")
+        return
     
     # Adjust end time if midnight
     if (end_time.hour == 0 and end_time.minute == 0 and             # Check if time is exactly 00:00:00.000 - this needs special handling
