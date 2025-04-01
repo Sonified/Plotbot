@@ -18,9 +18,13 @@ def import_data_function(trange, data_type):
     print_manager.debug(f"Input trange: {trange}")
     print_manager.variable_testing(f"import_data_function called for data_type: {data_type}")
     
+    # Add time tracking for function entry
+    print_manager.time_input("import_data_function", trange)
+    
     # Validate data type
     if data_type not in data_types:
         print_manager.variable_testing(f"Error: {data_type} not found in psp_data_types")
+        print_manager.time_output("import_data_function", "error: invalid data_type")
         return None
     
     print_manager.variable_testing(f"Getting configuration for {data_type}")
@@ -30,8 +34,10 @@ def import_data_function(trange, data_type):
     try:
         start_time = parse(trange[0])
         end_time = parse(trange[1])
+        print_manager.time_tracking(f"Parsed time range: {start_time} to {end_time}")
     except ValueError as e:
         print(f"Error parsing time range: {e}")
+        print_manager.time_output("import_data_function", "error: time parsing failed")
         return None
     
     # Format dates for TT2000 conversion
@@ -258,6 +264,19 @@ def import_data_function(trange, data_type):
     # After successful import
     global_tracker.update_imported_range(trange, data_type)
     # trange = np.around(trange, decimals=0)  # Truncate the seconds to integer values
-    print_manager.status(f"✅ - Data import complete for range {trange}.")
+    print_manager.status(f"✅ - Data import complete for range {trange}.\n")
+    
+    # Check if we have times and data to return
+    if times_list and any(data_dict.values()):
+        # Process results and log output time range
+        if 'times' in locals() and len(times) > 0:
+            output_range = [cdflib.epochs.CDFepoch.to_datetime(times[0]), 
+                          cdflib.epochs.CDFepoch.to_datetime(times[-1])]
+            print_manager.time_output("import_data_function", output_range)
+            print_manager.time_tracking(f"Data object time range: {output_range[0]} to {output_range[1]}")
+        else:
+            print_manager.time_output("import_data_function", "data processed but no time range available")
+    else:
+        print_manager.time_output("import_data_function", "no data found")
     
     return DataObject(times=times, data=concatenated_data)  # Return packaged data

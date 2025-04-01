@@ -49,7 +49,6 @@ from .data_download import download_new_psp_data
 from .data_import import import_data_function
 from .plot_manager import plot_manager
 from .multiplot_options import plt  # Import our enhanced plt
-from .get_data import get_data  # Add get_data import
 
 from .psp_data_types import data_types
 from .psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
@@ -171,59 +170,182 @@ def plotbot(trange, *args):
     print_manager.status(" ")    # Add spacing between sections
 
     #====================================================================
-    # PHASE 1: HANDLE CUSTOM VARIABLES AND THEIR SOURCE DATA
+    # DOWNLOAD AND PROCESS DATA
     #====================================================================
-    custom_vars = []
-    for request in plot_requests:
-        if request['data_type requested for plotbot'] == 'custom_data_type':
-            print_manager.variable_testing(f"Found custom variable request: {request['class_name']}.{request['subclass_name']}")
-            class_instance = data_cubby.grab(request['class_name'])
-            if class_instance:
-                var = class_instance.get_subclass(request['subclass_name'])
-                if var is not None:
-                    custom_vars.append((var, request['subclass_name']))
-                    print_manager.custom_debug(f"Added custom variable: {request['subclass_name']}\n")
-
-    # Process custom variables and their source data
-    for var, name in custom_vars:
-        if hasattr(var, 'source_var') and var.source_var is not None:
-            base_vars = []
-            for src_var in var.source_var:
-                if hasattr(src_var, 'class_name') and src_var.class_name != 'custom_class' and src_var.data_type != 'custom_data_type':
-                    base_vars.append(src_var)
-                    print_manager.test(f"Adding source variable for data download: {src_var.class_name}.{src_var.subclass_name}")
+    
+    for data_type in required_data_types:
+        print_manager.debug(f"\nProcessing {data_type}...")
+        # Add variable testing print to track data type processing
+        print_manager.variable_testing(f"About to process data_type: {data_type}")
+        
+        # Also check for the custom_data_type directly
+        if data_type == 'custom_data_type':
+            print_manager.variable_testing(f"CUSTOM data type detected - SKIPPING download and import")
+            print_manager.status(f"📤 Using custom variable, required data types will be acquired:")
             
-            # Download fresh data for base variables
-            if base_vars:
-                print_manager.status(f"📤 Custom variable '{name}' requires data for calculation")
-                get_data(trange, *base_vars)
+            # Get the custom variables that need to be plotted
+            custom_vars = []
+            
+            for request in plot_requests:
+                if request['data_type requested for plotbot'] == 'custom_data_type':
+                    class_instance = data_cubby.grab(request['class_name'])
+                    if class_instance:
+                        var = class_instance.get_subclass(request['subclass_name'])
+                        if var is not None:
+                            custom_vars.append((var, request['subclass_name']))
+                            print_manager.custom_debug(f"Found custom variable: {request['subclass_name']}\n")
+            
+            # Check if any custom variables need updating
+            needs_refresh = False
+            
+            # CRITICAL FIX: First check if any custom variable has NO data at all
+            for var, name in custom_vars:
+                # Check if the custom variable has initial data
+                if not hasattr(var, 'datetime_array') or var.datetime_array is None or len(var.datetime_array) == 0:
+                    print_manager.warning(f"Custom variable '{name}' has no initial data, will attempt to refresh from source variables")
+                    needs_refresh = True
+                    
+                    # Get the source variables and ensure they have fresh data
+                    if hasattr(var, 'source_var') and var.source_var is not None:
+                        # Get base variables (non-custom) that need to be downloaded
+                        from .get_data import get_data
+                        base_vars = []
+                        for src_var in var.source_var:
+                            if hasattr(src_var, 'class_name') and src_var.class_name != 'custom_class' and src_var.data_type != 'custom_data_type':
+                                base_vars.append(src_var)
+                    
+                        # Download fresh data for base variables if needed
+                        if base_vars:
+                            print_manager.custom_debug(f"Downloading fresh data for {len(base_vars)} source variables...")
+                            get_data(trange, *base_vars)
+                    
+                    # Update the variable using its update method
+                    if hasattr(var, 'update'):
+                        print_manager.custom_debug(f"Updating custom variable '{name}' with initial data...")
+                        updated_var = var.update(trange)
+                        if updated_var is not None:
+                            print_manager.custom_debug(f"✅ Successfully added initial data to variable '{name}'")
+                        else:
+                            print_manager.custom_debug(f"Warning: Failed to add initial data to '{name}'")
+            
+            # Now check time range coverage for variables that have data
+            for var, name in custom_vars:
+                if hasattr(var, 'datetime_array') and var.datetime_array is not None and len(var.datetime_array) > 0:
+                    cached_start = np.datetime64(var.datetime_array[0], 's')
+                    cached_end = np.datetime64(var.datetime_array[-1], 's')
+                    requested_start = np.datetime64(datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f'), 's')
+                    requested_end = np.datetime64(datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f'), 's')
+                    
+                    # Add 10s buffer to handle instrument timing differences
+                    buffered_start = cached_start - np.timedelta64(10, 's')
+                    buffered_end = cached_end + np.timedelta64(10, 's')
+                    
+                    if buffered_start > requested_start or buffered_end < requested_end:
+                        print_manager.custom_debug(f"Custom variable '{name}' - Requested time falls outside cached data range, updating...")
+                        needs_refresh = True
+                        
+                        # IMPORTANT: Get the source variables and ensure they have fresh data
+                        if hasattr(var, 'source_var') and var.source_var is not None:
+                            # Get base variables (non-custom) that need to be downloaded
+                            from .get_data import get_data
+                            base_vars = []
+                            for src_var in var.source_var:
+                                if hasattr(src_var, 'class_name') and src_var.class_name != 'custom_class' and src_var.data_type != 'custom_data_type':
+                                    base_vars.append(src_var)
+                        
+                            # Download fresh data for base variables if needed
+                            if base_vars:
+                                print_manager.status(f"Downloading fresh data for {len(base_vars)} source variables...")
+                                get_data(trange, *base_vars)
+                        
+                        # Update the variable for the new time range using its update method
+                        if hasattr(var, 'update'):
+                            print_manager.status(f"Updating custom variable '{name}' for new time range...")
+                            # Important! Capture the returned variable which may contain updated data
+                            updated_var = var.update(trange)
+                            if updated_var is not None:
+                                # The update method should have already updated the global reference
+                                print_manager.status(f"✅ Successfully updated variable '{var.subclass_name}'")
+                            else:
+                                print_manager.warning(f"Warning: update method for '{var.subclass_name}' returned None")
+                        else:
+                            print_manager.warning(f"Cannot update '{var.subclass_name}' - no update method available")
+            
+            if not needs_refresh:
+                print_manager.status(f"All custom variables are current for the requested time range")
+            
+            print_manager.status(" ")
+            continue
+            
+        # Check if data_type is in psp_data_types
+        print_manager.variable_testing(f"Checking if {data_type} is in psp_data_types: {data_type in data_types}")
+        
+        download_new_psp_data(trange, data_type)
+        
+        class_name = next(r['class_name'] for r in plot_requests      # Get class instance 
+                         if r['data_type requested for plotbot'] == data_type)
+        print_manager.variable_testing(f"Class name for {data_type}: {class_name}")
+        
+        class_instance = data_cubby.grab(class_name)                  # Load from cache
+        print_manager.variable_testing(f"Retrieved class instance from data_cubby: {class_instance.__class__.__name__}")
+        
+        # Check if we need to import or if cached data is outside our range
+        needs_import = global_tracker.is_import_needed(trange, data_type)
+        needs_refresh = False
+        print_manager.variable_testing(f"Import needed for {data_type}: {needs_import}")
+        
+        if hasattr(class_instance, 'datetime_array') and class_instance.datetime_array is not None:
+            print_manager.variable_testing(f"Class instance has datetime_array of length: {len(class_instance.datetime_array)}")
+            cached_start = np.datetime64(class_instance.datetime_array[0], 's')
+            cached_end = np.datetime64(class_instance.datetime_array[-1], 's')
+            requested_start = np.datetime64(datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f'), 's')
+            requested_end = np.datetime64(datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f'), 's')
+            
+            print_manager.debug(f"Cached time range: {cached_start} to {cached_end}")
+            print_manager.debug(f"Requested time range: {requested_start} to {requested_end}")
+            
+            # Add 10s buffer to handle instrument timing differences
+            buffered_start = cached_start - np.timedelta64(10, 's')
+            buffered_end = cached_end + np.timedelta64(10, 's')
+            
+            print_manager.debug("Checking if cached data (with ±10s buffer for instrument timing differences) covers requested time range:")
+            print_manager.debug(f"Is earliest cached data ({buffered_start}) too late for request ({requested_start})? {buffered_start > requested_start}")
+            print_manager.debug(f"Is latest cached data ({buffered_end}) too early for request ({requested_end})? {buffered_end < requested_end}")
+            
+            if buffered_start > requested_start or buffered_end < requested_end:
+                print_manager.status(f"{data_type} - Requested time falls outside cached data range, updating...")
+                needs_refresh = True
+
+    #====================================================================
+    # IMPORT/UPDATE DATA IF NEEDED
+    #====================================================================
+        if needs_import or needs_refresh:
+            # Import new data
+            print_manager.debug(f"{data_type} - {'Import required' if needs_import else 'Refresh required'}")
+            print_manager.variable_testing(f"About to call import_data_function for {data_type}")
+            
+            # This is where we could skip for custom data or handle it differently
+            print_manager.variable_testing(f"*** Key decision point for custom data: {data_type} ***")
+            
+            data_obj = import_data_function(trange, data_type)
+            if data_obj is None:
+                print_manager.variable_testing(f"No data returned from import for {data_type}")
+                continue
                 
-                # Update the custom variable
-                if hasattr(var, 'update'):
-                    updated_var = var.update(trange)
-                    if updated_var is not None:
-                        print_manager.custom_debug(f"✅ Successfully updated variable '{name}'")
-                    else:
-                        print_manager.warning(f"Warning: Failed to update '{name}'")
-
-    #====================================================================
-    # PHASE 2: HANDLE REGULAR VARIABLES
-    #====================================================================
-    regular_vars = []
-    for request in plot_requests:
-        if request['data_type requested for plotbot'] != 'custom_data_type':
-            print_manager.variable_testing(f"Found regular variable request: {request['class_name']}.{request['subclass_name']}")
-            class_instance = data_cubby.grab(request['class_name'])
-            if class_instance:
-                var = class_instance.get_subclass(request['subclass_name'])
-                if var is not None:
-                    regular_vars.append(var)
-                    print_manager.custom_debug(f"Added regular variable: {request['class_name']}.{request['subclass_name']}\n")
-
-    # Get data for regular variables
-    if regular_vars:
-        print_manager.status(f"Downloading data for {len(regular_vars)} regular variables...")
-        get_data(trange, *regular_vars)
+            print_manager.variable_testing(f"Data object returned from import: {type(data_obj)}")
+            
+            if needs_import:
+                global_tracker.update_imported_range(trange, data_type)
+            
+            # Update with new data
+            print_manager.status(f"📥 Updating {data_type}...")
+            print_manager.variable_testing(f"About to update {class_name} with new data")
+            class_instance.update(data_obj)
+            print_manager.status(" ")
+        else:
+            # Use existing data and calculations
+            print_manager.status(f"📤 Using existing variables, data update not needed for this time range")
+            print_manager.status(" ")
 
     #------------------ Prepare Plot Variables ------------------#
     plot_vars = []
@@ -442,18 +564,45 @@ def plotbot(trange, *args):
             # ============================================================================
             if empty_plot:
                 print_manager.debug("Creating empty plot...")
+                print_manager.debug("CRITICAL DEBUG - empty_plot is TRUE. This is why 'No Data Available' appears!")
+                print_manager.debug(f"CRITICAL DEBUG - Subplot axis_index: {axis_index}")
+                # Look through all the variables in this axis group and print their info
                 for (axis_num, is_right), variables in axis_groups.items():
                     if axis_num != axis_index:
                         continue
+                    print_manager.debug(f"CRITICAL DEBUG - Checking axis group {axis_num}, is_right={is_right}")
                     for i, var in enumerate(variables):
                         try:
-                            # Single-line debug info with all critical information
-                            debug_info = f"CRITICAL DEBUG - Var {i}: {var.class_name}.{var.subclass_name} | type={var.data_type}, plot={var.plot_type}, scale={var.y_scale}"
-                            debug_info += f"{', y_limit=' + str(var.y_limit) if hasattr(var, 'y_limit') else ''}"
-                            debug_info += f" | sources=[{', '.join(src_var.class_name + '(has_data=' + str(hasattr(src_var, 'datetime_array') and len(src_var.datetime_array) > 0) + ')' for src_var in var.source_var) if hasattr(var, 'source_var') and var.source_var is not None else 'none'}]" if var.data_type == 'custom_data_type' else ''
-                            time_indices = time_clip(var.datetime_array, trange[0], trange[1]) if hasattr(var, 'datetime_array') and var.datetime_array is not None else []
-                            debug_info += f" | data: points={len(time_indices)}" + (f", shape={np.array(var)[time_indices].shape}, has_nans={np.isnan(np.array(var)[time_indices]).any()}" if len(time_indices) > 0 else " (no data in range)")
-                            print_manager.debug(debug_info)
+                            print_manager.debug(f"CRITICAL DEBUG - Variable {i}: {var.class_name}.{var.subclass_name}")
+                            print_manager.debug(f"CRITICAL DEBUG - Variable {i} data_type: {var.data_type}")
+                            print_manager.debug(f"CRITICAL DEBUG - Variable {i} plot_type: {var.plot_type}")
+                            print_manager.debug(f"CRITICAL DEBUG - Variable {i} y_scale: {var.y_scale}")
+                            
+                            # Enhanced debugging for custom variables
+                            if var.data_type == 'custom_data_type' or var.class_name == 'custom_class':
+                                print_manager.debug(f"CRITICAL DEBUG - CUSTOM VARIABLE DETECTED: {var.subclass_name}")
+                                print_manager.debug(f"CRITICAL DEBUG - Has source_var: {hasattr(var, 'source_var')}")
+                                if hasattr(var, 'source_var') and var.source_var is not None:
+                                    print_manager.debug(f"CRITICAL DEBUG - Number of source variables: {len(var.source_var)}")
+                                    for idx, src_var in enumerate(var.source_var):
+                                        if hasattr(src_var, 'class_name'):
+                                            print_manager.debug(f"CRITICAL DEBUG - Source var {idx} class: {src_var.class_name}")
+                                            print_manager.debug(f"CRITICAL DEBUG - Source var {idx} has data: {hasattr(src_var, 'datetime_array') and src_var.datetime_array is not None and len(src_var.datetime_array) > 0}")
+                                print_manager.debug(f"CRITICAL DEBUG - Has update method: {hasattr(var, 'update')}")
+                            
+                            if hasattr(var, 'y_limit'):
+                                print_manager.debug(f"CRITICAL DEBUG - Variable {i} y_limit: {var.y_limit}")
+                            if hasattr(var, 'datetime_array') and var.datetime_array is not None:
+                                time_indices = time_clip(var.datetime_array, trange[0], trange[1])
+                                print_manager.debug(f"CRITICAL DEBUG - Variable {i} time indices count: {len(time_indices)}")
+                                if len(time_indices) > 0:
+                                    data = np.array(var)
+                                    data_clipped = data[time_indices] if data.ndim == 1 else data[:, time_indices]
+                                    print_manager.debug(f"CRITICAL DEBUG - Variable {i} data_clipped shape: {data_clipped.shape}")
+                                    print_manager.debug(f"CRITICAL DEBUG - Variable {i} has NaNs: {np.isnan(data_clipped).any()}")
+                                    print_manager.debug(f"CRITICAL DEBUG - Variable {i} all NaNs: {np.all(np.isnan(data_clipped))}")
+                            else:
+                                print_manager.debug(f"CRITICAL DEBUG - Variable {i} has no datetime_array or it's empty")
                         except Exception as e:
                             print_manager.debug(f"CRITICAL DEBUG - Error inspecting variable {i}: {str(e)}")
                 

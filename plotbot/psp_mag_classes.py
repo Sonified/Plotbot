@@ -178,7 +178,7 @@ class mag_rtn_4sa_class:
                 line_style=['-', '-', '-'] # Line styles
             )
         )
-        print_manager.variable_testing(f"Created mag_rtn_4sa.all variable with {3 if self.raw_data['br'] is not None else 0} components")
+        print_manager.variable_testing(f"FYI: Example mag data: Created mag_rtn_4sa.all variable with {3 if self.raw_data['br'] is not None else 0} components")
         
         self.br = plot_manager(
             self.raw_data['br'],
@@ -198,7 +198,6 @@ class mag_rtn_4sa_class:
                 line_style='-'             # Line style
             )
         )
-        print_manager.variable_testing(f"Created mag_rtn_4sa.br variable with data shape: {len(self.raw_data['br']) if self.raw_data['br'] is not None else 'None'}")
 
         self.bt = plot_manager(
             self.raw_data['bt'],
@@ -274,6 +273,7 @@ class mag_rtn_4sa_class:
                 line_width=1,              # Line width
                 line_style='-'             # Line style
             )
+            
         )
 
 mag_rtn_4sa = mag_rtn_4sa_class(None) #Initialize the class with no data
