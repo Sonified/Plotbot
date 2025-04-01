@@ -128,6 +128,8 @@ In VS code hit 'Run All' and scroll down to see example plots:
 *   BeautifulSoup: 4.12.3
 *   requests: 2.32.2
 *   python-dateutil: 2.9.0.post0
+*   pytest: 7.4.4
+*   termcolor: 2.4.0
 
 ## Running Tests
 
