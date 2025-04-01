@@ -30,27 +30,37 @@ from .psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
 from .psp_electron_classes import epad
 from .psp_proton_classes import proton
 
-# Import derived variable support
-from .derived_variable import derived_class, store_data
+# Import custom variables system
+from .custom_variables import custom_variable, CustomVariablesContainer
 
-# Add a method to debug derived variables
-def debug_derived():
-    """Print information about all derived variables."""
-    print_manager.variable_testing("--- DEBUG: Derived Variables ---")
-    derived_instance = data_cubby.grab('derived')
-    if derived_instance is None:
-        print_manager.variable_testing("No derived class found in data_cubby")
+# Import test_pilot for testing - safely importing the test functions
+# (test_pilot handles the fallback if pytest is not available)
+from .test_pilot import run_missions, phase, system_check
+
+# Add a method to debug custom variables
+def debug_custom_variables():
+    """Print information about all custom variables."""
+    print_manager.variable_testing("--- DEBUG: Custom Variables ---")
+    custom_instance = data_cubby.grab('custom_class')
+    if custom_instance is None:
+        print_manager.variable_testing("No custom class found in data_cubby")
         return
     
-    attrs = [attr for attr in dir(derived_instance) if not attr.startswith('__')]
-    if not attrs:
-        print_manager.variable_testing("No derived variables found")
+    if hasattr(custom_instance, 'variables'):
+        vars_dict = custom_instance.variables
+        var_names = list(vars_dict.keys())
+    else:
+        attrs = [attr for attr in dir(custom_instance) if not attr.startswith('__')]
+        var_names = attrs
+        vars_dict = {attr: getattr(custom_instance, attr) for attr in attrs}
+    
+    if not var_names:
+        print_manager.variable_testing("No custom variables found")
         return
     
-    print_manager.variable_testing(f"Found {len(attrs)} derived variables: {', '.join(attrs)}")
-    for attr in attrs:
-        var = getattr(derived_instance, attr)
-        print_manager.variable_testing(f"Variable: {attr}")
+    print_manager.variable_testing(f"Found {len(var_names)} custom variables: {', '.join(var_names)}")
+    for name, var in vars_dict.items():
+        print_manager.variable_testing(f"Variable: {name}")
         print_manager.variable_testing(f"  Type: {type(var)}")
         if hasattr(var, 'data_type'):
             print_manager.variable_testing(f"  Data type: {var.data_type}")
@@ -58,23 +68,21 @@ def debug_derived():
             print_manager.variable_testing(f"  Class name: {var.class_name}")
         if hasattr(var, 'subclass_name'):
             print_manager.variable_testing(f"  Subclass name: {var.subclass_name}")
-        if hasattr(var, 'is_derived'):
-            print_manager.variable_testing(f"  Is derived: {var.is_derived}")
         if hasattr(var, 'shape'):
             print_manager.variable_testing(f"  Shape: {var.shape}")
         if hasattr(var, '__array__'):
-            print_manager.variable_testing(f"  First few values: {var[:5]}")
+            try:
+                print_manager.variable_testing(f"  First few values: {var[:5]}")
+            except Exception as e:
+                print_manager.variable_testing(f"  Could not get values: {str(e)}")
     print_manager.variable_testing("--- End DEBUG ---")
 
-# Create derived class instance
-derived = derived_class()
+# Create custom variables instance
+custom_vars = CustomVariablesContainer()
 
-# Make sure it's stashed in data_cubby
-data_cubby.stash(derived, 'derived')
-
-# Debug derived variables
-print_manager.variable_testing("Initial derived class state:")
-debug_derived()
+# Debug custom variables initially
+print_manager.variable_testing("Initial custom variables state:")
+debug_custom_variables()
 
 # Import audification module
 from .audifier import audifier
@@ -111,6 +119,9 @@ __all__ = [
     'epad',
     'proton',
     'audifier',
-    'store_data',
-    'derived'
+    'custom_variable',  # Using custom_variable instead of new_variable
+    'debug_custom_variables',  # Add debug function for custom variables
+    'run_missions',   # Add test_pilot functions
+    'phase',
+    'system_check'
 ]

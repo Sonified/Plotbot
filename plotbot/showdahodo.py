@@ -43,7 +43,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     end_time = datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
     
     if start_time >= end_time:
-        print(f"Oops! 🤗 Start time ({trange[0]}) must be before end time ({trange[1]})")
+        print_manager.error(f"Oops! 🤗 Start time ({trange[0]}) must be before end time ({trange[1]})")
         return None
     
     # Identify required data types
@@ -56,7 +56,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     
     # Download and process data for each data type
     for data_type in required_data_types:
-        print(f"Processing {data_type}...")
+        print_manager.processing(f"Processing {data_type}...")
         
         download_new_psp_data(trange, data_type)
         
@@ -87,15 +87,80 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
             buffered_end = cached_end + np.timedelta64(10, 's')
             
             if buffered_start > requested_start or buffered_end < requested_end:
-                print(f"{data_type} - Requested time falls outside cached data range, updating...")
+                print_manager.processing(f"{data_type} - Requested time falls outside cached data range, updating...")
                 needs_refresh = True
 
+        # Special handling for custom variables
+        if data_type == 'custom_data_type':
+            print_manager.processing(f"Custom variable detected, using special handling...")
+            
+            # Process all custom variables that need to be updated
+            if class_name == 'custom_class':
+                # Get the variables we need to update
+                custom_vars = []
+                
+                # Check if var1 is a custom variable
+                if var1.data_type == 'custom_data_type':
+                    custom_vars.append(var1)
+                
+                # Check if var2 is a custom variable
+                if var2.data_type == 'custom_data_type':
+                    custom_vars.append(var2)
+                
+                # Check if color_var is a custom variable
+                if color_var is not None and color_var.data_type == 'custom_data_type':
+                    custom_vars.append(color_var)
+                
+                # Check if var3 is a custom variable
+                if var3 is not None and var3.data_type == 'custom_data_type':
+                    custom_vars.append(var3)
+                
+                # Update each custom variable
+                for var in custom_vars:
+                    if hasattr(var, 'update'):
+                        print_manager.processing(f"Updating custom variable: {var.subclass_name}...")
+                        # Get source variables if available
+                        if hasattr(var, 'source_var') and var.source_var is not None:
+                            # Get base variables (non-custom) that need to be downloaded
+                            from .get_data import get_data
+                            base_vars = []
+                            for src_var in var.source_var:
+                                if hasattr(src_var, 'class_name') and src_var.class_name != 'custom_class' and src_var.data_type != 'custom_data_type':
+                                    base_vars.append(src_var)
+                            
+                            # Download fresh data for base variables if needed
+                            if base_vars:
+                                print_manager.processing(f"Downloading fresh data for {len(base_vars)} source variables...")
+                                get_data(trange, *base_vars)
+                        
+                        # Update the variable with new time range
+                        print_manager.processing(f"Calling update method for {var.subclass_name}...")
+                        updated_var = var.update(trange)
+                        if updated_var is not None:
+                            print_manager.processing(f"Successfully updated custom variable: {var.subclass_name}")
+                        else:
+                            print_manager.warning(f"Warning: update method for {var.subclass_name} returned None")
+                    else:
+                        print_manager.warning(f"Warning: custom variable {var.subclass_name} has no update method")
+                
+                continue  # Skip the regular update process for custom variables
+        
+        # Regular variable handling
         if needs_import or needs_refresh:
             data_obj = import_data_function(trange, data_type)
             if needs_import:
                 global_tracker.update_imported_range(trange, data_type)
             
-            class_instance.update(data_obj)
+            if data_obj is not None:
+                # Check if the update method requires trange (for custom variables container)
+                if class_name == 'custom_class' and hasattr(class_instance, 'update'):
+                    # For CustomVariablesContainer, update requires both name and trange
+                    # This should not normally reach here due to the custom handling above
+                    print_manager.warning(f"Warning: Using fallback update path for custom variable")
+                    # We don't know which variable to update here, so we skip
+                else:
+                    # Regular class update method
+                    class_instance.update(data_obj)
 
     # Get processed variable instances
     var1_instance = data_cubby.grab(var1.class_name).get_subclass(var1.subclass_name)
@@ -159,7 +224,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     # ====================================================================
     # PART 3: PREPARE DATA FOR PLOTTING
     # ====================================================================
-    print("Preparing data for plotting...")
+    print_manager.processing("Preparing data for plotting...")
     
     # Extract data from class instances
     values1_full = var1_instance.data
@@ -177,7 +242,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     
     # Check data availability
     if len(time1_clipped) == 0 or len(time2_clipped) == 0:
-        print("No data available in the specified time range")
+        print_manager.warning("No data available in the specified time range")
         return None
     
     time1_clipped_len = len(time1_clipped)
@@ -194,7 +259,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
         color_time_clipped_len = len(color_time_clipped)
         
         if len(color_time_clipped) == 0:
-            print("No color data available in the specified time range")
+            print_manager.warning("No color data available in the specified time range")
             color_var = None  # Fall back to time-based coloring
             color_time_clipped = None
             color_values_clipped = None
@@ -210,7 +275,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
         var3_time_clipped_len = len(var3_time_clipped)
         
         if len(var3_time_clipped) == 0:
-            print("No var3 data available in the specified time range")
+            print_manager.warning("No var3 data available in the specified time range")
             var3 = None  # Fall back to time-based coloring
             var3_time_clipped = None
             var3_values_clipped = None
@@ -265,7 +330,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     
     # Resample data if needed
     if time_arrays_equal:
-        print("No resampling needed - time arrays are aligned")
+        print_manager.processing("No resampling needed - time arrays are aligned")
         values1 = values1_clipped
         values2 = values2_clipped
         if color_var is not None:
@@ -273,7 +338,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
         if var3 is not None:
             var3_values = var3_values_clipped
     else:
-        print("Resampling data to align time series")
+        print_manager.processing("Resampling data to align time series")
         if not np.array_equal(mdates.date2num(time1_clipped), mdates.date2num(target_times)):
             values1 = downsample_time_based(time1_clipped, values1_clipped, target_times)
         else:
@@ -309,7 +374,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     # ====================================================================
     # PART 4: CREATE THE HODOGRAM PLOT
     # ====================================================================
-    print("Creating hodogram plot...")
+    print_manager.processing("Creating hodogram plot...")
     
     # Create the plot
     #fig = plt.figure(figsize=(8, 6))
@@ -326,7 +391,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     # ===================================================================
     # Sort data by color if requested
     if sort is not None:
-        print("Sorting by ascending color value")
+        print_manager.processing("Sorting by ascending color value")
         sort_c = np.argsort(colors)
         values1 = values1[sort_c]
         values2 = values2[sort_c]
@@ -335,7 +400,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
             var3_values = var3_values[sort_c]
         
     if invsort is not None:
-        print("Sorting by descending color value")
+        print_manager.processing("Sorting by descending color value")
         sort_c = np.argsort(colors)[::-1]
         values1 = values1[sort_c]
         values2 = values2[sort_c]
@@ -437,7 +502,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
         
     # Handle brazil plot mode (instability thresholds)
     if brazil is not None:
-        print("Adding instability thresholds (Brazil plot)")
+        print_manager.processing("Adding instability thresholds (Brazil plot)")
         beta_par = np.arange(0, 1000, 1e-4)
         trat_parfire = 1-(.47/(beta_par - .59)**.53)
         trat_oblfire = 1-(1.4/(beta_par + .11))
@@ -488,4 +553,4 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     
     return fig, ax
 
-print("✨ Showdahodo initialized")
+print_manager.processing("✨ Showdahodo initialized")

@@ -20,9 +20,13 @@ def download_new_psp_data(trange, data_type):
     #====================================================================
     print_manager.variable_testing(f"download_new_psp_data called with data_type: {data_type}")
     
+    # Add time tracking for function entry
+    print_manager.time_input("download_new_psp_data", trange)
+    
     if data_type not in data_types:                      # Verify the requested data type exists in our supported types dictionary
         print(f"Data type {data_type} is not recognized.")
         print_manager.variable_testing(f"Unrecognized data_type: {data_type}, not in psp_data_types")
+        print_manager.time_output("download_new_psp_data", "error: invalid data_type")
         return
     
     print_manager.variable_testing(f"Found {data_type} in psp_data_types, retrieving configuration")
@@ -36,14 +40,17 @@ def download_new_psp_data(trange, data_type):
         # Use dateutil.parser.parse for flexible time parsing
         start_time = parse(trange[0]).replace(tzinfo=timezone.utc)
         end_time = parse(trange[1]).replace(tzinfo=timezone.utc)
+        print_manager.time_tracking(f"Parsed time range for download: {start_time} to {end_time}")
     except ValueError as e:
         print(f"Error parsing time range: {e}")
+        print_manager.time_output("download_new_psp_data", "error: time parsing failed")
         return
     
     # Adjust end time if midnight
     if (end_time.hour == 0 and end_time.minute == 0 and             # Check if time is exactly 00:00:00.000 - this needs special handling
         end_time.second == 0 and end_time.microsecond == 0):
         end_time = end_time - timedelta(days=1)                      # Subtract 24 hours to get previous day, as midnight belongs to next day
+        print_manager.time_tracking(f"Adjusted end time to previous day: {end_time}")
     
     print_manager.debug(f"Downloading data for UTC time range: {start_time} to {end_time}")
     
@@ -57,6 +64,8 @@ def download_new_psp_data(trange, data_type):
         else:
             print_manager.status(f"📡 {data_type} - Local .cdf files already exist:")
         print_manager.status("📂 " + ", ".join(found_files))
+        print_manager.time_output("download_new_psp_data", [str(start_time), str(end_time)])
+        print_manager.time_tracking(f"Found all files locally for time range: {start_time} to {end_time}")
         return
 
     print_manager.debug(f"\nDownloading missing files for {data_type}:")
@@ -134,3 +143,8 @@ def download_new_psp_data(trange, data_type):
                 print("🤷🏾‍♂️ The data you're looking for can't be retrieved from the server, friend!")
                 print(f'An error occurred: {e}')
                 continue
+
+    # Add at the end of the function before returning
+    print_manager.time_output("download_new_psp_data", [str(start_time), str(end_time)])
+    print_manager.time_tracking(f"Completed download for time range: {start_time} to {end_time}")
+    return

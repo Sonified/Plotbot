@@ -2,31 +2,70 @@ import numpy as np
 
 # 🎉 Define the generalized plotting options class 🎉
 class ploptions:
-    def __init__(self, data_type=None, var_name=None, class_name=None, subclass_name=None, plot_type=None, 
-                 datetime_array=None, y_label=None, legend_label=None, color=None, y_scale=None,
-                 y_limit=None, line_width=1, line_style='-',
-                 colormap=None, colorbar_scale='linear', colorbar_limits=None, additional_data=None,
-                 colorbar_label=None, data=None):  # Add data parameter
-        self.data_type = data_type            # Actual data product name (e.g., 'mag_rtn_4sa')
-        self.var_name = var_name              # Variable name in data file (e.g., 'br_rtn_4sa')
-        self.class_name = class_name          # Class handling this data type (e.g., 'mag_rtn_4sa')
-        self.subclass_name = subclass_name    # Specific Subclass (e.g., 'br')
-        self.plot_type = plot_type            # Type of plot (e.g., 'time_series')
-        self.datetime_array = datetime_array   # Time data
-        self.y_label = y_label                # Y-axis label
-        self.legend_label = legend_label      # Legend text
-        self.color = color                    # Plot color
-        self.y_scale = y_scale                # Scale type
-        self.y_limit = y_limit                # Y-axis limits
-        self.line_width = line_width          # Line width
-        self.line_style = line_style          # Line style
+    """A wrapper for storing plot-related config attributes"""
+    # Class-level debug attribute
+    debug = False
+    
+    @classmethod
+    def reset(cls):
+        """Reset all class-level attributes to their default values."""
+        cls.debug = False
+    
+    def __init__(self, 
+                 data_type=None, 
+                 class_name=None, 
+                 subclass_name=None, 
+                 plot_type='time_series',
+                 var_name=None,
+                 datetime_array=None,
+                 y_label=None, 
+                 legend_label=None, 
+                 color=None, 
+                 y_scale='linear',
+                 y_limit=None,
+                 line_width=1.0,
+                 line_style='-',
+                 colormap='viridis',
+                 colorbar_scale='linear',
+                 colorbar_limits=None,
+                 additional_data=None,
+                 colorbar_label=None,
+                 **kwargs):
+        
+        self.data_type = data_type 
+        self.class_name = class_name
+        self.subclass_name = subclass_name
+        self.plot_type = plot_type
+        self.var_name = var_name
+        # Store datetime_array as a private variable to avoid truth value comparisons
+        self._datetime_array = datetime_array
+        self.y_label = y_label
+        self.legend_label = legend_label
+        self.color = color
+        self.y_scale = y_scale
+        self.y_limit = y_limit
+        self.line_width = line_width
+        self.line_style = line_style
         self.colormap = colormap
         self.colorbar_scale = colorbar_scale
         self.colorbar_limits = colorbar_limits
         self.additional_data = additional_data
         self.colorbar_label = colorbar_label
-        self.data = data                      # Add data attribute
         
+        # Add any additional keyword arguments as attributes
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+            
+    # Add a property for datetime_array to safely handle it
+    @property
+    def datetime_array(self):
+        return self._datetime_array
+        
+    @datetime_array.setter
+    def datetime_array(self, value):
+        # Safer setter implementation that avoids truth value comparisons
+        self._datetime_array = value
+
 print('initialized ploptions')
 
 def retrieve_ploption_snapshot(state_dict):

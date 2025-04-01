@@ -199,14 +199,22 @@ def get_data(trange: List[str], *variables):
             # If we don't have a class instance yet, we need to instantiate it
             if class_instance is None:
                 # Try to instantiate the class if it's one of the standard ones
-                # This is hacky but follows the pattern used in the codebase
                 if data_type.lower() == 'mag_rtn_4sa':
                     class_instance = mag_rtn_4sa
+                elif data_type.lower() == 'mag_rtn':
+                    class_instance = mag_rtn
+                elif data_type.lower() == 'mag_sc_4sa':
+                    class_instance = mag_sc_4sa
+                elif data_type.lower() == 'mag_sc':
+                    class_instance = mag_sc
                 elif data_type.lower() == 'spi_sf00_l3_mom':
                     class_instance = proton
-                elif data_type.lower() == 'epad_l3':
+                elif data_type.lower() == 'spi_af00_l3_mom':
+                    class_instance = proton_hr
+                elif data_type.lower() == 'spe_sf0_pad':
                     class_instance = epad
-                # Add other mappings as needed
+                elif data_type.lower() == 'spe_af0_pad':
+                    class_instance = epad_hr
                     
                 print_manager.variable_testing(f"Created class instance for {data_type}")
             

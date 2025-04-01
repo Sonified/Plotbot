@@ -129,6 +129,150 @@ In VS code hit 'Run All' and scroll down to see example plots:
 *   requests: 2.32.2
 *   python-dateutil: 2.9.0.post0
 
+## Running Tests
+
+All tests for Plotbot are located in the `tests/` directory. You can run tests using the provided test runner:
+
+```bash
+# Run all tests
+python run_tests.py
+
+# Run a specific test file
+python run_tests.py test_custom_variables.py
+
+# Run a specific test function
+python run_tests.py test_custom_variables.py::test_create_custom_variable
+```
+
+Alternatively, you can use pytest directly:
+
+```bash
+# Run all tests
+pytest tests/
+
+# Run a specific test file
+pytest tests/test_custom_variables.py -v
+
+# Run a specific test function
+pytest tests/test_custom_variables.py::test_create_custom_variable -v
+```
+
+### Running Tests with Conda Environment
+Make sure you're in the correct directory and using the plotbot_env conda environment:
+
+```bash
+# Run all tests in test_multiplot.py
+cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_multiplot.py -v
+
+# Run a specific test function
+cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_multiplot.py::test_multiplot_single_custom_variable -v
+
+# Run the options reset test
+cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_multiplot.py::test_options_reset -v
+```
+
+The `-v` flag provides verbose output, showing more detail about what's happening in the tests.
+
+## Print Manager
+
+Plotbot includes a comprehensive print manager system that controls all console output. This system allows you to filter the types of messages displayed, making it easier to debug or focus on specific aspects of the application.
+
+### Basic Usage
+
+The print manager is accessible through the `print_manager` singleton:
+
+```python
+from plotbot.print_manager import print_manager
+```
+
+### Debug Modes
+
+There are several specialized debug modes you can enable:
+
+```python
+# Enable full debugging output (all message types)
+print_manager.enable_debug()
+
+# Enable only test output (useful for running tests)
+print_manager.enable_test()
+
+# Enable data cubby debugging (for tracking data storage)
+print_manager.enable_datacubby()
+```
+
+### Fine-Grained Control
+
+You can also control specific output types individually:
+
+```python
+# Control debug messages
+print_manager.show_debug = True  # Show detailed technical diagnostic information
+
+# Control variable and operation messages
+print_manager.show_custom_debug = True  # Show custom variable operations debugging
+print_manager.show_variable_testing = True  # Show variable testing specific debugging
+print_manager.show_variable_basic = True  # Show basic user-facing variable info
+
+# Control time tracking messages
+print_manager.show_time_tracking = True  # Show time range tracking information
+
+# Control test output messages
+print_manager.show_test = True  # Show test-specific output
+```
+
+### For Legacy Code
+
+For backward compatibility, the following aliases are also supported:
+
+```python
+# Legacy alias (same as show_variable_basic)
+print_manager.show_status = True  
+
+# Legacy alias (same as show_custom_debug)
+print_manager.show_derived = True
+```
+
+### Sending Messages
+
+To output messages through the print manager, use the appropriate method:
+
+```python
+# Regular debug messages
+print_manager.debug("This is a detailed debug message")
+
+# Critical debug messages (shown even when debug is disabled)
+print_manager.debug("DBG-CRITICAL: This critical message is always shown")
+
+# Test-specific messages
+print_manager.test("This is a test-related message")
+
+# Error messages
+print_manager.error("This is an error message")
+
+# Time tracking
+print_manager.time_tracking("Time-related diagnostic information")
+
+# Status messages
+print_manager.status("User-friendly status update")
+```
+
+### Example: Testing with Isolated Output
+
+When running tests, you often want to see only the test-related output:
+
+```python
+# In your test script
+from plotbot.print_manager import print_manager
+
+# Turn on only test output
+print_manager.enable_test()
+
+# Now run your tests
+# Only messages sent via print_manager.test() will be displayed
+```
+
+This is particularly useful when debugging test failures, as it reduces noise from other parts of the system.
+
 ## Data Structure
 
 Downloaded data is stored in:

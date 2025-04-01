@@ -35,11 +35,31 @@ class DataTracker:
     #====================================================================
     # FUNCTION: is_calculation_needed, Verifies if calculations are required
     #====================================================================
-    def is_calculation_needed(self, trange, data_type):
-        """Determine if calculations are needed for the specified time range."""
-        if not self._is_action_needed(trange, data_type, self.calculated_ranges, "calculated"):  # Check if range is already covered
-            print_manager.status(f"{data_type} variables already calculated for the time range: {trange[0]} to {trange[1]}")  # Inform user if already done
-        return self._is_action_needed(trange, data_type, self.calculated_ranges, "calculated")   # Return True if calculations needed
+    def is_calculation_needed(self, trange, data_type, variable_name=None):
+        """
+        Determine if calculations are needed for the specified time range.
+        
+        Parameters
+        ----------
+        trange : list
+            Time range [start, end]
+        data_type : str
+            Type of data (e.g., 'custom_data_type')
+        variable_name : str, optional
+            Specific variable name for more granular tracking
+            
+        Returns
+        -------
+        bool
+            True if calculation is needed, False otherwise
+        """
+        # Create a specific cache key if variable_name is provided
+        cache_key = f"{data_type}_{variable_name}" if variable_name else data_type
+        
+        if not self._is_action_needed(trange, cache_key, self.calculated_ranges, "calculated"):
+            print_manager.status(f"{cache_key} already calculated for the time range: {trange[0]} to {trange[1]}")
+            return False
+        return True
 
     #====================================================================
     # FUNCTION: update_imported_range, Records newly imported data ranges
@@ -63,18 +83,53 @@ class DataTracker:
     #====================================================================
     # FUNCTION: update_calculated_range, Records newly calculated data ranges
     #====================================================================
-    def update_calculated_range(self, trange, data_type):
-        """Record a new calculated time range for a specific data type."""
-        self._update_range(trange, data_type, self.calculated_ranges)   # Use internal method to update calculated ranges
+    def update_calculated_range(self, trange, data_type, variable_name=None):
+        """
+        Record a new calculated time range for a specific data type.
+        
+        Parameters
+        ----------
+        trange : list
+            Time range [start, end]
+        data_type : str
+            Type of data (e.g., 'custom_data_type')
+        variable_name : str, optional
+            Specific variable name for more granular tracking
+        """
+        # Create a specific cache key if variable_name is provided
+        cache_key = f"{data_type}_{variable_name}" if variable_name else data_type
+        
+        self._update_range(trange, cache_key, self.calculated_ranges)   # Use internal method to update calculated ranges
+        
+        # For backward compatibility, also update the general data_type entry
+        if variable_name and cache_key != data_type:
+            self._update_range(trange, data_type, self.calculated_ranges)
 
     #====================================================================
     # FUNCTION: get_calculated_range, Retrieves full range of calculations
     #====================================================================
-    def get_calculated_range(self, data_type):
-        """Retrieve the full calculated time range for a data type."""
-        if data_type not in self.calculated_ranges:                     # Check if we have any calculations for this type
+    def get_calculated_range(self, data_type, variable_name=None):
+        """
+        Retrieve the full calculated time range for a data type.
+        
+        Parameters
+        ----------
+        data_type : str
+            Type of data
+        variable_name : str, optional
+            Specific variable name
+            
+        Returns
+        -------
+        tuple
+            (earliest_start, latest_end) or None if no calculations exist
+        """
+        # Create a specific cache key if variable_name is provided
+        cache_key = f"{data_type}_{variable_name}" if variable_name else data_type
+        
+        if cache_key not in self.calculated_ranges:                     # Check if we have any calculations for this type
             return None                                                 # Return None if no calculations exist
-        ranges = self.calculated_ranges[data_type]                      # Get list of all calculated ranges
+        ranges = self.calculated_ranges[cache_key]                      # Get list of all calculated ranges
         if not ranges:                                                 # If list exists but is empty
             return None                                                # Return None for no calculations
         earliest_start = min(r[0] for r in ranges)                    # Find earliest start time across all ranges
@@ -126,6 +181,45 @@ class DataTracker:
         """Display all imported time ranges by data type."""
         for data_type, ranges in self.imported_ranges.items():          # Iterate through all tracked data types
             print(f"{data_type}: {ranges}")                             # Print ranges for each type
+            
+    #====================================================================
+    # FUNCTION: clear_calculation_cache, Clears calculation cache for type
+    #====================================================================
+    def clear_calculation_cache(self, data_type=None, variable_name=None):
+        """
+        Clear calculation cache for a specific data type and/or variable.
+        
+        Parameters
+        ----------
+        data_type : str, optional
+            Type of data to clear, or None to clear all
+        variable_name : str, optional
+            Specific variable name, or None to clear all for the data_type
+        """
+        if data_type is None:
+            # Clear all calculation caches
+            self.calculated_ranges = {}
+            print_manager.processing("Cleared all calculation caches")
+            return
+            
+        if variable_name is None:
+            # Clear all caches for this data_type including variable-specific ones
+            keys_to_clear = []
+            for key in self.calculated_ranges.keys():
+                if key == data_type or key.startswith(f"{data_type}_"):
+                    keys_to_clear.append(key)
+                    
+            for key in keys_to_clear:
+                del self.calculated_ranges[key]
+                
+            print_manager.processing(f"Cleared calculation cache for {data_type} and all related variables")
+            return
+            
+        # Clear only the specific variable cache
+        cache_key = f"{data_type}_{variable_name}"
+        if cache_key in self.calculated_ranges:
+            del self.calculated_ranges[cache_key]
+            print_manager.processing(f"Cleared calculation cache for {cache_key}")
 
 #====================================================================
 # Create global tracker instance for application-wide range tracking
