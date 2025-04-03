@@ -5,6 +5,12 @@ Tests for the multiplot functionality in Plotbot.
 This file contains tests for creating multi-panel plots with various configurations,
 including standard variables, custom variables, and different plot types.
 
+NOTES ON TEST OUTPUT:
+- Use print_manager.test() for any debug information you want to see in test output
+- Use print_manager.debug() for developer-level debugging details
+- To see all print statements in test output, add the -s flag when running pytest:
+  e.g., cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_multiplot.py -v -s
+
 To run all tests in this file:
 cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_multiplot.py -v
 
@@ -70,7 +76,7 @@ def record_system_check(description, condition, message):
 def pytest_runtest_setup(item):
     pytest._current_test_name = item.name
 
-# Add a summary function to display all test results
+# Add a summary function to display all test results at the end
 def print_test_summary():
     """Print a colored summary of all test results at the end"""
     print("\n" + "="*80)

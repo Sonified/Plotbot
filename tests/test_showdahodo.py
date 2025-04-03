@@ -1,9 +1,15 @@
 # tests/test_showdahodo.py
 """
-Tests for the showdahodo plotting functionality.
+Tests for showdahodo (hodogram) functionality in Plotbot.
 
-This file contains tests for the showdahodo plotting function, including
-tests for basic functionality, custom variables, and 3D plotting capabilities.
+This file contains tests for creating and manipulating hodogram plots,
+including tests for single and dual custom variables.
+
+NOTES ON TEST OUTPUT:
+- Use print_manager.test() for any debug information you want to see in test output
+- Use print_manager.debug() for developer-level debugging details
+- To see all print statements in test output, add the -s flag when running pytest:
+  e.g., cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_showdahodo.py -v -s
 
 To run all tests in this file:
 cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_showdahodo.py -v
@@ -17,15 +23,20 @@ import os
 import sys
 import matplotlib.pyplot as plt
 from datetime import datetime
+from unittest.mock import patch, MagicMock
 
 # Add the parent directory to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# Add parent directory to path to import plotbot modules
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from plotbot import mag_rtn_4sa, proton, epad
 from plotbot.custom_variables import custom_variable
 from plotbot.showdahodo import showdahodo
 from plotbot.test_pilot import phase, system_check
 from plotbot.print_manager import print_manager
+from plotbot.data_cubby import data_cubby
 
 @pytest.fixture
 def test_environment():
@@ -110,6 +121,13 @@ def verify_plot_has_data(fig, ax):
     
     return has_data, has_colorbar, len(scatter_plots)
 
+def get_colorbar(fig):
+    """Helper function to get the colorbar from a figure"""
+    for ax in fig.axes:
+        if isinstance(ax, plt.matplotlib.colorbar.Colorbar):
+            return ax
+    return None
+
 @pytest.mark.mission("Basic Showdahodo Functionality")
 def test_basic_functionality(test_environment):
     """Test the basic functionality of showdahodo with standard variables"""
@@ -189,19 +207,26 @@ def test_single_custom_variable(test_environment):
     # Get the time range from the fixture
     trange = test_environment
     
-    phase(1, "Creating custom variable")
-    # Create custom variable with subclass_name that matches legend_label to satisfy the test
-    ta_over_b = custom_variable('TA/|B|', proton.anisotropy / mag_rtn_4sa.bmag)
+    # First make a basic showdahodo call to load the required data
+    phase(1, "Loading data with basic showdahodo call")
+    print_manager.debug("Loading data with standard variables first")
+    fig_init, ax_init = showdahodo(trange, mag_rtn_4sa.br, proton.anisotropy)
+    print_manager.debug("Initial data loading complete")
+    plt.close(fig_init)  # Close the initial figure
+    
+    phase(2, "Creating custom variable")
+    # Create TAoverB custom variable
+    ta_over_b = custom_variable('TAoverB', proton.anisotropy / mag_rtn_4sa.bmag)
     
     # Set some properties
     ta_over_b.y_label = "Temperature Anisotropy / |B|"
-    ta_over_b.legend_label = "TA/|B|"
+    ta_over_b.legend_label = "TAoverB"
     
     # Print some diagnostics
     print_manager.test(f"Custom variable data_type: {ta_over_b.data_type}")
     print_manager.test(f"Custom variable class_name: {ta_over_b.class_name}")
     
-    phase(2, "Creating hodogram with custom variable as x-axis")
+    phase(3, "Creating hodogram with custom variable as x-axis")
     # Create hodogram with custom variable
     fig1, ax1 = showdahodo(trange, ta_over_b, mag_rtn_4sa.br)
     
@@ -228,7 +253,7 @@ def test_single_custom_variable(test_environment):
         f"X-axis label should be '{ta_over_b.legend_label}', found '{ax1.get_xlabel()}'"
     )
     
-    phase(3, "Creating hodogram with custom variable as y-axis")
+    phase(4, "Creating hodogram with custom variable as y-axis")
     # Create hodogram with custom variable on y-axis
     fig2, ax2 = showdahodo(trange, mag_rtn_4sa.br, ta_over_b)
     
@@ -261,13 +286,13 @@ def test_dual_custom_variables(test_environment):
     trange = test_environment
     
     phase(1, "Creating two custom variables")
-    # Create first custom variable with name matching label
-    ta_over_b = custom_variable('TA/|B|', proton.anisotropy / mag_rtn_4sa.bmag)
-    ta_over_b.legend_label = "TA/|B|"
+    # Create first custom variable
+    ta_over_b = custom_variable('TAoverB', proton.anisotropy / mag_rtn_4sa.bmag)
+    ta_over_b.legend_label = "TAoverB"
     
-    # Create second custom variable with name matching label
-    br_squared = custom_variable('Br²', mag_rtn_4sa.br * mag_rtn_4sa.br)
-    br_squared.legend_label = "Br²"
+    # Create second custom variable
+    br_squared = custom_variable('BrSquared', mag_rtn_4sa.br * mag_rtn_4sa.br)
+    br_squared.legend_label = "BrSquared"
     
     phase(2, "Creating hodogram with both custom variables")
     # Create hodogram with both custom variables
@@ -316,11 +341,11 @@ def test_repeated_custom_variables_plot(test_environment):
     
     phase(1, "First plot with custom variables")
     # Create first set of custom variables with names matching labels
-    ta_over_b1 = custom_variable('TA/|B| (First)', proton.anisotropy / mag_rtn_4sa.bmag)
-    ta_over_b1.legend_label = "TA/|B| (First)"
+    ta_over_b1 = custom_variable('TAoverB_First', proton.anisotropy / mag_rtn_4sa.bmag)
+    ta_over_b1.legend_label = "TAoverB_First"
     
-    br_squared1 = custom_variable('Br² (First)', mag_rtn_4sa.br * mag_rtn_4sa.br)
-    br_squared1.legend_label = "Br² (First)"
+    br_squared1 = custom_variable('BrSquared_First', mag_rtn_4sa.br * mag_rtn_4sa.br)
+    br_squared1.legend_label = "BrSquared_First"
     
     # Create first hodogram
     fig1, ax1 = showdahodo(trange, ta_over_b1, br_squared1)
@@ -339,11 +364,11 @@ def test_repeated_custom_variables_plot(test_environment):
     
     phase(2, "Second plot with newly created custom variables")
     # Create second set of custom variables with names matching labels
-    ta_over_b2 = custom_variable('TA/|B| (Second)', proton.anisotropy / mag_rtn_4sa.bmag)
-    ta_over_b2.legend_label = "TA/|B| (Second)"
+    ta_over_b2 = custom_variable('TAoverB_Second', proton.anisotropy / mag_rtn_4sa.bmag)
+    ta_over_b2.legend_label = "TAoverB_Second"
     
-    br_squared2 = custom_variable('Br² (Second)', mag_rtn_4sa.br * mag_rtn_4sa.br)
-    br_squared2.legend_label = "Br² (Second)"
+    br_squared2 = custom_variable('BrSquared_Second', mag_rtn_4sa.br * mag_rtn_4sa.br)
+    br_squared2.legend_label = "BrSquared_Second"
     
     # Create second hodogram
     fig2, ax2 = showdahodo(trange, ta_over_b2, br_squared2)
@@ -377,6 +402,68 @@ def test_repeated_custom_variables_plot(test_environment):
         f"Y-axis label should be '{br_squared2.legend_label}', found '{ax2.get_ylabel()}'"
     )
 
+@pytest.mark.mission("Standard Variable as Color in Showdahodo")
+def test_standard_variable_as_color(test_environment):
+    """Test using a standard variable as the color variable in showdahodo"""
+    
+    print("\n================================================================================")
+    print("TEST #5.5: Standard Variable as Color in Showdahodo")
+    print("Verifies that showdahodo works with a standard variable for coloring")
+    print("================================================================================\n")
+    
+    # Get the time range from the fixture
+    trange = test_environment
+    
+    # Make sure test mode is enabled
+    print_manager.enable_test()
+    
+    phase(1, "Creating hodogram with standard variable as color")
+    
+    # Just verify that bn has the attributes we expect for the test
+    print_manager.debug(f"Color variable class: {mag_rtn_4sa.bn.class_name}")
+    print_manager.debug(f"Color variable subclass: {mag_rtn_4sa.bn.subclass_name}")
+    print_manager.debug(f"Color variable legend_label: {mag_rtn_4sa.bn.legend_label}")
+    
+    # Call showdahodo with a color variable directly
+    fig, ax = showdahodo(trange, mag_rtn_4sa.br, mag_rtn_4sa.bt, color_var=mag_rtn_4sa.bn)
+    
+    # Verify plot was created
+    system_check(
+        "Plot Creation with Standard Color Variable",
+        fig is not None and ax is not None,
+        "Showdahodo should return figure and axis objects"
+    )
+    
+    # Verify plot has data
+    has_data, has_colorbar, scatter_count = verify_plot_has_data(fig, ax)
+    
+    system_check(
+        "Plot Data Verification with Standard Color Variable",
+        has_data,
+        f"Plot should contain data points. Found: {scatter_count} scatter collections with data: {has_data}"
+    )
+    
+    system_check(
+        "Colorbar Verification",
+        has_colorbar,
+        "Plot should have a colorbar for the standard variable"
+    )
+    
+    # Verify colorbar label matches the variable's legend_label
+    if has_colorbar:
+        colorbar = get_colorbar(fig)
+        if colorbar and hasattr(colorbar, 'ax') and hasattr(colorbar.ax, 'get_ylabel'):
+            actual_label = colorbar.ax.get_ylabel()
+            expected_label = mag_rtn_4sa.bn.legend_label
+            print(f">>> Expected colorbar label: '{expected_label}'")
+            print(f">>> Actual colorbar label: '{actual_label}'")
+            
+            system_check(
+                "Colorbar Label Verification",
+                actual_label == expected_label,
+                f"Colorbar label should be '{expected_label}', found '{actual_label}'"
+            )
+
 @pytest.mark.mission("Custom Variable as Color in Showdahodo")
 def test_custom_variable_as_color(test_environment):
     """Test using a custom variable as the color variable in showdahodo"""
@@ -388,15 +475,34 @@ def test_custom_variable_as_color(test_environment):
     
     # Get the time range from the fixture
     trange = test_environment
+    print_manager.show_test = True
     
     phase(1, "Creating custom variable for coloring")
     # Create custom variable with name matching label
-    ta_over_b = custom_variable('TA/|B| (Color)', proton.anisotropy / mag_rtn_4sa.bmag)
-    ta_over_b.legend_label = "TA/|B| (Color)"
+    ta_over_b = custom_variable('TAoverB_Color', proton.anisotropy / mag_rtn_4sa.bmag)
+    ta_over_b.legend_label = "TAoverB_Color"
+    
+    # Print diagnostics about variables
+    print_manager.debug(f"Custom variable name: {ta_over_b.name}")
+    print_manager.debug(f"Custom variable legend_label: {ta_over_b.legend_label}")
+    print_manager.debug(f"X-axis variable: {mag_rtn_4sa.br.class_name}.{mag_rtn_4sa.br.subclass_name}")
+    print_manager.debug(f"Y-axis variable: {mag_rtn_4sa.bt.class_name}.{mag_rtn_4sa.bt.subclass_name}")
+    print_manager.debug(f"Color variable type: {type(ta_over_b)}")
+    
+    # Debug print_manager settings
+    print(f">>> print_manager.show_test before showdahodo: {print_manager.show_test}")
     
     phase(2, "Creating hodogram with custom variable as color")
     # Create hodogram with custom variable as color
-    fig, ax = showdahodo(trange, mag_rtn_4sa.br, mag_rtn_4sa.bt, color_var=ta_over_b)
+    try:
+        fig, ax = showdahodo(trange, mag_rtn_4sa.br, mag_rtn_4sa.bt, color_var=ta_over_b)
+        print_manager.debug("showdahodo call successful")
+    except Exception as e:
+        print_manager.debug(f"Error in showdahodo call: {str(e)}")
+        raise e
+    
+    # Direct print of debug info to see it regardless of print_manager settings
+    print(f">>> print_manager.show_test after showdahodo: {print_manager.show_test}")
     
     # Verify plot was created
     system_check(
@@ -419,6 +525,21 @@ def test_custom_variable_as_color(test_environment):
         has_colorbar,
         "Plot should have a colorbar for the custom variable"
     )
+    
+    # Verify colorbar label matches the variable's legend_label
+    if has_colorbar:
+        colorbar = get_colorbar(fig)
+        if colorbar and hasattr(colorbar, 'ax') and hasattr(colorbar.ax, 'get_ylabel'):
+            actual_label = colorbar.ax.get_ylabel()
+            expected_label = ta_over_b.legend_label
+            print(f">>> Expected colorbar label: '{expected_label}'")
+            print(f">>> Actual colorbar label: '{actual_label}'")
+            
+            system_check(
+                "Colorbar Label Verification",
+                actual_label == expected_label,
+                f"Colorbar label should be '{expected_label}', found '{actual_label}'"
+            )
 
 @pytest.mark.mission("Custom Variable as Z-Axis in 3D Showdahodo")
 def test_custom_variable_as_z_axis(test_environment):
@@ -434,8 +555,8 @@ def test_custom_variable_as_z_axis(test_environment):
     
     phase(1, "Creating custom variable for z-axis")
     # Create custom variable with name matching label
-    br_squared = custom_variable('Br² (Z-Axis)', mag_rtn_4sa.br * mag_rtn_4sa.br)
-    br_squared.legend_label = "Br² (Z-Axis)"
+    br_squared = custom_variable('BrSquared_ZAxis', mag_rtn_4sa.br * mag_rtn_4sa.br)
+    br_squared.legend_label = "BrSquared_ZAxis"
     
     phase(2, "Creating 3D hodogram with custom variable as z-axis")
     # Create 3D hodogram with custom variable as z-axis
@@ -478,17 +599,17 @@ def test_all_custom_variables_3d(test_environment):
     
     phase(1, "Creating multiple custom variables for all dimensions")
     # Create custom variables for each dimension with names matching labels
-    ta_over_b = custom_variable('TA/|B| (X-Axis)', proton.anisotropy / mag_rtn_4sa.bmag)
-    ta_over_b.legend_label = "TA/|B| (X-Axis)"
+    ta_over_b = custom_variable('TAoverB_XAxis', proton.anisotropy / mag_rtn_4sa.bmag)
+    ta_over_b.legend_label = "TAoverB_XAxis"
     
-    br_squared = custom_variable('Br² (Y-Axis)', mag_rtn_4sa.br * mag_rtn_4sa.br)
-    br_squared.legend_label = "Br² (Y-Axis)"
+    br_squared = custom_variable('BrSquared_YAxis', mag_rtn_4sa.br * mag_rtn_4sa.br)
+    br_squared.legend_label = "BrSquared_YAxis"
     
-    bt_squared = custom_variable('Bt² (Z-Axis)', mag_rtn_4sa.bt * mag_rtn_4sa.bt)
-    bt_squared.legend_label = "Bt² (Z-Axis)"
+    bt_squared = custom_variable('BtSquared_ZAxis', mag_rtn_4sa.bt * mag_rtn_4sa.bt)
+    bt_squared.legend_label = "BtSquared_ZAxis"
     
-    bn_squared = custom_variable('Bn² (Color)', mag_rtn_4sa.bn * mag_rtn_4sa.bn)
-    bn_squared.legend_label = "Bn² (Color)"
+    bn_squared = custom_variable('BnSquared_Color', mag_rtn_4sa.bn * mag_rtn_4sa.bn)
+    bn_squared.legend_label = "BnSquared_Color"
     
     phase(2, "Creating 3D hodogram with all custom variables")
     # Create 3D hodogram with all custom variables
@@ -539,6 +660,7 @@ if __name__ == "__main__":
         test_single_custom_variable(trange)
         test_dual_custom_variables(trange)
         test_repeated_custom_variables_plot(trange)
+        test_standard_variable_as_color(trange)
         test_custom_variable_as_color(trange)
         test_custom_variable_as_z_axis(trange)
         test_all_custom_variables_3d(trange)
