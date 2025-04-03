@@ -196,30 +196,51 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     
     def downsample_time_based(x_time, x_values, target_times):
         """Interpolate x_values to match target_times using simple linear interpolation."""
-        # Convert datetime arrays to numeric timestamps for interpolation
-        x_time_numeric = mdates.date2num(x_time)
-        target_times_numeric = mdates.date2num(target_times)
-        
-        # Handle NaN values
-        valid_mask = ~np.isnan(x_values)
-        if not np.any(valid_mask):
-            return np.full_like(target_times_numeric, np.nan)
+        try:
+            # Convert datetime arrays to numeric timestamps for interpolation
+            x_time_numeric = mdates.date2num(x_time)
+            target_times_numeric = mdates.date2num(target_times)
             
-        if not np.all(valid_mask):
-            x_time_numeric = x_time_numeric[valid_mask]
-            x_values = x_values[valid_mask]
-        
-        # Simple linear interpolation
-        from scipy import interpolate
-        f = interpolate.interp1d(
-            x_time_numeric, x_values,
-            kind='linear',
-            bounds_error=False,
-            fill_value='extrapolate'
-        )
-        
-        new_values = f(target_times_numeric)
-        return new_values
+            # Check for sufficient data points for interpolation
+            if len(x_time) < 2:
+                if len(x_time) == 1 and len(target_times) > 0:
+                    # If we only have one point, replicate it for all target times
+                    return np.full(len(target_times), x_values[0])
+                return None
+            
+            # Handle NaN values
+            valid_mask = ~np.isnan(x_values)
+            valid_count = np.sum(valid_mask)
+            
+            if not np.any(valid_mask):
+                return np.full(len(target_times), np.nan)
+                
+            if not np.all(valid_mask):
+                x_time_numeric = x_time_numeric[valid_mask]
+                x_values = x_values[valid_mask]
+                
+                # Re-check if we have enough points after removing NaNs
+                if len(x_time_numeric) < 2:
+                    if len(x_time_numeric) == 1:
+                        # If we only have one point, replicate it for all target times
+                        return np.full(len(target_times), x_values[0])
+                    return None
+            
+            # Simple linear interpolation
+            from scipy import interpolate
+            f = interpolate.interp1d(
+                x_time_numeric, x_values,
+                kind='linear',
+                bounds_error=False,
+                fill_value='extrapolate'
+            )
+            
+            new_values = f(target_times_numeric)
+            return new_values
+            
+        except Exception as e:
+            print_manager.debug(f"Error in interpolation: {str(e)}")
+            return None
     
     # ====================================================================
     # PART 3: PREPARE DATA FOR PLOTTING
@@ -252,25 +273,38 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     if color_var is not None:
         color_values_full = color_var_instance.data
         color_time_full = color_var_instance.datetime_array
-        color_time_original_len = len(color_time_full)
         
-        # Apply time range to color data
-        color_time_clipped, color_values_clipped = apply_time_range(trange, color_time_full, color_values_full)
-        color_time_clipped_len = len(color_time_clipped)
-        
-        if len(color_time_clipped) == 0:
-            print_manager.warning("No color data available in the specified time range")
-            color_var = None  # Fall back to time-based coloring
+        if color_values_full is not None and color_time_full is not None:
+            color_time_original_len = len(color_time_full)
+            
+            # Apply time range to color data
+            color_time_clipped, color_values_clipped = apply_time_range(trange, color_time_full, color_values_full)
+            
+            if color_time_clipped is not None and color_values_clipped is not None:
+                color_time_clipped_len = len(color_time_clipped)
+                
+                if len(color_time_clipped) == 0:
+                    print_manager.warning("No color data available in the specified time range")
+                    color_var = None  # Fall back to time-based coloring
+                    color_time_clipped = None
+                    color_values_clipped = None
+            else:
+                color_time_clipped = None
+                color_values_clipped = None
+                color_time_clipped_len = 0
+        else:
             color_time_clipped = None
             color_values_clipped = None
+            color_time_original_len = 0
+            color_time_clipped_len = 0
 
-    # Prepare color data if provided
+    # Prepare var3 data if provided
     if var3 is not None:
         var3_values_full = var3_instance.data
         var3_time_full = var3_instance.datetime_array
         var3_time_original_len = len(var3_time_full)
         
-        # Apply time range to color data
+        # Apply time range to var3 data
         var3_time_clipped, var3_values_clipped = apply_time_range(trange, var3_time_full, var3_values_full)
         var3_time_clipped_len = len(var3_time_clipped)
         
@@ -281,10 +315,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
             var3_values_clipped = None
         var3_values = None  # Explicitly initialize var3_values to None
     else:
-        color_time_clipped = None
-        color_values_clipped = None
-        color_time_original_len = 0
-        color_time_clipped_len = 0
+        # Initialize var3-related variables only, don't reset color variables!
         var3_time_clipped = None
         var3_values_clipped = None
         var3_time_original_len = 0
@@ -297,10 +328,10 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
         'time2': time2_clipped_len
     }
     
-    if color_var is not None:
+    if color_var is not None and color_time_clipped is not None and len(color_time_clipped) > 0:
         lengths['color_time'] = color_time_clipped_len
 
-    if var3 is not None:
+    if var3 is not None and var3_time_clipped is not None and len(var3_time_clipped) > 0:
         lengths['var3_time'] = var3_time_clipped_len
         
     min_length = min(lengths.values())
@@ -309,60 +340,84 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
         target_times = time1_clipped
     elif lengths['time2'] == min_length:
         target_times = time2_clipped
-    elif color_var is not None and lengths['color_time'] == min_length:
+    elif color_var is not None and 'color_time' in lengths and lengths['color_time'] == min_length:
         target_times = color_time_clipped
-    elif var3 is not None and lengths['var3_time'] == min_length:
+    elif var3 is not None and 'var3_time' in lengths and lengths['var3_time'] == min_length:
         target_times = var3_time_clipped
     
     # Check if time arrays are equal or need resampling
-    time_arrays_equal = (len(time1_clipped) == len(target_times) and 
-                         np.array_equal(mdates.date2num(time1_clipped), mdates.date2num(target_times)))
-    time_arrays_equal = time_arrays_equal and (len(time2_clipped) == len(target_times) and 
-                        np.array_equal(mdates.date2num(time2_clipped), mdates.date2num(target_times)))
+    print_manager.debug(f"Data lengths - time1: {time1_clipped_len}, time2: {time2_clipped_len}, " +
+                        f"color: {color_time_clipped_len if color_var is not None and color_time_clipped is not None else 'N/A'}, " +
+                        f"var3: {var3_time_clipped_len if var3 is not None and var3_time_clipped is not None else 'N/A'}")
     
-    if color_var is not None:
-        time_arrays_equal = time_arrays_equal and (len(color_time_clipped) == len(target_times) and 
-                            np.array_equal(mdates.date2num(color_time_clipped), mdates.date2num(target_times)))
-
-    if var3 is not None:
-        time_arrays_equal = time_arrays_equal and (len(var3_time_clipped) == len(target_times) and 
-                            np.array_equal(mdates.date2num(var3_time_clipped), mdates.date2num(target_times)))
+    if target_times is None:
+        print_manager.warning("Target times is None, falling back to time1_clipped")
+        # Fall back to using time1_clipped if target_times is None
+        target_times = time1_clipped
     
-    # Resample data if needed
-    if time_arrays_equal:
-        print_manager.processing("No resampling needed - time arrays are aligned")
+    # Determine which variables need resampling by comparing with target_times
+    time1_needs_resampling = not (len(time1_clipped) == len(target_times) and 
+                              np.array_equal(mdates.date2num(time1_clipped), mdates.date2num(target_times)))
+    
+    time2_needs_resampling = not (len(time2_clipped) == len(target_times) and 
+                              np.array_equal(mdates.date2num(time2_clipped), mdates.date2num(target_times)))
+    
+    color_needs_resampling = False
+    if color_var is not None and color_time_clipped is not None and len(color_time_clipped) > 0:
+        # Always resample if the arrays have different lengths
+        if len(color_time_clipped) != len(target_times):
+            color_needs_resampling = True
+        else:
+            # Only compare arrays if they are the same length
+            color_needs_resampling = not np.array_equal(mdates.date2num(color_time_clipped), mdates.date2num(target_times))
+    
+    var3_needs_resampling = False
+    if var3 is not None and var3_time_clipped is not None and len(var3_time_clipped) > 0:
+        var3_needs_resampling = not (len(var3_time_clipped) == len(target_times) and 
+                                 np.array_equal(mdates.date2num(var3_time_clipped), mdates.date2num(target_times)))
+    
+    # Resample variables as needed
+    print_manager.processing(f"Resampling status - time1: {time1_needs_resampling}, time2: {time2_needs_resampling}, color: {color_needs_resampling}, var3: {var3_needs_resampling}")
+    
+    # Always resample variables that need it
+    if time1_needs_resampling:
+        print_manager.processing("Resampling time1")
+        values1 = downsample_time_based(time1_clipped, values1_clipped, target_times)
+    else:
         values1 = values1_clipped
+        
+    if time2_needs_resampling:
+        print_manager.processing("Resampling time2")
+        values2 = downsample_time_based(time2_clipped, values2_clipped, target_times)
+    else:
         values2 = values2_clipped
-        if color_var is not None:
+        
+    if color_var is not None and color_time_clipped is not None and len(color_time_clipped) > 0:
+        if color_needs_resampling:
+            print_manager.processing("Resampling color values")
+            color_values = downsample_time_based(color_time_clipped, color_values_clipped, target_times)
+            if color_values is None:
+                # In case interpolation fails, create a default color array
+                print_manager.debug("Interpolation failed for color values, creating default gradient")
+                # Use a simple gradient based on the original values
+                min_val = np.nanmin(color_values_clipped)
+                max_val = np.nanmax(color_values_clipped)
+                color_values = np.linspace(min_val, max_val, len(target_times))
+        else:
             color_values = color_values_clipped
-        if var3 is not None:
+    else:
+        color_values = None
+        
+    if var3 is not None and var3_time_clipped is not None and len(var3_time_clipped) > 0:
+        if var3_needs_resampling:
+            var3_values = downsample_time_based(var3_time_clipped, var3_values_clipped, target_times)
+        else:
             var3_values = var3_values_clipped
     else:
-        print_manager.processing("Resampling data to align time series")
-        if not np.array_equal(mdates.date2num(time1_clipped), mdates.date2num(target_times)):
-            values1 = downsample_time_based(time1_clipped, values1_clipped, target_times)
-        else:
-            values1 = values1_clipped
-            
-        if not np.array_equal(mdates.date2num(time2_clipped), mdates.date2num(target_times)):
-            values2 = downsample_time_based(time2_clipped, values2_clipped, target_times)
-        else:
-            values2 = values2_clipped
-            
-        if color_var is not None:
-            if not np.array_equal(mdates.date2num(color_time_clipped), mdates.date2num(target_times)):
-                color_values = downsample_time_based(color_time_clipped, color_values_clipped, target_times)
-            else:
-                color_values = color_values_clipped
-
-        if var3 is not None:
-            if not np.array_equal(mdates.date2num(var3_time_clipped), mdates.date2num(target_times)):
-                var3_values = downsample_time_based(var3_time_clipped, var3_values_clipped, target_times)
-            else:
-                var3_values = var3_values_clipped
+        var3_values = None
     
     # Prepare colors
-    if color_var is None:
+    if color_var is None or color_values is None:
         # Convert to days from first time point, which is what colorbar expects
         times_num = mdates.date2num(target_times)
         colors = times_num - times_num[0]
