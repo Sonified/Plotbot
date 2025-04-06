@@ -79,15 +79,24 @@ class Audifier:
     def __init__(self):
         # Initialize last_dir_file first
         self.last_dir_file = 'last_dir.txt'
+        self.default_save_dir_name = "audio_files" # Store default name
         
-        # Now we can get the save directory since last_dir_file exists
+        # Try to get the saved directory
         self.save_dir = self.get_save_directory()
+        
+        # If no directory was saved previously, set and create the default
+        if self.save_dir is None:
+            print(f"No save directory previously set. Defaulting to: ./{self.default_save_dir_name}")
+            self.save_dir = self.default_save_dir_name
+            os.makedirs(self.save_dir, exist_ok=True)
         
         # Initialize other variables
         self.sample_rate = 44100
         self.markers_per_hour = 2
         self.markers_only = False
         self.quantize_markers = False  # Can be False or number of minutes (10, 60, etc)
+        self._channels = 1
+        self._fade_samples = 0
     
     def get_save_directory(self):
         """Get the saved directory path."""
@@ -102,15 +111,25 @@ class Audifier:
         print(f"\nDEBUG CLIPPING:")
         print(f"Clipping data to range: {trange[0]} to {trange[1]}")
 
+        # Add check for valid components and datetime_array
+        if not components or not hasattr(components[0], 'datetime_array') or components[0].datetime_array is None:
+            print("Warning: Invalid component or missing datetime_array for clipping. Returning empty indices.")
+            return np.array([], dtype=int)
+
         # Parse times without timezone info
         start_dt = np.datetime64(parse(trange[0]))
         stop_dt = np.datetime64(parse(trange[1])) + np.timedelta64(1, 'us')
 
         # Get indices for the time range
-        indices = np.where((components[0].datetime_array >= start_dt) & 
-                          (components[0].datetime_array < stop_dt))[0]
+        try:
+            datetime_array = components[0].datetime_array
+            indices = np.where((datetime_array >= start_dt) & 
+                              (datetime_array < stop_dt))[0]
+        except TypeError as e:
+            print(f"Error during datetime comparison: {e}. Returning empty indices.")
+            return np.array([], dtype=int)
 
-        print(f"Original data points: {len(components[0])}")
+        print(f"Original data points: {len(components[0]) if hasattr(components[0], '__len__') else 'N/A'}")
         print(f"Points in range: {len(indices)}\n")
 
         return indices
@@ -121,13 +140,19 @@ class Audifier:
         print(f"Save Directory Set: {directory}")
     
     def select_save_dir(self, force_new=False):
-        """Open GUI to select save directory if needed or forced.
-        
-        Args:
-            force_new (bool): If True, always prompt for new directory
-        """
+        """Open GUI to select save directory ONLY if force_new is True, or if directory isn't set."""
+        # Prompt only if forced or if save_dir is somehow None (shouldn't happen after init)
         if force_new or self.save_dir is None:
-            self.save_dir = set_save_directory(self.last_dir_file)
+            print(f"Prompting for new save directory (force_new={force_new}). Current: '{self.save_dir}'")
+            selected_dir = set_save_directory(self.last_dir_file)
+            if selected_dir: # Only update if a directory was actually selected
+                self.save_dir = selected_dir
+                print(f"New save directory set: {self.save_dir}")
+            else:
+                print(f"Directory selection cancelled. Save directory remains: {self.save_dir}")
+        else:
+             # If not forcing and save_dir is set, just confirm the current directory
+             print(f"Using previously set save directory: {self.save_dir}")
             
         # Create button to open save directory
         try:
@@ -170,15 +195,73 @@ class Audifier:
         """Set number of markers per hour."""
         self.markers_per_hour = markers
         print(f"Markers per hour set to: {markers}")
+    
+    @property
+    def channels(self):
+        """Get the number of audio channels."""
+        return self._channels
+    
+    @channels.setter
+    def channels(self, value):
+        """Set the number of audio channels."""
+        if value in [1, 2]:
+            self._channels = value
+        else:
+            self._channels = 1
+    
+    @property
+    def fade_samples(self):
+        """Get the number of fade samples."""
+        return self._fade_samples
+    
+    @fade_samples.setter
+    def fade_samples(self, value):
+        """Set the number of fade samples."""
+        if value >= 0:
+            self._fade_samples = value
+        else:
+            self._fade_samples = 0
+    
+    def apply_fade(self, audio_data):
+        """Apply fade in/out to audio data."""
+        if self._fade_samples == 0:
+            return audio_data
+            
+        # Make a copy of the data as float32 for safe multiplication
+        audio_float = audio_data.astype(np.float32)
+        
+        # Determine if the audio is mono or stereo
+        is_stereo = len(audio_float.shape) > 1 and audio_float.shape[1] == 2
+        
+        # Create fade in/out windows
+        fade_in = np.linspace(0, 1, self._fade_samples)
+        fade_out = np.linspace(1, 0, self._fade_samples)
+        
+        if is_stereo:
+            # Apply fade to stereo audio (both channels)
+            for channel in range(2):
+                # Apply fade in
+                audio_float[:self._fade_samples, channel] *= fade_in
+                # Apply fade out
+                audio_float[-self._fade_samples:, channel] *= fade_out
+        else:
+            # Apply fade to mono audio
+            # Apply fade in
+            audio_float[:self._fade_samples] *= fade_in
+            # Apply fade out
+            audio_float[-self._fade_samples:] *= fade_out
+        
+        # Convert back to int16 before returning
+        return audio_float.astype(np.int16)
 
     def generate_markers(self, times, trange, output_dir):
         """Generate markers for the audified data."""
         print(f"Generating markers for time range: {trange[0]} to {trange[1]}")
         print(f"Number of time points: {len(times)}")
         
-        # Parse start and end times
-        start_datetime = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f')
-        stop_datetime = datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f')
+        # Parse start and end times using parse instead of strptime
+        start_datetime = parse(trange[0])
+        stop_datetime = parse(trange[1])
         
         # Generate marker times
         marker_times = []
@@ -260,19 +343,47 @@ class Audifier:
         return filename
     
     def format_time_for_filename(self, time_str):
-        """Convert time string from 'HH:MM.fff' to 'HHMM'"""
-        return time_str.replace(':', '').split('.')[0]
+        """Convert time string from 'HH:MM:SS.fff' to 'HHMM'"""
+        # Remove colons
+        formatted = time_str.replace(':', '')
+        # Split by dot to remove milliseconds
+        formatted = formatted.split('.')[0]
+        # If time ends in seconds that are 00, remove them
+        if len(formatted) == 6 and formatted.endswith('00'):
+            formatted = formatted[:-2]
+        return formatted
     
-    def audify(self, trange, *components):
-        """Generate audio files and markers.
-        
-        Args:
-            trange: Time range in format ['YYYY-MM-DD/HH:MM:SS.fff', 'YYYY-MM-DD/HH:MM:SS.fff']
-            *components: Variable components to audify (e.g., mag_rtn.br, mag_rtn.bt)
+    def audify(self, trange, *components, filename=None, channels=None, markers_per_hour=None,
+               sample_rate=None, norm_percentile=None):
         """
-        if self.save_dir is None:
-            print("Please set a save directory first")
-            return
+        Create a WAV file from the magnetometer time series.
+        
+        Parameters
+        ----------
+        trange : two element list
+            Time range for audio generation
+        components : list
+            List of components to include in the WAV file. 
+            In mono mode (channels=1), each component is saved as a separate WAV file.
+            In stereo mode (channels=2), the first two components are used for left/right channels.
+        filename : str
+            Filename for output file(s)
+        channels : int, optional
+            Number of audio channels (1 for mono, 2 for stereo). Defaults to self.channels.
+        markers_per_hour : int, optional
+            Number of hour markers to include per hour. Default is 0.
+        sample_rate : int, optional
+            Sample rate. Default is 44100.
+        norm_percentile : float, optional
+            Percentile for normalization. Default is 99.9.
+        """
+        channels = channels if channels is not None else self._channels
+        self.channels = channels
+        
+        # Check if channels and components are compatible
+        if channels == 2 and len(components) < 2:
+            print("Warning: Stereo mode requires at least 2 components. Setting to mono.")
+            self.channels = 1
                 
         print("Starting " + ("marker generation..." if self.markers_only else "audification process..."))
         
@@ -346,14 +457,21 @@ class Audifier:
         # Setup directories
         start_date = trange[0].split('/')[0]
         encounter = get_encounter_number(start_date)
-        encounter_dir = os.path.join(self.save_dir, encounter)
-        os.makedirs(encounter_dir, exist_ok=True)
         
-        # Setup output directory
-        start_date = start_date.replace('-', '_')
+        # Check if save_dir already ends with the encounter name
+        if os.path.basename(self.save_dir.rstrip('/\\')) == encounter:
+            encounter_dir = self.save_dir # Use existing directory
+            print(f"Save directory already ends with encounter '{encounter}'. Using: {encounter_dir}")
+        else:
+            encounter_dir = os.path.join(self.save_dir, encounter) # Create encounter dir inside save_dir
+            os.makedirs(encounter_dir, exist_ok=True) # Ensure base encounter dir exists if needed
+            print(f"Creating encounter directory: {encounter_dir}")
+
+        # Setup output subfolder within the encounter directory
+        formatted_date = start_date.replace('-', '_')
         start_time = self.format_time_for_filename(trange[0].split('/')[1])
         stop_time = self.format_time_for_filename(trange[1].split('/')[1])
-        subfolder_name = f"{encounter}_{start_date}_{start_time}_to_{stop_time}"
+        subfolder_name = f"{encounter}_{formatted_date}_{start_time}_to_{stop_time}"
         output_dir = os.path.join(encounter_dir, subfolder_name)
         os.makedirs(output_dir, exist_ok=True)
         
@@ -371,27 +489,151 @@ class Audifier:
         
         # Generate audio files if not markers_only
         if not self.markers_only:
-            for component in processed_components:
-                data = np.array(component[indices])
-                audio_data = self.normalize_to_int16(data)
-                
-                filename = os.path.join(output_dir,
-                    f"{encounter}_PSP_"
-                    f"{component.data_type.upper()}_"
-                    f"{component.class_name.upper()}_"
-                    f"{start_date}_"
-                    f"{start_time}_to_{stop_time}_"
-                    f"{component.subclass_name.capitalize()}.wav")
-                
-                wavfile.write(filename, self.sample_rate, audio_data)
-                print(f"Saved audio file: {filename}")
-                file_names[component.subclass_name] = filename
+            # Use original date format with dashes for filenames
+            formatted_date_with_dashes = start_date  # This preserves the original YYYY-MM-DD format
+            sample_rate_str = f"{self.sample_rate}SR"
+            
+            if self.channels == 1:  # Mono mode - each component gets its own file
+                # Process each component as a separate mono file
+                for component in processed_components:
+                    data = np.array(component[indices])
+                    audio_data = self.normalize_to_int16(data)
+                    
+                    # Apply fade if enabled
+                    if self._fade_samples > 0:
+                        audio_data = self.apply_fade(audio_data)
+                    
+                    filename = os.path.join(output_dir,
+                        f"{encounter}_PSP_"
+                        f"{component.data_type.upper()}_"
+                        f"{formatted_date_with_dashes}_"
+                        f"{start_time}_to_{stop_time}_"
+                        f"{sample_rate_str}_"
+                        f"{component.subclass_name.capitalize()}.wav")
+                    
+                    wavfile.write(filename, self.sample_rate, audio_data)
+                    print(f"Saved mono audio file: {filename}")
+                    file_names[component.subclass_name] = filename
+            else:  # Stereo mode (self.channels == 2)
+                # Process first two components as stereo
+                if len(processed_components) >= 2:
+                    left_data = np.array(processed_components[0][indices])
+                    right_data = np.array(processed_components[1][indices])
+                    
+                    # Normalize each channel separately
+                    left_normalized = self.normalize_to_int16(left_data)
+                    right_normalized = self.normalize_to_int16(right_data)
+                    
+                    # Make sure both channels have the same length
+                    min_length = min(len(left_normalized), len(right_normalized))
+                    left_normalized = left_normalized[:min_length]
+                    right_normalized = right_normalized[:min_length]
+                    
+                    # Combine into stereo array
+                    stereo_data = np.column_stack((left_normalized, right_normalized))
+                    
+                    # Apply fade if enabled
+                    if self._fade_samples > 0:
+                        stereo_data = self.apply_fade(stereo_data)
+                    
+                    # Create stereo filename using both component names
+                    left_name = processed_components[0].subclass_name.capitalize()
+                    right_name = processed_components[1].subclass_name.capitalize()
+                    
+                    filename = os.path.join(output_dir,
+                        f"{encounter}_PSP_"
+                        f"{processed_components[0].data_type.upper()}_"
+                        f"{formatted_date_with_dashes}_"
+                        f"{start_time}_to_{stop_time}_"
+                        f"{sample_rate_str}_"
+                        f"{left_name}_L_{right_name}_R.wav")
+                    
+                    wavfile.write(filename, self.sample_rate, stereo_data)
+                    print(f"Saved stereo audio file: {filename}")
+                    file_names[f"stereo_{left_name}_{right_name}"] = filename
+                    
+                    # Process any remaining components as mono files
+                    for component in processed_components[2:]:
+                        data = np.array(component[indices])
+                        audio_data = self.normalize_to_int16(data)
+                        
+                        # Apply fade if enabled
+                        if self._fade_samples > 0:
+                            audio_data = self.apply_fade(audio_data)
+                        
+                        filename = os.path.join(output_dir,
+                            f"{encounter}_PSP_"
+                            f"{component.data_type.upper()}_"
+                            f"{formatted_date_with_dashes}_"
+                            f"{start_time}_to_{stop_time}_"
+                            f"{sample_rate_str}_"
+                            f"{component.subclass_name.capitalize()}.wav")
+                        
+                        wavfile.write(filename, self.sample_rate, audio_data)
+                        print(f"Saved mono audio file: {filename}")
+                        file_names[component.subclass_name] = filename
+                else:
+                    print("Not enough components for stereo. Need at least 2.")
         
         # Show access buttons
         show_directory_button(self.save_dir)
         show_file_buttons(file_names)
         
         return file_names
+
+    def _process_and_save_mono_component(self, component, trange, filename, markers_per_hour, 
+                                        sample_rate, norm_percentile):
+        """Process a single component and save it as a mono WAV file."""
+        component_name = getattr(component, 'component_name', 'data')
+        component_wavfile = self._create_filename(filename, component_name)
+        logging.info(f'Creating audio file: {component_wavfile}')
+        
+        component_data = self._process_component(component, trange, sample_rate, norm_percentile)
+        if component_data is None:
+            return
+            
+        # Apply fade if specified
+        if self._fade_samples > 0:
+            component_data = self.apply_fade(component_data)
+            
+        # Save the mono WAV file
+        wavfile.write(component_wavfile, sample_rate, component_data)
+
+    def _process_component(self, component, trange, sample_rate, norm_percentile):
+        """Process a component to prepare it for audio conversion."""
+        # Find the time range for clipping
+        tr = trange.copy()
+        
+        # Get the time and data for this component
+        t = getattr(component, 'times', None)
+        y = getattr(component, 'data', None)
+        
+        # If either are None, return None
+        if t is None or y is None:
+            return None
+            
+        # Clip data to time range
+        t_ind, y = self.clip_data_to_range(t, y, tr)
+        
+        # Check if we got valid data
+        if len(y) == 0:
+            logging.warning(f'No data found for component in the time range: {tr}')
+            return None
+            
+        # Normalize and convert to int16
+        normalized_data = self.normalize_to_int16(y)
+        
+        return normalized_data
+        
+    def _create_filename(self, base_filename, component_suffix):
+        """Create a filename based on the base filename and component suffix."""
+        if base_filename is None:
+            return f'audio_{component_suffix}.wav'
+        else:
+            # If the filename already has .wav, replace it
+            if base_filename.lower().endswith('.wav'):
+                base_filename = base_filename[:-4]
+            return f'{base_filename}_{component_suffix}.wav'
 
     @staticmethod
     def normalize_to_int16(data):
