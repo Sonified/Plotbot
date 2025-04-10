@@ -1,9 +1,9 @@
 import numpy as np
 import types
-from .print_manager import print_manager
-from .data_cubby import data_cubby
-from .data_tracker import global_tracker
-from .plotbot_helpers import time_clip
+from ..print_manager import print_manager
+from ..data_cubby import data_cubby
+from ..data_tracker import global_tracker
+from ..plotbot_helpers import time_clip
 
 class CustomVariablesContainer:
     """
@@ -332,87 +332,39 @@ class CustomVariablesContainer:
         return result
     
     def _make_globally_accessible(self, name, variable):
-        """Make a variable globally accessible"""
-        try:
-            import sys
-            import importlib
+        """
+        Make the variable globally accessible under the plotbot namespace.
+        Sanitizes the name to ensure it's a valid Python identifier.
+        """
+        import importlib
+        import re
+
+        # Sanitize the name: replace spaces and other invalid chars with underscores
+        # Remove leading/trailing underscores and collapse multiple underscores
+        sanitized_name = re.sub(r'[^0-9a-zA-Z_]', '_', name)
+        sanitized_name = re.sub(r'_+$', '', sanitized_name) # Remove trailing underscores
+        sanitized_name = re.sub(r'^_+]', '', sanitized_name) # Remove leading underscores
+        sanitized_name = re.sub(r'__+', '_', sanitized_name) # Collapse multiple underscores
+        
+        # Ensure it doesn't start with a number (prepend underscore if needed)
+        if sanitized_name[0].isdigit():
+            sanitized_name = '_' + sanitized_name
             
-            # Add to plotbot module namespace
+        # Handle empty name after sanitization (should not happen with valid input)
+        if not sanitized_name:
+            print_manager.error(f"Could not create a valid global name for custom variable '{name}'")
+            return
+
+        try:
+            # Dynamically import the plotbot module
             plotbot_module = importlib.import_module('plotbot')
             
-            # Check if the variable already exists in namespace
-            if hasattr(plotbot_module, name):
-                print_manager.custom_debug(f"Updating existing global reference for '{name}'")
-                existing_var = getattr(plotbot_module, name)
-                
-                # If existing reference points to a plot_manager, update its data directly
-                # This mimics how standard variables work in psp_mag_classes 
-                if hasattr(existing_var, 'datetime_array') and hasattr(variable, 'datetime_array'):
-                    print_manager.custom_debug(f"Copying data from new variable to existing one")
-                    try:
-                        # Replace the array's data - this modifies the array in-place
-                        existing_var_array = np.array(existing_var, copy=False)
-                        variable_array = np.array(variable, copy=False)
-                        
-                        if existing_var_array.size == variable_array.size:
-                            existing_var_array[:] = variable_array
-                            
-                            # Update datetime array
-                            object.__setattr__(existing_var, 'datetime_array', variable.datetime_array)
-                            
-                            # Copy any updated plot options
-                            if hasattr(variable, '_plot_state') and hasattr(existing_var, '_plot_state'):
-                                existing_var._plot_state.update(variable._plot_state)
-                            
-                            # Preserve all styling attributes from the existing variable
-                            styling_attributes = [
-                                'color', 'line_style', 'line_width', 'marker', 'marker_size', 
-                                'alpha', 'zorder', 'y_scale', 'y_limit', 'colormap', 
-                                'colorbar_scale', 'colorbar_limits', 'legend_label_override'
-                            ]
-                            
-                            # Collect all style attributes from existing_var (source of truth for styles)
-                            original_styles = {}
-                            for attr in styling_attributes:
-                                if hasattr(existing_var, attr) and getattr(existing_var, attr) is not None:
-                                    original_styles[attr] = getattr(existing_var, attr)
-                                    print_manager.custom_debug(f"Found in-place style: {attr}={original_styles[attr]}")
-                                    
-                            # Apply all found styles to both variables to ensure consistency
-                            for attr, value in original_styles.items():
-                                try:
-                                    # Apply to both the existing reference and the new variable
-                                    print_manager.custom_debug(f"Preserving style attribute {attr}={value} during in-place update")
-                                    object.__setattr__(existing_var, attr, value)  # Ensure it's set on existing
-                                    object.__setattr__(variable, attr, value)  # Also set on new variable for consistency
-                                except Exception as e:
-                                    print_manager.custom_debug(f"Could not preserve style {attr}: {str(e)}")
-                                        
-                            print_manager.custom_debug(f"Successfully updated existing variable data in-place")
-                            return
-                    except Exception as e:
-                        print_manager.custom_debug(f"Could not update existing variable in-place: {str(e)}")
+            # Add the variable to the module's namespace using the sanitized name
+            setattr(plotbot_module, sanitized_name, variable)
+            print_manager.custom_debug(f"Made '{name}' globally accessible as plotbot.{sanitized_name}")
             
-            # Create new global reference
-            setattr(plotbot_module, name, variable)
-            
-            # IMPORTANT: Also add to the caller's globals (Jupyter notebook)
-            # Get the globals from the caller's frame
-            caller_globals = sys._getframe(1).f_globals
-            if "__main__" in str(caller_globals.get('__name__', '')):
-                # This is likely a notebook or script
-                caller_globals[name] = variable
-            
-            # Also try to add to builtins for broader accessibility
-            try:
-                import builtins
-                setattr(builtins, name, variable)
-            except:
-                pass
-            
-            print_manager.custom_debug(f"Made '{name}' globally accessible")
         except Exception as e:
-            print_manager.custom_debug(f"Failed to make variable globally accessible: {str(e)}")
+            print_manager.error(f"Failed to make custom variable '{name}' globally accessible as '{sanitized_name}': {e}")
 
 def custom_variable(name, expression):
     """
@@ -437,6 +389,12 @@ def custom_variable(name, expression):
     """
     print_manager.custom_debug(f"Creating custom variable: {name}")
     
+    # <<< ADDED DEBUG PRINT >>>
+    expr_has_data = hasattr(expression, 'datetime_array') and expression.datetime_array is not None and len(expression.datetime_array) > 0
+    expr_data_points = len(expression.datetime_array) if expr_has_data else 0
+    print_manager.debug(f"DEBUG custom_variable: Incoming expression for '{name}' already has data? {expr_has_data} ({expr_data_points} points)")
+    # <<< END ADDED DEBUG PRINT >>>
+
     # Clear any existing calculation cache for this variable name
     global_tracker.clear_calculation_cache('custom_data_type', name)
     

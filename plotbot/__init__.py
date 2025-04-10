@@ -25,13 +25,17 @@ from .ploptions import ploptions
 from .data_cubby import data_cubby
 from .plot_manager import plot_manager
 
-# Import data classes and their instances
-from .psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
-from .psp_electron_classes import epad
-from .psp_proton_classes import proton
+# Import helper functions needed for export
+from .plotbot_helpers import time_clip
+
+# Import data classes and their instances (Updated Paths)
+from .data_classes.psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
+from .data_classes.psp_electron_classes import epad
+from .data_classes.psp_proton_classes import proton
+from .data_classes.psp_proton_fits_classes import proton_fits # Import the FITS class
 
 # Import custom variables system
-from .custom_variables import custom_variable, CustomVariablesContainer
+from .data_classes.custom_variables import custom_variable, CustomVariablesContainer
 
 # Import test_pilot for testing - safely importing the test functions
 # (test_pilot handles the fallback if pytest is not available)
@@ -118,10 +122,12 @@ __all__ = [
     'mag_sc',
     'epad',
     'proton',
+    'proton_fits',   # Add proton_fits to __all__
     'audifier',
     'custom_variable',  # Using custom_variable instead of new_variable
     'debug_custom_variables',  # Add debug function for custom variables
     'run_missions',   # Add test_pilot functions
     'phase',
-    'system_check'
+    'system_check',
+    'time_clip'      # ADDED time_clip helper function
 ]

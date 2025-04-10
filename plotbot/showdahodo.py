@@ -6,6 +6,7 @@ from .data_download import download_new_psp_data
 from .data_import import import_data_function
 from .plotbot_helpers import time_clip
 from .multiplot_options import plt  # Import our enhanced plt with options
+from .get_data import get_data  # Import get_data function
 
 from matplotlib.colors import Normalize
 from scipy import stats
@@ -54,113 +55,58 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     if color_var is not None:
         required_data_types.add(color_var.data_type)
     
-    # Download and process data for each data type
-    for data_type in required_data_types:
-        print_manager.processing(f"Processing {data_type}...")
+    # Special handling for custom variables
+    custom_vars = []
+    if 'custom_data_type' in required_data_types:
+        print_manager.processing("Processing custom variables...")
+        # Collect all custom variables
+        if var1.data_type == 'custom_data_type':
+            custom_vars.append(var1)
+        if var2.data_type == 'custom_data_type':
+            custom_vars.append(var2)
+        if var3 is not None and var3.data_type == 'custom_data_type':
+            custom_vars.append(var3)
+        if color_var is not None and color_var.data_type == 'custom_data_type':
+            custom_vars.append(color_var)
         
-        download_new_psp_data(trange, data_type)
-        
-        # Get class instance
-        if data_type == var1.data_type:
-            class_name = var1.class_name
-        elif data_type == var2.data_type:
-            class_name = var2.class_name
-        elif color_var is not None and data_type == color_var.data_type:
-            class_name = color_var.class_name
-        elif var3 is not None and data_type == var3.data_type:
-            class_name = var3.class_name
-        
-        class_instance = data_cubby.grab(class_name)
-        
-        # Check if we need to update data
-        needs_import = global_tracker.is_import_needed(trange, data_type)
-        needs_refresh = False
-        
-        if hasattr(class_instance, 'datetime_array') and class_instance.datetime_array is not None:
-            cached_start = np.datetime64(class_instance.datetime_array[0], 's')
-            cached_end = np.datetime64(class_instance.datetime_array[-1], 's')
-            requested_start = np.datetime64(datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f'), 's')
-            requested_end = np.datetime64(datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f'), 's')
+        # Process each custom variable
+        for var in custom_vars:
+            if hasattr(var, 'source_var') and var.source_var is not None:
+                # Get base variables (non-custom) that need to be downloaded
+                base_vars = []
+                for src_var in var.source_var:
+                    if hasattr(src_var, 'class_name') and src_var.class_name != 'custom_class' and src_var.data_type != 'custom_data_type':
+                        base_vars.append(src_var)
+                
+                # Download fresh data for base variables if needed
+                if base_vars:
+                    print_manager.processing(f"Downloading fresh data for {len(base_vars)} source variables...")
+                    get_data(trange, *base_vars)
             
-            # Add buffer for timing differences
-            buffered_start = cached_start - np.timedelta64(10, 's')
-            buffered_end = cached_end + np.timedelta64(10, 's')
-            
-            if buffered_start > requested_start or buffered_end < requested_end:
-                print_manager.processing(f"{data_type} - Requested time falls outside cached data range, updating...")
-                needs_refresh = True
-
-        # Special handling for custom variables
-        if data_type == 'custom_data_type':
-            print_manager.processing(f"Custom variable detected, using special handling...")
-            
-            # Process all custom variables that need to be updated
-            if class_name == 'custom_class':
-                # Get the variables we need to update
-                custom_vars = []
-                
-                # Check if var1 is a custom variable
-                if var1.data_type == 'custom_data_type':
-                    custom_vars.append(var1)
-                
-                # Check if var2 is a custom variable
-                if var2.data_type == 'custom_data_type':
-                    custom_vars.append(var2)
-                
-                # Check if color_var is a custom variable
-                if color_var is not None and color_var.data_type == 'custom_data_type':
-                    custom_vars.append(color_var)
-                
-                # Check if var3 is a custom variable
-                if var3 is not None and var3.data_type == 'custom_data_type':
-                    custom_vars.append(var3)
-                
-                # Update each custom variable
-                for var in custom_vars:
-                    if hasattr(var, 'update'):
-                        print_manager.processing(f"Updating custom variable: {var.subclass_name}...")
-                        # Get source variables if available
-                        if hasattr(var, 'source_var') and var.source_var is not None:
-                            # Get base variables (non-custom) that need to be downloaded
-                            from .get_data import get_data
-                            base_vars = []
-                            for src_var in var.source_var:
-                                if hasattr(src_var, 'class_name') and src_var.class_name != 'custom_class' and src_var.data_type != 'custom_data_type':
-                                    base_vars.append(src_var)
-                            
-                            # Download fresh data for base variables if needed
-                            if base_vars:
-                                print_manager.processing(f"Downloading fresh data for {len(base_vars)} source variables...")
-                                get_data(trange, *base_vars)
-                        
-                        # Update the variable with new time range
-                        print_manager.processing(f"Calling update method for {var.subclass_name}...")
-                        updated_var = var.update(trange)
-                        if updated_var is not None:
-                            print_manager.processing(f"Successfully updated custom variable: {var.subclass_name}")
-                        else:
-                            print_manager.warning(f"Warning: update method for {var.subclass_name} returned None")
-                    else:
-                        print_manager.warning(f"Warning: custom variable {var.subclass_name} has no update method")
-                
-                continue  # Skip the regular update process for custom variables
-        
-        # Regular variable handling
-        if needs_import or needs_refresh:
-            data_obj = import_data_function(trange, data_type)
-            if needs_import:
-                global_tracker.update_imported_range(trange, data_type)
-            
-            if data_obj is not None:
-                # Check if the update method requires trange (for custom variables container)
-                if class_name == 'custom_class' and hasattr(class_instance, 'update'):
-                    # For CustomVariablesContainer, update requires both name and trange
-                    # This should not normally reach here due to the custom handling above
-                    print_manager.warning(f"Warning: Using fallback update path for custom variable")
-                    # We don't know which variable to update here, so we skip
+            # Update the variable with new time range
+            if hasattr(var, 'update'):
+                print_manager.processing(f"Updating custom variable: {var.subclass_name}...")
+                updated_var = var.update(trange)
+                if updated_var is not None:
+                    print_manager.processing(f"Successfully updated custom variable: {var.subclass_name}")
                 else:
-                    # Regular class update method
-                    class_instance.update(data_obj)
+                    print_manager.warning(f"Warning: update method for {var.subclass_name} returned None")
+    
+    # Collect regular variables for data loading
+    regular_vars = []
+    if var1.data_type != 'custom_data_type':
+        regular_vars.append(var1)
+    if var2.data_type != 'custom_data_type':
+        regular_vars.append(var2)
+    if var3 is not None and var3.data_type != 'custom_data_type':
+        regular_vars.append(var3)
+    if color_var is not None and color_var.data_type != 'custom_data_type':
+        regular_vars.append(color_var)
+    
+    # Use get_data for all regular variables (same as plotbot_main.py)
+    if regular_vars:
+        print_manager.processing(f"Loading data for {len(regular_vars)} regular variables...")
+        get_data(trange, *regular_vars)
 
     # Get processed variable instances
     var1_instance = data_cubby.grab(var1.class_name).get_subclass(var1.subclass_name)
@@ -253,9 +199,34 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     values2_full = var2_instance.data  
     time2_full = var2_instance.datetime_array
 
+    # DEBUGGING: Check if arrays are None before use
+    print_manager.debug(f"DEBUG: Before line 257 - var1_instance ({var1_instance.name}) datetime_array is None: {time1_full is None}")
+    print_manager.debug(f"DEBUG: Before line 257 - var1_instance ({var1_instance.name}) data is None: {values1_full is None}")
+    print_manager.debug(f"DEBUG: Before line 257 - var2_instance ({var2_instance.name}) datetime_array is None: {time2_full is None}")
+    print_manager.debug(f"DEBUG: Before line 257 - var2_instance ({var2_instance.name}) data is None: {values2_full is None}")
+
     # Save original lengths
     time1_original_len = len(time1_full)
     time2_original_len = len(time2_full)
+    color_var_original_len = 0
+    var3_original_len = 0
+    if color_var_instance is not None:
+        color_var_full = color_var_instance.data
+        color_time_full = color_var_instance.datetime_array
+        color_var_original_len = len(color_time_full) if color_time_full is not None else 0
+    else:
+        color_var_full = None
+        color_time_full = None
+
+    if var3_instance is not None:
+        values3_full = var3_instance.data
+        time3_full = var3_instance.datetime_array
+        var3_original_len = len(time3_full) if time3_full is not None else 0
+    else:
+        values3_full = None
+        time3_full = None
+
+    print_manager.debug(f"DEBUG: Original lengths - time1: {time1_original_len}, time2: {time2_original_len}, color: {color_var_original_len}, var3: {var3_original_len}")
     
     # Apply time range 
     time1_clipped, values1_clipped = apply_time_range(trange, time1_full, values1_full)
