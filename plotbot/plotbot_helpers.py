@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dateutil.parser import parse
 from .print_manager import print_manager
 from .data_cubby import data_cubby
@@ -49,75 +49,83 @@ def time_clip(datetime_array, start_time, end_time):
     if len(datetime_array) > 0:
         print_manager.time_tracking(f"Original datetime_array range: {datetime_array[0]} to {datetime_array[-1]}")
     
-    # Parse times without timezone info
+    # Parse times into aware Python datetime objects
     try:
-        start_dt = np.datetime64(parse(start_time))
-        # Add 1 microsecond to end time to include points right up to the boundary
-        end_dt = np.datetime64(parse(end_time)) + np.timedelta64(1, 'us')
+        start_dt_aware = parse(start_time).replace(tzinfo=timezone.utc)
+        # Use aware datetime for end comparison, maybe add timedelta directly if compatible
+        # end_dt_aware = parse(end_time).replace(tzinfo=timezone.utc) + timedelta(microseconds=1) 
+        # Let's try comparing up to *including* the end time first, without adding microseconds
+        end_dt_aware = parse(end_time).replace(tzinfo=timezone.utc)
         
         # Log the parsed datetime objects
-        print_manager.time_tracking(f"Parsed start_dt: {start_dt}, end_dt: {end_dt}")
+        print_manager.time_tracking(f"Parsed aware start_dt: {start_dt_aware}, end_dt: {end_dt_aware}")
     except Exception as e:
         print_manager.warning(f"❌ Error parsing time range: {e}")
         print_manager.time_output("time_clip", "parse_error")
         return np.array([])
     
+    # Convert start/end times to timezone-aware numpy datetime64 for robust comparison
+    try:
+        # Fix: Use pandas to properly handle timezone conversion
+        # Convert timezone-aware datetime to datetime64 through pandas
+        start_dt_np = pd.Timestamp(start_dt_aware).to_datetime64()
+        end_dt_np = pd.Timestamp(end_dt_aware).to_datetime64()
+    except Exception as e:
+        print_manager.error(f"❌ Failed to convert start/end times to np.datetime64: {e}")
+        print_manager.time_output("time_clip", "error: time conversion failed")
+        return np.array([]) # Return empty array if conversion fails
+    
+    # Ensure datetime_array is a numpy array for comparison
+    datetime_array_np = np.asarray(datetime_array)
+    if datetime_array_np.size == 0:
+        print_manager.warning("Input datetime_array is empty. Cannot clip.")
+        print_manager.time_output("time_clip", "empty input array")
+        return np.array([])
+
     # Handle different array shapes - spectral data has 2D time array
-    if isinstance(datetime_array[0], (list, np.ndarray)):
-        if isinstance(datetime_array[0][0], (str, np.datetime64)):
+    if datetime_array_np.ndim == 2 and isinstance(datetime_array_np[0,0], (datetime, np.datetime64)):
             print_manager.time_tracking(f"Detected 2D datetime array, using first column")
-            datetime_array = datetime_array[:,0]
+            datetime_array_np = datetime_array_np[:,0]
     
     print_manager.custom_debug(f"🔍 Time clipping: {start_time} to {end_time}")
-    print_manager.custom_debug(f"🔍 Data time range: {datetime_array[0]} to {datetime_array[-1]}")
+    print_manager.custom_debug(f"🔍 Data time range: {datetime_array_np[0]} to {datetime_array_np[-1]}")
     
-    # CUSTOM DEBUG: Add more debug output for comparison
-    print_manager.debug(f"DETAILED TIME CLIP - Start comparison: {start_dt} vs {datetime_array[0]}")
-    print_manager.debug(f"DETAILED TIME CLIP - End comparison: {end_dt} vs {datetime_array[-1]}")
-    
-    # Find indices where time is within range
+    # Perform comparison using numpy datetime64
     try:
-        # Get indices within range
-        within_start = datetime_array >= start_dt
-        within_end = datetime_array < end_dt
-        
-        # CUSTOM DEBUG: Print first few results of comparison
-        print_manager.debug(f"DETAILED TIME CLIP - First 3 within_start results: {within_start[:3]}")
-        print_manager.debug(f"DETAILED TIME CLIP - Last 3 within_start results: {within_start[-3:]}")
-        print_manager.debug(f"DETAILED TIME CLIP - First 3 within_end results: {within_end[:3]}")
-        print_manager.debug(f"DETAILED TIME CLIP - Last 3 within_end results: {within_end[-3:]}")
-        
-        indices = np.where((within_start) & (within_end))[0]
-        
-        print_manager.custom_debug(f"🔍 Time clip found {len(indices)} points in range")
-        
-        # CUSTOM DEBUG: Print summary of results
-        print_manager.debug(f"DETAILED TIME CLIP - Total points in datetime_array: {len(datetime_array)}")
-        print_manager.debug(f"DETAILED TIME CLIP - Points >= start_dt: {np.sum(within_start)}")
-        print_manager.debug(f"DETAILED TIME CLIP - Points < end_dt: {np.sum(within_end)}")
-        print_manager.debug(f"DETAILED TIME CLIP - Points in range: {len(indices)}")
-        
-        # Time tracking for result details
-        if len(indices) == 0:
-            print_manager.warning(f"⚠️ No data points found in time range {start_time} to {end_time}!")
-            print_manager.time_tracking(f"No matching points found between {start_dt} and {end_dt}")
-        elif len(indices) > 0:
-            first_time = datetime_array[indices[0]]
-            last_time = datetime_array[indices[-1]]
-            print_manager.custom_debug(f"🔍 First point: {first_time}, Last point: {last_time}")
-            print_manager.time_tracking(f"Found {len(indices)} points from {first_time} to {last_time}")
-        
-        # Log output
-        print_manager.time_output("time_clip", [
-            str(datetime_array[indices[0]]) if len(indices) > 0 else "empty", 
-            str(datetime_array[indices[-1]]) if len(indices) > 0 else "empty"
-        ])
-        
-        return indices
+        indices = np.where((datetime_array_np >= start_dt_np) & 
+                           (datetime_array_np <= end_dt_np))[0]
+        print_manager.custom_debug(f"Successfully compared numpy datetime64 times, found {len(indices)} indices.")
     except TypeError as e:
-        print_manager.warning(f"❌ Error comparing time arrays: {e}")
-        print_manager.time_output("time_clip", "type_error")
-        return np.array([])
+        # This might happen if datetime_array_np contains incompatible types despite best efforts
+        print_manager.warning(f"❌ TypeError during numpy time comparison: {e}. Returning empty.")
+        print_manager.debug(f"  datetime_array_np dtype: {datetime_array_np.dtype}, first element: {datetime_array_np[0] if datetime_array_np.size > 0 else 'N/A'}")
+        print_manager.debug(f"  start_dt_np: {start_dt_np}, end_dt_np: {end_dt_np}")
+        indices = np.array([])
+    except Exception as e_inner:
+        print_manager.warning(f"❌ Unexpected error during numpy time comparison: {e_inner}. Returning empty.")
+        indices = np.array([])
+
+    # Log clipped indices
+    if len(indices) > 0:
+        print_manager.time_tracking(f"Clipped indices range from {indices[0]} to {indices[-1]}")
+
+    # Time tracking for result details
+    if len(indices) == 0:
+        print_manager.warning(f"⚠️ No data points found in time range {start_time} to {end_time}!")
+        print_manager.time_tracking(f"No matching points found between {start_dt_aware} and {end_dt_aware}")
+    elif len(indices) > 0:
+        first_time = datetime_array_np[indices[0]]
+        last_time = datetime_array_np[indices[-1]]
+        print_manager.custom_debug(f"🔍 First point: {first_time}, Last point: {last_time}")
+        print_manager.time_tracking(f"Found {len(indices)} points from {first_time} to {last_time}")
+    
+    # Log output
+    print_manager.time_output("time_clip", [
+        str(datetime_array_np[indices[0]]) if len(indices) > 0 else "empty", 
+        str(datetime_array_np[indices[-1]]) if len(indices) > 0 else "empty"
+    ])
+    
+    return indices
 
 # Helper function to parse axis specification
 def parse_axis_spec(spec):

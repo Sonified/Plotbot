@@ -51,10 +51,10 @@ from .plot_manager import plot_manager
 from .multiplot_options import plt  # Import our enhanced plt
 from .get_data import get_data  # Add get_data import
 
-from .psp_data_types import data_types
-from .psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
-from .psp_electron_classes import epad, epad_hr
-from .psp_proton_classes import proton, proton_hr
+from .data_classes.psp_data_types import data_types
+from .data_classes.psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
+from .data_classes.psp_electron_classes import epad, epad_hr
+from .data_classes.psp_proton_classes import proton, proton_hr
 from .get_encounter import get_encounter_number
 from .time_utils import get_needed_6hour_blocks, daterange
 from .plotbot_helpers import time_clip, parse_axis_spec, resample, debug_plot_variable
@@ -374,6 +374,56 @@ def plotbot(trange, *args):
                         plot_ax.set_yscale(var.y_scale)  # Set linear/log scale
                         if var.y_limit:  # Set y-axis limits if specified
                             plot_ax.set_ylim(var.y_limit)
+
+                #====================================================================
+                # PLOT SCATTER DATA (e.g. FITS parameters) #Eventually this can be refactored and many functions from all types can be combined
+                #====================================================================
+                elif var.plot_type == 'scatter': # Added block for scatter plots
+                    # DATA VERIFICATION (similar to time_series)
+                    if var.datetime_array is None or len(var.datetime_array) == 0:
+                        empty_plot = True
+                        print_manager.debug("DBG-CRITICAL: empty_plot = True - No datetime array available (scatter)")
+                        continue
+
+                    time_indices = time_clip(var.datetime_array, trange[0], trange[1])
+                    if len(time_indices) == 0:
+                        empty_plot = True
+                        print_manager.debug("DBG-CRITICAL: empty_plot = True - No valid time indices found (scatter)")
+                        continue
+
+                    data = np.array(var) # Ensure data is numpy array
+
+                    # PROCEED WITH PLOTTING
+                    if not empty_plot:
+                        datetime_clipped = var.datetime_array[time_indices]
+
+                        # Handle scalar quantities
+                        if data.ndim == 1:
+                            data_clipped = data[time_indices]
+                            if np.all(np.isnan(data_clipped)):
+                                empty_plot = True
+                                print_manager.debug("DBG-CRITICAL: empty_plot = True - All data points are NaN (scatter)")
+                                continue
+
+                            # Use scatter plot specific attributes
+                            scatter_plot = plot_ax.scatter(
+                                datetime_clipped,
+                                data_clipped,
+                                label=getattr(var, 'legend_label', None),
+                                color=getattr(var, 'color', 'black'), # Default to black if not set
+                                marker=getattr(var, 'marker_style', 'o'), # Default to circle
+                                s=getattr(var, 'marker_size', 20), # Default size 20
+                                alpha=getattr(var, 'alpha', 0.7) # Default alpha 0.7
+                            )
+                            # Note: Appending scatter_plot (PathCollection) to legend_handles might not work perfectly for standard legends.
+                            # May need proxy artists later if legend appearance is incorrect.
+                            legend_handles.append(scatter_plot)
+                            if hasattr(var, 'legend_label'):
+                                legend_labels.append(var.legend_label)
+
+                        # Common y-axis settings for scatter plots
+                        plot_ax.set_ylabel(getattr(var, 'y_label', ''))
+                        plot_ax.set_yscale(getattr(var, 'y_scale', 'linear'))
 
                 #====================================================================
                 # PLOT SPECTRAL DATA (e.g. ELECTRON PAD SPECTROGRAMS)

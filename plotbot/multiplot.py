@@ -226,79 +226,32 @@ def multiplot(plot_list, **kwargs):
             print_manager.time_tracking(f"Panel {i+1} regular variable {var.class_name}.{var.subclass_name} processing with trange: {trange[0]} to {trange[1]}")
             
             try:
-                # Get fresh data for this time range
-                print_manager.time_tracking(f"Panel {i+1} downloading data for time range: {trange[0]} to {trange[1]}")
-                download_new_psp_data(trange, var.data_type)
-                
-                # Get the class instance from data_cubby
+                # Use get_data to handle loading for all regular types (including FITS)
+                print_manager.custom_debug(f"Calling get_data for {var.class_name}.{var.subclass_name} for time range: {trange}")
+                print_manager.time_tracking(f"Panel {i+1} calling get_data for {var.class_name}.{var.subclass_name} with trange: {trange[0]} to {trange[1]}")
+                get_data(trange, var) # <<< USE CENTRAL get_data function >>>
+
+                # After get_data, the variable instance in data_cubby should be updated.
+                # We need to retrieve the potentially updated variable to use for plotting.
                 class_instance = data_cubby.grab(var.class_name)
-                
-                if class_instance is None:
-                    print_manager.warning(f"❌ Failed to get class instance for {var.class_name}")
-                    print_manager.time_tracking(f"Panel {i+1} failed to get class instance for {var.class_name}")
-                    continue
-                
-                # Check if we need to import data
-                needs_import = global_tracker.is_import_needed(trange, var.data_type)
-                
-                # Check if current data covers the requested time range
-                needs_refresh = False
-                if hasattr(class_instance, 'datetime_array') and class_instance.datetime_array is not None:
-                    try:
-                        cached_start = np.datetime64(class_instance.datetime_array[0], 's')
-                        cached_end = np.datetime64(class_instance.datetime_array[-1], 's')
-                        requested_start = np.datetime64(start_time, 's')
-                        requested_end = np.datetime64(end_time, 's')
-                        
-                        print_manager.time_tracking(f"Panel {i+1} current cached time range: {cached_start} to {cached_end}")
-                        print_manager.time_tracking(f"Panel {i+1} requested time range: {requested_start} to {requested_end}")
-        
-                        buffered_start = cached_start - np.timedelta64(10, 's')
-                        buffered_end = cached_end + np.timedelta64(10, 's')
-        
-                        if buffered_start > requested_start or buffered_end < requested_end:
-                            needs_refresh = True
-                            print_manager.custom_debug(f"Data time range ({cached_start} to {cached_end}) doesn't cover requested range ({requested_start} to {requested_end})")
-                            print_manager.time_tracking(f"Panel {i+1} data needs refresh: cached range doesn't cover requested range")
-                    except Exception as e:
-                        print_manager.warning(f"Error checking time range: {str(e)}")
-                        print_manager.time_tracking(f"Panel {i+1} error checking time range: {str(e)}")
-                        needs_refresh = True
-                else:
-                    needs_refresh = True
-                    print_manager.time_tracking(f"Panel {i+1} data needs refresh: no datetime_array available")
-                
-                # Import new data if needed
-                if needs_import or needs_refresh:
-                    print_manager.custom_debug(f"Importing fresh data for {var.data_type} - needs_import={needs_import}, needs_refresh={needs_refresh}")
-                    print_manager.time_tracking(f"Panel {i+1} importing data for {var.data_type} with time range: {trange[0]} to {trange[1]}")
-                    data_obj = import_data_function(trange, var.data_type)
-                    if needs_import:
-                        global_tracker.update_imported_range(trange, var.data_type)
-                    if data_obj is not None:
-                        # Update the class instance with new data
-                        class_instance.update(data_obj)
-                        print_manager.custom_debug(f"✅ Updated {var.class_name} with fresh data for time range")
-                        print_manager.time_tracking(f"Panel {i+1} successfully updated {var.class_name} with fresh data")
-                        
-                        # CRITICAL FIX: Update the variable with the new data from the class instance
-                        updated_var = class_instance.get_subclass(var.subclass_name)
-                        if updated_var is not None:
-                            # Update the plot list with the returned updated variable
-                            plot_list[i] = (center_time, updated_var)
-                            print_manager.status(f"✅ Updated plot list with refreshed variable")
-                        else:
-                            print_manager.warning(f"❌ Failed to get updated subclass {var.subclass_name}")
+                if class_instance:
+                    updated_var = class_instance.get_subclass(var.subclass_name)
+                    if updated_var is not None:
+                        # Update the plot_list with the potentially updated variable instance
+                        plot_list[i] = (center_time, updated_var)
+                        print_manager.custom_debug(f"✅ Refreshed variable reference in plot_list for {var.class_name}.{var.subclass_name}")
+                        # Optional: Add check if data is now present
+                        # has_data_after_get = hasattr(updated_var, 'datetime_array') and updated_var.datetime_array is not None and len(updated_var.datetime_array) > 0
+                        # print_manager.custom_debug(f"  Variable has data after get_data: {has_data_after_get}")
                     else:
-                        print_manager.warning(f"❌ Failed to import data for {var.data_type}")
-                        print_manager.time_tracking(f"Panel {i+1} failed to import data for {var.data_type}")
-                
-                processed_var = class_instance.get_subclass(var.subclass_name)
-                if processed_var is not None:
-                    processed_var.append(processed_var)
+                        print_manager.warning(f"❌ Failed to get updated subclass {var.subclass_name} after get_data")
+                else:
+                    print_manager.warning(f"❌ Failed to get class instance {var.class_name} from data_cubby after get_data")
             except Exception as e:
-                print_manager.warning(f"❌ Error recalculating regular variable: {str(e)}")
-                print_manager.time_tracking(f"Panel {i+1} error recalculating regular variable: {str(e)}")
+                print_manager.warning(f"❌ Error during get_data or variable update for {var.class_name}.{var.subclass_name}: {str(e)}")
+                print_manager.time_tracking(f"Panel {i+1} error during get_data for {var.class_name}.{var.subclass_name}: {str(e)}")
+                # Continue to the next variable in the plot_list
+                continue 
     
     #==========================================================================
     # STEP 3: CREATE FIGURE AND CONFIGURE SUBPLOTS
@@ -533,6 +486,42 @@ def multiplot(plot_list, **kwargs):
                         if panel_color:
                             apply_panel_color(axs[i], panel_color, options)
     
+                    elif var.plot_type == 'scatter':
+                        # Handle scatter plots
+                        if len(indices) > 0:
+                            # Determine plot color (priority: panel_color > axis_options > var.color)
+                            plot_color = panel_color
+                            if not plot_color:
+                                plot_color = axis_options.color if axis_options.color else getattr(var, 'color', None)
+
+                            # Get scatter-specific attributes safely
+                            marker_style = getattr(var, 'marker_style', '.') # Default to small dot
+                            marker_size = getattr(var, 'marker_size', 5)     # Default size
+                            alpha = getattr(var, 'alpha', 1.0)               # Default alpha
+                            legend_label = getattr(var, 'legend_label', None) # Get legend label if it exists
+
+                            axs[i].scatter(var.datetime_array[indices],
+                                          var.data[indices],
+                                          color=plot_color,
+                                          marker=marker_style,
+                                          s=marker_size,  # Note: Matplotlib uses 's' for size
+                                          alpha=alpha,
+                                          label=legend_label) # Add label for potential legend use
+
+                            # Apply panel color formatting if needed
+                            if panel_color:
+                                apply_panel_color(axs[i], panel_color, options)
+                        else:
+                            # Handle empty data case for scatter plots
+                            print_manager.warning(f"No scatter data to plot for panel {i+1} - skipping plot")
+                            axs[i].text(0.5, 0.5, 'No data for this time range',
+                                       ha='center', va='center', transform=axs[i].transAxes,
+                                       fontsize=10, color='gray', style='italic')
+
+                            # Apply panel color formatting if needed (even for empty plots)
+                            if panel_color:
+                                apply_panel_color(axs[i], panel_color, options)
+                    
                     elif var.plot_type == 'spectral':
                         # CRITICAL FIX: Check if indices is empty before trying to plot spectral data
                         if len(indices) > 0:

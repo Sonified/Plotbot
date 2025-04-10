@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from .ploptions import ploptions
 from .print_manager import print_manager
 from .data_cubby import data_cubby
-from .custom_variables import custom_variable  # Use custom_variable instead
+from .data_classes.custom_variables import custom_variable  # UPDATED PATH
 
 class plot_manager(np.ndarray):
     
@@ -23,7 +23,7 @@ class plot_manager(np.ndarray):
         # Named variable reference tracking
         'original_derived_var', 'original_derived_name', 'add',
         # Add missing attributes
-        # 'marker', 'marker_size', 'alpha', 'zorder', 'legend_label_override'
+        'marker', 'marker_size', 'alpha', 'marker_style' #, 'zorder', 'legend_label_override'
     ]
 
     # Set up class-level interpolation settings
@@ -651,7 +651,7 @@ class plot_manager(np.ndarray):
         """Add two variables or a variable and a scalar."""
         # No longer importing from derived_variable
         from .print_manager import print_manager
-        from .custom_variables import custom_variable
+        from .data_classes.custom_variables import custom_variable
         
         print_manager.custom_debug(f"[MATH] Adding {getattr(self, 'subclass_name', 'var1')} + {getattr(other, 'subclass_name', str(other))}")
         
@@ -703,7 +703,7 @@ class plot_manager(np.ndarray):
         print_manager.variable_testing(f"Right-sided addition: {other} + {self.class_name}.{self.subclass_name}")
         
         # Import here to avoid circular imports
-        from .custom_variables import custom_variable
+        from .data_classes.custom_variables import custom_variable
         import numpy as np
         
         # Track source variables for the operation
@@ -751,7 +751,7 @@ class plot_manager(np.ndarray):
         """Subtract two variables or a variable and a scalar."""
         # No longer importing from derived_variable
         from .print_manager import print_manager
-        from .custom_variables import custom_variable
+        from .data_classes.custom_variables import custom_variable
         
         print_manager.custom_debug(f"[MATH] Subtracting {getattr(self, 'subclass_name', 'var1')} - {getattr(other, 'subclass_name', str(other))}")
         
@@ -802,7 +802,7 @@ class plot_manager(np.ndarray):
         print_manager.variable_testing(f"Right-sided subtraction: {other} - {self.class_name}.{self.subclass_name}")
         
         # Import here to avoid circular imports
-        from .custom_variables import custom_variable
+        from .data_classes.custom_variables import custom_variable
         import numpy as np
         
         # Track source variables for the operation
@@ -880,7 +880,7 @@ class plot_manager(np.ndarray):
         print_manager.variable_testing(f"Multiplication: {self.class_name}.{self.subclass_name} * {getattr(other, 'subclass_name', str(other))}")
         
         # Import here to avoid circular imports
-        from .custom_variables import custom_variable
+        from .data_classes.custom_variables import custom_variable
         import numpy as np
         
         # Track source variables for the operation
@@ -959,7 +959,7 @@ class plot_manager(np.ndarray):
         """Divide two variables or a variable and a scalar."""
         # No longer importing from derived_variable
         from .print_manager import print_manager
-        from .custom_variables import custom_variable
+        from .data_classes.custom_variables import custom_variable
         
         print_manager.custom_debug(f"[MATH] Dividing {getattr(self, 'subclass_name', 'var1')} / {getattr(other, 'subclass_name', str(other))}")
         
@@ -1014,7 +1014,7 @@ class plot_manager(np.ndarray):
         print_manager.variable_testing(f"Right-sided division: {other} / {self.class_name}.{self.subclass_name}")
         
         # Import here to avoid circular imports
-        from .custom_variables import custom_variable
+        from .data_classes.custom_variables import custom_variable
         import numpy as np
         
         # Track source variables for the operation
@@ -1061,7 +1061,7 @@ class plot_manager(np.ndarray):
         print_manager.variable_testing(f"Power operation: {self.class_name}.{self.subclass_name} ** {other}")
         
         # Import here to avoid circular imports
-        from .custom_variables import custom_variable
+        from .data_classes.custom_variables import custom_variable
         import numpy as np
         
         # Track source variables for the operation
@@ -1105,7 +1105,7 @@ class plot_manager(np.ndarray):
         print_manager.variable_testing(f"Negating {self.class_name}.{self.subclass_name}")
         
         # Import here to avoid circular imports
-        from .custom_variables import custom_variable
+        from .data_classes.custom_variables import custom_variable
         import numpy as np
         
         # Track source variables for the operation
@@ -1151,7 +1151,7 @@ class plot_manager(np.ndarray):
         print_manager.variable_testing(f"Taking absolute value of {self.class_name}.{self.subclass_name}")
         
         # Import here to avoid circular imports
-        from .custom_variables import custom_variable
+        from .data_classes.custom_variables import custom_variable
         import numpy as np
         
         # Track source variables for the operation
@@ -1197,7 +1197,7 @@ class plot_manager(np.ndarray):
         print_manager.variable_testing(f"Floor dividing {self.class_name}.{self.subclass_name} by {other}")
         
         # Import here to avoid circular imports
-        from .custom_variables import custom_variable
+        from .data_classes.custom_variables import custom_variable
         import numpy as np
 
         # Track source variables for the operation
@@ -1341,7 +1341,7 @@ class plot_manager(np.ndarray):
         print_manager.variable_testing(f"Right-sided addition: {other} + {self.class_name}.{self.subclass_name}")
         
         # Import here to avoid circular imports
-        from .custom_variables import custom_variable
+        from .data_classes.custom_variables import custom_variable
         import numpy as np
         
         # Track source variables for the operation
@@ -1387,7 +1387,7 @@ class plot_manager(np.ndarray):
         print_manager.variable_testing(f"Right-sided subtraction: {other} - {self.class_name}.{self.subclass_name}")
         
         # Import here to avoid circular imports
-        from .custom_variables import custom_variable
+        from .data_classes.custom_variables import custom_variable
         import numpy as np
         
         # Track source variables for the operation
@@ -1437,7 +1437,7 @@ class plot_manager(np.ndarray):
         print_manager.variable_testing(f"Right-sided division: {other} / {self.class_name}.{self.subclass_name}")
         
         # Import here to avoid circular imports
-        from .custom_variables import custom_variable
+        from .data_classes.custom_variables import custom_variable
         import numpy as np
         
         # Track source variables for the operation
@@ -1486,7 +1486,7 @@ class plot_manager(np.ndarray):
         print_manager.variable_testing(f"Right-sided power: {other} ** {self.class_name}.{self.subclass_name}")
         
         # Import here to avoid circular imports
-        from .custom_variables import custom_variable
+        from .data_classes.custom_variables import custom_variable
         import numpy as np
         
         # Track source variables for the operation
@@ -1532,7 +1532,7 @@ class plot_manager(np.ndarray):
         print_manager.variable_testing(f"Right-sided floor division: {other} // {self.class_name}.{self.subclass_name}")
         
         # Import here to avoid circular imports
-        from .custom_variables import custom_variable
+        from .data_classes.custom_variables import custom_variable
         import numpy as np
         
         # Track source variables for the operation

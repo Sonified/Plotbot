@@ -7,7 +7,7 @@ from .print_manager import print_manager
 from .data_download_helpers import check_local_files, create_pattern_string, process_directory
 from .server_access import server_access
 from .time_utils import daterange, get_needed_6hour_blocks
-from .psp_data_types import data_types
+from .data_classes.psp_data_types import data_types
 
 #====================================================================
 # FUNCTION: download_new_psp_data

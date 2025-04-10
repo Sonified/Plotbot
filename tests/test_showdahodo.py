@@ -31,8 +31,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 # Add parent directory to path to import plotbot modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from plotbot import mag_rtn_4sa, proton, epad
-from plotbot.custom_variables import custom_variable
+from plotbot import mag_rtn_4sa, proton, epad, proton_fits
+from plotbot.data_classes.custom_variables import custom_variable
 from plotbot.showdahodo import showdahodo
 from plotbot.test_pilot import phase, system_check
 from plotbot.print_manager import print_manager
@@ -650,6 +650,65 @@ def test_all_custom_variables_3d(test_environment):
         f"Z-axis label should be '{bt_squared.legend_label}', found '{ax.get_zlabel()}'"
     )
 
+@pytest.mark.mission("Proton FITS Variables in Showdahodo")
+def test_proton_fits_variables(test_environment):
+    """Test using two variables from the proton_fits class in showdahodo"""
+
+    print("\n================================================================================")
+    print("TEST #9: Proton FITS Variables in Showdahodo")
+    print("Verifies that showdahodo works with two variables from the proton_fits class")
+    print("================================================================================\n")
+
+    # Define a specific time range for this test
+    trange = ['2024-09-30/12:00:00.000', '2024-09-30/13:00:00.000']
+    print_manager.test(f"Using specific trange for this test: {trange}")
+
+    # Phase 1: Trigger data loading for proton_fits for the trange
+    # Use existing attributes from the proton_fits instance
+    var1 = proton_fits.beta_ppar_pfits # Example: Parallel beta
+    var2 = proton_fits.vdrift_va_pfits # Example: Normalized drift speed
+
+    # Check if variables were retrieved (basic check)
+    if var1 is None or var2 is None:
+        pytest.fail("Failed to retrieve proton_fits variables. Ensure they are initialized.")
+
+    print_manager.test(f"Using X variable: {var1.class_name}.{var1.subclass_name} ({var1.legend_label})")
+    print_manager.test(f"Using Y variable: {var2.class_name}.{var2.subclass_name} ({var2.legend_label})")
+
+    # Phase 2: Creating hodogram with both proton_fits variables
+    phase(2, "Creating hodogram with Proton FITS variables")
+    # Create hodogram directly using the attributes
+    fig, ax = showdahodo(trange, var1, var2)
+
+    # Verify plot was created
+    system_check(
+        "Plot Creation with Proton FITS Variables",
+        fig is not None and ax is not None,
+        "Showdahodo should return figure and axis objects"
+    )
+
+    # Verify plot has data
+    has_data, has_colorbar, scatter_count = verify_plot_has_data(fig, ax)
+
+    system_check(
+        "Plot Data Verification with Proton FITS Variables",
+        has_data,
+        f"Plot should contain data points. Found: {scatter_count} scatter collections with data: {has_data}"
+    )
+
+    # Verify axis labels using the legend_label attribute
+    system_check(
+        "X-Axis Label with First Proton FITS Variable",
+        ax.get_xlabel() == var1.legend_label,
+        f"X-axis label should be '{var1.legend_label}', found '{ax.get_xlabel()}'"
+    )
+
+    system_check(
+        "Y-Axis Label with Second Proton FITS Variable",
+        ax.get_ylabel() == var2.legend_label,
+        f"Y-axis label should be '{var2.legend_label}', found '{ax.get_ylabel()}'"
+    )
+
 if __name__ == "__main__":
     # This allows running the test directly
     test_environment_fixture = test_environment.__wrapped__()
@@ -664,6 +723,7 @@ if __name__ == "__main__":
         test_custom_variable_as_color(trange)
         test_custom_variable_as_z_axis(trange)
         test_all_custom_variables_3d(trange)
+        test_proton_fits_variables(trange)
         
         print("\n✅ All tests completed successfully!")
     except Exception as e:

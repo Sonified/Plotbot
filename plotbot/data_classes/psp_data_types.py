@@ -91,4 +91,30 @@ data_types = {
             'ENERGY_VALS', 'THETA_VALS', 'PHI_VALS'
         ],
     },
+    'sf00': { # FITS sf00 CSV data
+        'file_source': 'local_csv',
+        'local_path': os.path.join('psp_data', 'sf00'), # Specific path for SF00 CSVs
+        'file_pattern_import': ['spp_swp_spi_sf00_*.csv'], # More specific pattern
+        'file_time_format': 'daily',
+        'data_vars': [
+            'time', 'np1', 'np2', 'vp1_x', 'vp1_y', 'vp1_z',
+            'B_inst_x', 'B_inst_y', 'B_inst_z', 'B_SC_x', 'B_SC_y', 'B_SC_z',
+            'vdrift', 'Tperp1', 'Tperp2', 'Trat1', 'Trat2',
+            'np1_dpar', 'np2_dpar', 'vp1_x_dpar', 'vp1_y_dpar',
+            'vp1_z_dpar', 'vdrift_dpar', 'Tperp1_dpar', 'Tperp2_dpar',
+            'Trat1_dpar', 'Trat2_dpar', 'chi'
+        ]
+    },
+    'sf01': { # FITS sf01 CSV data
+        'file_source': 'local_csv',
+        'local_path': os.path.join('psp_data', 'sf01'), # Specific path for SF01 CSVs
+        'file_pattern_import': ['spp_swp_spi_sf01_*.csv'], # More specific pattern
+        'file_time_format': 'daily',
+        'data_vars': [
+            'time', 'na', 'va_x', 'va_y', 'va_z', 'Trata', 'Ta_perp',
+            'B_inst_x', 'B_inst_y', 'B_inst_z', # Needed for B_mag calculation
+            'na_dpar', 'va_x_dpar', 'va_y_dpar', 'va_z_dpar',
+            'Trata_dpar', 'Ta_perp_dpar', 'chi'
+        ]
+    }
 }
