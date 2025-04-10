@@ -1059,14 +1059,14 @@ class proton_fits_class:
         )
 
         # 31. |qz_p| (Scatter, Size 5)
-        self.abs_qz_p = plot_manager( # Absolute heat flux
+        self.qz_p_abs = plot_manager( # Absolute heat flux
              self.raw_data.get('|qz_p|'),
              plot_options=self._create_fits_scatter_ploptions(
-                 var_name='|qz_p|', 
-                 subclass_name='abs_qz_p', # MATCH ATTRIBUTE NAME (User list #31)
-                 y_label=r'$|Q_p| W/m^2$', 
-                 legend_label=r'$|Q_p|$', 
-                 color='mediumspringgreen' 
+                 var_name='|qz_p|',
+                 subclass_name='qz_p_abs', # MATCH ATTRIBUTE NAME (User list #31) - UPDATED
+                 y_label=r'$|Q_p| W/m^2$',
+                 legend_label=r'$|Q_p|$',
+                 color='mediumspringgreen'
             )
         )
 
