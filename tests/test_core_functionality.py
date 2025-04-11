@@ -44,3 +44,5 @@ def test_plotbot_initialization_and_exports():
         pytest.fail(f"Plotbot package failed during import: {e}")
     except Exception as e:
         pytest.fail(f"An unexpected error occurred during plotbot import/check: {e}")
+
+# Function test_ham_data_loading_and_variables removed.

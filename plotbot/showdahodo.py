@@ -20,6 +20,7 @@ from datetime import datetime, timezone, timedelta
 #%matplotlib notebook
 from mpl_toolkits import mplot3d
 from mpl_toolkits.mplot3d import Axes3D
+import logging
 
 def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None, 
                xlim_ = None, ylim_ = None, zlim_ = None, s_ = None, alpha_ = None, 
@@ -40,11 +41,16 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     # ====================================================================
     
     # Validate time range
-    start_time = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
-    end_time = datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
-    
-    if start_time >= end_time:
-        print_manager.error(f"Oops! 🤗 Start time ({trange[0]}) must be before end time ({trange[1]})")
+    try:
+        start_time = parse(trange[0]).replace(tzinfo=timezone.utc)
+        end_time = parse(trange[1]).replace(tzinfo=timezone.utc)
+        
+        if start_time >= end_time:
+            print_manager.error(f"Oops! 🤗 Start time ({trange[0]}) must be before end time ({trange[1]})")
+            return None
+    except (ValueError, TypeError) as e:  # Catch TypeError for non-string inputs
+        logging.error(f"showdahodo: Invalid time format or type in trange: {e}")
+        print_manager.error(f"showdahodo: Invalid time format or type provided: {trange}. Please use 'YYYY-MM-DD HH:MM:SS' or similar.")
         return None
     
     # Identify required data types
@@ -123,10 +129,16 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     
     def apply_time_range(trange, time_array, values_array):
         """Extract data within specified time range."""
-        # Parse time range
-        start_dt = parse(trange[0])
-        stop_dt = parse(trange[1])
-        
+        # Parse time range using dateutil.parser.parse
+        try:
+            start_dt = parse(trange[0]).replace(tzinfo=timezone.utc)
+            stop_dt = parse(trange[1]).replace(tzinfo=timezone.utc)
+        except (ValueError, TypeError) as e:
+             logging.error(f"apply_time_range: Invalid time format or type in trange: {e}")
+             print_manager.error(f"apply_time_range: Invalid time format or type provided: {trange}. Please use 'YYYY-MM-DD HH:MM:SS' or similar.")
+             # Return empty arrays or raise an error, depending on desired behavior
+             return np.array([]), np.array([])
+
         # Convert to numeric timestamps for comparison
         start_ts = mdates.date2num(start_dt)
         stop_ts = mdates.date2num(stop_dt)
@@ -198,13 +210,6 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     time1_full = var1_instance.datetime_array
     values2_full = var2_instance.data  
     time2_full = var2_instance.datetime_array
-
-    # DEBUGGING: Check if arrays are None before use
-    print_manager.debug(f"DEBUG: Before line 257 - var1_instance ({var1_instance.name}) datetime_array is None: {time1_full is None}")
-    print_manager.debug(f"DEBUG: Before line 257 - var1_instance ({var1_instance.name}) data is None: {values1_full is None}")
-    print_manager.debug(f"DEBUG: Before line 257 - var2_instance ({var2_instance.name}) datetime_array is None: {time2_full is None}")
-    print_manager.debug(f"DEBUG: Before line 257 - var2_instance ({var2_instance.name}) data is None: {values2_full is None}")
-
     # Save original lengths
     time1_original_len = len(time1_full)
     time2_original_len = len(time2_full)
@@ -579,4 +584,4 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     
     return fig, ax
 
-print_manager.processing("✨ Showdahodo initialized")
+print("✨ Showdahodo initialized")

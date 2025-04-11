@@ -34,7 +34,7 @@ from .calculations.calculate_proton_fits import calculate_proton_fits_vars
 TEST_ONLY_MODE = False
 
 # Function to recursively find local FITS CSV files matching patterns and date
-def find_local_fits_csvs(base_path, file_patterns, date_str):
+def find_local_csvs(base_path, file_patterns, date_str):
     """Recursively search for files matching patterns and containing date_str.
 
     Args:
@@ -62,7 +62,7 @@ def find_local_fits_csvs(base_path, file_patterns, date_str):
         except ValueError:
              pass # If neither format works, just use the original
 
-    print_manager.debug(f"Searching for FITS CSVs in '{base_path}' for patterns {file_patterns} and dates {date_formats_to_check}")
+    print_manager.debug(f"Searching for CSVs in '{base_path}' for patterns {file_patterns} and dates {date_formats_to_check}")
 
     if not os.path.isdir(base_path):
         print_manager.warning(f"Base path '{base_path}' does not exist or is not a directory.")
@@ -147,9 +147,14 @@ def import_data_function(trange, data_type):
 
         # Get config for the required input type (sf00 only needed now)
         try:
-            sf00_config = psp_data_types['sf00']
+            sf00_config = psp_data_types['sf00_fits']
         except KeyError as e:
-            print_manager.error(f"Configuration error: Missing 'sf00' data type definition in psp_data_types.py")
+            print_manager.error(f"Configuration error: Missing 'sf00_fits' data type definition in psp_data_types.py")
+            print_manager.time_output("import_data_function", "error: config error")
+            return None
+
+        if not sf00_config:
+            print_manager.error(f"Configuration error: Could not load config for sf00_fits.")
             print_manager.time_output("import_data_function", "error: config error")
             return None
 
@@ -179,7 +184,7 @@ def import_data_function(trange, data_type):
 
             # Find sf00 file(s) for the date
             print_manager.debug(f" Searching sf00 in: {sf00_base_path} with patterns: {sf00_patterns}")
-            sf00_files = find_local_fits_csvs(sf00_base_path, sf00_patterns, date_str)
+            sf00_files = find_local_csvs(sf00_base_path, sf00_patterns, date_str)
 
             if sf00_files:
                 # Assuming only one match per pattern per day is expected
@@ -318,6 +323,199 @@ def import_data_function(trange, data_type):
         print_manager.time_output("import_data_function", output_range_dt.tolist())
         return data_object
 
+    # --- Handle Hammerhead (ham) CSV Loading ---
+    elif data_type == 'ham':
+        print_manager.debug(f"\n=== Starting Hammerhead CSV Data Import for {trange} ===")
+
+        # Get config for the ham data type
+        config = psp_data_types['ham']
+        if not config:
+            print_manager.error(f"Configuration error: Missing 'ham' data type definition in psp_data_types.py")
+            print_manager.time_output("import_data_function", "error: config error")
+            return None
+
+        ham_base_path = config.get('local_path')
+        ham_patterns = config.get('file_pattern_import', ['*.csv'])  # Default to all CSVs if not specified
+        datetime_column = config.get('datetime_column', 'datetime')  # Get datetime column name
+
+        if not ham_base_path:
+            print_manager.error(f"Configuration error: Missing 'local_path' for ham.")
+            print_manager.time_output("import_data_function", "error: config error")
+            return None
+
+        # List to store all loaded data
+        all_raw_data_list = []
+        all_times = []
+        
+        for single_date in daterange(start_time, end_time):
+            date_str = single_date.strftime('%Y%m%d')
+            print_manager.debug(f"Searching for Hammerhead CSV for date: {date_str}")
+
+            # Find Hammerhead file(s) for the date
+            print_manager.debug(f" Searching ham in: {ham_base_path} with patterns: {ham_patterns}")
+            ham_files = find_local_csvs(ham_base_path, ham_patterns, date_str)
+
+            if ham_files:
+                # Assuming only one match per pattern per day is expected
+                if len(ham_files) > 1:
+                    print_manager.warning(f"Multiple ham files found for {date_str}, using first: {ham_files[0]}")
+
+                ham_path = ham_files[0]
+                print_manager.debug(f"  Found ham file: '{os.path.basename(ham_path)}'")
+
+                try:
+                    print_manager.processing(f"Loading Hammerhead data from {os.path.basename(ham_path)}...")
+                    # Read the CSV file
+                    try:
+                        # --- MODIFIED: Read without parse_dates ---
+                        # ham_df = pd.read_csv(ham_path, parse_dates=[datetime_column])
+                        ham_df = pd.read_csv(ham_path)
+
+                        # --- ADDED: Define which column NOT to include in data dict ---
+                        # Default to 'datetime' if it exists, otherwise 'time' if it exists
+                        exclude_column = None
+                        if 'datetime' in ham_df.columns:
+                             exclude_column = 'datetime'
+                        elif 'time' in ham_df.columns:
+                             exclude_column = 'time'
+                        else:
+                             print_manager.warning("Could not find 'datetime' or 'time' column for exclusion.")
+                             # Fallback or specific error handling might be needed
+
+                        # --- ADDED: Convert 'time' (Unix epoch) to TT2000 ---
+                        if 'time' in ham_df.columns:
+                            try:
+                                # Using to_numpy() to directly get numpy arrays
+                                datetime_series = pd.to_datetime(ham_df['time'], unit='s', utc=True)
+                                datetime_objs = datetime_series.to_numpy() # numpy array of datetime64[ns]
+
+                                # Convert numpy datetime64 to components list for TT2000
+                                # Need to handle potential NaT values if any times failed parsing
+                                datetime_components_list = []
+                                valid_time_mask = pd.notna(datetime_objs) # Mask for valid times
+                                temp_dt_objs = datetime_objs[valid_time_mask].astype('datetime64[us]').tolist() # Convert valid ones to Python datetimes via intermediate type
+
+                                comp_idx = 0 # Index for temp_dt_objs
+                                for is_valid in valid_time_mask:
+                                     if is_valid:
+                                         dt = temp_dt_objs[comp_idx]
+                                         datetime_components_list.append(
+                                              [dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, int(dt.microsecond / 1000)]
+                                         )
+                                         comp_idx += 1
+                                     else:
+                                         # Append placeholder for invalid times? Or handle later?
+                                         # For now, let TT2000 handle it, might result in errors if list is jagged
+                                         # Or maybe just skip? Let's try skipping for now, filtering applies mask later
+                                         datetime_components_list.append(None) # Placeholder might cause issues
+
+                                # Filter out None placeholders before computing TT2000
+                                valid_components_list = [comp for comp in datetime_components_list if comp is not None]
+                                if valid_components_list:
+                                     tt2000_array_full = cdflib.cdfepoch.compute_tt2000(valid_components_list)
+                                else:
+                                     tt2000_array_full = np.array([], dtype=np.int64) # Empty if no valid times
+
+                                # Create a full TT2000 array with NaNs (or appropriate fill) for invalid times
+                                tt2000_nan = np.iinfo(np.int64).min # Use min int64 as fill for TT2000 NaNs
+                                tt2000_with_nans = np.full(len(valid_time_mask), tt2000_nan, dtype=np.int64)
+                                tt2000_with_nans[valid_time_mask] = tt2000_array_full
+
+                                print_manager.debug(f"Converted HAM 'time' to TT2000 (Length: {len(tt2000_with_nans)})")
+                                times_tt2000 = tt2000_with_nans # Use the array with NaNs for indexing alignment
+
+                            except Exception as time_e:
+                                print_manager.error(f"Error converting HAM 'time' column: {time_e}")
+                                import traceback
+                                print_manager.debug(traceback.format_exc())
+                                continue # Skip this file if time conversion fails
+                        else:
+                            print_manager.error(f"'time' column not found in {ham_path}")
+                            continue # Skip file
+
+                        # --- MODIFIED: Filter by time range using TT2000 ---
+                        # Convert requested range to TT2000
+                        start_tt2000_req = cdflib.cdfepoch.compute_tt2000(
+                            [start_time.year, start_time.month, start_time.day,
+                             start_time.hour, start_time.minute, start_time.second,
+                             int(start_time.microsecond/1000)]
+                        )
+                        end_tt2000_req = cdflib.cdfepoch.compute_tt2000(
+                            [end_time.year, end_time.month, end_time.day,
+                             end_time.hour, end_time.minute, end_time.second,
+                             int(end_time.microsecond/1000)]
+                        )
+
+                        # Create mask for valid times within the range
+                        valid_range_mask = (times_tt2000 >= start_tt2000_req) & (times_tt2000 <= end_tt2000_req)
+
+                        if not np.any(valid_range_mask):
+                            print_manager.warning(f"No data in TT2000 time range for {os.path.basename(ham_path)}")
+                            continue
+
+                        # Apply mask to TT2000 times
+                        times_in_range = times_tt2000[valid_range_mask]
+                        all_times.extend(times_in_range) # Extend with TT2000 values
+
+                        # --- MODIFIED: Convert DataFrame to dictionary, excluding the chosen time column ---
+                        ham_data = {col: ham_df[col].values[valid_range_mask] # Apply mask to data columns too
+                                    for col in ham_df.columns if col != exclude_column}
+                        all_raw_data_list.append(ham_data)
+                        
+                    except Exception as e:
+                        print_manager.error(f"Error reading ham CSV file: {e}")
+                        import traceback
+                        print_manager.debug(traceback.format_exc())
+                        continue
+                        
+                except Exception as e:
+                    print_manager.error(f"Error processing {ham_path}: {e}")
+                    continue
+            else:
+                print_manager.warning(f"No Hammerhead files found for date {date_str}")
+        
+        # Merge data from all files
+        combined_data = {}
+        if not all_times: # Check if all_times list is empty
+             print_manager.warning(f"No Hammerhead data found within time range after processing files.")
+             print_manager.time_output("import_data_function", "error: no ham data found")
+             return None
+
+        # Ensure all_times is a numpy array for sorting
+        all_times_np = np.array(all_times, dtype=np.int64)
+
+        # Sort based on TT2000 times
+        sort_indices = np.argsort(all_times_np)
+        times_sorted = all_times_np[sort_indices]
+
+        # Concatenate and sort data arrays
+        first_data_dict = all_raw_data_list[0] # Use the first dict to get keys
+        for key in first_data_dict.keys():
+             # Concatenate arrays from all dictionaries for the current key
+             try:
+                 concatenated_array = np.concatenate([data[key] for data in all_raw_data_list if key in data])
+                 # Sort the concatenated array using the same indices
+                 combined_data[key] = concatenated_array[sort_indices]
+             except ValueError as ve:
+                  print_manager.error(f"Error concatenating/sorting HAM data for key '{key}': {ve}")
+                  # Handle potential shape mismatches - fill with NaNs
+                  combined_data[key] = np.full(len(times_sorted), np.nan)
+             except KeyError:
+                  # Should not happen if all files have same columns, but handle just in case
+                  print_manager.warning(f"Key '{key}' missing in some HAM files during concatenation.")
+                  combined_data[key] = np.full(len(times_sorted), np.nan)
+
+        # Create DataObject with sorted TT2000 times and sorted data dictionary
+        data_obj = DataObject(times=times_sorted, data=combined_data)
+        print_manager.status(f"Successfully loaded Hammerhead data with {len(times_sorted)} time points")
+        # Calculate output range from sorted TT2000 times
+        if len(times_sorted) > 0:
+            output_range_dt = cdflib.epochs.CDFepoch.to_datetime(times_sorted[[0, -1]])
+            print_manager.time_output("import_data_function", output_range_dt.tolist())
+        else:
+             print_manager.time_output("import_data_function", "success - empty range") # Or error?
+        return data_obj
+        
     else:
         # --- Existing CDF Processing Logic ---
         print_manager.debug(f"\n=== Starting import for {data_type} (CDF) ===")

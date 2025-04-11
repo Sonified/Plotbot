@@ -35,7 +35,7 @@ import bs4  # Import the module for version checking
 from bs4 import BeautifulSoup  # Import the class for HTML parsing
 import requests
 import dateutil
-from dateutil.parser import parse
+from dateutil.parser import parse as dateutil_parse
 from datetime import datetime, timedelta, timezone, time
 print("✅ Imported cdflib, BeautifulSoup, requests, dateutil, and datetime libraries.")
 # ----------------------------------------
@@ -66,15 +66,19 @@ def plotbot(trange, *args):
     """Plot multiple time series with shared x-axis and optional right y-axes."""
     from collections import defaultdict
     
-    # Validate time range and ensure UTC timezone
-    start_time = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
-    end_time = datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f').replace(tzinfo=timezone.utc)
-    
+    # Validate time range using dateutil.parser for flexibility
+    try:
+        start_time = dateutil_parse(trange[0]).replace(tzinfo=timezone.utc)
+        end_time = dateutil_parse(trange[1]).replace(tzinfo=timezone.utc)
+    except Exception as e:
+        print(f"Oops! 🤗 Could not parse time range strings: {trange}. Error: {e}")
+        sys.exit("Plotbot stopped due to invalid time range format")
+
     if start_time >= end_time:    # Validate time range order
         print(f"Oops! 🤗 Start time ({trange[0]}) must be before end time ({trange[1]})")
         sys.exit("Plotbot stopped due to invalid time range")
 
-        # Validate argument pairs
+    # Validate argument pairs
     if len(args) % 2 != 0:
         print("\nOops! 🤗 Arguments must be in pairs of (data, axis_number).")
         print("\nFor example:")
@@ -575,9 +579,14 @@ def plotbot(trange, *args):
         # ============================================================================
         # Add Date Label to lower right corner of plot
         # ============================================================================
-        plot_date = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f').strftime('%Y-%m-%d')
-        axs[-1].annotate(plot_date, xy=(1, -0.21), xycoords='axes fraction',  # Add date in lower right
-                         ha='right', va='top')
+        # Use dateutil_parse to handle different formats robustly, then format just the date part
+        try:
+            parsed_date = dateutil_parse(trange[0])
+            plot_date = parsed_date.strftime('%Y-%m-%d')
+            axs[-1].annotate(plot_date, xy=(1, -0.21), xycoords='axes fraction',  # Add date in lower right
+                             ha='right', va='top')
+        except Exception as e:
+            print_manager.warning(f"Could not parse date from trange[0] ('{trange[0]}') for annotation: {e}")
 
     plt.show()                                                    # Display the complete figure
 

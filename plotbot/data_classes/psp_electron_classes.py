@@ -4,11 +4,11 @@ import cdflib
 from datetime import datetime, timedelta, timezone
 
 # Import our custom managers (UPDATED PATHS)
-from ..print_manager import print_manager
-from ..data_cubby import data_cubby
-from ..plot_manager import plot_manager
-from ..ploptions import ploptions, retrieve_ploption_snapshot
-from ..get_encounter import get_encounter_number
+from plotbot.print_manager import print_manager
+from plotbot.data_cubby import data_cubby
+from plotbot.plot_manager import plot_manager
+from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.get_encounter import get_encounter_number
 
 class epad_strahl_class:
     def __init__(self, imported_data):

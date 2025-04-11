@@ -16,6 +16,7 @@ from .data_classes.psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_
 from .data_classes.psp_electron_classes import epad, epad_hr
 from .data_classes.psp_proton_classes import proton, proton_hr
 from .data_classes.psp_proton_fits_classes import proton_fits_class, proton_fits
+from .data_classes.psp_ham_classes import ham_class, ham
 
 def debug_object(obj, prefix=""):
     """Helper function to debug object attributes"""
@@ -101,9 +102,13 @@ def get_data(trange: List[str], *variables):
         data_type = None
         subclass_name = None
         is_proton_fits_var = isinstance(var, proton_fits_class) or getattr(var, 'class_name', None) == 'proton_fits'
+        is_ham_var = isinstance(var, ham_class) or getattr(var, 'class_name', None) == 'ham'
         
         if is_proton_fits_var:
             data_type = 'proton_fits' # Use a consistent identifier
+            subclass_name = getattr(var, 'subclass_name', '?')
+        elif is_ham_var:
+            data_type = 'ham' # Use ham identifier 
             subclass_name = getattr(var, 'subclass_name', '?')
         elif type(var).__name__ in ('module', 'type'):
             try:
@@ -193,6 +198,45 @@ def get_data(trange: List[str], *variables):
                 
             # Continue to next data_type - processing for proton_fits is done
             continue 
+
+        # --- Handle HAM CSV Data Type --- 
+        if data_type == 'ham':
+            ham_key = 'ham'
+            
+            # Check if update is needed
+            ham_needs_refresh = False
+            if hasattr(ham, 'datetime_array') and ham.datetime_array is not None and len(ham.datetime_array) > 0:
+                try:
+                    cached_start = np.datetime64(ham.datetime_array[0])
+                    cached_end = np.datetime64(ham.datetime_array[-1])
+                    buffer = np.timedelta64(10, 's')
+                    # Use pre-converted numpy values for comparison
+                    if (cached_start - buffer) > requested_start_np or (cached_end + buffer) < requested_end_np:
+                        ham_needs_refresh = True
+                except (IndexError, TypeError, ValueError) as e:
+                    print_manager.warning(f"Could not compare ham time ranges: {e}. Assuming refresh needed.")
+                    ham_needs_refresh = True
+            else:
+                ham_needs_refresh = True # No data means refresh needed
+
+            if ham_needs_refresh:
+                print_manager.debug(f"Ham data update required for {trange}.")
+                data_obj_ham = import_data_function(trange, 'ham')
+                
+                if data_obj_ham:
+                    print_manager.status(f"📥 Updating {ham_key} with CSV data...")
+                    if hasattr(ham, 'update'):
+                        ham.update(data_obj_ham)
+                        print_manager.variable_testing(f"Successfully updated {ham_key}.")
+                    else:
+                        print_manager.error(f"Error: {ham_key} instance has no 'update' method!")
+                else:
+                    print_manager.warning(f"Ham data import returned no data for {trange}.")
+            else:
+                print_manager.status(f"📤 Using existing {ham_key} data, update not needed.")
+                
+            # Continue to next data_type - processing for ham is done
+            continue
 
         # --- Handle Standard CDF Types --- 
         config = data_types.get(data_type)

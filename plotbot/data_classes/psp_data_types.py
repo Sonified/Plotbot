@@ -91,7 +91,7 @@ data_types = {
             'ENERGY_VALS', 'THETA_VALS', 'PHI_VALS'
         ],
     },
-    'sf00': { # FITS sf00 CSV data
+    'sf00_fits': { # FITS sf00 CSV data - RENAMED KEY
         'file_source': 'local_csv',
         'local_path': os.path.join('psp_data', 'sf00'), # Specific path for SF00 CSVs
         'file_pattern_import': ['spp_swp_spi_sf00_*.csv'], # More specific pattern
@@ -105,7 +105,7 @@ data_types = {
             'Trat1_dpar', 'Trat2_dpar', 'chi'
         ]
     },
-    'sf01': { # FITS sf01 CSV data
+    'sf01_fits': { # FITS sf01 CSV data - RENAMED KEY
         'file_source': 'local_csv',
         'local_path': os.path.join('psp_data', 'sf01'), # Specific path for SF01 CSVs
         'file_pattern_import': ['spp_swp_spi_sf01_*.csv'], # More specific pattern
@@ -115,6 +115,37 @@ data_types = {
             'B_inst_x', 'B_inst_y', 'B_inst_z', # Needed for B_mag calculation
             'na_dpar', 'va_x_dpar', 'va_y_dpar', 'va_z_dpar',
             'Trata_dpar', 'Ta_perp_dpar', 'chi'
+        ]
+    },
+    'ham': { # NEW: Hammerhead CSV data
+        'file_source': 'local_csv',
+        'local_path': os.path.join('psp_data', 'Hamstrings'),
+        'file_pattern_import': ['*_v*.csv'],
+        'file_time_format': 'daily',
+        'datetime_column': 'datetime',
+        'data_vars': [
+            'time',
+            'datetime',
+            'hamogram_30s',
+            'hamogram_og_30s',
+            'hamogram_2m',
+            'hamogram_og_2m',
+            'hamogram_20m',
+            'hamogram_90m',
+            'hamogram_4h',
+            'hamogram_og_4h',
+            'trat_ham',
+            'trat_ham_og',
+            'ham_core_drift',
+            'ham_core_drift_va',
+            'Nham_div_Ncore',
+            'Nham_div_Ncore_og',
+            'Nham_div_Ntot',
+            'Nham_div_Ntot_og',
+            'Tperp_ham_div_core',
+            'Tperp_ham_div_core_og',
+            'Tperprat_driftva_hc',
+            'Tperprat_driftva_hc_og'
         ]
     }
 }
