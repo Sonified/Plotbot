@@ -33,6 +33,7 @@ from .data_classes.psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_
 from .data_classes.psp_electron_classes import epad
 from .data_classes.psp_proton_classes import proton
 from .data_classes.psp_proton_fits_classes import proton_fits # Import the FITS class
+from .data_classes.psp_ham_classes import ham # ADDED: Import the HAM class instance
 
 # Import custom variables system
 from .data_classes.custom_variables import custom_variable, CustomVariablesContainer
@@ -123,6 +124,7 @@ __all__ = [
     'epad',
     'proton',
     'proton_fits',   # Add proton_fits to __all__
+    'ham',           # ADDED: Add ham to __all__
     'audifier',
     'custom_variable',  # Using custom_variable instead of new_variable
     'debug_custom_variables',  # Add debug function for custom variables

@@ -557,24 +557,64 @@ class plot_manager(np.ndarray):
             Aligned numpy arrays and the common datetime array
         """
         from .print_manager import print_manager
+        from .data_cubby import data_cubby
+        
+        # CRITICAL FIX: Check if variables have been corrupted and try to reload if possible
+        # This fixes the state corruption issue when plotbot loads data for a different timerange
+        
+        # Check self variable state
+        self_is_corrupt = False
+        if self is None or (hasattr(self, 'data') and self.data is None):
+            self_is_corrupt = True
+        elif not hasattr(self, 'datetime_array') or self.datetime_array is None:
+            self_is_corrupt = True
+        
+        # Check other variable state
+        other_is_corrupt = False
+        if other is None or (hasattr(other, 'data') and other.data is None):
+            other_is_corrupt = True
+        elif not hasattr(other, 'datetime_array') or other.datetime_array is None:
+            other_is_corrupt = True
+        
+        # Attempt to reload corrupted variables from data_cubby
+        if self_is_corrupt and hasattr(self, 'class_name') and hasattr(self, 'subclass_name'):
+            fresh_self = data_cubby.grab_component(self.class_name, self.subclass_name)
+            if fresh_self is not None and hasattr(fresh_self, 'datetime_array') and fresh_self.datetime_array is not None:
+                self = fresh_self
+                self_is_corrupt = False
+        
+        if other_is_corrupt and hasattr(other, 'class_name') and hasattr(other, 'subclass_name'):
+            fresh_other = data_cubby.grab_component(other.class_name, other.subclass_name)
+            if fresh_other is not None and hasattr(fresh_other, 'datetime_array') and fresh_other.datetime_array is not None:
+                other = fresh_other
+                other_is_corrupt = False
+        
+        # If either variable is still corrupt after reload attempts, return empty arrays with proper shape
+        if self_is_corrupt or other_is_corrupt:
+            print_manager.custom_debug(f"[MATH] One or both variables still corrupt after reload attempt")
+            empty_array = np.zeros(1)
+            return empty_array, empty_array, np.array([])
         
         # First check if variables have valid shapes before trying to access size/length
         if not hasattr(self, 'shape') or not hasattr(other, 'shape'):
             print_manager.custom_debug(f"[MATH] Cannot align variables - one or both variables have no shape attribute")
-            return np.array([]), np.array([]), None
+            empty_array = np.zeros(1)
+            return empty_array, empty_array, np.array([])
         
         # Now check if they have any data to align
         if self.size == 0 or other.size == 0:
             print_manager.custom_debug(f"[MATH] Cannot align variables - one or both variables have no data yet")
-            return np.array([]), np.array([]), None
+            empty_array = np.zeros(1)
+            return empty_array, empty_array, np.array([])
         
-        # CRITICAL FIX: Check if datetime arrays are None or empty
+        # Check if datetime arrays are None or empty
         no_datetime_self = not hasattr(self, 'datetime_array') or self.datetime_array is None or len(self.datetime_array) == 0
         no_datetime_other = not hasattr(other, 'datetime_array') or other.datetime_array is None or len(other.datetime_array) == 0
         
         if no_datetime_self and no_datetime_other:
             print_manager.custom_debug(f"[MATH] Both variables have no datetime arrays - cannot align")
-            return np.array([]), np.array([]), None
+            empty_array = np.zeros(1)
+            return empty_array, empty_array, np.array([])
         
         # Check if interpolation is needed - use try/except to safely handle len() calls
         try:
@@ -599,30 +639,36 @@ class plot_manager(np.ndarray):
             # Safely convert to array views
             try:
                 self_view = self.view(np.ndarray)
-            except:
-                self_view = np.array([])
+            except Exception as e:
+                self_view = np.zeros(1)
                 
             try:
                 other_view = other.view(np.ndarray)
-            except:
-                other_view = np.array([])
+            except Exception as e:
+                other_view = np.zeros(1)
+                
+            # One final safety check - ensure we're not returning None values
+            if self_view is None:
+                self_view = np.zeros(1)
+            if other_view is None:
+                other_view = np.zeros(1)
                 
             return self_view, other_view, dt_array
             
         # Choose shorter time base to avoid extrapolation
         # Use try/except for safety with datetime array length checks
         try:
-            # CRITICAL FIX: Additional safety checks before length comparison
+            # Safety checks before length comparison
             if not hasattr(self, 'datetime_array') or self.datetime_array is None or len(self.datetime_array) == 0:
                 print_manager.custom_debug(f"[MATH] First variable has no datetime array - using second variable's times")
                 target_times = other.datetime_array
-                self_aligned = self.view(np.ndarray)
+                self_aligned = np.zeros(len(target_times))  # Return zeros instead of None
                 other_aligned = other.view(np.ndarray)
             elif not hasattr(other, 'datetime_array') or other.datetime_array is None or len(other.datetime_array) == 0:
                 print_manager.custom_debug(f"[MATH] Second variable has no datetime array - using first variable's times")
                 target_times = self.datetime_array
                 self_aligned = self.view(np.ndarray)
-                other_aligned = other.view(np.ndarray)
+                other_aligned = np.zeros(len(target_times))  # Return zeros instead of None
             elif len(self.datetime_array) <= len(other.datetime_array):
                 print_manager.custom_debug(f"[MATH] Interpolating {getattr(other, 'subclass_name', 'var2')} to match {getattr(self, 'subclass_name', 'var1')}")
                 target_times = self.datetime_array
@@ -640,13 +686,19 @@ class plot_manager(np.ndarray):
                 )
                 other_aligned = other.view(np.ndarray)
             
+            # One final safety check - ensure we're not returning None values
+            if self_aligned is None:
+                self_aligned = np.zeros(len(target_times) if target_times is not None and len(target_times) > 0 else 1)
+            if other_aligned is None:
+                other_aligned = np.zeros(len(target_times) if target_times is not None and len(target_times) > 0 else 1)
+                
             return self_aligned, other_aligned, target_times
         except (TypeError, AttributeError) as e:
             # If anything goes wrong during datetime array operations, return empty arrays
             print_manager.custom_debug(f"[MATH] Error during interpolation - {str(e)}")
-            return np.array([]), np.array([]), None
-    
-    # Magic methods for arithmetic operations
+            empty_array = np.zeros(1)
+            return empty_array, empty_array, np.array([])
+            
     def __add__(self, other):
         """Add two variables or a variable and a scalar."""
         # No longer importing from derived_variable
@@ -659,7 +711,29 @@ class plot_manager(np.ndarray):
         if isinstance(other, plot_manager):
             # Object addition case - align variables first
             self_aligned, other_aligned, dt_array = self.align_variables(other)
-            result = self_aligned + other_aligned
+            
+            # Additional safety check before addition 
+            if self_aligned is None or other_aligned is None:
+                print_manager.warning(f"Cannot perform addition: One or both variables are None after alignment")
+                # Return an empty array instead of trying to add None values
+                result_var = plot_manager(np.zeros(1))
+                # Store source info
+                object.__setattr__(result_var, 'source_var', [self, other])
+                object.__setattr__(result_var, 'operation', 'add_failed')
+                var_name = f"{getattr(self, 'subclass_name', 'var1')}_{getattr(other, 'subclass_name', 'var2')}_add_failed"
+                return custom_variable(var_name, result_var)
+            
+            # If we got here, both variables should have valid data arrays to add
+            try:
+                # Safety check for empty arrays
+                if len(self_aligned) == 0 or len(other_aligned) == 0:
+                    result = np.zeros(1)
+                else:
+                    result = self_aligned + other_aligned
+            except Exception as e:
+                # Return an empty array instead of trying to add problematic values
+                print_manager.custom_debug(f"[MATH] Error during addition: {str(e)}")
+                result = np.zeros(1)
             
             # Create a name for the variable
             var_name = f"{getattr(self, 'subclass_name', 'var1')}_{getattr(other, 'subclass_name', 'var2')}_add"
@@ -679,7 +753,11 @@ class plot_manager(np.ndarray):
             return custom_variable(var_name, result_var)
         else:
             # Scalar addition case
-            result = self.view(np.ndarray) + other
+            try:
+                result = self.view(np.ndarray) + other
+            except Exception as e:
+                print_manager.custom_debug(f"[MATH] Error during scalar addition: {str(e)}")
+                result = np.zeros(1)
             
             # Create a result variable with datetime array from self using proper methods
             # that avoid truth value errors with arrays

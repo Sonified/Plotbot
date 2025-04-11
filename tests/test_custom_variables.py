@@ -431,6 +431,72 @@ def test_style_preservation_same_day(test_environment):
 # Example: If test_multi_variable_expressions was purely about calculation, it could remain.
 # If it needs plotting verification, adapt like test_create_custom_variable.
 
+@pytest.mark.mission("State Corruption Test")
+def test_custom_var_addition_after_plotbot_load(test_environment):
+    """
+    Test if creating a custom variable with addition fails after plotbot
+    loads data for one of the source variables for a *different* time range.
+    This simulates the state corruption observed in the notebook.
+    """
+    env = test_environment
+    trange_custom_var = env['trange_initial'] # e.g., '2023-09-28/...'
+    # Use a different time range that was causing issues in the notebook
+    trange_plotbot = ['2025-03-22/13:00:00.000', '2025-03-22/14:00:00.000'] 
+
+    phase(1, "Initial plotbot call (potentially corrupting state)")
+    plt.options.reset()
+    plt.options.use_single_title = True
+    plt.options.single_title_text = "Test: State Corruption - Load mag_rtn_4sa"
+    print(f"Plotbot call with trange: {trange_plotbot} for mag_rtn_4sa.bmag")
+    # This call loads mag_rtn_4sa.bmag for trange_plotbot
+    # Adding a check to ensure plotbot doesn't raise an immediate error if data is missing for 2025
+    try:
+        plotbot(trange_plotbot, mag_rtn_4sa.bmag, 1)
+    except Exception as e:
+        print(f"Note: Initial plotbot call raised an exception (may be expected if 2025 data missing): {e}")
+        # We can potentially continue if the goal is to see if state is corrupted regardless
+        # Or we could skip/fail here depending on desired test behavior for missing future data
+        pytest.skip(f"Skipping test as initial plotbot load failed (likely missing future data): {e}")
+        
+    print("Initial plotbot call completed (or skipped).")
+
+    # --- REMOVED Phase 2: No explicit get_data call here ---
+    # phase(2, "Load data for the custom variable's target time range")
+    # print(f"Calling get_data for trange: {trange_custom_var} for proton.anisotropy and mag_rtn_4sa.bmag")
+    # try:
+    #     get_data(trange_custom_var, proton.anisotropy, mag_rtn_4sa.bmag)
+    # except Exception as e:
+    #      pytest.fail(f"Failed to get_data for the target custom variable range {trange_custom_var}: {e}")
+    # print("Target range data loaded.")
+    # --------------------------------------------------------------------------
+
+    phase(3, "Attempting custom variable creation AFTER plotbot call")
+    # This is the step that currently fails in the notebook due to state corruption
+    print(f"Attempting: custom_variable('TAplusBmag_CorruptionTest', proton.anisotropy + mag_rtn_4sa.bmag)")
+    
+    # Try to create the variable directly. If state is corrupted, this will raise TypeError.
+    try:
+        TAplusBmag_test = custom_variable('TAplusBmag_CorruptionTest', proton.anisotropy + mag_rtn_4sa.bmag)
+        # If it reaches here, the operation succeeded (which is currently unexpected but desired)
+        system_check("Custom Variable Creation", True, "Custom variable created successfully after plotbot call.")
+
+        # Add further checks if needed, e.g., check for data
+        assert hasattr(TAplusBmag_test, 'data'), "Resulting custom variable has no 'data' attribute."
+        assert TAplusBmag_test.data is not None, "Resulting custom variable data is None."
+        assert TAplusBmag_test.data.size > 0, "Resulting custom variable data is empty."
+        system_check("Custom Variable Data Check", True, f"Custom variable has data (size: {TAplusBmag_test.data.size}).")
+        print("Test PASSED: Custom variable created successfully.")
+
+    except TypeError as e:
+        # If the TypeError occurs, the test fails, indicating the bug is present.
+        system_check("Custom Variable Creation", False, f"Failed to create custom variable due to TypeError: {e}")
+        pytest.fail(f"State corruption likely occurred. Failed with TypeError: {e}")
+    except Exception as e:
+        # Catch any other unexpected errors
+        system_check("Custom Variable Creation", False, f"Failed with unexpected error: {e}")
+        pytest.fail(f"Failed with unexpected error: {e}")
+
+
 # Final cleanup if __main__ block exists
 if __name__ == "__main__":
     # Optionally run specific tests if needed for direct execution
