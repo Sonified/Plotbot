@@ -127,6 +127,103 @@ class AxisOptions:
 class MultiplotOptions:
     """Configuration options for the multiplot function, including per-axis customization."""
     
+    # Add preset configurations
+    PRESET_CONFIGS = {
+        'VERTICAL_POSTER_MEDIUM': {
+            'width_pixels': 5400,
+            'height_pixels': 7200,
+            'dpi': 300,
+            'figsize': (18, 24),
+            'margins': {
+                'left': 0.11,
+                'right': 0.97,
+                'bottom': 0.05,
+                'top': 0.95
+            },
+            'vertical_space': 0.1,
+            'title_size': 20,
+            'title_y_position': 0.975,
+            'title_pad': 10.0,
+            'axis_label_size': 20,
+            'x_tick_label_size': 16,
+            'y_tick_label_size': 16,
+            'magnetic_field_line_width': 0.5,
+            'line_widths': {
+                'vertical': 2.0,
+                'spine': 1.5,
+                'tick': 1.5
+            },
+            'tick_length': 6,
+            'label_padding': {
+                'x': 8,
+                'y': 8
+            }
+        },
+        'VERTICAL_POSTER_LARGE': {
+            'width_pixels': 7200,
+            'height_pixels': 10800,
+            'dpi': 300,
+            'figsize': (24, 36),
+            'margins': {
+                'left': 0.11,
+                'right': 0.97,
+                'bottom': 0.05,
+                'top': 0.95
+            },
+            'vertical_space': 0.1,
+            'title_size': 30,
+            'title_y_position': 0.975,
+            'title_pad': 14.0,
+            'axis_label_size': 30,
+            'x_axis_label_size': 36,
+            'y_axis_label_size': 30,
+            'x_tick_label_size': 25,
+            'y_tick_label_size': 25,
+            'magnetic_field_line_width': 0.5,
+            'line_widths': {
+                'vertical': 2.0,
+                'spine': 1.5,
+                'tick': 1.5
+            },
+            'tick_length': 10,
+            'label_padding': {
+                'x': 16,
+                'y': 16
+            }
+        },
+        
+        'HORIZONTAL_POSTER': {
+            'width_pixels': 7200,
+            'height_pixels': 5400,
+            'dpi': 300,
+            'figsize': (24, 18),
+            'margins': {
+                'left': 0.11,
+                'right': 0.97,
+                'bottom': 0.05,
+                'top': 0.95
+            },
+            'vertical_space': 0.1,
+            'title_size': 20,
+            'title_y_position': 0.975,
+            'title_pad': 10.0,
+            'axis_label_size': 20,
+            'x_tick_label_size': 16,
+            'y_tick_label_size': 16,
+            'magnetic_field_line_width': 0.5,
+            'line_widths': {
+                'vertical': 2.0,
+                'spine': 1.5,
+                'tick': 1.5
+            },
+            'tick_length': 6,
+            'label_padding': {
+                'x': 8,
+                'y': 8
+            }
+        }
+    }
+    
     # Make axes a class-level attribute
     axes = {}
 
@@ -138,6 +235,9 @@ class MultiplotOptions:
         for i in range(1, 26):
             if i not in MultiplotOptions.axes:
                 MultiplotOptions.axes[i] = AxisOptions()
+
+        self.tick_length = 6.0
+        self.tick_width = 1.0
 
     def reset(self):
         """Reset all options to their default values."""
@@ -181,6 +281,7 @@ class MultiplotOptions:
         self.y_label_size = 11
         self.x_label_size = 11
         self.y_label_pad = 20
+        self.x_label_pad = 20
         self.x_tick_label_size = 10
         self.y_tick_label_size = 10
         self.second_variable_on_right_axis = False
@@ -189,10 +290,22 @@ class MultiplotOptions:
         self.color_mode = 'default'  # Options: 'default', 'rainbow', 'single'
         self.single_color = None     # Used when color_mode = 'single'
         
+        # New save options
+        self.save_output = False
+        self.save_preset = None
+        self.save_dpi = None  # Will be set by preset if used
+        self.output_dimensions = None # Tuple (width_px, height_px) or None
+        
         # Pre-initialize axis options for axes 1-25
         for i in range(1, 26):
             if i not in MultiplotOptions.axes:
                 MultiplotOptions.axes[i] = AxisOptions()
+        
+        self.title_pad = 6.0 # Add title_pad default
+        self.title_y_position = 0.98
+        self.magnetic_field_line_width = 1.0
+        self.tick_length = 6.0
+        self.tick_width = 1.0
     
     def _get_axis_options(self, axis_number: int) -> AxisOptions:
         """Helper method to get or create axis options"""
@@ -334,6 +447,61 @@ class MultiplotOptions:
                 print(f"  horizontal_line_style: {axis_opts.horizontal_line_style}")
             print(f"  right y_limit: {axis_opts.r.y_limit}")
             print(f"  right color: {axis_opts.r.color}")
+
+    # New methods for applying presets
+    def _apply_preset_config(self):
+        """Apply the current preset configuration if one is set."""
+        if not self.save_preset or self.save_preset not in self.PRESET_CONFIGS:
+            return
+
+        config = self.PRESET_CONFIGS[self.save_preset]
+        
+        # Store original panel-based values
+        self._orig_width = self.width
+        self._orig_height_per_panel = self.height_per_panel
+        
+        # Apply preset values
+        self.width = config['figsize'][0]
+        self.height_per_panel = config['figsize'][1]  # Will be adjusted per panel in multiplot
+        self.save_dpi = config['dpi']
+        self.hspace = config['vertical_space']
+        self.title_fontsize = config['title_size']
+        self.title_y_position = config.get('title_y_position', self.title_y_position)
+        self.title_pad = config.get('title_pad', self.title_pad)
+        
+        # Apply axis label sizes (prioritize specific, fallback to general)
+        base_axis_size = config.get('axis_label_size', None) # Get the general one if it exists
+        self.x_label_size = config.get('x_axis_label_size', base_axis_size if base_axis_size is not None else self.x_label_size)
+        self.y_label_size = config.get('y_axis_label_size', base_axis_size if base_axis_size is not None else self.y_label_size)
+        
+        self.x_tick_label_size = config['x_tick_label_size']
+        self.y_tick_label_size = config['y_tick_label_size']
+        self.border_line_width = config['line_widths']['spine']
+        self.vertical_line_width = config['line_widths']['vertical']
+        self.magnetic_field_line_width = config.get('magnetic_field_line_width', self.magnetic_field_line_width)
+        self.tick_length = config.get('tick_length', self.tick_length)
+        # Get tick_width from line_widths sub-dictionary
+        if 'line_widths' in config and isinstance(config['line_widths'], dict):
+            self.tick_width = config['line_widths'].get('tick', self.tick_width)
+
+        # Apply padding from presets if they exist (using renamed key)
+        if 'label_padding' in config:
+            self.x_label_pad = config['label_padding'].get('x', self.x_label_pad)
+            self.y_label_pad = config['label_padding'].get('y', self.y_label_pad)
+        # Fallback for old presets that might still use 'tick_pad' (optional, but safe)
+        elif 'tick_pad' in config:
+             print_manager.warning("Preset uses deprecated 'tick_pad'. Use 'label_padding' instead.")
+             self.x_label_pad = config['tick_pad'].get('x', self.x_label_pad)
+             self.y_label_pad = config['tick_pad'].get('y', self.y_label_pad)
+
+    def _restore_original_values(self):
+        """Restore original values after using a preset."""
+        if hasattr(self, '_orig_width'):
+            self.width = self._orig_width
+            self.height_per_panel = self._orig_height_per_panel
+            delattr(self, '_orig_width')
+            delattr(self, '_orig_height_per_panel')
+            
 
 # Create a custom plt object that extends matplotlib.pyplot
 class EnhancedPlotting:
