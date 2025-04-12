@@ -743,7 +743,7 @@ def import_data_function(trange, data_type):
         # Create and return DataObject for CDF
         data_object = DataObject(times=times_sorted, data=data_sorted)
         global_tracker.update_imported_range(trange, data_type)
-        print_manager.status(f"✅ - CDF Data import complete for {data_type} range {trange}.\n")
+        print_manager.status(f"☑️ - CDF Data import complete for {data_type} range {trange}.\n")
         output_range = [cdflib.epochs.CDFepoch.to_datetime(times_sorted[0]),
                         cdflib.epochs.CDFepoch.to_datetime(times_sorted[-1])]
         print_manager.time_output("import_data_function", output_range)

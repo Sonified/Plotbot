@@ -17,6 +17,9 @@ import matplotlib.colors as colors
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+import os
+from PIL import Image
+import matplotlib.pyplot as mpl_plt
 
 def debug_variable_time_ranges(var, trange, label=""):
     """Helper function to debug time range issues with variables."""
@@ -91,16 +94,34 @@ def multiplot(plot_list, **kwargs):
     # Get options instance
     options = plt.options
     
+    # Store original rcParams to restore later
+    original_rcparams = {} 
+    
     # Override any options with provided kwargs
     for key, value in kwargs.items():
         if hasattr(options, key):
             setattr(options, key, value)
     
     print_manager.debug("\n=== Starting Multiplot Function ===")
-    print_manager.debug(f"Window: {options.window}, Position: {options.position}")
     
-    # Convert window to timedelta
-    window_td = pd.Timedelta(options.window)
+    # Apply preset configuration if specified
+    if options.save_preset:
+        options._apply_preset_config()
+        # --- TEMPORARILY SET RCPARAMS FOR PRESET --- 
+        preset_config = options.PRESET_CONFIGS.get(options.save_preset, {})
+        params_to_set = {
+            'xtick.major.width': options.tick_width, # Use the option we just added
+            'ytick.major.width': options.tick_width, # Use the option we just added
+            'xtick.major.size': options.tick_length, # Corresponds to tick_length 
+            'ytick.major.size': options.tick_length, # Corresponds to tick_length
+            'axes.linewidth': options.border_line_width # Corresponds to spine width
+        }
+        for key, value in params_to_set.items():
+            if key in mpl_plt.rcParams:
+                original_rcparams[key] = mpl_plt.rcParams[key]
+                mpl_plt.rcParams[key] = value
+                print_manager.debug(f"Preset applying rcParam: {key} = {value}")
+        # --- END TEMPORARILY SET RCPARAMS --- 
     
     #==========================================================================
     # STEP 2: PROCESS VARIABLES AND ENSURE DATA AVAILABILITY
@@ -117,17 +138,17 @@ def multiplot(plot_list, **kwargs):
         
         # Calculate time range for this panel
         if options.position == 'around':
-            start_time = pd.Timestamp(center_time) - window_td/2
-            end_time = pd.Timestamp(center_time) + window_td/2
-            print_manager.time_tracking(f"Panel {i+1} 'around' position: center ± {window_td/2}")
+            start_time = pd.Timestamp(center_time) - pd.Timedelta(options.window)/2
+            end_time = pd.Timestamp(center_time) + pd.Timedelta(options.window)/2
+            print_manager.time_tracking(f"Panel {i+1} 'around' position: center ± {pd.Timedelta(options.window)/2}")
         elif options.position == 'before':
-            start_time = pd.Timestamp(center_time) - window_td
+            start_time = pd.Timestamp(center_time) - pd.Timedelta(options.window)
             end_time = pd.Timestamp(center_time)
-            print_manager.time_tracking(f"Panel {i+1} 'before' position: center - {window_td}")
+            print_manager.time_tracking(f"Panel {i+1} 'before' position: center - {pd.Timedelta(options.window)}")
         else:  # after
             start_time = pd.Timestamp(center_time)
-            end_time = pd.Timestamp(center_time) + window_td
-            print_manager.time_tracking(f"Panel {i+1} 'after' position: center + {window_td}")
+            end_time = pd.Timestamp(center_time) + pd.Timedelta(options.window)
+            print_manager.time_tracking(f"Panel {i+1} 'after' position: center + {pd.Timedelta(options.window)}")
             
         # Track calculated time range
         print_manager.time_tracking(f"Panel {i+1} calculated time range: {start_time} to {end_time}")
@@ -259,21 +280,61 @@ def multiplot(plot_list, **kwargs):
     # Calculate number of panels needed
     n_panels = len(plot_list)
     
-    # Create figure with subplots
-    print_manager.debug("\nCreating figure...")
-    fig, axs = plt.subplots(n_panels, 1, 
-                           figsize=(options.width, options.height_per_panel*n_panels), 
-                           sharex=False)
+    # Get color scheme BEFORE creating figure (needed for title color)
+    color_scheme = get_plot_colors(n_panels, options.color_mode, options.single_color)
+    
+    if options.save_preset:
+        config = options.PRESET_CONFIGS[options.save_preset]
+        # Create figure with preset dimensions
+        fig = plt.figure(figsize=config['figsize'], dpi=config.get('dpi', 300)) # Use preset figsize and dpi
+        
+        # --- APPLY PRESET MARGINS --- 
+        gs = plt.GridSpec(n_panels, 1)
+        try: # Add try-except for safety
+            gs.update(
+                left=config['margins']['left'],
+                right=config['margins']['right'],
+                bottom=config['margins']['bottom'],
+                top=config['margins']['top'],
+                hspace=config['vertical_space']
+            )
+        except KeyError as e:
+            print_manager.warning(f"Preset missing required margin key: {e}. Using default layout.")
+            gs.update(hspace=config['vertical_space']) # Apply hspace at least
+        # --- END APPLY PRESET MARGINS --- 
+        
+        axs = [fig.add_subplot(gs[i]) for i in range(n_panels)]
+    else:
+        # Original panel-based approach
+        
+        # --- ASPECT RATIO FIX for output_dimensions --- 
+        if options.output_dimensions:
+            target_width_px, target_height_px = options.output_dimensions
+            # Calculate target aspect ratio
+            if target_height_px > 0: # Avoid division by zero
+                target_aspect = float(target_width_px) / target_height_px
+                # Calculate initial figure height based on user's width and target aspect ratio
+                initial_fig_height = options.width / target_aspect
+                initial_figsize = (options.width, initial_fig_height)
+                print_manager.debug(f"Using output_dimensions. Target aspect: {target_aspect:.2f}, Initial figsize: {initial_figsize}")
+            else:
+                # Fallback if height is zero
+                initial_figsize = (options.width, options.height_per_panel * n_panels)
+                print_manager.warning("Target height is zero, falling back to panel-based figsize")
+        else:
+            # Default panel-based calculation
+            initial_figsize = (options.width, options.height_per_panel * n_panels)
+            print_manager.debug(f"Using panel-based figsize: {initial_figsize}")
+        # --- END ASPECT RATIO FIX --- 
+            
+        fig, axs = plt.subplots(n_panels, 1, 
+                               figsize=initial_figsize, # Use calculated figsize 
+                               sharex=False)
+        plt.subplots_adjust(right=0.85, hspace=options.hspace)
     
     if n_panels == 1:
         axs = [axs]
     
-    # Adjust subplot spacing
-    plt.subplots_adjust(right=0.85, hspace=options.hspace)
-    
-    # Get color scheme based on color_mode
-    color_scheme = get_plot_colors(n_panels, options.color_mode, options.single_color)
-
     #==========================================================================
     # STEP 4: POPULATE PLOTS WITH DATA
     #==========================================================================
@@ -286,14 +347,14 @@ def multiplot(plot_list, **kwargs):
     
         # Format time range
         if options.position == 'around':
-            start_time = center_dt - window_td/2
-            end_time = center_dt + window_td/2
+            start_time = center_dt - pd.Timedelta(options.window)/2
+            end_time = center_dt + pd.Timedelta(options.window)/2
         elif options.position == 'before':
-            start_time = center_dt - window_td
+            start_time = center_dt - pd.Timedelta(options.window)
             end_time = center_dt
         else:  # after
             start_time = center_dt
-            end_time = center_dt + window_td
+            end_time = center_dt + pd.Timedelta(options.window)
         
         trange = [
             start_time.strftime('%Y-%m-%d/%H:%M:%S.%f'),
@@ -356,7 +417,7 @@ def multiplot(plot_list, **kwargs):
     
                         ax2.plot(single_var.datetime_array[indices], 
                                 single_var.data[indices],
-                                linewidth=single_var.line_width,
+                                linewidth=options.magnetic_field_line_width if options.save_preset else single_var.line_width,
                                 linestyle=single_var.line_style,
                                 label=single_var.legend_label,
                                 color=plot_color)
@@ -404,7 +465,7 @@ def multiplot(plot_list, **kwargs):
     
                         axs[i].plot(single_var.datetime_array[indices], 
                                    single_var.data[indices],
-                                   linewidth=single_var.line_width,
+                                   linewidth=options.magnetic_field_line_width if options.save_preset else single_var.line_width,
                                    linestyle=single_var.line_style,
                                    label=single_var.legend_label,
                                    color=plot_color)
@@ -474,7 +535,7 @@ def multiplot(plot_list, **kwargs):
                         if len(indices) > 0:
                             axs[i].plot(var.datetime_array[indices], 
                                         var.data[indices],
-                                        linewidth=var.line_width,
+                                        linewidth=options.magnetic_field_line_width if options.save_preset else var.line_width,
                                         linestyle=var.line_style,
                                         color=plot_color)
                         else:
@@ -559,7 +620,7 @@ def multiplot(plot_list, **kwargs):
                     if len(indices) > 0:
                         axs[i].plot(var.datetime_array[indices], 
                                     var.data[indices],
-                                    linewidth=var.line_width,
+                                    linewidth=options.magnetic_field_line_width if options.save_preset else var.line_width,
                                     linestyle=var.line_style,
                                     color=plot_color)
                     else:
@@ -719,10 +780,12 @@ def multiplot(plot_list, **kwargs):
                 else:
                     axs[i].set_xticklabels(tick_labels)
                     if options.use_custom_x_axis_label:
-                         axs[i].set_xlabel(options.custom_x_axis_label, fontweight='bold', fontsize=options.x_label_size)
+                         axs[i].set_xlabel(options.custom_x_axis_label, fontweight='bold', fontsize=options.x_label_size,
+                                           labelpad=options.x_label_pad)
                     else:
                         axs[i].set_xlabel(f"Relative Time ({options.relative_time_step_units} from Perihelion)", 
-                                        fontweight='bold', fontsize=options.x_label_size)
+                                        fontweight='bold', fontsize=options.x_label_size,
+                                        labelpad=options.x_label_pad)
                    
             else:
                 axs[i].set_xticklabels(tick_labels)
@@ -730,16 +793,18 @@ def multiplot(plot_list, **kwargs):
                     axs[i].set_xlabel('')
                 else:
                     if options.use_custom_x_axis_label:
-                        axs[i].set_xlabel(options.custom_x_axis_label, fontweight='bold', fontsize=options.x_label_size)
+                        axs[i].set_xlabel(options.custom_x_axis_label, fontweight='bold', fontsize=options.x_label_size,
+                                          labelpad=options.x_label_pad)
                     else:
                         axs[i].set_xlabel(f"Relative Time ({options.relative_time_step_units} from Perihelion)", 
-                                        fontweight='bold', fontsize=options.x_label_size)
+                                        fontweight='bold', fontsize=options.x_label_size,
+                                        labelpad=options.x_label_pad)
     
             # Add these two lines to set tick label sizes when using relative time
             axs[i].tick_params(axis='x', labelsize=options.x_tick_label_size)
             axs[i].tick_params(axis='y', labelsize=options.y_tick_label_size)
     
-            # After setting tick sizes in the relative time section
+            # After setting tick sizes 
             # Apply border line width to all spines (top, bottom, left, right)
             for spine_name, spine in axs[i].spines.items():
                 spine.set_linewidth(plt.options.border_line_width)
@@ -751,20 +816,15 @@ def multiplot(plot_list, **kwargs):
                            linestyle=options.vertical_line_style,
                            linewidth=options.vertical_line_width)
     
-        if options.use_single_title:
-            if i == 0:
-                title = (options.single_title_text if options.single_title_text 
-                         else f"{enc_num} - {pos_desc[options.position]} - {pd.Timestamp(center_time).strftime('%Y-%m-%d %H:%M')}")
-                if options.color_mode in ['rainbow', 'single'] and panel_color:
-                    axs[i].set_title(title, fontsize=options.title_fontsize, fontweight='bold', color=panel_color)
-                else:
-                    axs[i].set_title(title, fontsize=options.title_fontsize, fontweight='bold')
-        else:
+        # --- Individual Title Setting (only if not using single title with preset) ---
+        if not (options.use_single_title and options.save_preset):
             title = f"{enc_num} - {pos_desc[options.position]} - {pd.Timestamp(center_time).strftime('%Y-%m-%d %H:%M')}"
             if options.color_mode in ['rainbow', 'single'] and panel_color:
-                axs[i].set_title(title, fontsize=options.title_fontsize, color=panel_color)
+                axs[i].set_title(title, fontsize=options.title_fontsize, color=panel_color,
+                                 pad=options.title_pad)
             else:
-                axs[i].set_title(title, fontsize=options.title_fontsize)
+                axs[i].set_title(title, fontsize=options.title_fontsize,
+                                 pad=options.title_pad)
     
         # Check for global horizontal line
         if plt.options.draw_horizontal_line:
@@ -797,15 +857,19 @@ def multiplot(plot_list, **kwargs):
                     ax.set_xlabel('')
                 else:
                     if options.use_custom_x_axis_label:
-                        ax.set_xlabel(options.custom_x_axis_label, fontweight='bold', fontsize=options.x_label_size)
+                        ax.set_xlabel(options.custom_x_axis_label, fontweight='bold', fontsize=options.x_label_size,
+                                      labelpad=options.x_label_pad)
                     else:
-                        ax.set_xlabel("Time", fontweight='bold', fontsize=options.x_label_size)
+                        ax.set_xlabel("Time", fontweight='bold', fontsize=options.x_label_size,
+                                      labelpad=options.x_label_pad)
             else:
                 if i == len(axs) - 1:
                     if options.use_custom_x_axis_label:
-                        ax.set_xlabel(options.custom_x_axis_label, fontweight='bold', fontsize=options.x_label_size)
+                        ax.set_xlabel(options.custom_x_axis_label, fontweight='bold', fontsize=options.x_label_size,
+                                      labelpad=options.x_label_pad)
                     else:
-                        ax.set_xlabel("Time", fontweight='bold', fontsize=options.x_label_size)
+                        ax.set_xlabel("Time", fontweight='bold', fontsize=options.x_label_size,
+                                      labelpad=options.x_label_pad)
                 else:
                     ax.set_xlabel('')
     
@@ -817,11 +881,113 @@ def multiplot(plot_list, **kwargs):
         for i, ax in enumerate(axs):
             apply_bottom_axis_color(ax, color_scheme['panel_colors'][i])
     
+    # --- Figure-Level Title Setting (if using single title and preset) --- 
+    if options.use_single_title and options.save_preset:
+        config = options.PRESET_CONFIGS[options.save_preset]
+        title = options.single_title_text or f"PSP Data Around Perihelia"
+        # --- APPLY TITLE COLOR --- 
+        title_color = None
+        if options.color_mode == 'rainbow' and color_scheme and color_scheme['panel_colors']:
+            title_color = color_scheme['panel_colors'][0] # Use color of first panel
+        # --- END APPLY TITLE COLOR ---
+        fig.suptitle(title, 
+                     y=config['title_y_position'], 
+                     fontsize=config['title_size'], 
+                     fontweight='bold',
+                     color=title_color) # Pass color if available
+    
     print_manager.status("Generating multiplot...\n")
+    
+    #==========================================================================
+    # STEP 3: SAVE OUTPUT IF REQUESTED
+    #==========================================================================
+    if options.save_output:
+        # Generate timestamp for filename
+        timestamp = datetime.now().strftime('%Y-%m-%d-%H_%M_%S')
+        filename = f'PSP_MULTIPLOT_{timestamp}.png'
+        
+        if options.save_preset:
+            # --- Preset Saving Logic --- 
+            config = options.PRESET_CONFIGS[options.save_preset]
+            # Save with preset configuration - REMOVE bbox_inches='tight'
+            fig.savefig(
+                filename,
+                dpi=config['dpi'],
+                facecolor='white'
+            )
+            
+            # Verify and resize if necessary
+            try:
+                with Image.open(filename) as img:
+                    target_size = (config['width_pixels'], config['height_pixels'])
+                    if img.size != target_size:
+                        print_manager.status(f"Resizing saved image from {img.size} to {target_size}...")
+                        resized_img = img.resize(target_size, Image.Resampling.LANCZOS)
+                        resized_img.save(filename)
+                    final_size = target_size
+            except Exception as e:
+                print_manager.warning(f"Error resizing image using preset: {e}")
+                final_size = "Unknown"
+
+            print_manager.status(f'Plot saved to: {os.path.abspath(filename)}')
+            print_manager.status(f'Final dimensions: {final_size[0]}x{final_size[1]} pixels' if final_size != "Unknown" else "Final dimensions: Unknown")
+        
+        elif options.output_dimensions:
+            # --- Custom Dimensions Saving Logic --- 
+            target_width_px, target_height_px = options.output_dimensions
+            # Save the figure as it is currently rendered (respecting user settings)
+            # Use a reasonable default DPI for initial save, as resizing handles final pixel dimensions
+            initial_dpi = 300 
+            fig.savefig(
+                filename,
+                dpi=initial_dpi,
+                bbox_inches='tight',
+                pad_inches=0.1,
+                facecolor='white'
+            )
+            
+            # Resize the saved image to the exact requested dimensions
+            try:
+                with Image.open(filename) as img:
+                    target_size = (target_width_px, target_height_px)
+                    if img.size != target_size:
+                        print_manager.status(f"Resizing saved image from {img.size} to {target_size}...")
+                        resized_img = img.resize(target_size, Image.Resampling.LANCZOS)
+                        resized_img.save(filename)
+                    final_size = target_size
+            except Exception as e:
+                print_manager.warning(f"Error resizing image to custom dimensions: {e}")
+                final_size = "Unknown"
+                
+            print_manager.status(f'Plot saved to: {os.path.abspath(filename)}')
+            print_manager.status(f'Final dimensions: {final_size[0]}x{final_size[1]} pixels' if final_size != "Unknown" else "Final dimensions: Unknown")
+            
+        else:
+            # --- Standard Save (no preset, no specific dimensions) --- 
+            fig.savefig(
+                filename,
+                dpi=options.save_dpi if options.save_dpi else 300, # Use save_dpi if set, else default
+                bbox_inches='tight',
+                pad_inches=0.1
+            )
+            print_manager.status(f'Plot saved to: {os.path.abspath(filename)}')
+    
+    # Show the plot
     plt.show()
+    
+    # Restore original values if using preset
+    if options.save_preset:
+        options._restore_original_values()
+        # --- RESTORE ORIGINAL RCPARAMS --- 
+        if original_rcparams:
+            for key, value in original_rcparams.items():
+                mpl_plt.rcParams[key] = value
+                print_manager.debug(f"Restored rcParam: {key} = {value}")
+        # --- END RESTORE ORIGINAL RCPARAMS --- 
+            
+    
     print_manager.debug("=== Multiplot Complete ===\n")
     
-    fig.savefig('multiplot_output.png', dpi=300, bbox_inches='tight', pad_inches=0)
     return fig, axs
 
 print('📈📉 Multiplot Initialized')
