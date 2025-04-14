@@ -98,6 +98,36 @@ class Audifier:
         self._channels = 1
         self._fade_samples = 0
     
+    def _parse_and_format_trange(self, trange):
+        """Parses trange and returns datetime objects and formatted strings."""
+        try:
+            start_dt = parse(trange[0])
+            end_dt = parse(trange[1])
+            # Get formatted date/time strings needed
+            start_date_str = start_dt.strftime('%Y-%m-%d') # Format as YYYY-MM-DD
+            formatted_date = start_dt.strftime('%Y_%m_%d') # Use underscore format for subfolder
+            start_time_str = start_dt.strftime('%H:%M:%S.%f')[:-3]
+            stop_time_str = end_dt.strftime('%H:%M:%S.%f')[:-3]
+            start_time_formatted = self.format_time_for_filename(start_time_str)
+            stop_time_formatted = self.format_time_for_filename(stop_time_str)
+            formatted_date_with_dashes = start_date_str # Re-use YYYY-MM-DD string
+            
+            return {
+                'start_dt': start_dt,
+                'end_dt': end_dt,
+                'start_date_str': start_date_str,
+                'formatted_date': formatted_date,
+                'start_time_formatted': start_time_formatted,
+                'stop_time_formatted': stop_time_formatted,
+                'formatted_date_with_dashes': formatted_date_with_dashes
+            }
+        except Exception as e:
+            # Use logging if available, otherwise print
+            try: import logging; logging.error(f"Error parsing/formatting time range strings: {trange}. Error: {e}")
+            except: pass
+            print(f"Error parsing/formatting time range strings: {trange}. Please use a format like 'YYYY-MM-DD HH:MM:SS' or 'YYYY-MM-DD/HH:MM:SS'.")
+            return None # Indicate failure
+
     def get_save_directory(self):
         """Get the saved directory path."""
         if os.path.exists(self.last_dir_file):
@@ -259,11 +289,15 @@ class Audifier:
         print(f"Generating markers for time range: {trange[0]} to {trange[1]}")
         print(f"Number of time points: {len(times)}")
         
-        # Parse start and end times using parse instead of strptime
-        start_datetime = parse(trange[0])
-        stop_datetime = parse(trange[1])
-        
-        # Generate marker times
+        # === PARSE AND FORMAT TIME RANGE using helper ===
+        time_info = self._parse_and_format_trange(trange)
+        if time_info is None:
+            return None # Error already printed by helper
+        # ================================================
+
+        # Generate marker times based on parsed datetimes
+        start_datetime = time_info['start_dt'] # Use parsed object
+        stop_datetime = time_info['end_dt']   # Use parsed object
         marker_times = []
         
         if self.quantize_markers:
@@ -311,13 +345,8 @@ class Audifier:
             print("No valid markers found within the data range.")
             return None
             
-        # Get start date with hyphens preserved
-        start_date = trange[0].split('/')[0]  # This keeps the hyphens in 2023-09-26
-        encounter = get_encounter_number(start_date)
-        
-        # Format times for filename
-        start_time = self.format_time_for_filename(trange[0].split('/')[1])
-        stop_time = self.format_time_for_filename(trange[1].split('/')[1])
+        # Get encounter number using formatted date string from helper
+        encounter = get_encounter_number(time_info['start_date_str'])
         
         # Format the frequency for filename
         if self.markers_per_hour < 1:
@@ -326,9 +355,10 @@ class Audifier:
         else:
             freq_str = f"{self.markers_per_hour}_per_hour"
             
+        # Create filename using formatted strings from helper
         filename = os.path.join(output_dir,
-            f"{encounter}_PSP_FIELDS_MARKER_SET_{start_date}_"
-            f"{start_time}_to_{stop_time}_{freq_str}.txt")
+            f"{encounter}_PSP_FIELDS_MARKER_SET_{time_info['start_date_str']}_"
+            f"{time_info['start_time_formatted']}_to_{time_info['stop_time_formatted']}_{freq_str}.txt")
         
         with open(filename, 'w') as f:
             for marker_time, sample_number in zip(marker_times, closest_indices):
@@ -387,6 +417,12 @@ class Audifier:
                 
         print("Starting " + ("marker generation..." if self.markers_only else "audification process..."))
         
+        # === PARSE AND FORMAT TIME RANGE using helper ===
+        time_info = self._parse_and_format_trange(trange)
+        if time_info is None:
+             return {} # Error already printed by helper
+        # ===============================================
+
         # ====================================================================
         # DOWNLOAD AND PROCESS DATA FOR EACH COMPONENT
         # ====================================================================
@@ -413,10 +449,12 @@ class Audifier:
             # Check if cached data covers our time range
             if hasattr(class_instance, 'datetime_array') and class_instance.datetime_array is not None:
                 try:
+                    # Compare using numpy datetime64 which should handle different input formats
                     cached_start = np.datetime64(class_instance.datetime_array[0], 's')
                     cached_end = np.datetime64(class_instance.datetime_array[-1], 's')
-                    requested_start = np.datetime64(parse(trange[0]), 's')
-                    requested_end = np.datetime64(parse(trange[1]), 's')
+                    # Use parsed start/end from helper for comparison
+                    requested_start = np.datetime64(time_info['start_dt'], 's') 
+                    requested_end = np.datetime64(time_info['end_dt'], 's')
                     
                     # Add buffer for timing differences
                     buffered_start = cached_start - np.timedelta64(10, 's')
@@ -455,8 +493,7 @@ class Audifier:
             return
         
         # Setup directories
-        start_date = trange[0].split('/')[0]
-        encounter = get_encounter_number(start_date)
+        encounter = get_encounter_number(time_info['start_date_str'])
         
         # Check if save_dir already ends with the encounter name
         if os.path.basename(self.save_dir.rstrip('/\\')) == encounter:
@@ -467,11 +504,8 @@ class Audifier:
             os.makedirs(encounter_dir, exist_ok=True) # Ensure base encounter dir exists if needed
             print(f"Creating encounter directory: {encounter_dir}")
 
-        # Setup output subfolder within the encounter directory
-        formatted_date = start_date.replace('-', '_')
-        start_time = self.format_time_for_filename(trange[0].split('/')[1])
-        stop_time = self.format_time_for_filename(trange[1].split('/')[1])
-        subfolder_name = f"{encounter}_{formatted_date}_{start_time}_to_{stop_time}"
+        # Setup output subfolder within the encounter directory using pre-formatted strings from helper
+        subfolder_name = f"{encounter}_{time_info['formatted_date']}_{time_info['start_time_formatted']}_to_{time_info['stop_time_formatted']}"
         output_dir = os.path.join(encounter_dir, subfolder_name)
         os.makedirs(output_dir, exist_ok=True)
         
@@ -489,8 +523,7 @@ class Audifier:
         
         # Generate audio files if not markers_only
         if not self.markers_only:
-            # Use original date format with dashes for filenames
-            formatted_date_with_dashes = start_date  # This preserves the original YYYY-MM-DD format
+            # Use pre-formatted date string with dashes for filenames from helper
             sample_rate_str = f"{self.sample_rate}SR"
             
             if self.channels == 1:  # Mono mode - each component gets its own file
@@ -506,8 +539,8 @@ class Audifier:
                     filename = os.path.join(output_dir,
                         f"{encounter}_PSP_"
                         f"{component.data_type.upper()}_"
-                        f"{formatted_date_with_dashes}_"
-                        f"{start_time}_to_{stop_time}_"
+                        f"{time_info['formatted_date_with_dashes']}_"
+                        f"{time_info['start_time_formatted']}_to_{time_info['stop_time_formatted']}_"
                         f"{sample_rate_str}_"
                         f"{component.subclass_name.capitalize()}.wav")
                     
@@ -543,8 +576,8 @@ class Audifier:
                     filename = os.path.join(output_dir,
                         f"{encounter}_PSP_"
                         f"{processed_components[0].data_type.upper()}_"
-                        f"{formatted_date_with_dashes}_"
-                        f"{start_time}_to_{stop_time}_"
+                        f"{time_info['formatted_date_with_dashes']}_"
+                        f"{time_info['start_time_formatted']}_to_{time_info['stop_time_formatted']}_"
                         f"{sample_rate_str}_"
                         f"{left_name}_L_{right_name}_R.wav")
                     
@@ -564,8 +597,8 @@ class Audifier:
                         filename = os.path.join(output_dir,
                             f"{encounter}_PSP_"
                             f"{component.data_type.upper()}_"
-                            f"{formatted_date_with_dashes}_"
-                            f"{start_time}_to_{stop_time}_"
+                            f"{time_info['formatted_date_with_dashes']}_"
+                            f"{time_info['start_time_formatted']}_to_{time_info['stop_time_formatted']}_"
                             f"{sample_rate_str}_"
                             f"{component.subclass_name.capitalize()}.wav")
                         
