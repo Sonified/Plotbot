@@ -30,8 +30,8 @@ from .plotbot_helpers import time_clip
 
 # Import data classes and their instances (Updated Paths)
 from .data_classes.psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
-from .data_classes.psp_electron_classes import epad
-from .data_classes.psp_proton_classes import proton
+from .data_classes.psp_electron_classes import epad, epad_hr
+from .data_classes.psp_proton_classes import proton, proton_hr
 from .data_classes.psp_proton_fits_classes import proton_fits # Import the FITS class
 from .data_classes.psp_ham_classes import ham # ADDED: Import the HAM class instance
 
@@ -122,7 +122,9 @@ __all__ = [
     'mag_sc_4sa', 
     'mag_sc',
     'epad',
+    'epad_hr',       # ADD epad_hr
     'proton',
+    'proton_hr',     # ADD proton_hr
     'proton_fits',   # Add proton_fits to __all__
     'ham',           # ADDED: Add ham to __all__
     'audifier',
