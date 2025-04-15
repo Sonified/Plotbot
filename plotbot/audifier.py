@@ -99,27 +99,47 @@ class Audifier:
         self._fade_samples = 0
     
     def _parse_and_format_trange(self, trange):
-        """Parses trange and returns datetime objects and formatted strings."""
+        """Parses trange and returns datetime objects and formatted strings, handling multi-day ranges."""
         try:
             start_dt = parse(trange[0])
             end_dt = parse(trange[1])
-            # Get formatted date/time strings needed
-            start_date_str = start_dt.strftime('%Y-%m-%d') # Format as YYYY-MM-DD
-            formatted_date = start_dt.strftime('%Y_%m_%d') # Use underscore format for subfolder
-            start_time_str = start_dt.strftime('%H:%M:%S.%f')[:-3]
-            stop_time_str = end_dt.strftime('%H:%M:%S.%f')[:-3]
-            start_time_formatted = self.format_time_for_filename(start_time_str)
-            stop_time_formatted = self.format_time_for_filename(stop_time_str)
-            formatted_date_with_dashes = start_date_str # Re-use YYYY-MM-DD string
             
+            # Format start date/time parts
+            start_date_hyphen = start_dt.strftime('%Y-%m-%d')
+            start_date_underscore = start_dt.strftime('%Y_%m_%d')
+            start_time_hhmm = self.format_time_for_filename(start_dt.strftime('%H:%M:%S.%f')[:-3])
+            
+            # Format end time part
+            stop_time_hhmm = self.format_time_for_filename(end_dt.strftime('%H:%M:%S.%f')[:-3])
+            
+            # Check if range spans multiple days
+            if start_dt.date() == end_dt.date():
+                # Single day range
+                range_str_hyphen = f"{start_date_hyphen}_{start_time_hhmm}_to_{stop_time_hhmm}"
+                range_str_underscore = f"{start_date_underscore}_{start_time_hhmm}_to_{stop_time_hhmm}"
+                # Keep single date format for backward compatibility if needed elsewhere?
+                # For now, let's focus on the range strings.
+                formatted_date_with_dashes = start_date_hyphen # Original date for potential single-day use case
+                formatted_date_underscore = start_date_underscore # Original date for potential single-day use case
+            else:
+                # Multi-day range
+                end_date_hyphen = end_dt.strftime('%Y-%m-%d')
+                end_date_underscore = end_dt.strftime('%Y_%m_%d')
+                range_str_hyphen = f"{start_date_hyphen}_{start_time_hhmm}_to_{end_date_hyphen}_{stop_time_hhmm}"
+                range_str_underscore = f"{start_date_underscore}_{start_time_hhmm}_to_{end_date_underscore}_{stop_time_hhmm}"
+                # Keep start date for backward compatibility if needed elsewhere?
+                formatted_date_with_dashes = start_date_hyphen
+                formatted_date_underscore = start_date_underscore
+
             return {
                 'start_dt': start_dt,
                 'end_dt': end_dt,
-                'start_date_str': start_date_str,
-                'formatted_date': formatted_date,
-                'start_time_formatted': start_time_formatted,
-                'stop_time_formatted': stop_time_formatted,
-                'formatted_date_with_dashes': formatted_date_with_dashes
+                'start_date_str': start_date_hyphen, # Keep for encounter lookup
+                'range_str_hyphen': range_str_hyphen, # Combined range string with hyphens in dates
+                'range_str_underscore': range_str_underscore, # Combined range string with underscores in dates
+                # Keep original formatted dates just in case, though likely unused now
+                'formatted_date': formatted_date_underscore, 
+                'formatted_date_with_dashes': formatted_date_with_dashes 
             }
         except Exception as e:
             # Use logging if available, otherwise print
@@ -355,10 +375,9 @@ class Audifier:
         else:
             freq_str = f"{self.markers_per_hour}_per_hour"
             
-        # Create filename using formatted strings from helper
+        # Create filename using the combined range string from helper
         filename = os.path.join(output_dir,
-            f"{encounter}_PSP_FIELDS_MARKER_SET_{time_info['start_date_str']}_"
-            f"{time_info['start_time_formatted']}_to_{time_info['stop_time_formatted']}_{freq_str}.txt")
+            f"{encounter}_PSP_FIELDS_MARKER_SET_{time_info['range_str_hyphen']}_{freq_str}.txt")
         
         with open(filename, 'w') as f:
             for marker_time, sample_number in zip(marker_times, closest_indices):
@@ -504,8 +523,8 @@ class Audifier:
             os.makedirs(encounter_dir, exist_ok=True) # Ensure base encounter dir exists if needed
             print(f"Creating encounter directory: {encounter_dir}")
 
-        # Setup output subfolder within the encounter directory using pre-formatted strings from helper
-        subfolder_name = f"{encounter}_{time_info['formatted_date']}_{time_info['start_time_formatted']}_to_{time_info['stop_time_formatted']}"
+        # Setup output subfolder within the encounter directory using the combined range string from helper
+        subfolder_name = f"{encounter}_{time_info['range_str_underscore']}"
         output_dir = os.path.join(encounter_dir, subfolder_name)
         os.makedirs(output_dir, exist_ok=True)
         
@@ -539,8 +558,7 @@ class Audifier:
                     filename = os.path.join(output_dir,
                         f"{encounter}_PSP_"
                         f"{component.data_type.upper()}_"
-                        f"{time_info['formatted_date_with_dashes']}_"
-                        f"{time_info['start_time_formatted']}_to_{time_info['stop_time_formatted']}_"
+                        f"{time_info['range_str_hyphen']}_"
                         f"{sample_rate_str}_"
                         f"{component.subclass_name.capitalize()}.wav")
                     
@@ -576,8 +594,7 @@ class Audifier:
                     filename = os.path.join(output_dir,
                         f"{encounter}_PSP_"
                         f"{processed_components[0].data_type.upper()}_"
-                        f"{time_info['formatted_date_with_dashes']}_"
-                        f"{time_info['start_time_formatted']}_to_{time_info['stop_time_formatted']}_"
+                        f"{time_info['range_str_hyphen']}_"
                         f"{sample_rate_str}_"
                         f"{left_name}_L_{right_name}_R.wav")
                     
@@ -597,8 +614,7 @@ class Audifier:
                         filename = os.path.join(output_dir,
                             f"{encounter}_PSP_"
                             f"{component.data_type.upper()}_"
-                            f"{time_info['formatted_date_with_dashes']}_"
-                            f"{time_info['start_time_formatted']}_to_{time_info['stop_time_formatted']}_"
+                            f"{time_info['range_str_hyphen']}_"
                             f"{sample_rate_str}_"
                             f"{component.subclass_name.capitalize()}.wav")
                         
