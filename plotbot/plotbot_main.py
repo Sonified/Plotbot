@@ -428,6 +428,8 @@ def plotbot(trange, *args):
                         # Common y-axis settings for scatter plots
                         plot_ax.set_ylabel(getattr(var, 'y_label', ''))
                         plot_ax.set_yscale(getattr(var, 'y_scale', 'linear'))
+                        if hasattr(var, 'y_limit') and var.y_limit:  # Add this check and call
+                            plot_ax.set_ylim(var.y_limit)
 
                 #====================================================================
                 # PLOT SPECTRAL DATA (e.g. ELECTRON PAD SPECTROGRAMS)
