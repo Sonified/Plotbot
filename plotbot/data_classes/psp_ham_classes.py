@@ -230,9 +230,10 @@ class ham_class:
         # Stash instance after update
         data_cubby.stash(self, class_name='ham')
 
-    def _create_ham_scatter_ploptions(self, var_name, subclass_name, y_label, legend_label, color, marker_style=(5, 1), marker_size=20, alpha=0.2):
+    def _create_ham_scatter_ploptions(self, var_name, subclass_name, y_label, legend_label, color, marker_style=(5, 1), marker_size=20, alpha=0.2, y_limit=None):
         """Helper method for standard ham scatter plot options."""
         # Default star marker (5, 1), size 20, alpha 0.2 if not overridden
+        print('Running _create_ham_scatter_ploptions')
         return ploptions(
             var_name=var_name,
             data_type='ham',
@@ -247,7 +248,7 @@ class ham_class:
             marker_style=marker_style,
             marker_size=marker_size,
             alpha=alpha,
-            y_limit=None # Default to auto-limits
+            y_limit=y_limit # Default to auto-limits
         )
 
     def _create_ham_timeseries_ploptions(self, var_name, subclass_name, y_label, legend_label, color, y_limit=[0, None], line_width=1, line_style='-'):
