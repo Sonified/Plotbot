@@ -14,6 +14,27 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
 *   Rapid Multi-panel comparisons ofa single variable using the `multiplot` function.
 *   Rapid Audio generation using the 'audifier' function.
 
+## Example Usage & Notebook
+
+The primary way to learn and use Plotbot is through the included Jupyter Notebook: `Plotbot.ipynb`. This notebook contains numerous examples demonstrating how to load data, customize plots, and use the various functions like `plotbot()`, `multiplot()`, `showdahodo()`, and `audifier()`.
+
+A typical `plotbot()` call looks like this:
+
+```python
+# Import necessary components (This is done at the top of the notebook)
+import plotbot
+from plotbot import *
+
+# Define the time range
+trange = ['2018-10-22 12:00:00', '2018-10-27 13:00:00'] # Note: .fff for milliseconds is optional
+
+# Plot variables on different axes
+plotbot(trange, 
+        mag_rtn_4sa.br, 1,  # Plot Br component of B-field (RTN, ~4 samples/sec) on axis 1
+        epad.strahl, 2)     # Plot electron strahl spectrogram on axis 2 
+```
+This simple call automatically downloads the required data for the specified time range and generates a two-panel plot.
+
 ## Installation (macOS Instructions Only, other OS instructions coming soon)
 
 ### Prerequisites
@@ -78,7 +99,7 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
     *   Clone this repository and change your working directory to the Plotbot directory. After you run this command you can follow the instructions in the terminal to complete the installation 💻:
 
         ```bash
-        git clone https://github.com/Sonified/Plotbot.git && cd Plotbot && echo "✅ Download complete" && echo "" && echo "Copy and paste the following command, including the period, to initialize Conda for your shell: ./install_scripts/1_init_conda.sh" && echo ""
+        git clone https://github.com/Sonified/Plotbot.git && cd Plotbot && echo "✅ Download complete" && echo "" && echo "Copy and paste the following command, including the period, to initialize Conda for your shell: ./Install_Scripts/1_init_conda.sh" && echo ""
         ```
 
 2.  **Now Run the Environment Setup Scripts in the Same Terminal Window** 
@@ -86,19 +107,19 @@ A tool for downloading and plotting data from the Parker Solar Probe. Created by
     *   First, initialize Conda for your shell:
        
         ```bash
-        ./install_scripts/1_init_conda.sh
+        ./Install_Scripts/1_init_conda.sh
         ```
 
     *   Next, create the Plotbot environment from the YAML file:
         
         ```bash
-        ./install_scripts/2_setup_env.sh
+        ./Install_Scripts/2_setup_env.sh
         ```
 
     *   Finally, register Plotbot as a Jupyter kernel (👉 if VS Code is open, close ❌ and reopen 🟢 it after this):
         
         ```bash
-        ./install_scripts/3_register_kernel.sh
+        ./Install_Scripts/3_register_kernel.sh
         ````
 
 3.  **Open VS Code & Select the Environment**
@@ -130,50 +151,6 @@ In VS code hit 'Run All' and scroll down to see example plots:
 *   python-dateutil: 2.9.0.post0
 *   pytest: 7.4.4
 *   termcolor: 2.4.0
-
-## Running Tests
-
-All tests for Plotbot are located in the `tests/` directory. You can run tests using the provided test runner:
-
-```bash
-# Run all tests
-python run_tests.py
-
-# Run a specific test file
-python run_tests.py test_custom_variables.py
-
-# Run a specific test function
-python run_tests.py test_custom_variables.py::test_create_custom_variable
-```
-
-Alternatively, you can use pytest directly:
-
-```bash
-# Run all tests
-pytest tests/
-
-# Run a specific test file
-pytest tests/test_custom_variables.py -v
-
-# Run a specific test function
-pytest tests/test_custom_variables.py::test_create_custom_variable -v
-```
-
-### Running Tests with Conda Environment
-Make sure you're in the correct directory and using the plotbot_env conda environment:
-
-```bash
-# Run all tests in test_multiplot.py
-cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_multiplot.py -v
-
-# Run a specific test function
-cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_multiplot.py::test_multiplot_single_custom_variable -v
-
-# Run the options reset test
-cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_multiplot.py::test_options_reset -v
-```
-
-The `-v` flag provides verbose output, showing more detail about what's happening in the tests.
 
 ## Print Manager
 
@@ -337,7 +314,14 @@ Each of the data components (like mag_rtn.br) has various properties that you ca
 ```python
 mag_rtn.br.color = 'green'  # Change the line color
 mag_rtn.br.y_limit = (-50, 50)  # Set y-axis limits
+mag_rtn.br.y_scale = 'log' # Set y-axis to log scale
 ```
+
+**Note:** The `plotbot()` function can handle various plot types automatically based on the variable's definition, including:
+*   `time_series`: Standard line plots.
+*   `spectral`: 2D color mesh plots (spectrograms).
+*   `scatter`: Scatter plots for data points that may not be continuous.
+
 **4. Available Data Products**
 
 Here's a list of the currently available data products and their components.
@@ -400,15 +384,345 @@ Here's a list of the currently available data products and their components.
 **5. Other Plotting Functions**
 There are two other primary plotting methods in `Plotbot`:
 
-*    `multiplot()`: The `multiplot` function provides similar capability to `plotbot` but allows for automated generation of many subplots, e.g. around perihelion.  See the 'Multiplotting Magic' section of the notebook for details on usage.
-*   `showdahodo()`:  Creates a hodogram (scatter) plot of two variables.  This is useful for visualizing the relationship between, for example, two components of the magnetic field.  Examples are provided in the notebook.
+*    `multiplot()`: Designed for comparing a *single* variable across multiple consecutive time intervals. It automatically generates subplots for each interval, making it easy to analyze changes over extended periods or around events like perihelion. See the 'Multiplotting Magic' section of the notebook for usage details.
+*   `showdahodo()`:  Creates a hodogram (scatter) plot comparing two variables against each other (instead of against time). This is useful for visualizing the relationship between, for example, two components of the magnetic field. Examples are provided in the notebook.
 
 **6. Data Audification:**
 
 Plotbot also includes an `audifier` object, which allows you to create audio files (WAV format) from any of the data components.  Furthermore, you can generate a text file containing time markers.  This marker file can be directly imported into audio processing software like iZotope RX, allowing you to visually navigate the audio based on specific time points within the data. See the included Jupyter Notebook for examples.
 
-Note: The current version of plotbot requires that you first use plotbot to download the data for the time range of interest, this will be updated soon.
+## Advanced Features
+
+Beyond basic plotting, Plotbot offers powerful features for data analysis:
+
+### Custom Variables
+
+You can easily create new variables derived from existing data using standard arithmetic operations. Plotbot automatically handles the underlying data loading and calculation.
+
+```python
+from plotbot import custom_variable, proton, mag_rtn_4sa
+
+# Example: Calculate Temperature Anisotropy over B Magnitude
+ta_over_b = custom_variable('MyAnisotropyRatio', proton.anisotropy / mag_rtn_4sa.bmag)
+
+# You can then plot this new variable like any other:
+plotbot(trange, ta_over_b, 1)
+
+# Customize its appearance:
+ta_over_b.y_label = 'T_perp/T_par / B'
+ta_over_b.y_scale = 'log'
+```
+
+Plotbot's `plotbot.data_classes.custom_variables.py` module manages these operations, ensuring that source data is available and calculations are updated when the time range changes. See `tests/test_custom_variables.py` and `tests/test_arithmetic.py` for more examples.
+
+### Proton Distribution Function Fits
+
+Plotbot includes capabilities for analyzing proton velocity distribution functions (VDFs) measured by SPAN-i. The `plotbot.data_classes.psp_proton_fits_classes.py` module defines classes to handle fitting parameters (like core/beam densities, temperatures, drifts) derived from these VDFs. The calculations themselves are performed by functions within `plotbot.calculations.calculate_proton_fits.py`.
+
+While the fitting process itself is complex and currently requires manual setup or integration within specific analysis workflows, the resulting fit parameters can potentially be loaded and plotted using Plotbot's standard mechanisms once calculated. This feature is under active development. See `tests/test_fits_integration.py` for related tests.
+
+## Code Structure Overview
+
+For those interested in contributing or understanding the internals:
+
+*   **`Plotbot.ipynb`**: The main Jupyter Notebook demonstrating usage.
+*   **`plotbot/`**: Contains the core Python code.
+    *   **`__init__.py`**: Makes the package importable and exposes key functions/classes.
+    *   **`plotbot.py`**: Simple import helper.
+    *   **`plotbot_main.py`**: Contains the primary `plotbot()` function logic.
+    *   **`multiplot.py`, `showdahodo.py`, `audifier.py`**: Implement other main features.
+    *   **`data_classes/`**: Defines classes for each instrument/data product (e.g., `psp_mag_classes.py`, `psp_proton_classes.py`, `custom_variables.py`). These handle data attributes, plotting defaults, and sometimes calculations.
+    *   **`calculations/`**: Houses more complex analysis code, like `calculate_proton_fits.py`.
+    *   **`data_download.py`, `data_import.py`, `get_data.py`**: Handle fetching and loading data.
+    *   **`data_cubby.py`, `data_tracker.py`**: Internal mechanisms for managing loaded data.
+    *   **`plot_manager.py`**: Handles the underlying Matplotlib plotting logic.
+    *   **`print_manager.py`**: Controls console output.
+    *   **`test_pilot.py`**: Custom pytest runner framework.
+    *   **`utils.py`, `time_utils.py`, `plotbot_helpers.py`, etc.**: Utility functions.
+*   **`tests/`**: Contains all `pytest` tests.
+*   **`Install_Scripts/`**: Scripts for setting up the Conda environment.
+*   **`psp_data/`**: Default location for downloaded data (can be configured).
+*   **`docs/`**: Additional documentation (if any).
+*   **`environment.yml`**: Defines the Conda environment.
+*   **`run_tests.py`**: Convenience script for running tests.
+
+## Running Tests
+
+Plotbot utilizes the `pytest` framework along with a custom space-themed runner (`plotbot/test_pilot.py`) for organized and informative testing. All tests reside in the `tests/` directory, categorized by the functionality they cover (e.g., `test_plotbot.py`, `test_multiplot.py`, `test_custom_variables.py`).
+
+### Test Structure with `test_pilot.py`
+
+Our tests follow a mission structure provided by `test_pilot.py`:
+*   **Missions:** Each test function is marked with `@pytest.mark.mission("Mission Name")` to group related checks.
+*   **Phases:** Within a test, `phase(number, "Description")` calls structure the test flow into logical steps.
+*   **System Checks:** `system_check("Check Name", condition, "Failure Message")` performs assertions with clear reporting.
+
+This structure, visible in files like `tests/test_plotbot.py`, provides detailed, space-themed output in the terminal, making it easier to track test progress and diagnose failures.
+
+### Executing Tests
+
+You can run tests using the provided `run_tests.py` script or directly with `pytest`.
+
+**Using `run_tests.py`:**
+
+```bash
+# Run all tests
+python run_tests.py
+
+# Run a specific test file (e.g., test_custom_variables.py)
+python run_tests.py test_custom_variables.py
+
+# Run a specific test function within a file
+python run_tests.py test_custom_variables.py::test_create_custom_variable
+```
+
+**Using `pytest` directly (often with Conda environment activation):**
+
+Make sure you're in the correct directory (`~/GitHub/Plotbot`) and using the `plotbot_env` conda environment.
+
+```bash
+# Run all tests
+conda run -n plotbot_env python -m pytest tests/ -v
+
+# Run all tests in a specific file (e.g., test_multiplot.py)
+conda run -n plotbot_env python -m pytest tests/test_multiplot.py -v
+
+# Run a specific test function (e.g., test_multiplot_single_custom_variable)
+conda run -n plotbot_env python -m pytest tests/test_multiplot.py::test_multiplot_single_custom_variable -v
+
+# Run a specific mission
+conda run -n plotbot_env python -m pytest tests/ -m "Custom Variable Time Range Update - Log Scale" -v
+```
+
+The `-v` flag provides verbose output. Add the `-s` flag (`pytest -v -s`) if you want to see output from `print()` statements within the tests (including `print_manager.test()` output when tests are run).
 
 Have Fun Plotbotting!
 
+## Technical Notes For Developers:
+**Important Note on Standard Variable Caching:**
+
+A key aspect of Plotbot's efficiency for standard data products (like `mag_rtn_4sa`, `proton`, etc.) is how calculated data is stored and reused. Unlike custom variables which have a separate calculation tracking mechanism, standard variables cache their **calculated results** within the class instance itself, managed by `data_cubby`. Here's a breakdown confirmed by code analysis:
+
+*   **Initial State:** When Plotbot starts, empty instances of data classes (e.g., `mag_rtn_4sa_class`) are created and stored in `data_cubby`.
+*   **First Data Request:** When data is requested for a time range (`trange`) not yet covered:
+    *   `get_data.py` identifies the need via `data_tracker.is_import_needed`.
+    *   `data_import.py` fetches the **raw data** from files.
+    *   This raw data is passed to the relevant class's `.update()` method (e.g., `mag_rtn_4sa.update(raw_data)`).
+    *   Inside the class, `calculate_variables()` uses the raw data to perform calculations (e.g., `bmag = np.sqrt(...)`).
+    *   The **calculated results** (e.g., the `bmag` NumPy array) are stored in the instance's internal `self.raw_data` dictionary.
+    *   `set_ploptions()` then creates `plot_manager` objects (e.g., `self.bmag`), packaging these **calculated arrays** from `self.raw_data`.
+    *   `data_cubby.stash(self, ...)` saves the *entire class instance*, which now contains the `plot_manager` objects holding the **calculated results**, back into the `data_cubby`.
+    *   `data_tracker.update_imported_range` logs that this `trange` has been imported.
+*   **Subsequent Requests (Covered `trange`):**
+    *   `get_data.py` checks `data_tracker.is_import_needed` and finds the `trange` is covered.
+    *   It **skips** calling `data_import.py` and **skips** calling the class's `.update()` method. No recalculation occurs for this standard variable.
+    *   When plotting (`plotbot_main.py`), `data_cubby.grab(...)` retrieves the *existing class instance* (saved during the first request).
+    *   The required `plot_manager` (e.g., `mag_rtn_4sa.bmag`) is extracted from this instance.
+    *   Plotting proceeds using the **previously calculated and stored results** contained within that `plot_manager`.
+
+In essence, standard variables recalculate *only when new raw data is imported* for a time range. Otherwise, the results calculated during the last relevant import are efficiently reused from the cached class instance.
+
+Now, let's look at the role of each module in this pipeline:
+
+1.  **`plotbot/get_data.py` (The Conductor):**
+    *   This is the main entry point called by functions like `plotbot()` when data is needed for a specific time range (`trange`) and set of variables.
+
+**Plotbot Data Acquisition Pipeline Overview:**
+
+```text
+Simplified Data Flow
+
+Request: plotbot(trange, mag_rtn.br, 1)
+            |
+          Calls
+            |
+            V
+            get_data.py (The conductor)
+            |
+            V
+            1. Identify Data Type Needed
+            |
+            [psp_data_types.py] <----- Data Configuration Hub 
+            |                          (e.g. provides data_type key)
+            |             
+            V
+            2. Check Cache for this data_type w/in provided trange
+            |     
+            [data_tracker.py] <----- Cache Manager
+            |
+            V
+            3. Is Download Needed? (Y/N)
+            |
+    +---<---+-->--+
+    |             |
+   (N)           (Y)
+    |             |
+    |             V
+    |             4. Initiate Download
+    |             |                  
+    |             V
+    |             [data_download.py] (uses data_download_helpers.py)
+    |             |              (process_directory calls server_access.py)
+    |             V
+    |<-------(Files Downloaded)
+    |
+    V
+    5. Is Data Import Needed? 
+    |                               
+    [data_tracker.py] (tracks what's stored in data_cubby cache)
+    |
+    +-------------+
+    |             |
+   (N)           (Y)
+    |             |
+    |             6. Initiate Import of RAW Data
+    |             |  
+    |             [get_data.py]
+    |             |  
+    |            Calls
+    |             |
+    |             V
+    |             [data_import.py] <----Reads RAW Variables/Columns from Files (CDF/CSV)
+    |             |                     Uses Config: psp_data_types.py
+    |             |                     Uses Libs: cdflib, pandas
+    |             V                  
+    |<---(Returns RAW DataObject)
+    |
+    (RAW DataObject ready from Importer)
+    |
+    V
+    7. Update Class, Calculate Variables & Update Cache
+       (get_data calls Class.update(RAW DataObject))
+            |
+            V [Inside Data Class Instance (e.g., psp_mag_classes.py)]
+              - Takes RAW DataObject
+              - Calls internal calculate_variables() -> Calculates derived quantities (e.g., Bmag) from raw data
+              - Calls internal set_ploptions()      -> Stores results as interactive plot_manager objects (e.g., self.bmag)
+       (get_data calls data_tracker.update...())
+            |
+            V
+    ---> Data Ready for Plotting 
+         (Accessible via Class instance, e.g., mag_rtn_4sa.bmag)
+```
+
+The process of getting data from a request (e.g., in `plotbot()` or `get_data()`) to being available for plotting involves several coordinated modules:
+
+1.  **`plotbot/get_data.py` (The Conductor):**
+    *   This is the main entry point called by functions like `plotbot()` when data is needed for a specific time range (`trange`) and set of variables.
+    *   It first identifies the unique *types* of data required (e.g., `mag_RTN_4sa`, `proton`, `proton_fits`, `ham`) based on the input variables, consulting the configuration in `plotbot/data_classes/psp_data_types.py`.
+    *   For each required data type, it orchestrates the subsequent steps.
+
+2.  **`plotbot/data_tracker.py` (The Cache Manager):**
+    *   Before fetching or loading, `get_data` consults the `global_tracker` instance defined here.
+    *   This tracker remembers which time ranges have already been successfully *imported* from files or *calculated* (for types like `proton_fits`).
+    *   Functions like `is_import_needed()` and `is_calculation_needed()` tell `get_data` whether it can skip fetching/loading/calculating steps if the requested `trange` is already covered by a previously processed range for that specific data type.
+
+3.  **`plotbot/data_classes/psp_data_types.py` (The Configuration Hub):**
+    *   This crucial dictionary defines the properties of *every* known data type Plotbot can handle.
+    *   For standard downloadable CDF data (like FIELDS mag or SWEAP moments), it specifies the remote URL, local storage path structure, filename patterns (for finding/downloading), required password type (via `server_access`), expected CDF variable names inside the files, and time granularity (daily vs. 6-hour).
+    *   For data sourced from local CSV files (like pre-calculated FITS results or Hammerhead data), it specifies `file_source: 'local_csv'`, the base path to search, filename patterns, and expected column names.
+
+4.  **`plotbot/data_download.py` & `plotbot/data_download_helpers.py` (The Fetching Crew):**
+    *   If `get_data` determines (based on `data_tracker` and `psp_data_types`) that remote CDF files *might* be needed, it calls `download_new_psp_data`.
+    *   `download_new_psp_data` first calls `check_local_files` (from `data_download_helpers`) to see if the required files *already exist* locally for the `trange`.
+    *   If files are missing, `download_new_psp_data` uses the URL and patterns from the `psp_data_types` config.
+    *   `process_directory` (in `data_download_helpers`) handles contacting the remote server (using `authenticate_session` which leverages `plotbot/server_access.py`), parsing the HTML directory listing (`BeautifulSoup`) to find the *latest version* of the required file(s), and calling `download_file` to save them to the configured local path.
+
+5.  **`plotbot/data_import.py` (The Importer & Calculator):**
+    *   Once `get_data` knows the necessary files are available locally (either downloaded or inherently local like CSVs) and determines an import/refresh is needed (via `data_tracker`), it calls `import_data_function`.
+    *   **For CDFs:** This function finds the relevant local CDF files for the `trange`, opens them using `cdflib`, extracts the time arrays and the specific data variables listed in `psp_data_types.py`, handles fill values (converting them to `NaN`), concatenates data from multiple files if necessary, sorts by time, and returns a structured `DataObject`.
+    *   **For Calculated FITS (`proton_fits`):** When triggered by `get_data` (using a specific key like `'fits_calculated'`), this function reads the *raw* input CSVs (e.g., `sf00` type defined in `psp_data_types`) needed for the calculation, potentially calls the actual calculation function (like `calculate_proton_fits_vars` from `plotbot/calculations/`), processes the results, and returns them in the `DataObject` structure. *(Note: The exact triggering and calculation logic for FITS might be complex).*
+    *   **For Other Local CSVs (`ham`):** Similar to FITS, it finds the relevant local CSVs based on the `psp_data_types` config, reads them (using `pandas`), handles time conversion (to TT2000), filters by the requested `trange`, concatenates, sorts, and returns a `DataObject`.
+
+6.  **Back to `plotbot/get_data.py`:**
+    *   Receives the `DataObject` (containing time and data arrays) from `data_import`.
+    *   Updates the relevant global data class instance (e.g., `mag_rtn_4sa`, `proton`, `proton_fits`, `ham`) by calling its `.update()` method. This instance likely stores the data internally (potentially using `plotbot/data_cubby.py`).
+    *   Calls `data_tracker.update_imported_range` or `update_calculated_range` to record that this `trange` has now been successfully processed for the given data type.
+
+### Data Class and Plotting Architecture
+
+```
+Simplified Flow:
+User Access         Data Class             Plot Manager          Plot Options
+(e.g. mag_rtn.br)  (psp_mag_classes.py)   (plot_manager.py)     (ploptions.py)
+      |                    |                       |                     |
+      '------------------->' Calls __getattr__     |                     |
+                           |  on instance          |                     |
+                           |                       |                     |
+                           `-----> returns ------>` Holds data & uses --> Holds config
+                                 plot_manager      (Subclasses           (color, label,
+                                 instance          np.ndarray)           limits, etc.)
+
+Internal Setup (within Data Class):
+ __init__ / update()
+      |
+      V
+ calculate_variables() <-- Reads imported DataObject (from data_import.py)
+      |                   Stores results in self.raw_data
+      V
+ set_ploptions() ------> Creates plot_manager instance for each variable
+                        (e.g., self.br = plot_manager(self.raw_data['br'], ploptions(...)))
+
+Arithmetic & Custom Variables:
+ plot_manager_A + plot_manager_B  (via __add__ etc. in plot_manager.py)
+      |
+      V
+ New (Derived) plot_manager instance <-- Holds calculated data, links to sources A & B
+      |
+      V
+ custom_variable("MyVar", ...) ------> Registers derived instance globally (plotbot.MyVar)
+      |                                (Managed by custom_variables.py)
+      V
+ User Access (e.g. plotbot.MyVar) --> Acts like a standard plot_manager
+```
+
+**Detailed Explanation:**
+
+1.  **Data Classes (`psp_*.py`, `psp_ham_classes.py`): The Organizers**
+    *   **Role:** Each file defines a class (e.g., `mag_rtn_class`) managing data from a specific source (FIELDS, SPAN-i, SPAN-e, FITS CSVs, HAM CSVs).
+    *   **Instantiation:** An instance of each class is created globally (e.g., `mag_rtn`) usually without data initially, and registered in the `data_cubby`.
+    *   **`calculate_variables()`:** Triggered by the `update()` method when new data arrives from `data_import.py`. It processes the raw input `DataObject` and calculates specific physical quantities (e.g., B components, proton moments), storing results (NumPy arrays) in its internal `self.raw_data` dictionary.
+    *   **`set_ploptions()`:** Called after `calculate_variables`. This method is key: it creates a separate `plot_manager` instance for *each* plottable variable (e.g., `self.br`, `self.bmag`).
+    *   **Linking Data & Plotting:** When creating the `plot_manager` for `br`, it passes `self.raw_data['br']` (the actual data array) and a `ploptions` object containing default plot settings (labels, color, scale) specific to `br`.
+
+2.  **`plotbot/ploptions.py`: The Style Configurator**
+    *   **Role:** Defines the simple `ploptions` class.
+    *   **Function:** Acts as a container holding plotting configuration attributes (like `y_label`, `color`, `line_style`, `plot_type`). An instance of `ploptions` is created and configured within the Data Class's `set_ploptions()` method for each variable.
+
+3.  **`plotbot/plot_manager.py`: The Interactive Variable**
+    *   **Role:** This is the object users typically interact with (e.g., `mag_rtn.br`). It represents a single plottable variable.
+    *   **Dual Nature:** It subclasses `numpy.ndarray`, meaning it *is* the data array itself, allowing direct NumPy operations. It *also* holds the associated `ploptions` instance containing its plotting configuration and metadata (`data_type`, `class_name`, etc.).
+    *   **User Customization:** Provides properties (`@property`, `@*.setter`) so users can easily get/set plotting attributes (`mag_rtn.br.color = 'blue'`), which modifies the underlying `ploptions` state.
+    *   **Arithmetic (`__add__`, `__truediv__`, etc.):** Defines how operators work between `plot_manager` instances. When you perform `var_A / var_B`:
+        *   It aligns the data arrays from `var_A` and `var_B` to a common time grid (interpolation).
+        *   Performs the division.
+        *   Creates and returns a *new* (derived) `plot_manager` instance containing the result. This derived instance stores references to its sources (`var_A`, `var_B`) and the operation ('div').
+
+4.  **`plotbot/custom_variables.py`: Managing Derived Variables**
+    *   **Role:** Manages user-defined variables created through arithmetic operations on `plot_manager` instances.
+    *   **`custom_variable(name, expression)`:**
+        *   Takes the derived `plot_manager` instance (`expression`) returned by an arithmetic operation (like `proton.anisotropy / mag_rtn_4sa.bmag`).
+        *   Extracts the source variables and operation type stored on the `expression` object.
+        *   Registers this derived variable under the given `name` in the `CustomVariablesContainer`.
+        *   Makes the variable globally accessible (e.g., `plotbot.MyRatio`) so it can be used like any built-in variable.
+        *   Assigns an `update` method that allows Plotbot to recalculate the variable using fresh source data when the time range changes, preserving user styling.
+    *   **Dependency on Standard Variables:** They use standard variables as their inputs. When a custom variable needs to be recalculated (because `is_calculation_needed` returns true), it fetches the *current state* of its source standard variables from the `data_cubby`.
+    *   **Storing Calculated Results:** After recalculation, the new `plot_manager` object containing the **calculated result** is stored within the `CustomVariablesContainer` (which itself resides in `data_cubby`), replacing the previous result for that variable name.
+    *   **Triggering Data Updates:** Custom variables themselves don't directly trigger downloads. Instead, the main `plotbot` function ensures that the necessary source standard variables are up-to-date (by calling `get_data` on them) *before* it attempts to update or calculate the custom variable.
+
+This structure separates data calculation (in Data Classes) from plotting configuration (`ploptions`) and interactive data handling (`plot_manager`), while allowing seamless creation and management of derived quantities (`custom_variables`).
+
+**How Custom Variables Differ:**
+
+Custom variables (created using arithmetic like `proton.anisotropy / mag_rtn_4sa.bmag`) handle caching differently:
+
+*   **Dependency on Standard Variables:** They use standard variables as their inputs. When a custom variable needs to be recalculated (because `is_calculation_needed` returns true), it fetches the *current state* of its source standard variables from the `data_cubby`.
+*   **Storing Calculated Results:** After recalculation, the new `plot_manager` object containing the **calculated result** is stored within the `CustomVariablesContainer` (which itself resides in `data_cubby`), replacing the previous result for that variable name.
+*   **Triggering Data Updates:** Custom variables themselves don't directly trigger downloads. Instead, the main `plotbot` function ensures that the necessary source standard variables are up-to-date (by calling `get_data` on them) *before* it attempts to update or calculate the custom variable.
+
+This difference allows custom variables to recalculate only when their specific cached calculation is deemed outdated for the requested time range, based on their own tracking, rather than being tied solely to the import status of their underlying source data files.
+
+Now, let's look at the role of each module in this pipeline:
+
 (This is a work in progress)
+
