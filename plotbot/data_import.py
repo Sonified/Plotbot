@@ -15,7 +15,7 @@ from .data_cubby import data_cubby
 # from .plotbot_helpers import find_local_fits_csvs # This function is defined locally below
 
 # Import the NEW calculation function
-from .calculations.calculate_proton_fits import calculate_proton_fits_vars
+# from .calculations.calculate_proton_fits import calculate_proton_fits_vars
 
 # Attempt to import Jaye's original calculation function (legacy/backup)
 # try:

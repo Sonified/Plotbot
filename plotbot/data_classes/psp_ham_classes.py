@@ -233,7 +233,7 @@ class ham_class:
     def _create_ham_scatter_ploptions(self, var_name, subclass_name, y_label, legend_label, color, marker_style=(5, 1), marker_size=20, alpha=0.2, y_limit=None):
         """Helper method for standard ham scatter plot options."""
         # Default star marker (5, 1), size 20, alpha 0.2 if not overridden
-        print('Running _create_ham_scatter_ploptions')
+        # print('Running _create_ham_scatter_ploptions')
         return ploptions(
             var_name=var_name,
             data_type='ham',

@@ -13,11 +13,26 @@ from .server_access import server_access
 #====================================================================
 def check_local_files(trange: tuple, data_type: str) -> tuple[bool, list, list]:
     """
-    Check if files exist locally for given time range and data type.
+    Check if required data files for a specific data type exist locally 
+    within the expected directory structure for a given time range.
+
+    Determines file coverage based on the data type's time granularity 
+    (daily or 6-hour).
+
+    Args:
+        trange: A tuple containing two strings representing the start and end 
+                of the time range (e.g., ('YYYY-MM-DD HH:MM:SS', 'YYYY-MM-DD HH:MM:SS')).
+        data_type: The key corresponding to the data type in the 
+                   `plotbot.data_classes.psp_data_types.data_types` dictionary.
+
     Returns:
-        - bool: True if we have complete coverage
-        - list: Found files
-        - list: Missing files
+        A tuple containing:
+        - bool: True if all expected files for the `trange` are found locally, 
+                False otherwise.
+        - list: A list of strings containing the full paths to the local files 
+                that were found.
+        - list: A list of strings representing the expected base filenames 
+                (without version or extension) that were *not* found locally.
     """
     print_manager.debug("Local Files Time Debug")
     print_manager.debug(f"Input trange: {trange}")
@@ -207,8 +222,108 @@ def case_insensitive_file_search(directory, pattern_base):
         print_manager.debug(f"Full error: {traceback.format_exc()}")
         return []                   
     
+#====================================================================
+# FUNCTION: process_directory, Orchestrates Downloading of latest file version from a directory
+#====================================================================
+def process_directory(dir_url, pattern_str, date_info, base_local_path):
+    """
+    Orchestrate the process of accessing a remote directory and downloading the 
+    latest version of a needed file.
+
+    Handles authentication, file listing, version comparison, local path setup, 
+    and initiates the download.
+
+    Args:
+        dir_url: The URL of the remote directory containing the data file.
+        pattern_str: The regex pattern for matching the desired file and 
+                     extracting its version number.
+        date_info: A dictionary containing date details used for logging and 
+                   path construction: {'year': YYYY, ...}.
+        base_local_path: The base local directory path template for saving the file.
+
+    Returns:
+        True if the file was successfully downloaded, False if an error occurred 
+        or the file already existed locally, None if the directory or file was 
+        not found on the server.
+    """
+    response = authenticate_session(dir_url)  # Attempt to access the directory, handling login if needed.
+    
+    if response.status_code == 404: # Check if the directory itself wasn't found.
+        print(f"\nERROR: No data available at {dir_url}") # Indicate directory not found.
+        return None # Step out of function.
+    
+    if response.status_code != 200: # Check for other access errors (like permission denied after auth).
+        print(f"Failed to access {dir_url} with status code {response.status_code}") # Indicate generic access failure.
+        return None # Step out of function.
+        
+    # If directory accessed successfully, parse the HTML listing.
+    latest_file = process_file_listing(response.text, pattern_str, date_info) # Find the filename with the highest version number.
+    
+    if not latest_file: # Check if any matching file was found in the listing.
+        return None # Step out of function.
+        
+    # Prepare the local save location.
+    local_file_path = setup_local_path(base_local_path, date_info['year'], latest_file) # Get the full local path, checks if it exists.
+    
+    if not local_file_path:  # Check if setup_local_path returned None (meaning file already exists).
+        return None # Step out of function.
+        
+    # Construct the full URL for the specific file to download.
+    file_url = dir_url + latest_file
+    
+    # Initiate the actual download process.
+    return download_file(server_access.session, file_url, local_file_path) # Return True on success, False on download failure.
+
+#====================================================================
+# FUNCTION: download_file, ✨ Downloads a single file and saves it locally ✨
+#====================================================================
+def download_file(session, file_url, local_file_path):
+    """
+    Download a single file from a URL and save it locally.
+
+    Uses the provided requests session to perform the download.
+
+    Args:
+        session: The `requests.Session` object to use for the download 
+                 (should be authenticated if necessary).
+        file_url: The full URL of the file to download.
+        local_file_path: The full local path where the file should be saved.
+
+    Returns:
+        True if the download and saving were successful (HTTP status 200), 
+        False otherwise.
+    """
+    print_manager.status(f'Downloading {file_url}')
+    # Send the HTTP GET request to download the file content:
+    file_response = session.get(file_url) #<--- ✨This is where the download happens ✨
+    
+    if file_response.status_code == 200:
+        with open(local_file_path, 'wb') as f:
+            f.write(file_response.content)
+        print_manager.status(f'File {local_file_path} downloaded successfully.')
+        return True
+    else:
+        print_manager.status(f'Error downloading {file_url}, status code {file_response.status_code}')
+        return False
+
+#====================================================================
+# FUNCTION: authenticate_session, Handles authentication for accessing URLs
+#====================================================================
 def authenticate_session(dir_url):
-    """Handle authentication for PSP data access."""
+    """
+    Attempt to access a directory URL, handling authentication if required.
+
+    Uses the global `server_access` object to manage credentials and the 
+    requests session. Prompts for username/password via `getpass` if the 
+    server returns a 401 Unauthorized status.
+
+    Args:
+        dir_url: The URL of the remote directory to access.
+
+    Returns:
+        The `requests.Response` object from the successful GET request, or 
+        the response object from the final failed attempt (e.g., 401, 404).
+    """
     print_manager.debug("🔍 Starting authentication attempt")
     print_manager.debug(f"🔑 Password type: {server_access._password_type}")
     response = server_access.session.get(dir_url)
@@ -240,16 +355,28 @@ def authenticate_session(dir_url):
             if response.status_code == 401 and attempt < 1:
                 print_manager.debug("❌ Authentication failed - please try again")
 
+    return response # Return the final response, successful or not
+
+#====================================================================
+# FUNCTION: process_file_listing, Finds latest file version from HTML listing
+#====================================================================
 def process_file_listing(html_content, pattern_str, date_info):
-    """Extract and sort filenames from directory listing.
-    
+    """
+    Extract filenames from an HTML directory listing and find the latest version.
+
+    Parses the HTML, finds links matching the provided regex pattern, 
+    extracts version numbers, and returns the filename with the highest version.
+
     Args:
-        html_content: HTML response from server
-        pattern_str: Regex pattern for matching files
-        date_info: Dict with keys:
-            - date_str: Formatted date string
-            - is_hourly: Boolean for 6-hour vs daily files
-            - hour_str: Hour string (for 6-hour files)
+        html_content: A string containing the HTML source of the directory listing page.
+        pattern_str: The regex pattern string (created by `create_pattern_string`) 
+                     to match filenames and capture the version number.
+        date_info: A dictionary containing date details for logging purposes:
+                   {'date_str': 'YYYYMMDD', 'is_hourly': bool, 'hour_str': 'HH' or None}.
+
+    Returns:
+        A string containing the filename of the latest version found, or None if 
+        no matching files are found.
     """
     soup = BeautifulSoup(html_content, 'html.parser')
     links = soup.find_all('a')
@@ -269,22 +396,28 @@ def process_file_listing(html_content, pattern_str, date_info):
         
     return max(files_with_versions, key=lambda x: x[1])[0]
 
-def download_file(session, file_url, local_file_path):
-    """Download and save a file."""
-    print_manager.status(f'Downloading {file_url}')
-    file_response = session.get(file_url)
-    
-    if file_response.status_code == 200:
-        with open(local_file_path, 'wb') as f:
-            f.write(file_response.content)
-        print_manager.status(f'File {local_file_path} downloaded successfully.')
-        return True
-    else:
-        print_manager.status(f'Error downloading {file_url}, status code {file_response.status_code}')
-        return False
 
+#====================================================================
+# FUNCTION: setup_local_path, Constructs local path and checks existence
+#====================================================================
 def setup_local_path(base_local_path, year, filename):
-    """Setup local directory and return full file path."""
+    """
+    Construct the full local path for a file and check if it exists.
+
+    Ensures the target directory exists before checking for the file.
+
+    Args:
+        base_local_path: The base directory path template from the 
+                         `psp_data_types` configuration (e.g., 
+                         `"psp_data/fields/l2/{data_level}/"`).
+        year: The year (integer or string) corresponding to the file's date.
+        filename: The name of the file (e.g., 
+                  `"psp_fld_l2_mag_rtn_4sa_20230101_v02.cdf"`).
+
+    Returns:
+        The full local path string if the file does *not* already exist, 
+        otherwise returns None.
+    """
     local_dir = os.path.join(base_local_path, str(year))
     if not os.path.exists(local_dir):
         os.makedirs(local_dir)
@@ -296,32 +429,30 @@ def setup_local_path(base_local_path, year, filename):
         return None
     return local_file_path
 
-def create_pattern_string(template, data_level, date_info):
-    """Create pattern string based on file type."""
+#====================================================================
+# FUNCTION: create_pattern_string, Creates regex pattern for matching data files
+#====================================================================
+def create_pattern_string(pattern_template, data_level, date_info):
+    """
+    Create a regex pattern string for matching specific data files.
+
+    Constructs the pattern based on whether the data type uses daily or 
+    6-hour file granularity.
+
+    Args:
+        pattern_template: The filename pattern string template from the 
+                          `psp_data_types` configuration (e.g., 
+                          `"psp_fld_l2_{data_level}_{date_str}_v*.cdf"`).
+        data_level: The data level string (e.g., 'mag_rtn_4sa') from the config.
+        date_info: A dictionary containing date details:
+                   {'date_str': 'YYYYMMDD', 'is_hourly': bool, 'hour_str': 'HH' or None}.
+
+    Returns:
+        A string containing the compiled regex pattern ready for matching.
+        Example: 'psp_fld_l2_mag_rtn_4sa_20230101_v(\d+).cdf'
+    """
     if date_info['is_hourly']:
         date_hour_str = f"{date_info['date_str']}{date_info['hour_str']}"
-        return template.format(data_level=data_level, date_hour_str=date_hour_str)
-    return template.format(data_level=data_level, date_str=date_info['date_str'])
+        return pattern_template.format(data_level=data_level, date_hour_str=date_hour_str)
+    return pattern_template.format(data_level=data_level, date_str=date_info['date_str'])
     
-def process_directory(dir_url, pattern_str, date_info, base_local_path):
-    """Handle the entire directory processing workflow."""
-    response = authenticate_session(dir_url)  # Removed password_type parameter
-    
-    if response.status_code == 404:
-        print(f"\nERROR: No data available at {dir_url}")
-        return None
-    if response.status_code != 200:
-        print(f"Failed to access {dir_url} with status code {response.status_code}")
-        return None
-        
-    latest_file = process_file_listing(response.text, pattern_str, date_info)
-    if not latest_file:
-        return None
-        
-    local_file_path = setup_local_path(base_local_path, date_info['year'], latest_file)
-    if not local_file_path:  # File already exists
-        return None
-        
-    file_url = dir_url + latest_file
-    return download_file(server_access.session, file_url, local_file_path)
-
