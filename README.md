@@ -522,10 +522,20 @@ A key aspect of Plotbot's efficiency for standard data products (like `mag_rtn_4
 
 In essence, standard variables recalculate *only when new raw data is imported* for a time range. Otherwise, the results calculated during the last relevant import are efficiently reused from the cached class instance.
 
+**How Custom Variables Differ:**
+
+Custom variables (created using arithmetic like `proton.anisotropy / mag_rtn_4sa.bmag`) handle caching differently:
+
+*   **Dependency on Standard Variables:** They use standard variables as their inputs. When a custom variable needs to be recalculated (because `is_calculation_needed` returns true), it fetches the *current state* of its source standard variables from the `data_cubby`.
+*   **Storing Calculated Results:** After recalculation, the new `plot_manager` object containing the **calculated result** is stored within the `CustomVariablesContainer` (which itself resides in `data_cubby`), replacing the previous result for that variable name.
+*   **Triggering Data Updates:** Custom variables themselves don't directly trigger downloads. Instead, the main `plotbot` function ensures that the necessary source standard variables are up-to-date (by calling `get_data` on them) *before* it attempts to update or calculate the custom variable.
+
+This difference allows custom variables to recalculate only when their specific cached calculation is deemed outdated for the requested time range, based on their own tracking, rather than being tied solely to the import status of their underlying source data files.
+
 Now, let's look at the role of each module in this pipeline:
 
-1.  **`plotbot/get_data.py` (The Conductor):**
-    *   This is the main entry point called by functions like `plotbot()` when data is needed for a specific time range (`trange`) and set of variables.
+**`plotbot/get_data.py` (The Conductor):**
+*   This is the main entry point called by functions like `plotbot()` when data is needed for a specific time range (`trange`) and set of variables.
 
 **Plotbot Data Acquisition Pipeline Overview:**
 
@@ -643,15 +653,13 @@ The process of getting data from a request (e.g., in `plotbot()` or `get_data()`
 
 ```
 Simplified Flow:
-User Access         Data Class             Plot Manager          Plot Options
-(e.g. mag_rtn.br)  (psp_mag_classes.py)   (plot_manager.py)     (ploptions.py)
-      |                    |                       |                     |
-      '------------------->' Calls __getattr__     |                     |
-                           |  on instance          |                     |
-                           |                       |                     |
-                           `-----> returns ------>` Holds data & uses --> Holds config
-                                 plot_manager      (Subclasses           (color, label,
-                                 instance          np.ndarray)           limits, etc.)
+User Access          Instance of Data Class       plot_manager instance
+(e.g. mag_rtn.br)    (e.g., mag_rtn object)       (The object returned)
+      |                        |                           |
+      '----------------------->' Access attribute (.br) ---> Returns the specific plot_manager
+                                                               |
+                                                        Holds Data (is ndarray)
+                                                        Holds Plot Config (its ploptions attribute)
 
 Internal Setup (within Data Class):
  __init__ / update()
@@ -706,23 +714,28 @@ Arithmetic & Custom Variables:
         *   Registers this derived variable under the given `name` in the `CustomVariablesContainer`.
         *   Makes the variable globally accessible (e.g., `plotbot.MyRatio`) so it can be used like any built-in variable.
         *   Assigns an `update` method that allows Plotbot to recalculate the variable using fresh source data when the time range changes, preserving user styling.
-    *   **Dependency on Standard Variables:** They use standard variables as their inputs. When a custom variable needs to be recalculated (because `is_calculation_needed` returns true), it fetches the *current state* of its source standard variables from the `data_cubby`.
-    *   **Storing Calculated Results:** After recalculation, the new `plot_manager` object containing the **calculated result** is stored within the `CustomVariablesContainer` (which itself resides in `data_cubby`), replacing the previous result for that variable name.
-    *   **Triggering Data Updates:** Custom variables themselves don't directly trigger downloads. Instead, the main `plotbot` function ensures that the necessary source standard variables are up-to-date (by calling `get_data` on them) *before* it attempts to update or calculate the custom variable.
+
 
 This structure separates data calculation (in Data Classes) from plotting configuration (`ploptions`) and interactive data handling (`plot_manager`), while allowing seamless creation and management of derived quantities (`custom_variables`).
 
-**How Custom Variables Differ:**
+### Standard Variable State Management: `data_cubby`, Class Instances, and Update Logic
 
-Custom variables (created using arithmetic like `proton.anisotropy / mag_rtn_4sa.bmag`) handle caching differently:
+While the main pipeline overview describes the general flow, the precise logic for updating standard data variables (like `mag_rtn_4sa`, `proton`, etc.) involves specific checks managed by `get_data.py` interacting with `data_cubby` and `data_tracker`.
 
-*   **Dependency on Standard Variables:** They use standard variables as their inputs. When a custom variable needs to be recalculated (because `is_calculation_needed` returns true), it fetches the *current state* of its source standard variables from the `data_cubby`.
-*   **Storing Calculated Results:** After recalculation, the new `plot_manager` object containing the **calculated result** is stored within the `CustomVariablesContainer` (which itself resides in `data_cubby`), replacing the previous result for that variable name.
-*   **Triggering Data Updates:** Custom variables themselves don't directly trigger downloads. Instead, the main `plotbot` function ensures that the necessary source standard variables are up-to-date (by calling `get_data` on them) *before* it attempts to update or calculate the custom variable.
+1.  **Role of `data_cubby`:** The `data_cubby` acts as a registry, holding the global *instances* of the standard data classes (e.g., the `mag_rtn_4sa` object, which is an instance of `mag_rtn_4sa_class`). It does not store raw data separately for these types.
 
-This difference allows custom variables to recalculate only when their specific cached calculation is deemed outdated for the requested time range, based on their own tracking, rather than being tied solely to the import status of their underlying source data files.
+2.  **The Update Trigger - Two Conditions:** When `get_data.py` processes a request for a standard data type and a specific time range (`trange`), it determines if the cached instance needs updating based on *two* conditions:
+    *   **`needs_import` Check:** It first asks `data_tracker.is_import_needed(trange, data_type)`. This checks if an import for this `data_type` covering this `trange` has been logged previously.
+    *   **`needs_refresh` Check:** Independently, `get_data.py` retrieves the current class instance from `data_cubby`. It then directly inspects the time range of the data held within that instance (usually by checking the `datetime_array` attribute). It compares this cached time range against the requested `trange`. If the cached data doesn't fully cover the request, `needs_refresh` becomes true.
 
-Now, let's look at the role of each module in this pipeline:
+3.  **Executing the Update:** The `class_instance.update(data_obj)` method (which involves reading files via `import_data_function`, recalculating variables, and storing the results back in the instance) is called only if **`needs_import` is TRUE *OR* `needs_refresh` is TRUE**.
+    *   **Handling Extended Ranges:** It's important to note that if the update is triggered because the requested `trange` extends beyond the time range currently held in the instance, `import_data_function` is designed to read the source files for the *entire extended `trange`*. It then concatenates this data and returns a complete `DataObject` covering the full extended period. The subsequent `class_instance.update()` call uses this new, larger `DataObject` to recalculate variables and store the results, effectively replacing the previous, shorter time range data within the instance with the complete data for the extended range.
+
+4.  **Skipping the Update:** If *both* the tracker indicates the range was previously imported (`needs_import` is FALSE) *and* the direct check shows the currently cached instance already holds data covering the requested `trange` (`needs_refresh` is FALSE), then the `.update()` method is skipped entirely. `plotbot` will later retrieve this existing instance from `data_cubby` and use its already calculated data.
+
+5.  **Contrast with Custom Variables:** This dual-check logic differs from custom variables. Custom variables rely solely on a single check (`data_tracker.is_calculation_needed`) which uses a separate tracking mechanism (`calculated_ranges`) specific to that variable's calculation state.
+
+This ensures that standard variables are updated not only when new time ranges are encountered according to the tracker, but also if the specific data held in the cache doesn't adequately cover the request, providing robustness against potential inconsistencies.
 
 (This is a work in progress)
 
