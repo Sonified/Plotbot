@@ -14,7 +14,9 @@ dependencies:
   - scipy=1.15.2
   - pytest=7.4.4
   - termcolor=2.4.0
+  - ipympl
   - pip
   - pip:
     - ipykernel
     - ipywidgets
+    - pyspedas

@@ -145,6 +145,9 @@ In VS code hit 'Run All' and scroll down to see example plots:
 *   NumPy: 1.26.4
 *   Pandas: 2.2.2
 *   Matplotlib: 3.9.2
+*   ipympl: 0.9.4 # For %matplotlib widget
+*   ipywidgets: 8.1.3 # For audifier and potentially other widgets
+*   pyspedas: 1.6.1 # Space physics data analysis
 *   cdflib: 1.3.1
 *   BeautifulSoup: 4.12.3
 *   requests: 2.32.2

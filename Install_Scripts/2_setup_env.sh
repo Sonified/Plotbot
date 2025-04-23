@@ -23,26 +23,19 @@ if conda env list | grep -q plotbot_env; then
     case $option in
         1)
             echo "🔹 Updating 'plotbot_env' environment..."
-            echo "Running: conda env update -f environment.yml --name plotbot_env"
+            echo "Running: conda env update -f environment.yml --name plotbot_env -v"
             
-            # Capture output to check if changes were made
-            update_output=$(conda env update -f environment.yml --name plotbot_env 2>&1)
-            update_status=$?
+            # Run the command and let it print directly to terminal
+            conda env update -f environment.yml --name plotbot_env -v
+            update_status=$? # Capture exit status immediately
             
             # Check if the update was successful
             if [ $update_status -ne 0 ]; then
-                echo "❌ Error: Environment update failed with code $update_status."
+                echo "❌ Error: Environment update failed. See detailed conda output above. (Exit code: $update_status)"
                 exit 1
             else
-                # Display the output so user can see what happened
-                echo "$update_output"
-                
-                # Check if "Requirement already satisfied" appears for all packages
-                if [[ "$update_output" == *"Requirement already satisfied"* ]] && ! [[ "$update_output" == *"Collecting "* ]]; then
-                    echo "✅ Environment checked - all packages are already up to date!"
-                else
-                    echo "✅ Environment updated successfully with new packages!"
-                fi
+                # Simplified success message since details are printed above
+                echo "✅ Environment updated successfully!"
             fi
             ;;
         2)
