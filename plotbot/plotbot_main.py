@@ -593,5 +593,5 @@ def plotbot(trange, *args):
     plt.show()                                                    # Display the complete figure
 
 print('\n🤖 Plotbot Initialized')
-print(f'   Version: 2025_04_21_v1.00')
-print(f'   Commit: Refactor: Plan SPDF integration, fix FITS import bug, add comments')
+print(f'   Version: 2025_04_23_v1.00')
+print(f'   Commit: Feat: Update dependencies (pyspedas, ipympl), add package check test')
