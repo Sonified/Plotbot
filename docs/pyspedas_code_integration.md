@@ -85,18 +85,46 @@ The primary challenge shifts to ensuring that `plotbot/data_import.py` (which us
     *   Internal Logic:
         *   Map the Plotbot `data_type` key to the required `pyspedas` `datatype` string (this mapping can be internal to this function initially, e.g., a simple dictionary).
         *   Call the appropriate `pyspedas` function with `downloadonly=True`, `notplot=True`, and potentially configure the download path if needed to align with Plotbot's structure.
-        *   **Optimization:** Use the `no_update` parameter pattern provided by Robert to potentially improve performance by checking local files first (ensure `downloadonly=True` and `notplot=True` are also included in the actual call):
+        *   **Optimization for Offline Use:** Use the `no_update` parameter pattern to ensure reliable checking for local files when potentially offline. The `no_update=True` check MUST be performed first. If it returns the file path, the process can stop (file found locally). Only if `no_update=True` fails to return the file should `no_update=False` be attempted (which triggers the download if online). This is crucial because the standard check (omitting `no_update` or using only `no_update=False`) fails when offline, as it attempts network access even with `downloadonly=True`.
+            
+            Here's a more detailed example illustrating how the result might be captured and used:
+            ```python
+            # Example logic structure (ensure downloadonly=True, notplot=True etc. are included)
+            file_path = None
+            try:
+                for no_update_flag in [True, False]: # Check local first, then attempt download
+                    print(f"Attempting pyspedas call with no_update={no_update_flag}...")
+                    returned_data = pyspedas_func(..., no_update=no_update_flag, ...)
+                    if returned_data: # Check if list is not empty and contains path
+                        file_path = returned_data[0]
+                        print(f"File path found/obtained with no_update={no_update_flag}.")
+                        break # Exit loop once file is found/downloaded
+                if not file_path:
+                     print("File not found locally or via download attempt.")
+            except Exception as e:
+                print(f"Error during pyspedas check/download: {e}")
+                # Handle error appropriately
+
+            # Proceed using file_path if found
+            ```
+
+            The original concise structure focusing on the loop itself was:
             ```python
             try:
                 for no_update in [True, False]:  # First try local, then try download
-                    mag_rtn_4sa_vars = pyspedas.psp.fields(
+                    # Assign returned value if needed, e.g.:
+                    # returned_data = pyspedas.psp.fields(
+                    pyspedas.psp.fields(
                         trange=trange,
-                        datatype='mag_rtn_4_sa_per_cyc',
+                        datatype='mag_rtn_4_sa_per_cyc', # Example datatype
                         level='l2',
                         time_clip=True,
                         get_support_data=True,
+                        downloadonly=True, # Crucial
+                        notplot=True,      # Crucial
                         no_update=no_update
                     )
+                    # Add logic here to check the returned value and potentially break
             except Exception as e:
                 pass # Add appropriate error handling / loop breaking logic
             ```
@@ -190,3 +218,26 @@ electrons_cdf_file_path = '/Users/robertalexander/Dropbox/__Collaborations/_NASA
 
 # Load the high-resolution electron CDF file
 electrons_cdf_file = cdflib.CDF(electrons_cdf_file_path)
+
+## 8. Test Results & Key Learnings (From `tests/test_pyspedas_download.py`)
+
+Initial testing using `downloadonly=True` provided several critical insights:
+
+*   **Return Value is Key:** The `pyspedas` data loading functions (`fields`, `spi`, `spe`) successfully return a list containing the *relative path* to the file(s) they downloaded or found locally, even when `downloadonly=True` is used. This is crucial because it bypasses the need for potentially unreliable `glob` searches immediately after the function call, especially given the long download times observed for some data types.
+    *   Example Return: `['psp_data/fields/l2/mag_rtn_4_per_cycle/2023/psp_fld_l2_mag_rtn_4_sa_per_cyc_20230928_v02.cdf']`
+*   **Directory Structure Matches:** The directory structure where `pyspedas` saves downloaded files (relative to the `psp_data` root) perfectly matches the structure defined in `plotbot/data_classes/psp_data_types.py` based on the Berkeley server layout.
+    *   Verification involved comparing the absolute path derived from the `pyspedas` return value against the expected absolute path constructed using the config and `WORKSPACE_ROOT`.
+*   **Base Filename Matches (Case-Insensitive):** The core components of the filename (instrument, level, data product, date) match the expected patterns *when compared case-insensitively*. The version number (`_vXX`) is correctly handled.
+*   **Case Mismatch Identified:** There is a consistent case difference between the filenames returned by `pyspedas` and the patterns expected from the Berkeley config (`psp_data_types.py`):
+    *   `pyspedas` returns paths with lowercase components (e.g., `l2`, `l3`, `rtn`, `sc`, `sa`, `cyc`).
+    *   Berkeley patterns use mixed case (e.g., `L2`, `L3`, `RTN`, `SC`, `Sa`, `Cyc`).
+*   **Plotbot File Search is Case-Insensitive:** A check of `data_download_helpers.py` (`case_insensitive_file_search`) and `data_import.py` confirmed that Plotbot's existing logic for finding local files already performs case-insensitive comparisons. Therefore, the case mismatch in filenames should *not* prevent Plotbot from finding/loading files downloaded by `pyspedas`.
+*   **Long Download Times Confirmed:** Manual testing and test failures confirmed that some data types (e.g., `mag_rtn`) involve downloading large multi-GB files, taking several minutes. `time_clip=True` does *not* appear to prevent the download of the entire file block.
+*   **`no_update` Loop Performance:** The performance test showed that using the `no_update=[True, False]` loop is slightly *slower* than letting `pyspedas` perform its default check when the file is already local. The default check is efficient.
+
+**Implications for Integration:**
+
+1.  The core data acquisition logic (in `get_data.py` or a new `spdf_download.py`) should rely on the **return value** of the `pyspedas` function (when using `downloadonly=True`) to get the path to the needed file, rather than using `glob`.
+2.  The comparison logic for paths needs to handle the **relative path** returned by `pyspedas` and convert it to absolute if needed for internal consistency.
+3.  While the case mismatch in filenames is noted, no immediate code change is needed in the file *searching* logic due to its existing case-insensitivity.
+4.  The `no_update` loop strategy **is the required method** for reliably checking for local files when potentially offline. The standard `pyspedas` check (even with `downloadonly=True`) fails offline as it still attempts network access. While the initial `no_update=True` check is slightly slower than the standard check *when online and the file exists*, its offline reliability is essential for Plotbot's intended use cases.
