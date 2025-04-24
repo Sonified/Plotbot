@@ -593,5 +593,5 @@ def plotbot(trange, *args):
     plt.show()                                                    # Display the complete figure
 
 print('\n🤖 Plotbot Initialized')
-print(f'   Version: 2025_04_24_v1.01')
-print(f'   Commit: Refactor: Rename data download modules and functions, add basic plot test')
+print(f'   Version: 2025_04_24_v1.02')
+print(f'   Commit: Feat: Implement conditional download logic in get_data')

@@ -66,3 +66,26 @@
 **GitHub Push:**
 - **Commit Message:** `Refactor: Rename data download modules and functions, add basic plot test`
 - **Version Tag:** `2025_04_24_v1.01` 
+
+## Entry 2025-04-24 (Attempt 2 at Config Logic)
+
+**Summary:**
+- **Failed Attempt:** Attempted to integrate the `config.data_server` logic into `get_data.py`. The implementation incorrectly modified the core existing logic instead of creating a simple conditional fork for the download step.
+- **Clarification of Correct Approach:** The intended next step is to modify `get_data.py` *minimally*. Within the main loop processing standard data types, the single call to `download_berkeley_data` should be replaced by an `if/elif/else` block based on `config.data_server`. This block will conditionally call either `download_spdf_data` or `download_berkeley_data` (or try SPDF then Berkeley for `dynamic` mode), leaving the surrounding data checking and import logic unchanged.
+
+**Status:** Code reverted. Ready to re-attempt the config logic implementation correctly. 
+
+## Entry 2025-04-24 (Continued... Again)
+
+**Summary:**
+- Implemented conditional data download logic in `plotbot/get_data.py`:
+    - Added import for `plotbot.config` and `plotbot.data_download_pyspedas.download_spdf_data`.
+    - Replaced the direct call to `download_berkeley_data` with an `if/elif/else` block based on `config.data_server` (defaulting to `'dynamic'`).
+    - This block conditionally calls `download_spdf_data` or `download_berkeley_data`.
+- Created `plotbot/config.py` file with the `data_server` configuration variable and documentation.
+- Verified the changes by running `tests/test_all_plot_basics.py` and `tests/test_showdahodo.py::test_basic_functionality`, both passed successfully.
+- Updated `docs/pyspedas_code_integration.md` to reflect the completion of Step 3 (Dispatch Logic modification). 
+
+**GitHub Push:**
+- **Commit Message:** `Feat: Implement conditional download logic in get_data`
+- **Version Tag:** `2025_04_24_v1.02` 
