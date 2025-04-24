@@ -48,4 +48,21 @@
 
 **Git Push:**
 *   Version Tag: `2025_04_24_v1.00`
-*   Commit Message: `Feat: Add offline pyspedas check test & update plan` 
+*   Commit Message: `Feat: Add offline pyspedas check test & update plan`
+
+## Entry 2025-04-24 (Continued)
+
+**Summary:**
+- Refactored data download functionality:
+    - Renamed `plotbot/data_download.py` to `plotbot/data_download_berkeley.py`.
+    - Renamed the core Berkeley download function from `download_new_psp_data` to `download_berkeley_data`.
+    - Updated imports and function calls in `get_data.py`, `multiplot.py`, `audifier.py`, `showdahodo.py`, and `plotbot_main.py` to use the new module and function names.
+    - Added placeholder comments (`# TODO`) regarding future configuration server checks.
+    - Created a new file `plotbot/data_download_pyspedas.py` with a basic structure for the SPDF download function (`download_spdf_data`), including `PYSPEDAS_MAP`.
+- Created a new, fast smoke test file `tests/test_all_plot_basics.py`.
+- This test includes basic checks for `plotbot`, `multiplot`, and `showdahodo` using only `mag_rtn_4sa` data for a short interval.
+- Debugged `tests/test_all_plot_basics.py`, specifically adjusting assertions for `plotbot` (doesn't return fig/axs) and `multiplot` (handles single-panel return types flexibly) until all tests passed.
+
+**GitHub Push:**
+- **Commit Message:** `Refactor: Rename data download modules and functions, add basic plot test`
+- **Version Tag:** `2025_04_24_v1.01` 

@@ -1,7 +1,7 @@
 # Import plotbot components with relative imports
 from .data_cubby import data_cubby
 from .data_tracker import global_tracker  
-from .data_download import download_new_psp_data
+from .data_download_berkeley import download_berkeley_data
 from .data_import import import_data_function
 from .print_manager import print_manager
 from .get_encounter import get_encounter_number
@@ -218,7 +218,7 @@ def multiplot(plot_list, **kwargs):
                     # Download fresh data for base variables if needed
                     if base_vars:
                         print_manager.custom_debug(f"Downloading fresh data for {len(base_vars)} source variables...")
-                        get_data(trange, *base_vars)
+                        download_berkeley_data(trange, *base_vars)
                 
                 # Update the variable for the new time range using its update method
                 if hasattr(var, 'update'):

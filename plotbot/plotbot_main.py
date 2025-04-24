@@ -45,10 +45,10 @@ from .print_manager import print_manager
 from .server_access import server_access
 from .data_tracker import global_tracker
 from .data_cubby import data_cubby
-from .data_download import download_new_psp_data
+from .data_download_berkeley import download_berkeley_data
 from .data_import import import_data_function
 from .plot_manager import plot_manager
-from .multiplot_options import plt  # Import our enhanced plt
+from .multiplot_options import plt, MultiplotOptions
 from .get_data import get_data  # Add get_data import
 
 from .data_classes.psp_data_types import data_types
@@ -593,5 +593,5 @@ def plotbot(trange, *args):
     plt.show()                                                    # Display the complete figure
 
 print('\n🤖 Plotbot Initialized')
-print(f'   Version: 2025_04_23_v1.00')
-print(f'   Commit: Feat: Update dependencies (pyspedas, ipympl), add package check test')
+print(f'   Version: 2025_04_24_v1.01')
+print(f'   Commit: Refactor: Rename data download modules and functions, add basic plot test')
