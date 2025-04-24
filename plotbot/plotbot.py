@@ -28,4 +28,9 @@ __all__ = [
     'mag_sc',
     'epad',
     'proton'
-] 
+]
+
+# Display Plotbot banner with version and commit info
+print(colored("🤖 Plotbot Initialized", "blue"))
+print(f"   Version: {colored('2025_04_24_v1.00', 'yellow')}") # Updated version
+print(f"   Commit: {colored('Feat: Add offline pyspedas check test & update plan', 'green')}") # Updated commit message 

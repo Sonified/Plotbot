@@ -26,4 +26,13 @@ Focused on updating the project's core dependencies and installation process, an
 
 **Git Push:**
 *   Version Tag: `2025_04_23_v1.00`
-*   Commit Message: `Feat: Update dependencies (pyspedas, ipympl), add package check test` 
+*   Commit Message: `Feat: Update dependencies (pyspedas, ipympl), add package check test`
+
+---
+**Editor & Filename Update:**
+*   Installed and started using the `Vditor` markdown editor extension for viewing/editing Captain's Logs.
+*   **Important:** Log filenames must now use hyphens for the date (`YYYY-MM-DD`) format, e.g., `captains_log_2025-04-23.md`. The previous format using underscores for the date (`YYYY_MM_DD.md`) caused issues with the editor, specifically due to the underscore before the `.md` extension. 
+
+---
+LOG CLOSED
+--- 
