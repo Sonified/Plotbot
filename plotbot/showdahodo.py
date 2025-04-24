@@ -2,7 +2,7 @@
 from .print_manager import print_manager
 from .data_cubby import data_cubby
 from .data_tracker import global_tracker  
-from .data_download import download_new_psp_data
+from .data_download_berkeley import download_berkeley_data
 from .data_import import import_data_function
 from .plotbot_helpers import time_clip
 from .multiplot_options import plt  # Import our enhanced plt with options

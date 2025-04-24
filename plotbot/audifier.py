@@ -10,7 +10,7 @@ from dateutil.parser import parse
 from .get_encounter import get_encounter_number
 from .data_cubby import data_cubby
 from .data_tracker import global_tracker
-from .data_download import download_new_psp_data
+from .data_download_berkeley import download_berkeley_data
 from .data_import import import_data_function
 from .print_manager import print_manager
 from .plotbot_helpers import time_clip
@@ -456,7 +456,7 @@ class Audifier:
             print_manager.debug(f"\nProcessing {data_type} - {subclass_name}")
             
             # Download data if needed
-            download_new_psp_data(trange, data_type)
+            download_berkeley_data(trange, data_type)
             
             # Get class instance from data_cubby
             class_instance = data_cubby.grab(class_name)
