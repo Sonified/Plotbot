@@ -135,3 +135,5 @@ __all__ = [
     'system_check',
     'time_clip'      # ADDED time_clip helper function
 ]
+
+# Note: Version and Git commit messages are printed at the bottom of plotbot_main.py

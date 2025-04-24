@@ -10,6 +10,8 @@ from .print_manager import print_manager
 from .data_tracker import global_tracker
 from .data_cubby import data_cubby
 from .data_download_berkeley import download_berkeley_data
+from .data_download_pyspedas import download_spdf_data
+from . import config
 from .data_import import import_data_function
 from .data_classes.psp_data_types import data_types
 from .data_classes.psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
@@ -248,10 +250,36 @@ def get_data(trange: List[str], *variables):
             print_manager.warning(f"Skipping standard processing for local_csv type {data_type}. Should be handled by proton_fits.")
             continue
             
-        # TODO: Add logic here to check plotbot.config.data_server
-        # For now, default to calling Berkeley download only
-        # Download data if needed
-        download_berkeley_data(trange, data_type)
+        # Conditional data download based on configuration
+        server_mode = getattr(config, 'data_server', 'dynamic') # Default to dynamic
+        print_manager.debug(f"Server mode for {data_type}: {server_mode}")
+        
+        download_attempted = False
+        download_successful = False # Assume files might exist locally
+
+        if server_mode == 'spdf':
+            print_manager.debug(f"Attempting SPDF download for {data_type}...")
+            download_successful = download_spdf_data(trange, data_type)
+            download_attempted = True
+        elif server_mode == 'berkeley':
+            print_manager.debug(f"Attempting Berkeley download for {data_type}...")
+            download_successful = download_berkeley_data(trange, data_type)
+            download_attempted = True
+        elif server_mode == 'dynamic':
+            print_manager.debug(f"Attempting SPDF download (dynamic mode) for {data_type}...")
+            download_successful = download_spdf_data(trange, data_type)
+            download_attempted = True
+            if not download_successful:
+                print_manager.debug(f"SPDF download failed/incomplete for {data_type}, falling back to Berkeley...")
+                download_successful = download_berkeley_data(trange, data_type)
+        else:
+            print_manager.warning(f"Invalid config.data_server mode: '{server_mode}'. Defaulting to Berkeley.")
+            download_successful = download_berkeley_data(trange, data_type)
+            download_attempted = True
+            
+        # The import logic below relies on files being present locally if needed.
+        # The download functions are responsible for ensuring this.
+        # We proceed to check if the *in-memory* cache needs updating.
         
         class_name = data_type  # Assume class_name matches data_type for standard types
         class_instance = data_cubby.grab(class_name)
