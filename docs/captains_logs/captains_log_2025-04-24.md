@@ -89,3 +89,28 @@
 **GitHub Push:**
 - **Commit Message:** `Feat: Implement conditional download logic in get_data`
 - **Version Tag:** `2025_04_24_v1.02` 
+
+## Entry 2025-04-24 (Configuration Refactor)
+
+**Current Task:** Refactoring the configuration system. The goal is to move the data type definitions (currently a dictionary in `plotbot/data_classes/psp_data_types.py`) into a dedicated `PlotbotConfig` class. This class will manage the configuration and provide a structured way to access and potentially modify settings (like the `data_server` mode needed for testing). The aim is to make this accessible globally, likely via `plotbot.config`. 
+
+## Entry 2025-04-24 (Berkeley vs SPDF Variable Comparison)
+
+**Summary:**
+- Added a new test `test_compare_berkeley_spdf_vars` to `tests/test_pyspedas_download.py`.
+- **Goal:** Verify that the internal variable names within CDF files are consistent, regardless of whether the file originates from Berkeley or SPDF.
+- **Process:**
+    - The test uses a helper function `_get_internal_vars` to run `plotbot` in both `'berkeley'` and `'spdf'` modes for a set of test variables (`mag_rtn_4sa.br`, `mag_sc_4sa.bx`, `proton.vr`, `epad.strahl`).
+    - It finds the relevant CDF files loaded/downloaded by `plotbot` for each mode.
+    - It extracts the list of all variable names from the CDFs using `cdflib`.
+    - It compares the variable lists between the two modes for each data type.
+- **Debugging:** Required multiple rounds of debugging to fix:
+    - Import conflicts (`plotbot` module vs function).
+    - Incorrect glob patterns in `_find_cdf_files` (double `_v*` wildcard, missing `{data_level}` formatting, missing `{date_str}` formatting).
+    - Incorrect `cdflib` usage (using non-existent `.varnames()` instead of `cdf_info()` + `.rVariables` / `.zVariables`).
+    - Type mismatch in comparison logic (`list` vs `set`).
+- **Result:** The test now passes, confirming that for the tested data types, the internal CDF variable names are identical between the Berkeley-style and SPDF-style files.
+
+**GitHub Push:**
+- **Commit Message:** `Test: Add and pass Berkeley vs SPDF variable comparison test`
+- **Version Tag:** `2025_04_24_v1.03` 

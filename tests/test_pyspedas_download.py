@@ -3,19 +3,45 @@ import os
 import pytest
 import glob
 import time # Added for performance test and sleep
+import cdflib # Add cdflib import
 from datetime import datetime
-from plotbot.data_classes.psp_data_types import data_types
-from plotbot.test_pilot import phase, system_check # Import test pilot helpers
+import sys # Added for path modification
+# from plotbot import plt # Import plotbot's plt instance # Remove this line
+
+# Add the parent directory to sys.path to find plotbot package
+# This assumes the tests/ directory is one level below the main project root
+# Adjust if your structure is different
+plotbot_project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, plotbot_project_root)
+
+# Now import plotbot components specifically
+import plotbot # For plotbot.config
+from plotbot.plotbot_main import plotbot as plotbot_function # The main function, renamed
+from plotbot.data_classes.psp_data_types import data_types # For config lookups in helpers
+from plotbot import mag_rtn_4sa, mag_sc_4sa, proton, epad # Data variables needed for tests
+from plotbot import print_manager # For logging
+from plotbot import plt # For plot closing
+from plotbot.test_pilot import phase, system_check # Test helpers
+
+# Remove the old imports
+# import plotbot # Import the main package to access config # Remove this line
+# from plotbot import * # Remove this wildcard import
 
 # Global list to store paths of successfully found/downloaded files for cleanup
 downloaded_files_to_clean = []
 
-# Test time range from docs/pyspedas_download_examples.py
-TEST_TRANGE = ['2023-09-28/06:00:00.000', '2023-09-28/07:30:00.000']
-TEST_DATE_STR = '20230928'
-TEST_YEAR = '2023'
+# Updated test time range and constants
+# TEST_TRANGE = ['2023-09-14/06:00:00.000', '2023-09-14/07:30:00.000']
+# TEST_DATE_STR = '20230914'
+# TEST_YEAR = '2023'
+
+# New test time range and constants for 2020
+TEST_TRANGE = ['2020-04-09/06:00:00.000', '2020-04-09/07:30:00.000']
+TEST_DATE_STR = '20200409'
+TEST_YEAR = '2020'
 
 # Map Plotbot data types to pyspedas datatypes and expected Berkeley local paths
+# Rebuild this dict using the new date/year constants
 TEST_DATA_TYPES = {
     'mag_RTN_4sa': {
         'pyspedas_datatype': 'mag_rtn_4_sa_per_cyc',
@@ -59,6 +85,17 @@ TEST_DATA_TYPES = {
 # This needs verification, but aligns with logs in pyspedas_code_integration.md
 WORKSPACE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # Assumes tests/ is one level down
 PYSPEDAS_ROOT_DATA_DIR = os.path.join(WORKSPACE_ROOT, 'psp_data')
+
+# Fixture to manage config changes and ensure reset
+@pytest.fixture
+def manage_config():
+    original_server_mode = plotbot.config.data_server
+    print(f"\n--- [Fixture] Saving original config.data_server: '{original_server_mode}' ---")
+    try:
+        yield # Test runs here
+    finally:
+        plotbot.config.data_server = original_server_mode
+        print(f"--- [Fixture] Restored config.data_server to: '{plotbot.config.data_server}' ---")
 
 
 def get_expected_berkeley_path_info(data_type_key):
@@ -511,4 +548,367 @@ def test_cleanup_downloaded_files():
             all_deleted = False
 
     phase(3, "Final cleanup verification")
-    system_check("Overall Cleanup Status", all_deleted, "All identified test files should be successfully deleted.") 
+    system_check("Overall Cleanup Status", all_deleted, "All identified test files should be successfully deleted.")
+
+
+@pytest.mark.mission("Pyspedas Internal Variable Name Verification")
+@pytest.mark.parametrize("plotbot_key, config", TEST_DATA_TYPES.items())
+def test_pyspedas_internal_variable_names(plotbot_key, config):
+    """Checks if variable names inside pyspedas-downloaded CDFs match Plotbot expectations."""
+    phase(1, f"Setup and Cleanup for {plotbot_key}") # Renamed phase
+    pyspedas_func = config['pyspedas_func']
+    pyspedas_datatype = config['pyspedas_datatype']
+    kwargs = config['kwargs']
+    file_path = None
+    returned_data = None
+    print(f"--- Verifying internal variables for: {plotbot_key} ---")
+
+    # --- Add Cleanup Step --- 
+    # Construct directory path and patterns
+    expected_dir = os.path.join(PYSPEDAS_ROOT_DATA_DIR, config['pyspedas_subpath'])
+    spdf_pattern = os.path.join(expected_dir, config['pyspedas_file_pattern'])
+    berkeley_pattern = os.path.join(expected_dir, config['berkeley_file_pattern'])
+    files_to_delete = []
+
+    # Use glob to find potentially conflicting files (case-insensitive conceptually)
+    # Glob is case-sensitive on Linux/macOS by default, case-insensitive on Windows.
+    # To handle this robustly, we might need a helper or just glob both patterns.
+    print(f"  Searching for files to delete in: {expected_dir}")
+    print(f"  SPDF Pattern: {config['pyspedas_file_pattern']}")
+    print(f"  Berkeley Pattern: {config['berkeley_file_pattern']}")
+    
+    # Find files matching either pattern
+    files_to_delete.extend(glob.glob(spdf_pattern))
+    # Use extend to avoid duplicates if patterns overlap significantly
+    berkeley_files = glob.glob(berkeley_pattern)
+    for bf in berkeley_files:
+        if bf not in files_to_delete:
+            files_to_delete.append(bf)
+
+    if files_to_delete:
+        print(f"  Found {len(files_to_delete)} potential file(s) to delete:")
+        delete_success = True
+        for f_del in files_to_delete:
+            try:
+                os.remove(f_del)
+                print(f"    Deleted: {os.path.basename(f_del)}")
+            except OSError as e:
+                print(f"    Error deleting {os.path.basename(f_del)}: {e}")
+                delete_success = False
+        system_check("Pre-Test File Cleanup", delete_success, "Should be able to delete existing test files.")
+        if not delete_success:
+             pytest.fail("Failed to clean up existing files before testing.")
+    else:
+        print("  No pre-existing files found to delete.")
+        system_check("Pre-Test File Cleanup", True, "No pre-existing files found.")
+    # --- End Cleanup Step ---
+
+    phase(2, f"Ensure CDF file exists via Pyspedas ({plotbot_key})")
+    try:
+        for no_update_flag in [True, False]:
+            print(f"  Calling {pyspedas_func.__name__} with no_update={no_update_flag}...")
+            returned_data = pyspedas_func(
+                trange=TEST_TRANGE,
+                datatype=pyspedas_datatype,
+                no_update=no_update_flag,
+                downloadonly=True,
+                notplot=True,
+                time_clip=True,
+                **kwargs
+            )
+            if returned_data and isinstance(returned_data, list) and len(returned_data) > 0:
+                # Path is relative to data dir, make it absolute
+                relative_path = returned_data[0]
+                file_path = os.path.abspath(os.path.join(WORKSPACE_ROOT, relative_path)) # Use WORKSPACE_ROOT
+                print(f"    Pyspedas acknowledged file (absolute path): {file_path}")
+                break # File found/downloaded
+    except Exception as e:
+        system_check("Pyspedas File Acquisition", False, f"Pyspedas call failed: {e}")
+        pytest.fail(f"Pyspedas call failed for {plotbot_key} during file acquisition: {e}")
+
+    file_exists = file_path is not None and os.path.exists(file_path)
+    path_check = system_check("Pyspedas File Acquisition", file_exists, f"Pyspedas should provide a valid path to an existing file. Path: {file_path}")
+    if not path_check:
+        pytest.fail(f"Could not acquire valid file path from Pyspedas for {plotbot_key}")
+
+    phase(3, f"Get Expected Internal Variables from Plotbot Config ({plotbot_key})")
+    expected_vars = data_types[plotbot_key].get('data_vars', [])
+    vars_check = system_check("Expected Variable List Validity", isinstance(expected_vars, list) and len(expected_vars) > 0,
+                              f"Plotbot config (psp_data_types.py) should define 'data_vars' for {plotbot_key}. Found: {expected_vars}")
+    if not vars_check:
+        pytest.fail(f"Could not get expected variable list for {plotbot_key} from psp_data_types.py")
+    print(f"  Expected Plotbot vars: {expected_vars}")
+
+    phase(4, f"Read CDF and Check Variables ({plotbot_key})")
+    missing_vars = []
+    try:
+        print(f"  Opening CDF: {os.path.basename(file_path)}")
+        with cdflib.CDF(file_path) as cdf_file:
+            cdf_info = cdf_file.cdf_info()
+            # Correct way to get variable names using cdf_info()
+            cdf_info = cdf_file.cdf_info()
+            all_vars = cdf_info.rVariables + cdf_info.zVariables
+            internal_vars[dt_key] = list(all_vars) # Combine rVariables and zVariables
+            # print_manager.debug(f"  Extracted variables for {dt_key} (Count: {len(all_vars)}): {internal_vars[dt_key][:10]}...") # Print first 10
+            print_manager.debug(f"  Extracted variables for {dt_key} (Count: {len(all_vars)}): {internal_vars[dt_key]}") # Print the FULL list
+
+        if not missing_vars:
+             print(f"  ✅ All expected variables found in {os.path.basename(file_path)}.")
+        else:
+             print(f"  ❌ Missing expected variables in {os.path.basename(file_path)}: {missing_vars}")
+
+        final_check = system_check("Internal Variable Name Match", not missing_vars,
+                 f"Expected variables missing in {plotbot_key} CDF ({os.path.basename(file_path)}): {missing_vars}")
+        if not final_check:
+             print(f" ---- Please compare the 'Expected Plotbot vars' list above with the 'Actual variables in CDF' list ----")
+
+    except Exception as e:
+        system_check("CDF Read/Variable Check", False, f"Error reading/checking CDF '{os.path.basename(file_path)}' for {plotbot_key}: {e}")
+        pytest.fail(f"Error reading/checking CDF for {plotbot_key}: {e}")
+
+def _find_cdf_files(data_type_key, date_str):
+    """Helper to find CDF files for a given type and date, handling patterns."""
+    if data_type_key not in data_types:
+        print(f"Warning: Data type key '{data_type_key}' not found in psp_data_types.")
+        return []
+
+    config = data_types[data_type_key]
+    berkeley_local_path_template = config.get('local_path', '')
+    data_level = config.get('data_level', 'l2')
+    berkeley_relative_path = berkeley_local_path_template.format(data_level=data_level)
+    year_str = date_str[:4]
+    expected_dir = os.path.join(WORKSPACE_ROOT, berkeley_relative_path, year_str)
+
+    # Get both Berkeley and potential SPDF patterns (pyspedas might create lowercase)
+    berkeley_pattern_tmpl = config.get('file_pattern_import', '')
+    # Format the template with BOTH data_level and date_str
+    try:
+        berkeley_pattern_formatted = berkeley_pattern_tmpl.format(data_level=data_level, date_str=date_str)
+    except KeyError as e:
+        print(f"ERROR formatting Berkeley pattern '{berkeley_pattern_tmpl}': {e}. Missing placeholder?")
+        berkeley_pattern_formatted = berkeley_pattern_tmpl # Fallback
+    berkeley_pattern = os.path.join(expected_dir, berkeley_pattern_formatted)
+    
+    # Crude conversion for potential SPDF pattern (lowercase L, Sa, Cyc) - may need refinement
+    spdf_pattern_tmpl = berkeley_pattern_tmpl.replace('L', 'l').replace('Sa', 'sa').replace('Cyc', 'cyc')
+    # Format the SPDF template too
+    try:
+        spdf_pattern_formatted = spdf_pattern_tmpl.format(data_level=data_level, date_str=date_str)
+    except KeyError as e:
+        print(f"ERROR formatting SPDF pattern '{spdf_pattern_tmpl}': {e}. Missing placeholder?")
+        spdf_pattern_formatted = spdf_pattern_tmpl # Fallback
+    spdf_pattern = os.path.join(expected_dir, spdf_pattern_formatted)
+
+    found_files = set()
+    # The patterns now have date and level substituted, and end with _v*.cdf
+    berkeley_glob_pattern = berkeley_pattern # Use the fully formatted pattern directly
+    spdf_glob_pattern = spdf_pattern # Use the fully formatted pattern directly
+
+    print(f"  Globbing Berkeley: {berkeley_glob_pattern}")
+    found_files.update(glob.glob(berkeley_glob_pattern))
+    print(f"  Globbing SPDF: {spdf_glob_pattern}")
+    found_files.update(glob.glob(spdf_glob_pattern))
+
+    print(f"  Found files for {data_type_key} ({date_str}): {list(found_files)}")
+    return list(found_files)
+
+def _delete_files(file_paths):
+    """Helper to delete a list of files."""
+    if not file_paths:
+        print("  No files provided for deletion.")
+        return True
+    print(f"  Attempting to delete {len(file_paths)} file(s):")
+    all_deleted = True
+    for f_path in file_paths:
+        try:
+            if os.path.exists(f_path):
+                os.remove(f_path)
+                print(f"    Deleted: {os.path.basename(f_path)}")
+                if os.path.exists(f_path):
+                    print(f"    ERROR: File still exists after delete attempt: {os.path.basename(f_path)}")
+                    all_deleted = False
+            else:
+                print(f"    Skipped (already gone): {os.path.basename(f_path)}")
+        except OSError as e:
+            print(f"    Error deleting {os.path.basename(f_path)}: {e}")
+            all_deleted = False
+    return all_deleted
+
+def _get_internal_vars(server_mode, trange, variables_to_load):
+    """Helper to run plotbot and get internal variable names used."""
+    print_manager.debug(f"--- Entering _get_internal_vars (mode: {server_mode}) ---") # ADD debug print
+    plotbot.config.data_server = server_mode
+    print_manager.debug(f"Set config.data_server = {server_mode}")
+
+    # Determine required Plotbot data types based on input variables
+    data_types_found = set()
+    variables_to_plot = []
+    # Revised loop to correctly handle data types
+    for var in variables_to_load:
+        if hasattr(var, 'data_type'):
+            data_type = var.data_type
+            # Corrected check: Ensure data_type exists and is NOT a local_csv source
+            if data_type and data_types.get(data_type, {}).get('file_source') != 'local_csv':
+                data_types_found.add(data_type)
+                variables_to_plot.append(var)
+            else:
+                print_manager.debug(f"Skipping variable {getattr(var, 'subclass_name', 'N/A')} - No valid CDF data_type found or is local_csv.")
+        else:
+             print_manager.debug(f"Skipping variable - No data_type attribute found.")
+
+    print_manager.debug(f"Target data types for {server_mode}: {data_types_found}")
+    print_manager.debug(f"Variables to plot for {server_mode}: {[getattr(v, 'subclass_name', 'N/A') for v in variables_to_plot]}")
+
+
+    internal_vars = {}
+
+    if not variables_to_plot:
+        print_manager.debug("No variables to plot, returning empty dict.")
+        print_manager.debug(f"--- Exiting _get_internal_vars (mode: {server_mode}) ---") # ADD debug print
+        return internal_vars
+
+    try:
+        # Call plotbot - we ignore the output figure/axes
+        plot_args = []
+        for i, var in enumerate(variables_to_plot):
+            plot_args.extend([var, i + 1]) # Pass var object and panel number
+        
+        print_manager.debug(f"Calling plotbot_function for {server_mode} with trange={trange} and {len(plot_args)} plot_args...") # ADD debug print
+        plotbot_function(trange, *plot_args)
+        print_manager.debug(f"plotbot_function call completed for {server_mode}.") # ADD debug print
+
+        # REMOVED: plt.close('all') # Let test runner/fixtures handle cleanup if needed
+        print("  plotbot() call completed.") 
+
+        # Step 4: Locating downloaded/used CDFs and extracting variables...
+        # print("Step 4: Locating downloaded/used CDFs and extracting variables...")
+        
+        # After plotbot runs, find the relevant CDFs based on the data_types loaded
+        # Use the existing _find_cdf_files helper
+        date_str = datetime.strptime(trange[0].split('/')[0], '%Y-%m-%d').strftime('%Y%m%d')
+        print_manager.debug(f"Looking for CDFs for date: {date_str}")
+
+        for dt_key in data_types_found:
+            print_manager.debug(f"Finding CDF for data_type: {dt_key}")
+            found_paths = _find_cdf_files(dt_key, date_str)
+            if found_paths:
+                cdf_path = found_paths[0] # Use the first found file
+                print_manager.debug(f"Reading variables from: {cdf_path}")
+                try:
+                    with cdflib.CDF(cdf_path) as cdf_file:
+                        # Correct way to get variable names using cdf_info()
+                        cdf_info = cdf_file.cdf_info()
+                        all_vars = cdf_info.rVariables + cdf_info.zVariables
+                        internal_vars[dt_key] = list(all_vars) # Combine rVariables and zVariables
+                        # print_manager.debug(f"  Extracted variables for {dt_key} (Count: {len(all_vars)}): {internal_vars[dt_key][:10]}...") # Print first 10
+                        print_manager.debug(f"  Extracted variables for {dt_key} (Count: {len(all_vars)}): {internal_vars[dt_key]}") # Print the FULL list
+                except Exception as e:
+                    print_manager.warning(f"Failed to read CDF {cdf_path}: {e}")
+            else:
+                print_manager.warning(f"No CDF file found for data type {dt_key} and date {date_str}.")
+
+    except Exception as e:
+        print_manager.error(f"Error during plotbot call or variable extraction in {server_mode} mode: {e}")
+        # Potentially raise or handle the error if needed for test failure
+
+    print_manager.debug(f"Internal vars found ({server_mode}): {internal_vars}") # ADD debug print
+    print_manager.debug(f"--- Exiting _get_internal_vars (mode: {server_mode}) ---") # ADD debug print
+    return internal_vars
+
+@pytest.mark.mission("Compare Berkeley vs SPDF Internal CDF Variables")
+def test_compare_berkeley_spdf_vars(manage_config): # Use the fixture
+    """Compares internal variable names from CDFs downloaded via Berkeley and SPDF."""
+    print_manager.enable_debug() # Enable detailed debug prints
+    
+    # Define variables covering different instruments/types
+    variables_to_test = [
+        mag_rtn_4sa.br, 
+        mag_sc_4sa.bx, 
+        proton.vr, 
+        epad.strahl
+    ]
+    expected_data_types = {var.data_type for var in variables_to_test if hasattr(var, 'data_type')}
+    
+    phase(1, "Get Internal Variables from Berkeley Server")
+    berkeley_vars = _get_internal_vars('berkeley', TEST_TRANGE, variables_to_test)
+    system_check("Berkeley Variable Extraction", len(berkeley_vars) > 0, f"Should extract variables for Berkeley mode. Got: {berkeley_vars}")
+    if not berkeley_vars: 
+        pytest.fail("Could not extract variables in Berkeley mode, cannot compare.")
+
+    phase(2, "Get Internal Variables from SPDF Server")
+    spdf_vars = _get_internal_vars('spdf', TEST_TRANGE, variables_to_test)
+    system_check("SPDF Variable Extraction", len(spdf_vars) > 0, f"Should extract variables for SPDF mode. Got: {spdf_vars}")
+    if not spdf_vars:
+        pytest.fail("Could not extract variables in SPDF mode, cannot compare.")
+
+    phase(3, "Compare Variable Sets for Each Data Type")
+    all_types_match = True
+    # Compare only the types successfully processed by *both* modes
+    common_data_types = set(berkeley_vars.keys()) & set(spdf_vars.keys())
+    missing_in_spdf = expected_data_types - set(spdf_vars.keys())
+    missing_in_berkeley = expected_data_types - set(berkeley_vars.keys())
+
+    if missing_in_berkeley:
+         print(f"Warning: Expected types missing from Berkeley results: {missing_in_berkeley}")
+    if missing_in_spdf:
+         print(f"Warning: Expected types missing from SPDF results: {missing_in_spdf}")
+
+    print(f"Comparing common data types: {common_data_types}")
+    for data_type in common_data_types:
+        print(f"\n  Comparing: {data_type}")
+        b_list = berkeley_vars.get(data_type, []) # Get the list (or empty list)
+        s_list = spdf_vars.get(data_type, []) # Get the list (or empty list)
+        
+        # Convert lists to sets for comparison
+        b_set = set(b_list)
+        s_set = set(s_list)
+        
+        diff_b_s = b_set - s_set
+        diff_s_b = s_set - b_set
+        
+        match = (len(diff_b_s) == 0) and (len(diff_s_b) == 0)
+        if not match:
+            all_types_match = False
+            print(f"    Mismatch Found for {data_type}!")
+            if diff_b_s:
+                print(f"      Vars in Berkeley ONLY: {sorted(list(diff_b_s))}")
+            if diff_s_b:
+                print(f"      Vars in SPDF ONLY: {sorted(list(diff_s_b))}")
+        else:
+            print(f"    Variable sets match for {data_type}.")
+            
+        system_check(f"Variable Set Match ({data_type})", match, f"Variable sets for {data_type} should match between Berkeley and SPDF.")
+
+    # Final overall check
+    system_check("Overall Variable Set Comparison", all_types_match, "Internal variable names should be consistent across sources for all common data types.") 
+
+@pytest.mark.mission("Basic CDF Read Test")
+def test_read_specific_cdf():
+    """Tests basic reading of a known local CDF file using cdflib."""
+    # Use the file found during the directory search
+    cdf_file_path_relative = "psp_data/fields/l2/mag_rtn_4_per_cycle/2023/psp_fld_l2_mag_rtn_4_sa_per_cyc_20230928_v02.cdf"
+    cdf_file_path_absolute = os.path.join(WORKSPACE_ROOT, cdf_file_path_relative)
+
+    phase(1, f"Checking existence of {os.path.basename(cdf_file_path_absolute)}")
+    file_exists = os.path.exists(cdf_file_path_absolute)
+    system_check("CDF File Exists", file_exists, f"Test CDF file should exist at: {cdf_file_path_absolute}")
+    if not file_exists:
+        pytest.fail(f"Test CDF file not found at expected location: {cdf_file_path_absolute}")
+
+    phase(2, f"Reading variables from {os.path.basename(cdf_file_path_absolute)} using cdflib")
+    all_vars = []
+    try:
+        with cdflib.CDF(cdf_file_path_absolute) as cdf_file:
+            cdf_info = cdf_file.cdf_info()
+            # Explicitly convert keys view to list if necessary, handle potential None
+            r_vars = list(cdf_info.rVariables) if cdf_info.rVariables else []
+            z_vars = list(cdf_info.zVariables) if cdf_info.zVariables else []
+            all_vars = r_vars + z_vars
+            print(f"  Variables found: {all_vars}")
+    except Exception as e:
+        system_check("CDF Read successful", False, f"Failed to read CDF file {cdf_file_path_absolute}: {e}")
+        pytest.fail(f"Error reading CDF file: {e}")
+
+    phase(3, "Verifying variables were extracted")
+    vars_found = len(all_vars) > 0
+    system_check("Variables Extracted", vars_found, f"Should find variables in the CDF file. Found: {len(all_vars)}") 

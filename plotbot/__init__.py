@@ -19,11 +19,12 @@ mpl_plt.rcParams.update({
 
 # Import core components
 from .print_manager import print_manager
-from .server_access import server_access 
+from .server_access import server_access
 from .data_tracker import global_tracker
 from .ploptions import ploptions
 from .data_cubby import data_cubby
 from .plot_manager import plot_manager
+from .config import config
 
 # Import helper functions needed for export
 from .plotbot_helpers import time_clip
@@ -133,7 +134,8 @@ __all__ = [
     'run_missions',   # Add test_pilot functions
     'phase',
     'system_check',
-    'time_clip'      # ADDED time_clip helper function
+    'time_clip',      # ADDED time_clip helper function
+    'config'          # ADDED config to __all__
 ]
 
 # Note: Version and Git commit messages are printed at the bottom of plotbot_main.py

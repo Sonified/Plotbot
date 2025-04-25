@@ -53,6 +53,7 @@ def setup_test():
 @pytest.mark.mission("Basic Plotbot Test (mag_rtn_4sa)")
 def test_plotbot_basic():
     """Basic test for plotbot with mag_rtn_4sa data."""
+    print_manager.enable_debug() # Temporarily enable full debug output
     print("\n=== Testing plotbot ===")
     fig = None # Initialize fig to None
     try:
