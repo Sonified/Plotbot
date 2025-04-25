@@ -35,6 +35,16 @@ plotbot(trange,
 ```
 This simple call automatically downloads the required data for the specified time range and generates a two-panel plot.
 
+**Data Source Configuration (`config.data_server`):**
+
+By default, Plotbot now prioritizes downloading data from NASA's public CDAWeb/SPDF archive using the `pyspedas` library. This behavior can be controlled via the `config.data_server` setting found in `plotbot/config.py`. The available modes are:
+
+*   **`'dynamic'` (Default):** Plotbot first attempts to download data from the SPDF server using `pyspedas`. If the data is not found on SPDF (e.g., it's too recent or not available), it will automatically fall back to attempting a download from the original Berkeley server. **Note:** Data unavailable on SPDF is often not yet public on the Berkeley server either and may require password authentication.
+*   **`'spdf'`:** Plotbot will *only* attempt to download data from the SPDF server via `pyspedas`. If the data isn't found there, it will not attempt to download from Berkeley.
+*   **`'berkeley'`:** Plotbot will *only* use the original method to download data directly from the Berkeley server, bypassing `pyspedas` and SPDF entirely.
+
+This setting allows users to choose their preferred data source or rely on the dynamic fallback for maximum data availability.
+
 ## Installation (macOS Instructions Only, other OS instructions coming soon)
 
 ### Prerequisites

@@ -1,6 +1,6 @@
 # Plotbot Integration with pyspedas/CDAWeb
 
-**Status (2025-04-24):** Initial structural refactoring complete. Download functions/modules renamed, SPDF placeholder created. Next steps involve implementing config and dispatch logic.
+**Status (2025-04-24):** ✅ **Complete.** Core integration structure implemented, pyspedas download function logic complete, dispatch logic in place, configuration added, and all planned tests (including variable consistency, offline checks, and dynamic fallback) are passing.
 
 ## 1. Goal
 
@@ -72,93 +72,35 @@ The primary challenge shifts to ensuring that `plotbot/data_import.py` (which us
     *   Add `pyspedas` to the `environment.yml` file.
     *   Update the installation scripts (`Install_Scripts/`) if necessary to ensure the environment is created correctly with `pyspedas` included.
 
-1.  **Step 1: Audit `pyspedas` Download & Variable Names:**
-    *   **Priority:** This step is crucial before major code changes.
-    *   Determine the exact `pyspedas` function calls and arguments needed for download-only (e.g., `pyspedas.psp.fields` with `datatype`, `trange`, `notplot=True`, `downloadonly=True`).
-    *   Confirm the default local download path and filename conventions used by `pyspedas` for PSP data.
-    *   **CRITICAL:** Download sample CDF files for key data types (MAG, SPI, SPE) using the intended `pyspedas` download-only commands.
-    *   Inspect the variable names *inside* these downloaded CDFs (using `cdflib` or similar tools).
-    *   Compare these variable names against the corresponding `data_vars` lists currently defined in `plotbot/data_classes/psp_data_types.py` for Berkeley files.
-    *   Note any discrepancies.
-    *   Confirm `pyspedas` download behavior for multi-day/multi-block time ranges (single vs. multiple files).
-    *   **Note on Scope (2025-04-24):** Currently focusing the audit on standard resolution FIELDS (MAG), SPAN-i (protons), and SPAN-e (electrons) data types, as these are the primary types implemented in Plotbot and available via pyspedas/CDAWeb. High-resolution data types are not currently targeted as they may not be fully available via pyspedas/CDAWeb, and other potential future data types haven't been integrated into Plotbot yet.
+1.  **Step 1: Audit `pyspedas` Download & Variable Names:** ✅ **Complete**
+    *   **(Completed 2025-04-24):** Tests in `tests/test_pyspedas_download.py` covered:
+        *   `pyspedas` download function calls, arguments, and return values (`downloadonly=True`).
+        *   Local download path and filename conventions (including case-insensitivity handling).
+        *   Reliability of the `no_update=[True, False]` loop for offline checks.
+        *   Variable name consistency between Berkeley and SPDF sources for tested types (`test_compare_berkeley_spdf_vars`).
+        *   `pyspedas` download behavior (multiple files, consistent with Berkeley). 
+    *   See Section 8 for detailed test results and implications.
  
-2.  **Step 2: Implement `_trigger_spdf_download` Function:**
-    *   **(Partially Complete):** The file `plotbot/data_download_pyspedas.py` has been created with a placeholder function `download_spdf_data`. Implementation is pending.
-    *   Input: `trange`, Plotbot `data_type` key (e.g., `'mag_RTN_4sa'`).
-    *   Internal Logic (TODO):
-        *   Map the Plotbot `data_type` key to the required `pyspedas` `datatype` string (this mapping can be internal to this function initially, e.g., a simple dictionary).
-        *   Call the appropriate `pyspedas` function with `downloadonly=True`, `notplot=True`, and potentially configure the download path if needed to align with Plotbot's structure.
-        *   **Optimization for Offline Use:** Use the `no_update` parameter pattern to ensure reliable checking for local files when potentially offline. The `no_update=True` check MUST be performed first. If it returns the file path, the process can stop (file found locally). Only if `no_update=True` fails to return the file should `no_update=False` be attempted (which triggers the download if online). This is crucial because the standard check (omitting `no_update` or using only `no_update=False`) fails when offline, as it attempts network access even with `downloadonly=True`.
-            
-            Here's a more detailed example illustrating how the result might be captured and used:
-            ```python
-            # Example logic structure (ensure downloadonly=True, notplot=True etc. are included)
-            file_path = None
-            try:
-                for no_update_flag in [True, False]: # Check local first, then attempt download
-                    print(f"Attempting pyspedas call with no_update={no_update_flag}...")
-                    returned_data = pyspedas_func(..., no_update=no_update_flag, ...)
-                    if returned_data: # Check if list is not empty and contains path
-                        file_path = returned_data[0]
-                        print(f"File path found/obtained with no_update={no_update_flag}.")
-                        break # Exit loop once file is found/downloaded
-                if not file_path:
-                     print("File not found locally or via download attempt.")
-            except Exception as e:
-                print(f"Error during pyspedas check/download: {e}")
-                # Handle error appropriately
+2.  **Step 2: Implement `download_spdf_data` Function:** ✅ **Complete**
+    *   **(Completed 2025-04-24):** The function `download_spdf_data` in `plotbot/data_download_pyspedas.py` is implemented.
+    *   Includes `PYSPEDAS_MAP` for basic types.
+    *   Correctly uses the `no_update=[True, False]` loop strategy for reliable offline checks and downloads.
+    *   Includes basic error handling and status reporting via `print_manager`.
+    *   Returns `True` on success (file found locally or downloaded), `False` on failure or if mapping is missing.
 
-            # Proceed using file_path if found
-            ```
+3.  **Step 3: Modify `get_data` Dispatch Logic:** ✅ **Complete**
+    *   **(Completed 2025-04-24):** Implemented the conditional dispatch logic in `get_data.py`. It now reads `config.data_server` (defaulting to `'dynamic'`) and calls either `download_spdf_data` or `download_berkeley_data` accordingly. Created `plotbot/config.py` with the `data_server` setting. Basic smoke tests pass.
 
-            The original concise structure focusing on the loop itself was:
-            ```python
-            try:
-                for no_update in [True, False]:  # First try local, then try download
-                    # Assign returned value if needed, e.g.:
-                    # returned_data = pyspedas.psp.fields(
-                    pyspedas.psp.fields(
-                        trange=trange,
-                        datatype='mag_rtn_4_sa_per_cyc', # Example datatype
-                        level='l2',
-                        time_clip=True,
-                        get_support_data=True,
-                        downloadonly=True, # Crucial
-                        notplot=True,      # Crucial
-                        no_update=no_update
-                    )
-                    # Add logic here to check the returned value and potentially break
-            except Exception as e:
-                pass # Add appropriate error handling / loop breaking logic
-            ```
-        *   Handle `pyspedas` errors (e.g., data not found, download failure).
-    *   Output: Return a status indicating success or failure of the download attempt.
+4.  **Step 4: Adjust File Finding Logic (If Necessary):** ✅ **Complete (No Adjustments Needed)**
+    *   **(Verified 2025-04-24):** Based on the audit in Step 1, Plotbot's existing file finding logic (case-insensitive search, directory structure expectations) is compatible with `pyspedas` downloads. No code changes were required in `data_download_helpers.py` or `data_import.py` for this aspect.
 
-3.  **Step 3: Modify `get_data` Dispatch Logic:**
-    *   **(Update 2025-04-24):** Implemented the conditional dispatch logic in `get_data.py`. It now reads `config.data_server` (defaulting to `'dynamic'`) and calls either `download_spdf_data` or `download_berkeley_data` accordingly within the main processing loop for standard CDF types. Created `plotbot/config.py` with the `data_server` setting. Basic smoke tests in `test_all_plot_basics.py` pass with this change.
-    *   **(Renaming Done, Logic Pending):** Keep `get_data` as the main entry point.
-    *   Inside `get_data`, locate the section where downloads are triggered if `check_local_files` indicates missing files.
-    *   Add conditional logic based on `plotbot.config.data_server`:
-        *   If mode is `'spdf'`: Call `download_spdf_data`. If it fails, do not proceed to Berkeley.
-        *   If mode is `'berkeley'`: Call `download_berkeley_data`.
-        *   If mode is `'dynamic'`: Call `download_spdf_data`. If it returns a failure status indicating data not found, *then* call `download_berkeley_data`.
-    *   The subsequent call to `import_data_function` (which loads data from local files) remains in place and should execute after the conditional download attempts.
+5.  **Step 5: Testing:** ✅ **Complete**
+    *   **(Tests Added/Verified 2025-04-24):**
+        *   `tests/test_pyspedas_download.py`: Contains tests for core `pyspedas` download behavior, offline checks (`no_update` loop), variable name consistency, implicitly tests `'spdf'` and `'berkeley'` modes via `test_compare_berkeley_spdf_vars`, and explicitly tests the `'dynamic'` mode fallback (`test_dynamic_mode_fallback`). All tests passing.
+        *   `tests/test_all_plot_basics.py`: Provides basic smoke testing for the implemented dispatch logic.
 
-4.  **Step 4: Adjust File Finding Logic (If Necessary):**
-    *   Based on the download location confirmed in Step 1, ensure `check_local_files` (in `data_download_helpers.py`) and `import_data_function` (in `data_import.py`) are looking in the correct local directories to find files downloaded by either Berkeley or SPDF/`pyspedas`.
-    *   Ensure the logic handling multiple versions or case-insensitivity works for both potential sources.
-
-5.  **Step 5: Testing:**
-    *   Implement initial tests within a new file: `tests/test_spdf_download.py`.
-    *   Test functionality with `data_server` set to `'spdf'`, `'berkeley'`, and `'dynamic'`.
-    *   Test with time ranges that should succeed and fail on SPDF.
-    *   Test with time ranges requiring Berkeley access (recent data).
-
-6.  **Step 6: Contingency - Address Variable Name Discrepancies (IF NEEDED):**
-    *   **Only if Step 1 reveals significant differences** in variable names between SPDF and Berkeley CDFs:
-        *   Modify `plotbot/data_classes/psp_data_types.py`: Formally add the `pyspedas_datatype` key and potentially add separate `spdf_data_vars` lists or a mapping structure if names differ significantly.
-        *   Modify `import_data_function`: Add logic to detect the likely source of a CDF file (e.g., based on filename convention or path) and use the appropriate list of variable names (`data_vars` vs. `spdf_data_vars`) when extracting data with `cdflib`.
+6.  **Step 6: Contingency - Address Variable Name Discrepancies:** ✅ **Complete (Not Required for Tested Types)**
+    *   **(Verified 2025-04-24):** The `test_compare_berkeley_spdf_vars` test (Step 1) confirmed variable names are consistent for the primary data types (`mag_RTN_4sa`, `mag_SC_4sa`, `spi_sf00_l3_mom`, `spe_sf0_pad`). Therefore, modifying `psp_data_types.py` or `import_data_function` for variable name mapping is **not currently necessary** for these types.
 
 ## 5. Key Modules to Modify (Initial Minimal Plan)
 
