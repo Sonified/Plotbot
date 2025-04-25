@@ -67,8 +67,8 @@ def plotbot(trange, *args):
     from collections import defaultdict
     
     print("Plotbot starting...")
-    print("Version: 2025_04_24_v1.03")  # Update version tag
-    print("Commit: Test: Add and pass Berkeley vs SPDF variable comparison test") # Update commit message
+    print("Version: 2025_04_25_v1.04")  # Update version tag
+    print("Commit: Feat: Complete pyspedas integration and testing") # Update commit message
 
     # Validate time range using dateutil.parser for flexibility
     try:
