@@ -50,14 +50,13 @@ def download_spdf_data(trange, plotbot_key):
         plotbot_key (str): The Plotbot data type key (e.g., 'mag_SC_4sa').
 
     Returns:
-        str or None: The relative path to the downloaded/found file if successful,
-                     None otherwise.
+        bool: True if the data was successfully downloaded or found locally, False otherwise.
     """
     print_manager.debug(f"Attempting SPDF download for {plotbot_key} in range {trange}")
 
     if plotbot_key not in PYSPEDAS_MAP:
         print_manager.warning(f"Pyspedas mapping not defined for {plotbot_key}. Cannot download from SPDF.")
-        return None
+        return False
         
     map_config = PYSPEDAS_MAP[plotbot_key]
     pyspedas_func = map_config['pyspedas_func']
@@ -107,12 +106,12 @@ def download_spdf_data(trange, plotbot_key):
         # Optionally, log the full traceback for debugging
         # import traceback
         # print_manager.error(traceback.format_exc())
-        return None # Return None on error
+        return False # Return False on error
 
     if file_path:
         # TODO: Perform any necessary validation on the file_path?
-        # For now, just return the relative path string.
-        return file_path
+        # Return True as download/local check was successful
+        return True
     else:
         print_manager.warning(f"Could not find or download {plotbot_key} from SPDF.")
-        return None 
+        return False # Return False as download/local check failed 

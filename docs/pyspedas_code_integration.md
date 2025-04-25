@@ -67,6 +67,7 @@ The primary challenge shifts to ensuring that `plotbot/data_import.py` (which us
 ## 4. Proposed Refactoring Steps (Revised: Minimal, Audit-First Approach)
 
 0.  **Step 0: Update Environment & Installer:**
+    *   **(Completed 2025-04-23):** `pyspedas` and `ipympl` were added to `environment.yml` and confirmed via `tests/test_package_dependencies.py`.
     *   **Priority:** Must be done before coding/testing the download logic.
     *   Add `pyspedas` to the `environment.yml` file.
     *   Update the installation scripts (`Install_Scripts/`) if necessary to ensure the environment is created correctly with `pyspedas` included.
@@ -80,7 +81,8 @@ The primary challenge shifts to ensuring that `plotbot/data_import.py` (which us
     *   Compare these variable names against the corresponding `data_vars` lists currently defined in `plotbot/data_classes/psp_data_types.py` for Berkeley files.
     *   Note any discrepancies.
     *   Confirm `pyspedas` download behavior for multi-day/multi-block time ranges (single vs. multiple files).
-
+    *   **Note on Scope (2025-04-24):** Currently focusing the audit on standard resolution FIELDS (MAG), SPAN-i (protons), and SPAN-e (electrons) data types, as these are the primary types implemented in Plotbot and available via pyspedas/CDAWeb. High-resolution data types are not currently targeted as they may not be fully available via pyspedas/CDAWeb, and other potential future data types haven't been integrated into Plotbot yet.
+ 
 2.  **Step 2: Implement `_trigger_spdf_download` Function:**
     *   **(Partially Complete):** The file `plotbot/data_download_pyspedas.py` has been created with a placeholder function `download_spdf_data`. Implementation is pending.
     *   Input: `trange`, Plotbot `data_type` key (e.g., `'mag_RTN_4sa'`).
@@ -237,6 +239,7 @@ Initial testing using `downloadonly=True` provided several critical insights:
 *   **Plotbot File Search is Case-Insensitive:** A check of `data_download_helpers.py` (`case_insensitive_file_search`) and `data_import.py` confirmed that Plotbot's existing logic for finding local files already performs case-insensitive comparisons. Therefore, the case mismatch in filenames should *not* prevent Plotbot from finding/loading files downloaded by `pyspedas`.
 *   **Long Download Times Confirmed:** Manual testing and test failures confirmed that some data types (e.g., `mag_rtn`) involve downloading large multi-GB files, taking several minutes. `time_clip=True` does *not* appear to prevent the download of the entire file block.
 *   **`no_update` Loop Performance:** The performance test showed that using the `no_update=[True, False]` loop is slightly *slower* than letting `pyspedas` perform its default check when the file is already local. The default check is efficient.
+*   **Variable Name Consistency Confirmed:** The `test_compare_berkeley_spdf_vars` test successfully compared the internal variable names extracted from CDF files sourced from both Berkeley (simulated via local files with Berkeley naming) and SPDF (simulated via local files with SPDF naming). The test passed, confirming that the variable names within the CDFs are identical for the tested data types (`mag_RTN_4sa`, `mag_SC_4sa`, `spi_sf00_l3_mom`, `spe_sf0_pad`). This validates that the existing `data_import.py` logic should correctly parse data from either source without needing source-specific variable lists (contingency Step 6 is likely unnecessary for these types).
 
 **Implications for Integration:**
 
@@ -244,3 +247,4 @@ Initial testing using `downloadonly=True` provided several critical insights:
 2.  The comparison logic for paths needs to handle the **relative path** returned by `pyspedas` and convert it to absolute if needed for internal consistency.
 3.  While the case mismatch in filenames is noted, no immediate code change is needed in the file *searching* logic due to its existing case-insensitivity.
 4.  The `no_update` loop strategy **is the required method** for reliably checking for local files when potentially offline. The standard `pyspedas` check (even with `downloadonly=True`) fails offline as it still attempts network access. While the initial `no_update=True` check is slightly slower than the standard check *when online and the file exists*, its offline reliability is essential for Plotbot's intended use cases.
+5.  The successful variable comparison provides confidence that the data loading logic in `data_import.py` is robust enough for both data sources for the tested types.

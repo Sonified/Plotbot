@@ -11,7 +11,7 @@ from .data_tracker import global_tracker
 from .data_cubby import data_cubby
 from .data_download_berkeley import download_berkeley_data
 from .data_download_pyspedas import download_spdf_data
-from . import config
+import plotbot
 from .data_import import import_data_function
 from .data_classes.psp_data_types import data_types
 from .data_classes.psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
@@ -251,7 +251,7 @@ def get_data(trange: List[str], *variables):
             continue
             
         # Conditional data download based on configuration
-        server_mode = getattr(config, 'data_server', 'dynamic') # Default to dynamic
+        server_mode = plotbot.config.data_server # <-- With this line
         print_manager.debug(f"Server mode for {data_type}: {server_mode}")
         
         download_attempted = False

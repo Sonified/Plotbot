@@ -66,6 +66,10 @@ def plotbot(trange, *args):
     """Plot multiple time series with shared x-axis and optional right y-axes."""
     from collections import defaultdict
     
+    print("Plotbot starting...")
+    print("Version: 2025_04_24_v1.03")  # Update version tag
+    print("Commit: Test: Add and pass Berkeley vs SPDF variable comparison test") # Update commit message
+
     # Validate time range using dateutil.parser for flexibility
     try:
         start_time = dateutil_parse(trange[0]).replace(tzinfo=timezone.utc)

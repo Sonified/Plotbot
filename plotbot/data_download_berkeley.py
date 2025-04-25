@@ -147,4 +147,5 @@ def download_berkeley_data(trange, data_type):
     # Add at the end of the function before returning
     print_manager.time_output("download_berkeley_data", [str(start_time), str(end_time)])
     print_manager.time_tracking(f"Completed download for time range: {start_time} to {end_time}")
-    return
+    # Assume success if we reach this point without returning False earlier
+    return True
