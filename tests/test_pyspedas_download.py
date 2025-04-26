@@ -882,6 +882,254 @@ def test_compare_berkeley_spdf_vars(manage_config): # Use the fixture
     # Final overall check
     system_check("Overall Variable Set Comparison", all_types_match, "Internal variable names should be consistent across sources for all common data types.") 
 
+# +++ NEW TEST +++
+@pytest.mark.mission("Basic SPDF Download Logic Debug")
+def test_spdf_download_single_call_debug():
+    """Tests the download_spdf_data logic with debug logging.
+    
+    Calls the function twice to observe initial download vs local find.
+    Cleans up the downloaded file afterwards.
+    """
+    plotbot_key = 'mag_RTN_4sa'
+    # Requesting 12 hours within Oct 22nd
+    trange_debug = ['2018-10-22 06:00:00', '2018-10-22 18:00:00'] 
+    
+    phase(1, f"Enable Debug Logging for Test ({plotbot_key})")
+    print_manager.show_debug = True
+    print(f"Debug logging enabled: {print_manager.show_debug}")
+    
+    # Import the function directly
+    from plotbot.data_download_pyspedas import download_spdf_data
+    
+    downloaded_file_relative_path = None # To store path for cleanup
+    
+    phase(2, f"First call to download_spdf_data for {plotbot_key} (expect download)")
+    print(f"Calling download_spdf_data (1st time) with trange={trange_debug}, key='{plotbot_key}'")
+    
+    result1 = False
+    try:
+        # Pyspedas downloadonly=True returns a list of *relative* paths
+        returned_data1 = download_spdf_data(trange_debug, plotbot_key)
+        result1 = isinstance(returned_data1, list) and len(returned_data1) > 0
+        if result1:
+             downloaded_file_relative_path = returned_data1[0] # Store relative path
+             print(f"First call successful, returned path: {downloaded_file_relative_path}")
+        else:
+             print(f"First call failed or returned no path. Result: {returned_data1}")
+             
+    except Exception as e:
+        print(f"Error during first download_spdf_data call: {e}")
+        pytest.fail(f"First download_spdf_data call raised an exception: {e}")
+    
+    system_check("First Call Execution", result1, "First call should successfully download/find the file.")
+    
+    phase(3, f"Second call to download_spdf_data for {plotbot_key} (expect local find)")
+    print(f"Calling download_spdf_data (2nd time) with trange={trange_debug}, key='{plotbot_key}'")
+    
+    result2 = False
+    try:
+        # This call should now find the file locally
+        returned_data2 = download_spdf_data(trange_debug, plotbot_key)
+        result2 = isinstance(returned_data2, list) and len(returned_data2) > 0
+        if result2:
+             print(f"Second call successful, returned path: {returned_data2[0]}")
+             # Verify paths match
+             assert returned_data2[0] == downloaded_file_relative_path, "Path from second call should match first call"
+        else:
+             print(f"Second call failed or returned no path. Result: {returned_data2}")
+             
+    except Exception as e:
+        print(f"Error during second download_spdf_data call: {e}")
+        pytest.fail(f"Second download_spdf_data call raised an exception: {e}")
+
+    system_check("Second Call Execution", result2, "Second call should find the file locally.")
+
+    phase(4, "Cleanup Downloaded File")
+    if downloaded_file_relative_path:
+        # Construct absolute path assuming standard pyspedas data dir relative to WORKSPACE_ROOT
+        # This assumes download_spdf_data puts files in a predictable location relative to workspace
+        # Get WORKSPACE_ROOT (adjust if necessary)
+        import os
+        WORKSPACE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        absolute_file_path = os.path.join(WORKSPACE_ROOT, downloaded_file_relative_path)
+        print(f"Attempting to delete file: {absolute_file_path}")
+        deleted = False
+        if os.path.exists(absolute_file_path):
+            try:
+                os.remove(absolute_file_path)
+                deleted = not os.path.exists(absolute_file_path)
+                print(f"Deletion successful: {deleted}")
+            except OSError as e:
+                print(f"Error deleting file {absolute_file_path}: {e}")
+        else:
+            print("File not found at expected path for deletion.")
+            deleted = True # Consider it 'cleaned' if not found
+        system_check("File Cleanup", deleted, f"Should delete the downloaded file: {downloaded_file_relative_path}")
+    else:
+        print("Skipping cleanup: No file path captured from first download call.")
+        system_check("File Cleanup", True, "Cleanup skipped as no file path was recorded.")
+
+# --- End Modified Test ---
+
+# +++ NEW TEST FOR CASE CONFLICT +++
+@pytest.mark.mission("Berkeley vs SPDF Case Conflict")
+def test_berkeley_spdf_case_conflict(manage_config): # Use config fixture
+    """Tests if an existing Berkeley-cased file interferes with SPDF local check.
+
+    1. Deletes target file.
+    2. Downloads using Berkeley mode.
+    3. Checks file existence (Berkeley case).
+    4. Switches to SPDF mode and calls download_spdf_data.
+    5. Observes if the local check (no_update=True) finds the Berkeley file.
+    6. Cleans up.
+    """
+    plotbot_key = 'mag_RTN_4sa'
+    trange_test = ['2018-10-22 06:00:00', '2018-10-22 18:00:00']
+    test_date_str = '20181022'
+    test_year = '2018'
+    
+    # Import necessary functions and configs
+    from plotbot.data_download_pyspedas import download_spdf_data
+    from plotbot.data_download_berkeley import download_berkeley_data # Added import
+    from plotbot.data_classes.psp_data_types import data_types
+    import os
+    import glob
+    
+    # Define expected filenames/paths (might need refinement based on actual config)
+    # Assuming standard locations relative to WORKSPACE_ROOT
+    WORKSPACE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    expected_dir = os.path.join(WORKSPACE_ROOT, "psp_data/fields/l2/mag_rtn_4_per_cycle", test_year)
+    berkeley_filename_pattern = f"psp_fld_l2_mag_RTN_4_Sa_per_Cyc_{test_date_str}_v*.cdf" # Berkeley case
+    spdf_filename_pattern = f"psp_fld_l2_mag_rtn_4_sa_per_cyc_{test_date_str}_v*.cdf" # SPDF case
+    berkeley_glob_pattern = os.path.join(expected_dir, berkeley_filename_pattern)
+    spdf_glob_pattern = os.path.join(expected_dir, spdf_filename_pattern)
+
+    phase(1, f"Clean Up Existing Files ({plotbot_key})")
+    files_to_delete = glob.glob(berkeley_glob_pattern) + glob.glob(spdf_glob_pattern)
+    print(f"Found files to delete: {files_to_delete}")
+    deleted_cleanly = True
+    for f_path in set(files_to_delete): # Use set to avoid deleting same file twice if patterns match
+        try:
+            if os.path.exists(f_path):
+                os.remove(f_path)
+                print(f"  Deleted: {os.path.basename(f_path)}")
+                if os.path.exists(f_path):
+                     print(f"  ERROR: File still exists after deletion: {f_path}")
+                     deleted_cleanly = False
+            else:
+                 print(f"  Already gone: {os.path.basename(f_path)}")
+        except OSError as e:
+            print(f"  Error deleting {f_path}: {e}")
+            deleted_cleanly = False
+    system_check("Initial Cleanup", deleted_cleanly, "Should ensure no target files exist initially.")
+    if not deleted_cleanly:
+        pytest.fail("Initial cleanup failed.")
+
+    phase(2, f"Download using Berkeley Mode ({plotbot_key})")
+    plotbot.config.data_server = 'berkeley'
+    print(f"Set config.data_server = '{plotbot.config.data_server}'")
+    berkeley_download_success = False
+    try:
+        berkeley_download_success = download_berkeley_data(trange_test, plotbot_key)
+        print(f"Berkeley download function returned: {berkeley_download_success}")
+    except Exception as e:
+        print(f"Error during Berkeley download call: {e}")
+        # Fail if the Berkeley download itself errors out
+        pytest.fail(f"Berkeley download raised an exception: {e}")
+    system_check("Berkeley Download Attempt", berkeley_download_success, "Berkeley download should succeed.")
+    if not berkeley_download_success:
+         pytest.fail("Berkeley download failed, cannot proceed with test.")
+
+    phase(3, "Verify Berkeley File Exists")
+    berkeley_files_found = glob.glob(berkeley_glob_pattern)
+    berkeley_file_exists = len(berkeley_files_found) > 0
+    berkeley_file_path = berkeley_files_found[0] if berkeley_file_exists else None
+    print(f"Checking for Berkeley file ({berkeley_filename_pattern}): Exists = {berkeley_file_exists}, Path = {berkeley_file_path}")
+    system_check("Berkeley File Verification", berkeley_file_exists, f"Should find the Berkeley-cased file: {berkeley_filename_pattern}")
+    if not berkeley_file_exists:
+         pytest.fail("Did not find the expected Berkeley file after download attempt.")
+
+    phase(4, f"Attempt SPDF Download/Check with Berkeley File Present ({plotbot_key})") # Changed phase title back
+    plotbot.config.data_server = 'spdf'
+    print(f"Set config.data_server = '{plotbot.config.data_server}'")
+    spdf_returned_paths = []
+    try:
+        # Enable debug prints to see internal pyspedas messages
+        print_manager.show_debug = True 
+        print("Calling download_spdf_data (expecting local check)...")
+        spdf_returned_paths = download_spdf_data(trange_test, plotbot_key)
+        print(f"SPDF download function returned: {spdf_returned_paths}")
+    except Exception as e:
+        print(f"Error during SPDF download/check call: {e}")
+        # Don't necessarily fail here, the goal is to observe behavior
+    
+    phase(5, "Analyze SPDF Result")
+    # Did the SPDF call return the path to the EXISTING Berkeley file?
+    found_berkeley_file_via_spdf = False
+    if isinstance(spdf_returned_paths, list) and len(spdf_returned_paths) > 0:
+        # Pyspedas returns relative paths
+        spdf_returned_relative_path = spdf_returned_paths[0]
+        
+        # --- MODIFIED LOGIC: Compare to expected SPDF path directly ---
+        # Construct the expected *relative* path of the TARGET SPDF file 
+        # Get patterns from config to construct expected SPDF name
+        config = data_types[plotbot_key]
+        spdf_pattern_template = config.get('spdf_file_pattern')
+        data_level = config.get('data_level', 'l2')
+        # Extract version from the original Berkeley filename found
+        import re
+        match = re.search(r'(_v\d+)', os.path.basename(berkeley_file_path))
+        version_str_part = match.group(1) if match else '_v??' # Handle if version not found
+        
+        target_spdf_basename_template = spdf_pattern_template.replace('_v*.cdf', f'{version_str_part}.cdf')
+        expected_spdf_basename = target_spdf_basename_template.format(data_level=data_level, date_str=test_date_str)
+        expected_spdf_path = os.path.join(os.path.dirname(berkeley_file_path), expected_spdf_basename)
+        expected_spdf_relative_path = os.path.relpath(expected_spdf_path, WORKSPACE_ROOT)
+        
+        print(f"  SPDF returned path (relative): {spdf_returned_relative_path}")
+        print(f"  Expected SPDF path (relative): {expected_spdf_relative_path}")
+        
+        # Check if the returned relative path matches the expected SPDF path
+        if spdf_returned_relative_path == expected_spdf_relative_path:
+             spdf_check_found_correct_file = True 
+             print("  SUCCESS: SPDF check found the (internally renamed) local file.")
+        else:
+             spdf_check_found_correct_file = False
+             print("  FAILURE: SPDF check returned a different path than expected.")
+        # --- End MODIFIED LOGIC ---
+    else:
+        spdf_check_found_correct_file = False # Added default
+        print("  FAILURE: SPDF check did not return any file path.")
+        
+    # Check if a *new* SPDF-cased file was created (it shouldn't have been if the check worked)
+    spdf_files_found_after = glob.glob(spdf_glob_pattern)
+    new_spdf_file_created = len(spdf_files_found_after) > 0
+    print(f"Checking for SPDF file ({spdf_filename_pattern}): Found = {new_spdf_file_created}")
+
+    # Primary assertion: Did the SPDF check find the renamed file?
+    system_check("SPDF Local Check Result", spdf_check_found_correct_file, 
+                 "SPDF local check (no_update=True) should find the file after internal rename.") # Updated msg
+    # Secondary assertion: Did it create a duplicate SPDF file? -> Removed as rename creates the file.
+    # system_check("SPDF Duplicate File Creation", ...) # Keep removed
+
+    phase(6, "Final Cleanup")
+    final_files_to_delete = glob.glob(berkeley_glob_pattern) + glob.glob(spdf_glob_pattern)
+    print(f"Final files to delete: {final_files_to_delete}")
+    final_cleanup_ok = True
+    for f_path in set(final_files_to_delete):
+        try:
+            if os.path.exists(f_path):
+                os.remove(f_path)
+                if os.path.exists(f_path):
+                    print(f"  ERROR: Final cleanup failed for {f_path}")
+                    final_cleanup_ok = False
+        except OSError as e:
+            print(f"  Error during final cleanup of {f_path}: {e}")
+            final_cleanup_ok = False
+    system_check("Final Cleanup", final_cleanup_ok, "Should remove all test files.")
+
+# --- End New Test ---
+
 @pytest.mark.mission("Dynamic Mode Fallback Verification")
 def test_dynamic_mode_fallback(manage_config): # Use the fixture
     """Tests if dynamic mode correctly falls back to Berkeley when SPDF fails."""
