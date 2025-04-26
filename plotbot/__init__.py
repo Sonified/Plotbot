@@ -144,8 +144,8 @@ BLUE = '\033[94m'
 RESET = '\033[0m'
 
 # Use the latest known version/commit for the library init display
-print(f'{BLUE}   Version: 2025_04_25_v1.08{RESET}')
-print(f'{BLUE}   Commit: Fix: Correct print_manager init, Set mathtext font to STIX{RESET}')
+print(f'{BLUE}   Version: 2025_04_25_v1.09{RESET}')
+print(f'{BLUE}   Previous Commit: Fix: Correct version print location/wording, add pb demo to notebook{RESET}')
 
 # Note: Previous logic had this at the end of plotbot_main.py, moved here 
 #       to ensure it prints after all imports in __init__ are processed.
