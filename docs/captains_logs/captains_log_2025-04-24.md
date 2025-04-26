@@ -126,3 +126,5 @@
     *   Offline checks using the `no_update` loop.
     *   Correct functioning of `spdf`, `berkeley`, and `dynamic` modes, including the fallback mechanism.
 *   Archived the integration plan document to `docs/refactoring_log/refactoring_pyspedas_code_integration.md`. 
+
+* Captains log CLOSED!
