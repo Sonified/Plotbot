@@ -151,21 +151,37 @@ In VS code hit 'Run All' and scroll down to see example plots:
 
 ## Required Versions (included in the environment)
 
+These versions are defined in the `environment.yml` file located in the project root directory.
+
 *   Python: 3.12.4
 *   NumPy: 1.26.4
 *   Pandas: 2.2.2
 *   Matplotlib: 3.9.2
-*   ipympl: 0.9.4 # For %matplotlib widget
-*   ipywidgets: 8.1.3 # For audifier and potentially other widgets
-*   pyspedas: 1.6.1 # Space physics data analysis
-*   cdflib: 1.3.1
-*   BeautifulSoup: 4.12.3
+*   SciPy: 1.15.2 
+*   ipympl: (latest compatible) # For %matplotlib widget
+*   ipywidgets: (latest compatible via pip) # For audifier and potentially other widgets
+*   ipykernel: (latest compatible via pip) # For Jupyter kernel
+*   pyspedas: (latest compatible via pip) # Space physics data analysis
+*   cdflib: >=1.3.1
+*   BeautifulSoup: 4.12.3 (beautifulsoup4)
 *   requests: 2.32.2
 *   python-dateutil: 2.9.0.post0
 *   pytest: 7.4.4
 *   termcolor: 2.4.0
 
-## Print Manager
+### Enhanced IDE Support with Stub Files (`.pyi`)
+
+To significantly improve the development experience within IDEs like VS Code, Plotbot now includes `.pyi` stub files for many core modules (e.g., `plot_manager.pyi` corresponds to `plot_manager.py`).
+
+These stub files define the type signatures for functions, methods, classes, and attributes, acting as explicit blueprints for the code structure. The primary goal of adopting this approach was to:
+
+*   **Supercharge Auto-Completion:** Provide the IDE with precise type information, leading to vastly more accurate and helpful suggestions as you type (e.g., seeing available methods and attributes for objects like `mag_rtn_4sa.br`).
+*   **Improve Code Navigation:** Allow the IDE to better understand connections within the code, making it easier to jump to definitions and find usages.
+*   **Clarify Expectations:** Make it clearer what kinds of data functions expect and return, directly within the development environment.
+
+While these stubs *can* also be used by external type-checking tools, their main purpose within Plotbot is to make interacting with the code faster, easier, and less error-prone directly within your editor by boosting its built-in intelligence features.
+
+### Print Manager
 
 Plotbot includes a comprehensive print manager system that controls all console output. This system allows you to filter the types of messages displayed, making it easier to debug or focus on specific aspects of the application.
 
