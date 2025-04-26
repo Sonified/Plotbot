@@ -8,6 +8,26 @@ to improve debugging and user feedback.
 import inspect
 import datetime
 import os
+import logging
+
+# --- Custom Filter to Block Specific Pyspedas INFO Messages ---
+class PyspedasInfoFilter(logging.Filter):
+    """Filters out common, verbose INFO messages from pyspedas."""
+    def filter(self, record):
+        # Return False to block the message, True to allow it
+        msg = record.getMessage()
+        # Block the specific INFO messages we want to hide
+        if "Searching for local files..." in msg:
+            return False
+        if "No local files found for" in msg:
+            return False
+        if "Downloading remote index:" in msg:
+            return False
+        if "File is current:" in msg:
+            return False
+        # Allow all other messages to pass
+        return True
+# --- End Custom Filter ---
 
 class print_manager_class:
     """
@@ -31,6 +51,7 @@ class print_manager_class:
         show_processing: Enable/disable data processing status messages
         show_category_prefix: Enable/disable category prefixes like [DEBUG], [PROCESS], etc.
         show_warnings: Enable/disable warning messages
+        pyspedas_verbose: Enable/disable verbose INFO messages from pyspedas library (default: True)
     """
     
     def __init__(self):
@@ -40,14 +61,16 @@ class print_manager_class:
         self.custom_debug_enabled = False  # Custom variable operations debugging
         self.derived_enabled = False       # Legacy alias for custom_debug_enabled
         self.variable_testing_enabled = False # Variable testing specific debugging
-        self.variable_basic_enabled = True   # Basic user-facing variable info 
-        self.error_enabled = True            # Error messages (always keep this enabled)
-        self.time_tracking_enabled = True    # Time range tracking (enabled by default)
-        self.test_enabled = True             # Test output (enabled by default)
-        self.module_prefix_enabled = True    # Show module name prefix (enabled by default)
-        self.processing_enabled = True       # Show data processing status messages (enabled by default)
-        self.category_prefix_enabled = True  # Show category prefixes (enabled by default)
-        self.warnings_enabled = True         # Show warning messages (enabled by default)
+        self.variable_basic_enabled = False   # Basic user-facing variable info 
+        self.error_enabled = False            # Error messages (always keep this enabled)
+        self.time_tracking_enabled = False    # Time range tracking (enabled by default)
+        self.test_enabled = False             # Test output (enabled by default)
+        self.module_prefix_enabled = False    # Show module name prefix (enabled by default)
+        self.processing_enabled = False       # Show data processing status messages (enabled by default)
+        self.category_prefix_enabled = False  # Show category prefixes (enabled by default)
+        self.warnings_enabled = False         # Show warning messages (enabled by default)
+        self._pyspedas_verbose = True         # Control pyspedas INFO logging (default: verbose)
+        self._pyspedas_filter_instance = None # Store the filter instance
         
         # Print formatting prefixes
         self.debug_prefix = "[DEBUG] "
@@ -75,6 +98,44 @@ class print_manager_class:
             'import': "[IMPORT] ",
             'time': "[TIME] "
         }
+
+        # Initial configuration of pyspedas logging based on default flag
+        self._configure_pyspedas_logging()
+
+    def _configure_pyspedas_logging(self):
+        """Applies or removes the filter for pyspedas INFO messages."""
+        try:
+            pyspedas_logger = logging.getLogger('pyspedas')
+
+            if not self._pyspedas_verbose:
+                # Suppress verbose info messages
+                if self._pyspedas_filter_instance is None:
+                    self._pyspedas_filter_instance = PyspedasInfoFilter()
+                
+                # Check if filter is already added before adding
+                if self._pyspedas_filter_instance not in pyspedas_logger.filters:
+                    pyspedas_logger.addFilter(self._pyspedas_filter_instance)
+                    self.debug("Added PyspedasInfoFilter.")
+                
+                # Set level to INFO so the filter can catch messages
+                pyspedas_logger.setLevel(logging.INFO)
+                # Ensure propagation is on so messages reach handlers (where filter might also live, though we added it to logger)
+                pyspedas_logger.propagate = True 
+                self.debug("Configured pyspedas logging: Suppressed INFO (Level=INFO, Filter added, Propagate=True).")
+            else:
+                # Restore verbose info messages
+                if self._pyspedas_filter_instance is not None and self._pyspedas_filter_instance in pyspedas_logger.filters:
+                    pyspedas_logger.removeFilter(self._pyspedas_filter_instance)
+                    self.debug("Removed PyspedasInfoFilter.")
+                # Reset level to default (NOTSET lets it inherit)
+                pyspedas_logger.setLevel(logging.NOTSET) 
+                # Reset propagation to default (usually True for non-root loggers)
+                pyspedas_logger.propagate = True 
+                self.debug("Configured pyspedas logging: Verbose (Level=NOTSET, Filter removed, Propagate=True).")
+
+        except Exception as e:
+            # Use internal print to avoid loop if print_manager itself fails
+            print(f"[PRINT_MANAGER_ERROR] Failed to configure pyspedas logging: {e}")
 
     def _format_message(self, msg, component=None):
         """Format the message with appropriate markers based on where it was called from."""
@@ -388,6 +449,22 @@ class print_manager_class:
         """Set whether to show warning messages."""
         self.warnings_enabled = value
         
+    @property
+    def pyspedas_verbose(self):
+        """Get the current state of pyspedas verbose INFO logging."""
+        return self._pyspedas_verbose
+        
+    @pyspedas_verbose.setter
+    def pyspedas_verbose(self, value):
+        """Set whether pyspedas INFO messages should be shown."""
+        if not isinstance(value, bool):
+            print("[PRINT_MANAGER_WARNING] pyspedas_verbose must be set to True or False.")
+            return
+            
+        if self._pyspedas_verbose != value:
+            self._pyspedas_verbose = value
+            self._configure_pyspedas_logging() # Reconfigure logging immediately
+
     # Initialize show_datacubby for backward compatibility
     show_datacubby = False
 

@@ -11,7 +11,7 @@ mpl_plt.rcParams.update({
     'font.sans-serif': ['Arial'],
     'axes.labelweight': 'normal',
     'font.weight': 'normal',
-    'mathtext.fontset': 'custom',
+    'mathtext.fontset': 'stix',
     'mathtext.rm': 'Arial',
     'mathtext.it': 'Arial:italic',
     'mathtext.bf': 'Arial:bold'
@@ -138,4 +138,14 @@ __all__ = [
     'config'          # ADDED config to __all__
 ]
 
-# Note: Version and Git commit messages are printed at the bottom of plotbot_main.py
+# Final initialization step: Print Version and Commit
+# ANSI color codes
+BLUE = '\033[94m'
+RESET = '\033[0m'
+
+# Use the latest known version/commit for the library init display
+print(f'{BLUE}   Version: 2025_04_25_v1.08{RESET}')
+print(f'{BLUE}   Commit: Fix: Correct print_manager init, Set mathtext font to STIX{RESET}')
+
+# Note: Previous logic had this at the end of plotbot_main.py, moved here 
+#       to ensure it prints after all imports in __init__ are processed.
