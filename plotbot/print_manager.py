@@ -16,17 +16,20 @@ class PyspedasInfoFilter(logging.Filter):
     def filter(self, record):
         # Return False to block the message, True to allow it
         msg = record.getMessage()
+        # --- DEBUG PRINT --- 
+        # print(f"[Filter Check] Received log message: '{msg[:50]}...'") # Removed diagnostic
         # Block the specific INFO messages we want to hide
+        should_block = False
         if "Searching for local files..." in msg:
-            return False
+            should_block = True
         if "No local files found for" in msg:
-            return False
+            should_block = True
         if "Downloading remote index:" in msg:
-            return False
+            should_block = True
         if "File is current:" in msg:
-            return False
+            should_block = True
         # Allow all other messages to pass
-        return True
+        return not should_block
 # --- End Custom Filter ---
 
 class print_manager_class:
@@ -69,7 +72,7 @@ class print_manager_class:
         self.processing_enabled = False       # Show data processing status messages (enabled by default)
         self.category_prefix_enabled = False  # Show category prefixes (enabled by default)
         self.warnings_enabled = False         # Show warning messages (enabled by default)
-        self._pyspedas_verbose = True         # Control pyspedas INFO logging (default: verbose)
+        self._pyspedas_verbose = False        # Control pyspedas INFO logging (default: now False)
         self._pyspedas_filter_instance = None # Store the filter instance
         
         # Print formatting prefixes
@@ -99,39 +102,71 @@ class print_manager_class:
             'time': "[TIME] "
         }
 
+        # --- DEBUG PRINT --- 
+        # print("[print_manager.__init__] Calling initial _configure_pyspedas_logging") # Removed diagnostic
         # Initial configuration of pyspedas logging based on default flag
         self._configure_pyspedas_logging()
 
     def _configure_pyspedas_logging(self):
         """Applies or removes the filter for pyspedas INFO messages."""
+        # --- DEBUG PRINT --- 
+        # print(f"[Configure Logging] Running with self._pyspedas_verbose = {self._pyspedas_verbose}") # Removed diagnostic
         try:
+            # --- Target both pyspedas logger AND root logger --- 
             pyspedas_logger = logging.getLogger('pyspedas')
+            root_logger = logging.getLogger() # Get the root logger
+            # --- DEBUG PRINT --- 
+            # print(f"[Configure Logging] Got logger: {pyspedas_logger.name}, Level: {logging.getLevelName(pyspedas_logger.level)}, Propagate: {pyspedas_logger.propagate}, Filters: {pyspedas_logger.filters}") # Removed diagnostic
+            # print(f"[Configure Logging] Got root logger: Level: {logging.getLevelName(root_logger.level)}, Filters: {root_logger.filters}, Handlers: {root_logger.handlers}") # Removed diagnostic
 
             if not self._pyspedas_verbose:
                 # Suppress verbose info messages
+                # print("[Configure Logging] Action: Trying to ADD filter to ROOT, set ROOT level INFO") # Removed diagnostic
+                
+                # --- Ensure filter instance exists --- 
                 if self._pyspedas_filter_instance is None:
                     self._pyspedas_filter_instance = PyspedasInfoFilter()
+                    # print("[Configure Logging]   Created filter instance.") # Removed diagnostic
                 
-                # Check if filter is already added before adding
-                if self._pyspedas_filter_instance not in pyspedas_logger.filters:
-                    pyspedas_logger.addFilter(self._pyspedas_filter_instance)
-                    self.debug("Added PyspedasInfoFilter.")
+                # --- Add filter to ROOT logger --- 
+                if self._pyspedas_filter_instance not in root_logger.filters:
+                    root_logger.addFilter(self._pyspedas_filter_instance)
+                    # print("[Configure Logging]   Filter ADDED to ROOT logger.") # Removed diagnostic
+                # else:
+                    # print("[Configure Logging]   Filter already present on ROOT logger.") # Removed diagnostic
                 
-                # Set level to INFO so the filter can catch messages
-                pyspedas_logger.setLevel(logging.INFO)
-                # Ensure propagation is on so messages reach handlers (where filter might also live, though we added it to logger)
-                pyspedas_logger.propagate = True 
-                self.debug("Configured pyspedas logging: Suppressed INFO (Level=INFO, Filter added, Propagate=True).")
+                # Set ROOT level to INFO so the filter can catch messages
+                # We might need a handler on the root logger if none exists, 
+                # but let's try level and filter first.
+                root_logger.setLevel(logging.INFO)
+                
+                # Optionally keep configuring the specific pyspedas logger too?
+                # For now, let's focus on the root logger as the source.
+                # pyspedas_logger.setLevel(logging.INFO)
+                # pyspedas_logger.propagate = False # Keep propagation off if root handles it
+                
+                self.debug("Configured ROOT logging: Suppressed INFO (Level=INFO, Filter added).")
+                # --- DEBUG PRINT --- 
+                # print(f"[Configure Logging] END STATE (Suppress): Root Level={logging.getLevelName(root_logger.level)}, Root Filters={root_logger.filters}") # Removed diagnostic
             else:
                 # Restore verbose info messages
-                if self._pyspedas_filter_instance is not None and self._pyspedas_filter_instance in pyspedas_logger.filters:
-                    pyspedas_logger.removeFilter(self._pyspedas_filter_instance)
-                    self.debug("Removed PyspedasInfoFilter.")
-                # Reset level to default (NOTSET lets it inherit)
-                pyspedas_logger.setLevel(logging.NOTSET) 
-                # Reset propagation to default (usually True for non-root loggers)
-                pyspedas_logger.propagate = True 
-                self.debug("Configured pyspedas logging: Verbose (Level=NOTSET, Filter removed, Propagate=True).")
+                # print("[Configure Logging] Action: Trying to REMOVE filter from ROOT, reset ROOT level") # Removed diagnostic
+                
+                # --- Remove filter from ROOT logger --- 
+                if self._pyspedas_filter_instance is not None and self._pyspedas_filter_instance in root_logger.filters:
+                    root_logger.removeFilter(self._pyspedas_filter_instance)
+                    # print("[Configure Logging]   Filter REMOVED from ROOT logger.") # Removed diagnostic
+                
+                # Reset ROOT level to default (WARNING is common)
+                root_logger.setLevel(logging.WARNING) 
+                
+                # Reset specific pyspedas logger too
+                # pyspedas_logger.setLevel(logging.NOTSET)
+                # pyspedas_logger.propagate = True
+                
+                self.debug("Configured ROOT logging: Verbose (Level=WARNING, Filter removed).")
+                # --- DEBUG PRINT --- 
+                # print(f"[Configure Logging] END STATE (Verbose): Root Level={logging.getLevelName(root_logger.level)}, Root Filters={root_logger.filters}") # Removed diagnostic
 
         except Exception as e:
             # Use internal print to avoid loop if print_manager itself fails
@@ -457,6 +492,8 @@ class print_manager_class:
     @pyspedas_verbose.setter
     def pyspedas_verbose(self, value):
         """Set whether pyspedas INFO messages should be shown."""
+        # --- DEBUG PRINT --- 
+        # print(f"[Setter Call] pyspedas_verbose trying to set to: {value} (Current: {self._pyspedas_verbose})") # Removed diagnostic
         if not isinstance(value, bool):
             print("[PRINT_MANAGER_WARNING] pyspedas_verbose must be set to True or False.")
             return
