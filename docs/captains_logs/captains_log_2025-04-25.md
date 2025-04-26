@@ -34,3 +34,13 @@
 **GitHub Push:**
 *   **Commit Message:** `Fix(download): Fix SPDF local check failure due to filename case sensitivity`
 *   **Version Tag:** `2025_04_25_v1.07` 
+
+**2025-04-25 ~21:45 UTC - Initialization & Font Warning Fixes**
+
+*   **`plotbot.config` Access:** Diagnosed `AttributeError: 'function' object has no attribute 'config'`. Cause: `from plotbot import *` made the name `plotbot` refer to the function, shadowing the package module needed for `plotbot.config`. Solution (in notebook): Ensure `import plotbot` runs *after* `from plotbot import *` to reassign the name `plotbot` to the package module.
+*   **`print_manager` Init:** Fixed `NameError: name 'print_manager' is not defined` occurring within `_configure_pyspedas_logging`. Cause: The method tried using the global `print_manager` instance name before it was fully assigned during class instantiation. Solution: Changed internal calls from `print_manager.debug` to `self.debug`.
+*   **Matplotlib Font Warning:** Addressed the `Substituting symbol \perp from STIXGeneral` warning seen during plotting. Cause: Default `mathtext.fontset` ('custom') sometimes required symbol substitution. Solution: Changed `mathtext.fontset` to `'stix'` within the global `rcParams` configuration in `plotbot/__init__.py` for better symbol coverage.
+
+**GitHub Push:**
+*   **Commit Message:** `Fix: Correct print_manager init, Set mathtext font to STIX`
+*   **Version Tag:** `2025_04_25_v1.08`
