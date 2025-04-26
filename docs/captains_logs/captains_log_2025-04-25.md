@@ -54,3 +54,15 @@
 **GitHub Push:**
 *   **Commit Message:** `Fix: Correct version print location/wording, add pb demo to notebook`
 *   **Version Tag:** `2025_04_25_v1.09`
+
+**2025-04-25 ~22:45 UTC - Pyspedas Verbosity Fix (Root Logger)**
+
+*   **Problem:** Despite setting `print_manager.pyspedas_verbose = False`, verbose `pyspedas` messages like "Searching for local files..." persisted.
+*   **Investigation:** Added a new test (`test_pyspedas_verbosity_control`) using `caplog`. This test confirmed the messages were still being logged even when the filter was correctly applied to the `pyspedas` logger.
+*   **Root Cause:** Analysis of the `caplog` output showed the messages originated from the `root` logger, not the `pyspedas` logger.
+*   **Solution:** Modified `plotbot.print_manager._configure_pyspedas_logging` to apply the `PyspedasInfoFilter` and set the logging level directly on the `root` logger when `pyspedas_verbose` is `False`. This successfully silenced the unwanted messages.
+*   **Cleanup:** Removed diagnostic print statements added during debugging.
+
+**GitHub Push:**
+*   **Commit Message:** `Fix: Silence pyspedas logs by filtering root logger`
+*   **Version Tag:** `2025_04_25_v1.10`

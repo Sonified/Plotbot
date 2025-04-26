@@ -6,6 +6,7 @@ import time # Added for performance test and sleep
 import cdflib # Add cdflib import
 from datetime import datetime
 import sys # Added for path modification
+import logging
 # from plotbot import plt # Import plotbot's plt instance # Remove this line
 
 # Add the parent directory to sys.path to find plotbot package
@@ -1209,3 +1210,118 @@ def test_read_specific_cdf():
     phase(3, "Verifying variables were extracted")
     vars_found = len(all_vars) > 0
     system_check("Variables Extracted", vars_found, f"Should find variables in the CDF file. Found: {len(all_vars)}") 
+
+# +++ NEW TEST FOR VERBOSITY CONTROL +++
+@pytest.mark.mission("Pyspedas Verbosity Control")
+def test_pyspedas_verbosity_control(caplog): # Use caplog fixture
+    """Tests if print_manager.pyspedas_verbose controls SPDF download logs.
+    
+    Uses mag_RTN_4sa as the test case.
+    Captures stdout/stderr to check for specific log messages.
+    """
+    plotbot_key = 'mag_RTN_4sa'
+    # Use a known downloadable range different from other tests to avoid conflicts
+    trange_verb = ['2018-10-23 00:00:00', '2018-10-23 06:00:00'] 
+    test_date_str = '20181023'
+    test_year = '2018'
+    target_message = "Searching for local files..."
+
+    # Import the download function directly
+    from plotbot.data_download_pyspedas import download_spdf_data
+    
+    # --- Helper function to find and delete files for this test ---
+    def find_and_delete_test_files():
+        # Based on previous tests, construct path and pattern
+        expected_dir = os.path.join(WORKSPACE_ROOT, "psp_data/fields/l2/mag_rtn_4_per_cycle", test_year)
+        spdf_filename_pattern = f"psp_fld_l2_mag_rtn_4_sa_per_cyc_{test_date_str}_v*.cdf"
+        spdf_glob_pattern = os.path.join(expected_dir, spdf_filename_pattern)
+        files_to_delete = glob.glob(spdf_glob_pattern)
+        if files_to_delete:
+            print(f"\n  Cleaning up files for verbosity test: {files_to_delete}")
+            return _delete_files(files_to_delete)
+        else:
+            print("\n  No files found for verbosity test cleanup.")
+            return True # No files to delete is considered success
+            
+    # --- Initial Cleanup --- 
+    phase(0, f"Initial Cleanup for {plotbot_key} ({test_date_str})")
+    cleanup_ok = find_and_delete_test_files()
+    system_check("Initial File Cleanup", cleanup_ok, "Should be able to delete pre-existing test files.")
+    if not cleanup_ok:
+        pytest.fail("Initial cleanup failed, cannot proceed.")
+
+    # --- Phase 1: Test VERBOSE Mode --- 
+    phase(1, f"Test VERBOSE Mode (pyspedas_verbose = True) for {plotbot_key}")
+    print_manager.pyspedas_verbose = True # Explicitly set to True
+    print(f"Set print_manager.pyspedas_verbose = {print_manager.pyspedas_verbose}")
+    download_path_verbose = None
+    caplog.clear() # Clear previous logs
+    caplog.set_level(logging.INFO) # Ensure INFO messages are captured
+    try:
+        # Remove capsys.disabled() as we now rely on caplog
+        # with capsys.disabled(): 
+        print("  Calling download_spdf_data (Verbose Mode)...")
+        result_verbose = download_spdf_data(trange_verb, plotbot_key)
+        if isinstance(result_verbose, list) and len(result_verbose) > 0:
+            download_path_verbose = result_verbose[0]
+            print(f"  Download call returned (verbose): {download_path_verbose}")
+        else:
+            print(f"  Download call failed or returned no path (verbose): {result_verbose}")
+                
+        # captured_verbose = capsys.readouterr() # Remove capsys read
+        # Check if the target message is in the captured log text
+        verbose_log_found = target_message in caplog.text
+        print(f"  Target message '{target_message}' found in log output: {verbose_log_found}")
+        if not verbose_log_found:
+            print(f"Captured log text (verbose):\n---\n{caplog.text}\n---")
+        
+    except Exception as e:
+        pytest.fail(f"Download call failed during VERBOSE test: {e}")
+    
+    system_check(f"Verbose Log Output ({target_message})", verbose_log_found, 
+                 f"'{target_message}' should be printed when pyspedas_verbose is True.")
+
+    # --- Phase 2: Cleanup Between Modes --- 
+    phase(2, f"Cleanup Between Modes for {plotbot_key}")
+    cleanup_mid_ok = find_and_delete_test_files()
+    system_check("Mid-Test File Cleanup", cleanup_mid_ok, "Should be able to delete files before testing quiet mode.")
+    if not cleanup_mid_ok:
+        pytest.fail("Mid-test cleanup failed, cannot proceed.")
+
+    # --- Phase 3: Test QUIET Mode --- 
+    phase(3, f"Test QUIET Mode (pyspedas_verbose = False) for {plotbot_key}")
+    print_manager.pyspedas_verbose = False # Explicitly set to False
+    print(f"Set print_manager.pyspedas_verbose = {print_manager.pyspedas_verbose}")
+    download_path_quiet = None
+    caplog.clear() # Clear previous logs before quiet test
+    caplog.set_level(logging.INFO) # Keep capturing INFO level
+    try:
+        # Remove capsys.disabled()
+        # with capsys.disabled():
+        print("  Calling download_spdf_data (Quiet Mode)...")
+        result_quiet = download_spdf_data(trange_verb, plotbot_key)
+        if isinstance(result_quiet, list) and len(result_quiet) > 0:
+            download_path_quiet = result_quiet[0]
+            print(f"  Download call returned (quiet): {download_path_quiet}")
+        else:
+            print(f"  Download call failed or returned no path (quiet): {result_quiet}")
+        
+        # captured_quiet = capsys.readouterr() # Remove capsys read
+        # Check if the target message is NOT in the captured log text
+        quiet_log_found = target_message in caplog.text
+        print(f"  Target message '{target_message}' found in log output: {quiet_log_found}")
+        if quiet_log_found:
+            print(f"Captured log text (quiet):\n---\n{caplog.text}\n---")
+        
+    except Exception as e:
+        pytest.fail(f"Download call failed during QUIET test: {e}")
+
+    system_check(f"Quiet Log Output ({target_message})", not quiet_log_found, 
+                 f"'{target_message}' should NOT be printed when pyspedas_verbose is False.")
+                 
+    # --- Final Cleanup --- 
+    phase(4, f"Final Cleanup for {plotbot_key}")
+    final_cleanup_ok = find_and_delete_test_files()
+    system_check("Final File Cleanup", final_cleanup_ok, "Should be able to delete files after quiet mode test.")
+
+# --- End New Test --- 
