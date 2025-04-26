@@ -44,3 +44,13 @@
 **GitHub Push:**
 *   **Commit Message:** `Fix: Correct print_manager init, Set mathtext font to STIX`
 *   **Version Tag:** `2025_04_25_v1.08`
+
+**2025-04-25 ~22:15 UTC - Version Print Cleanup & Notebook Update**
+
+*   **Version Print Location:** Removed redundant Version/Commit print statements from the `plotbot()` function in `plotbot/plotbot_main.py` (User edit). These prints correctly reside only in `plotbot/__init__.py` to ensure they run only once on initial package import.
+*   **Print Wording:** Updated the commit message label in `plotbot/__init__.py` from "Commit:" to "Previous Commit:" for better clarity.
+*   **Notebook Demo:** User updated `Plotbot.ipynb` to include a demonstration of the `import plotbot as pb` syntax and accessing `pb.config`.
+
+**GitHub Push:**
+*   **Commit Message:** `Fix: Correct version print location/wording, add pb demo to notebook`
+*   **Version Tag:** `2025_04_25_v1.09`
