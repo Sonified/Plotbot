@@ -18,3 +18,19 @@
 **GitHub Push:**
 *   **Commit Message:** `Docs: Explain .pyi files and update required versions in README`
 *   **Version Tag:** `2025_04_25_v1.06` 
+
+**2025-04-25 ~21:20 UTC - SPDF/Berkeley Filename Case Sensitivity Fix**
+
+*   **Problem:** Identified repeated download attempts/confusing logs when using SPDF data source (`config.data_server = 'spdf'` or `'dynamic'`) even when data files seemed to exist locally.
+*   **Investigation:** Hypothesized a case sensitivity conflict between Berkeley-downloaded filenames (e.g., `..._Sa_...`) and the patterns SPDF checks locally (e.g., `..._sa_...`).
+*   **Testing (`test_berkeley_spdf_case_conflict`):** 
+    *   Confirmed that `pyspedas`'s local check (`no_update=True`) failed to find existing Berkeley-cased files.
+    *   Confirmed that pre-emptively renaming the Berkeley file to the SPDF case allowed the `no_update=True` check to succeed.
+*   **Metadata Update:** Added `spdf_file_pattern` key to relevant entries in `plotbot/data_classes/psp_data_types.py` to store the expected lowercase SPDF filename patterns.
+*   **Solution:** Implemented pre-emptive renaming logic within `plotbot/data_download_pyspedas.py`. Before calling `pyspedas`, the function now checks for existing Berkeley-cased files and renames them to the SPDF case using the new metadata key. This ensures the `no_update=True` check works reliably.
+*   **Documentation:** Added a technical note to `README.md` explaining the issue and the implemented solution.
+*   **Next:** Prepare files for commit and push. 
+
+**GitHub Push:**
+*   **Commit Message:** `Fix(download): Fix SPDF local check failure due to filename case sensitivity`
+*   **Version Tag:** `2025_04_25_v1.07` 

@@ -1,3 +1,5 @@
+#plotbot/data_classes/psp_data_types.py
+
 import os
 
 # CONFIGURATION: Data Types, Defines all available PSP data products
@@ -19,6 +21,7 @@ data_types = {
         'password_type': 'mag',
         'file_pattern': r'psp_fld_{data_level}_mag_RTN_4_Sa_per_Cyc_{date_str}_v(\d{{2}})\.cdf',      # Added this
         'file_pattern_import': r'psp_fld_{data_level}_mag_RTN_4_Sa_per_Cyc_{date_str}_v*.cdf',  # Fixed case to match actual files
+        'spdf_file_pattern': r'psp_fld_{data_level}_mag_rtn_4_sa_per_cyc_{date_str}_v*.cdf',    # SPDF case (lowercase)
         'data_level': 'l2',
         'file_time_format': 'daily',
         'data_vars': ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'],
@@ -39,6 +42,7 @@ data_types = {
         'password_type': 'mag',
         'file_pattern': r'psp_fld_{data_level}_mag_SC_4_Sa_per_Cyc_{date_str}_v(\d{{2}})\.cdf',
         'file_pattern_import': r'psp_fld_{data_level}_mag_SC_4_Sa_per_Cyc_{date_str}_v*.cdf',
+        'spdf_file_pattern': r'psp_fld_{data_level}_mag_sc_4_sa_per_cyc_{date_str}_v*.cdf',   # SPDF case (lowercase)
         'data_level': 'l2',
         'file_time_format': 'daily',
         'data_vars': ['psp_fld_l2_mag_SC_4_Sa_per_Cyc'],
@@ -49,6 +53,7 @@ data_types = {
         'password_type': 'sweap',
         'file_pattern': r'psp_swp_spe_sf0_L3_pad_{date_str}_v(\d{{2}})\.cdf',
         'file_pattern_import': r'psp_swp_spe_sf0_L3_pad_{date_str}_v*.cdf',
+        'spdf_file_pattern': r'psp_swp_spe_sf0_l3_pad_{date_str}_v*.cdf',   # SPDF case (lowercase l3)
         'data_level': 'l3',
         'file_time_format': 'daily',
         'data_vars': ['EFLUX_VS_PA_E', 'PITCHANGLE'],
@@ -69,6 +74,7 @@ data_types = {
         'password_type': 'sweap',
         'file_pattern': r'psp_swp_spi_sf00_L3_mom_{date_str}_v(\d{{2}})\.cdf',
         'file_pattern_import': r'psp_swp_spi_sf00_L3_mom_{date_str}_v*.cdf',
+        'spdf_file_pattern': r'psp_swp_spi_sf00_l3_mom_{date_str}_v*.cdf',   # SPDF case (lowercase l3)
         'data_level': 'l3',
         'file_time_format': 'daily',
         'data_vars': [

@@ -67,8 +67,9 @@ def plotbot(trange, *args):
     from collections import defaultdict
     
     print("Plotbot starting...")
-    print("Version: 2025_04_25_v1.06")  # Update version tag
-    print("Commit: Docs: Explain .pyi files and update required versions in README") # Update commit message
+    print("Version: 2025_04_25_v1.07")  # Update version tag
+    print("Commit: Fix(download): Fix SPDF local check failure due to filename case sensitivity") # Update commit message
+    print("For detailed usage instructions and examples, please refer to the README.md file and the Plotbot.ipynb Jupyter Notebook.")
 
     # Validate time range using dateutil.parser for flexibility
     try:
@@ -597,5 +598,3 @@ def plotbot(trange, *args):
     plt.show()                                                    # Display the complete figure
 
 print('\n🤖 Plotbot Initialized')
-print(f'   Version: 2025_04_24_v1.02')
-print(f'   Commit: Feat: Implement conditional download logic in get_data')

@@ -766,5 +766,13 @@ While the main pipeline overview describes the general flow, the precise logic f
 
 This ensures that standard variables are updated not only when new time ranges are encountered according to the tracker, but also if the specific data held in the cache doesn't adequately cover the request, providing robustness against potential inconsistencies.
 
+### SPDF vs. Berkeley Filename Case Sensitivity
+
+**Issue:** A case-sensitivity conflict was identified between local files downloaded via the Berkeley server and the local file check performed by `pyspedas` (specifically when using `no_update=True`, which is intended to check locally without hitting the network). Berkeley filenames often use different capitalization (e.g., `...mag_RTN_4_Sa_per_Cyc...`) than the patterns `pyspedas` typically expects or generates (e.g., `...mag_rtn_4_sa_per_cyc...`). On case-sensitive filesystems (or case-preserving filesystems like default macOS/APFS), the `pyspedas` `no_update=True` check fails to recognize the existing Berkeley-cased file, leading it to believe the file is missing locally.
+
+**Symptom:** This resulted in the `download_spdf_data` function unnecessarily proceeding to the `no_update=False` step (which *does* contact the network index) even when a file covering the time range existed locally (downloaded from Berkeley). While the `no_update=False` step correctly identified the file as current and prevented a full re-download, it caused confusing log messages and bypassed the intended optimization of the `no_update=True` check.
+
+**Solution:** The `plotbot/data_download_pyspedas.py` module now includes pre-emptive logic. Before calling `pyspedas` (when in `'spdf'` or `'dynamic'` mode), it checks the local data directory for files matching the Berkeley naming convention for the requested data type and time range. If found, it automatically renames the file(s) to match the expected SPDF (lowercase) naming convention defined by the `spdf_file_pattern` key in `plotbot/data_classes/psp_data_types.py`. This ensures the subsequent `pyspedas` `no_update=True` check finds the correctly-cased file, improving the reliability of the local check.
+
 (This is a work in progress)
 
