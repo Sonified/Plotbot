@@ -1,4 +1,7 @@
 psp_data/
+ace_data/
 .DS_Store
+.vscode/
 Thumbs.db
 __pycache__/
+.pytest_cache/
