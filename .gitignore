@@ -5,3 +5,4 @@ ace_data/
 Thumbs.db
 __pycache__/
 .pytest_cache/
+last_dir.txt
