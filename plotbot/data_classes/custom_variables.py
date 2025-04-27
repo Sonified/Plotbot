@@ -473,8 +473,8 @@ def test_custom_variables():
     y = np.sin(x)
     
     # Create a plot_manager object for testing
-    from .plot_manager import plot_manager
-    from .ploptions import ploptions
+    from ..plot_manager import plot_manager
+    from ..ploptions import ploptions
     
     # Create proper plot options
     plot_options = ploptions(

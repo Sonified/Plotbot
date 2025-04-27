@@ -1,3 +1,5 @@
+#plotbot/data_classes/psp_mag_classes.py
+
 import numpy as np
 import pandas as pd
 import cdflib

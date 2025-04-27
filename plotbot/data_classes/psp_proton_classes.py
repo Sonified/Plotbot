@@ -1,13 +1,15 @@
+#plotbot/data_classes/psp_proton_classes.py
+
 import numpy as np
 import pandas as pd
 import cdflib
 from datetime import datetime, timedelta, timezone
 
 # Import our custom managers (UPDATED PATHS)
-from ..print_manager import print_manager
-from ..data_cubby import data_cubby
-from ..plot_manager import plot_manager
-from ..ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.print_manager import print_manager
+from plotbot.data_cubby import data_cubby
+from plotbot.plot_manager import plot_manager
+from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
 
 # 🎉 Define the main class to calculate and store proton variables 🎉
 class proton_class:    

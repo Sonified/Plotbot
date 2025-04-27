@@ -1,3 +1,5 @@
+#plotbot/data_classes/psp_proton_fits_classes.py
+
 import numpy as np
 import pandas as pd
 import cdflib
@@ -11,17 +13,17 @@ try:
     electron_volt = physical_constants['electron volt'][0]
     speed_of_light = physical_constants['speed of light in vacuum'][0]
 except ImportError:
-     print("Warning: scipy.constants not found, using approximate proton mass.")
-     proton_mass_kg_scipy = 1.67262192e-27 # kg Fallback
+    print("Warning: scipy.constants not found, using approximate proton mass.")
+    proton_mass_kg_scipy = 1.67262192e-27 # kg Fallback
 
 m = 1836 * 511000.0 / (299792.0**2) # Factor for Tpar_tot calculation
 m_proton_kg = proton_mass_kg_scipy
 
 # Import our custom managers (UPDATED PATHS)
-from ..print_manager import print_manager
-from ..data_cubby import data_cubby
-from ..plot_manager import plot_manager
-from ..ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.print_manager import print_manager
+from plotbot.data_cubby import data_cubby
+from plotbot.plot_manager import plot_manager
+from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
 # Import get_data and proton instance for dependency loading (within method if needed)
 # from ..get_data import get_data 
 # from .psp_proton_classes import proton
@@ -338,18 +340,18 @@ class proton_fits_class:
 
             # Check if any essential raw data is missing
             essential_raw = [np1, np2, Tperp1, Tperp2, Trat1, Trat2, vdrift,
-                             B_inst_x, B_inst_y, B_inst_z, vp1_x, vp1_y, vp1_z]
+                            B_inst_x, B_inst_y, B_inst_z, vp1_x, vp1_y, vp1_z]
             if any(v is None for v in essential_raw):
-                 missing_keys = [k for k, v in data_dict.items() if v is None and k in [
+                missing_keys = [k for k, v in data_dict.items() if v is None and k in [
                     'np1', 'np2', 'Tperp1', 'Tperp2', 'Trat1', 'Trat2', 'vdrift',
                     'B_inst_x', 'B_inst_y', 'B_inst_z', 'vp1_x', 'vp1_y', 'vp1_z'
-                 ]]
-                 logging.error(f"Essential raw data missing from imported_data: {missing_keys}. Cannot perform calculations.")
-                 # Clear potentially calculated fields from previous runs
-                 for key in self.raw_data:
-                     if key not in data_dict: # Don't clear raw inputs
-                         self.raw_data[key] = None
-                 return
+                ]]
+                logging.error(f"Essential raw data missing from imported_data: {missing_keys}. Cannot perform calculations.")
+                # Clear potentially calculated fields from previous runs
+                for key in self.raw_data:
+                    if key not in data_dict: # Don't clear raw inputs
+                        self.raw_data[key] = None
+                return
 
             # --- Filtering (Apply filtering similar to the original function) ---
             filter_conditions = (
@@ -619,10 +621,10 @@ class proton_fits_class:
             logging.error(traceback.format_exc())
             # Clear potentially calculated fields if error occurs
             for key in self.raw_data:
-                 # Check if key exists in self.raw_data before trying to assign None
-                 # Also check if it wasn't part of the original input (data_dict)
-                 if key in self.raw_data and key not in data_dict:
-                      self.raw_data[key] = None
+                # Check if key exists in self.raw_data before trying to assign None
+                # Also check if it wasn't part of the original input (data_dict)
+                if key in self.raw_data and key not in data_dict:
+                    self.raw_data[key] = None
             self.datetime_array = None # Also clear time
             self.time = None
 
@@ -784,289 +786,289 @@ class proton_fits_class:
 
         # 8. n_tot (Scatter, Size 5)
         self.n_tot = plot_manager( # Total beam+core density
-             self.raw_data.get('n_tot'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='n_tot',
-                 subclass_name='n_tot', # User list #8
-                 y_label=r'Density (cm$^{-3}$)',
-                 legend_label=r'$n_{ptot}$', 
-                 color='deepskyblue' 
+            self.raw_data.get('n_tot'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='n_tot',
+                subclass_name='n_tot', # User list #8
+                y_label=r'Density (cm$^{-3}$)',
+                legend_label=r'$n_{ptot}$', 
+                color='deepskyblue' 
             )
         )
 
         # 9. np2/np1 (Scatter, Size 5)
         self.np2_np1_ratio = plot_manager( # Beam to core density ratio
-             self.raw_data.get('np2_np1_ratio'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='np2_np1_ratio',
-                 subclass_name='np2_np1_ratio', # MATCH ATTRIBUTE NAME (User list #9)
-                 y_label=r'$\frac{n_{p2}}{n_{p1}}$', 
-                 legend_label=r'$\frac{n_{p2}}{n_{p1}}$', 
-                 color='deepskyblue' 
+            self.raw_data.get('np2_np1_ratio'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='np2_np1_ratio',
+                subclass_name='np2_np1_ratio', # MATCH ATTRIBUTE NAME (User list #9)
+                y_label=r'$\frac{n_{p2}}{n_{p1}}$', 
+                legend_label=r'$\frac{n_{p2}}{n_{p1}}$', 
+                color='deepskyblue' 
             )
         )
 
         # 10. vp1_x (Scatter, Size 5)
         self.vp1_x = plot_manager( # Core velocity x
-             self.raw_data.get('vp1_x'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='vp1_x',
-                 subclass_name='vp1_x', # User list #10
-                 y_label=r'Velocity (km/s)',
-                 legend_label=r'$vx_{p1}$',
-                 color='forestgreen'
+            self.raw_data.get('vp1_x'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='vp1_x',
+                subclass_name='vp1_x', # User list #10
+                y_label=r'Velocity (km/s)',
+                legend_label=r'$vx_{p1}$',
+                color='forestgreen'
             )
         )
 
         # 11. vp1_y (Scatter, Size 5)
         self.vp1_y = plot_manager( # Core velocity y
-             self.raw_data.get('vp1_y'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='vp1_y',
-                 subclass_name='vp1_y', # User list #11
-                 y_label=r'Velocity (km/s)',
-                 legend_label=r'$vy_{p1}$',
-                 color='orange'
+            self.raw_data.get('vp1_y'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='vp1_y',
+                subclass_name='vp1_y', # User list #11
+                y_label=r'Velocity (km/s)',
+                legend_label=r'$vy_{p1}$',
+                color='orange'
             )
         )
 
         # 12. vp1_z (Scatter, Size 5)
         self.vp1_z = plot_manager( # Core velocity z
-             self.raw_data.get('vp1_z'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='vp1_z',
-                 subclass_name='vp1_z', # User list #12
-                 y_label=r'Velocity (km/s)',
-                 legend_label=r'$vz_{p1}$',
-                 color='dodgerblue'
+            self.raw_data.get('vp1_z'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='vp1_z',
+                subclass_name='vp1_z', # User list #12
+                y_label=r'Velocity (km/s)',
+                legend_label=r'$vz_{p1}$',
+                color='dodgerblue'
             )
         )
 
         # 13. vp1_mag (Scatter, Size 5)
         self.vp1_mag = plot_manager( # Core velocity magnitude
-             self.raw_data.get('vp1_mag'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='vp1_mag',
-                 subclass_name='vp1_mag', # User list #13
-                 y_label=r'Velocity (km/s)',
-                 legend_label=r'$vmag_{p1}$',
-                 color='dodgerblue' 
+            self.raw_data.get('vp1_mag'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='vp1_mag',
+                subclass_name='vp1_mag', # User list #13
+                y_label=r'Velocity (km/s)',
+                legend_label=r'$vmag_{p1}$',
+                color='dodgerblue' 
             )
         )
 
         # 14. vcm_x (Scatter, Size 5)
         self.vcm_x = plot_manager( # Center of mass velocity x
-             self.raw_data.get('vcm_x'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='vcm_x',
-                 subclass_name='vcm_x', # User list #14
-                 y_label=r'Velocity (km/s)',
-                 legend_label=r'$vx_{cm}$',
-                 color='forestgreen' 
+            self.raw_data.get('vcm_x'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='vcm_x',
+                subclass_name='vcm_x', # User list #14
+                y_label=r'Velocity (km/s)',
+                legend_label=r'$vx_{cm}$',
+                color='forestgreen' 
             )
         )
 
         # 15. vcm_y (Scatter, Size 5)
         self.vcm_y = plot_manager( # Center of mass velocity y
-             self.raw_data.get('vcm_y'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='vcm_y',
-                 subclass_name='vcm_y', # User list #15
-                 y_label=r'Velocity (km/s)',
-                 legend_label=r'$vy_{cm}$',
-                 color='orange' 
+            self.raw_data.get('vcm_y'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='vcm_y',
+                subclass_name='vcm_y', # User list #15
+                y_label=r'Velocity (km/s)',
+                legend_label=r'$vy_{cm}$',
+                color='orange' 
             )
         )
 
         # 16. vcm_z (Scatter, Size 5)
         self.vcm_z = plot_manager( # Center of mass velocity z
-             self.raw_data.get('vcm_z'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='vcm_z',
-                 subclass_name='vcm_z', # User list #16
-                 y_label=r'Velocity (km/s)',
-                 legend_label=r'$vz_{cm}$',
-                 color='dodgerblue' 
+            self.raw_data.get('vcm_z'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='vcm_z',
+                subclass_name='vcm_z', # User list #16
+                y_label=r'Velocity (km/s)',
+                legend_label=r'$vz_{cm}$',
+                color='dodgerblue' 
             )
         )
 
         # 17. vcm_mag (Scatter, Size 5)
         self.vcm_mag = plot_manager( # Center of mass velocity magnitude
-             self.raw_data.get('vcm_mag'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='vcm_mag',
-                 subclass_name='vcm_mag', # User list #17
-                 y_label=r'Velocity (km/s)',
-                 legend_label=r'$vmag_{cm}$',
-                 color='dodgerblue' 
+            self.raw_data.get('vcm_mag'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='vcm_mag',
+                subclass_name='vcm_mag', # User list #17
+                y_label=r'Velocity (km/s)',
+                legend_label=r'$vmag_{cm}$',
+                color='dodgerblue' 
             )
         )
-
+        
         # 18. vdrift (Scatter, Size 5)
         self.vdrift = plot_manager( # Drift speed
-             self.raw_data.get('vdrift'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='vdrift',
-                 subclass_name='vdrift', # User list #18
-                 y_label=r'$V_{drift}$', 
-                 legend_label=r'$vdrift_{p2}$', 
-                 color='navy' 
+            self.raw_data.get('vdrift'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='vdrift',
+                subclass_name='vdrift', # User list #18
+                y_label=r'$V_{drift}$', 
+                legend_label=r'$vdrift_{p2}$', 
+                color='navy' 
             )
         )
 
         # 19. |vdrift| (Scatter, Size 5)
         self.vdrift_abs = plot_manager( # Absolute drift speed
-             self.raw_data.get('vdrift_abs'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='vdrift_abs', 
-                 subclass_name='vdrift_abs', # MATCH ATTRIBUTE NAME (User list #19)
-                 y_label=r'$|V_{drift}|$', 
-                 legend_label=r'$|vdrift_{p2}|$ ', 
-                 color='navy' 
+            self.raw_data.get('vdrift_abs'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='vdrift_abs', 
+                subclass_name='vdrift_abs', # MATCH ATTRIBUTE NAME (User list #19)
+                y_label=r'$|V_{drift}|$', 
+                legend_label=r'$|vdrift_{p2}|$ ', 
+                color='navy' 
             )
         )
 
         # 20. vdrift_va_pfits (Scatter, Size 5)
         self.vdrift_va_pfits = plot_manager( # Normalized drift speed - ATTRIBUTE NAME CHANGED
-             self.raw_data.get('vdrift_va'), # Still gets raw 'vdrift_va' data
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='vdrift_va', 
-                 subclass_name='vdrift_va_pfits', # User list #20
-                 y_label=r'$V_{drift}/V_A$', 
-                 legend_label=r'$vdrift_{p2}/vA$', 
-                 color='navy' 
+            self.raw_data.get('vdrift_va'), # Still gets raw 'vdrift_va' data
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='vdrift_va', 
+                subclass_name='vdrift_va_pfits', # User list #20
+                y_label=r'$V_{drift}/V_A$', 
+                legend_label=r'$vdrift_{p2}/vA$', 
+                color='navy' 
             )
         )
 
         # 21. Trat1 (Scatter, Size 5)
         self.Trat1 = plot_manager( # Temperature anisotropy of the core
-             self.raw_data.get('Trat1'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='Trat1',
-                 subclass_name='Trat1', # User list #21
-                 y_label=r'$T_{\perp}/T_{\parallel}$',
-                 legend_label=r'$T_{\perp}/T_{\parallel,p1}$',
-                 color='hotpink' 
+            self.raw_data.get('Trat1'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='Trat1',
+                subclass_name='Trat1', # User list #21
+                y_label=r'$T_{\perp}/T_{\parallel}$',
+                legend_label=r'$T_{\perp}/T_{\parallel,p1}$',
+                color='hotpink' 
             )
         )
 
         # 22. Trat2 (Scatter, Size 5)
         self.Trat2 = plot_manager( # Temperature anisotropy of the beam
-             self.raw_data.get('Trat2'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='Trat2',
-                 subclass_name='Trat2', # User list #22
-                 y_label=r'$T_{\perp}/T_{\parallel}$',
-                 legend_label=r'$T_{\perp}/T_{\parallel,p2}$',
-                 color='deepskyblue' 
+            self.raw_data.get('Trat2'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='Trat2',
+                subclass_name='Trat2', # User list #22
+                y_label=r'$T_{\perp}/T_{\parallel}$',
+                legend_label=r'$T_{\perp}/T_{\parallel,p2}$',
+                color='deepskyblue' 
             )
         )
 
         # 23. Trat_tot (Scatter, Size 5)
         self.Trat_tot = plot_manager( # Total temperature anisotropy
-             self.raw_data.get('Trat_tot'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='Trat_tot',
-                 subclass_name='Trat_tot', # User list #23
-                 y_label=r'$T_\perp/T_\parallel$',
-                 legend_label=r'$T_\perp/T_\parallel$',
-                 color='mediumspringgreen' 
+            self.raw_data.get('Trat_tot'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='Trat_tot',
+                subclass_name='Trat_tot', # User list #23
+                y_label=r'$T_\perp/T_\parallel$',
+                legend_label=r'$T_\perp/T_\parallel$',
+                color='mediumspringgreen' 
             )
         )
 
         # 24. Tpar1 (Scatter, Size 5)
         self.Tpar1 = plot_manager( # Temperature parallel of the core
-             self.raw_data.get('Tpar1'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='Tpar1',
-                 subclass_name='Tpar1', # User list #24
-                 y_label=r'$T_{\parallel}$',
-                 legend_label=r'$T_{\parallel,p1}$',
-                 color='hotpink' 
+            self.raw_data.get('Tpar1'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='Tpar1',
+                subclass_name='Tpar1', # User list #24
+                y_label=r'$T_{\parallel}$',
+                legend_label=r'$T_{\parallel,p1}$',
+                color='hotpink' 
             )
         )
 
         # 25. Tpar2 (Scatter, Size 5)
         self.Tpar2 = plot_manager( # Temperature parallel of the beam
-             self.raw_data.get('Tpar2'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='Tpar2',
-                 subclass_name='Tpar2', # User list #25
-                 y_label=r'$T_{\parallel}$',
-                 legend_label=r'$T_{\parallel,p2}$',
-                 color='deepskyblue' 
+            self.raw_data.get('Tpar2'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='Tpar2',
+                subclass_name='Tpar2', # User list #25
+                y_label=r'$T_{\parallel}$',
+                legend_label=r'$T_{\parallel,p2}$',
+                color='deepskyblue' 
             )
         )
 
         # 26. Tpar_tot (Scatter, Size 5)
         self.Tpar_tot = plot_manager( # Total temperature parallel
-             self.raw_data.get('Tpar_tot'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='Tpar_tot',
-                 subclass_name='Tpar_tot', # User list #26
-                 y_label=r'$T_\parallel$',
-                 legend_label=r'$T_\parallel$', 
-                 color='mediumspringgreen' 
+            self.raw_data.get('Tpar_tot'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='Tpar_tot',
+                subclass_name='Tpar_tot', # User list #26
+                y_label=r'$T_\parallel$',
+                legend_label=r'$T_\parallel$', 
+                color='mediumspringgreen' 
             )
         )
 
         # 27. Tperp1 (Scatter, Size 5)
         self.Tperp1 = plot_manager( # Temperature perpendicular of the core
-             self.raw_data.get('Tperp1'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='Tperp1',
-                 subclass_name='Tperp1', # User list #27
-                 y_label=r'$T_{\perp}$',
-                 legend_label=r'$T_{\perp,p1}$',
-                 color='hotpink' 
+            self.raw_data.get('Tperp1'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='Tperp1',
+                subclass_name='Tperp1', # User list #27
+                y_label=r'$T_{\perp}$',
+                legend_label=r'$T_{\perp,p1}$',
+                color='hotpink' 
             )
         )
 
         # 28. Tperp2 (Scatter, Size 5)
         self.Tperp2 = plot_manager( # Temperature perpendicular of the beam
-             self.raw_data.get('Tperp2'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='Tperp2',
-                 subclass_name='Tperp2', # User list #28
-                 y_label=r'$T_{\perp}$',
-                 legend_label=r'$T_{\perp,p2}$',
-                 color='deepskyblue' 
+            self.raw_data.get('Tperp2'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='Tperp2',
+                subclass_name='Tperp2', # User list #28
+                y_label=r'$T_{\perp}$',
+                legend_label=r'$T_{\perp,p2}$',
+                color='deepskyblue' 
             )
         )
 
         # 29. Tperp_tot (Scatter, Size 5)
         self.Tperp_tot = plot_manager( # Total temperature perpendicular
-             self.raw_data.get('Tperp_tot'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='Tperp_tot',
-                 subclass_name='Tperp_tot', # User list #29
-                 y_label=r'$T_{\perp}$', 
-                 legend_label=r'$T_{\perp}$', 
-                 color='mediumspringgreen' 
+            self.raw_data.get('Tperp_tot'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='Tperp_tot',
+                subclass_name='Tperp_tot', # User list #29
+                y_label=r'$T_{\perp}$', 
+                legend_label=r'$T_{\perp}$', 
+                color='mediumspringgreen' 
             )
         )
 
         # 30. Temp_tot (Scatter, Size 5)
         self.Temp_tot = plot_manager( # Total temperature
-             self.raw_data.get('Temp_tot'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='Temp_tot',
-                 subclass_name='Temp_tot', # User list #30
-                 y_label=r'$Temp_{tot}$', 
-                 legend_label=r'$T_{tot}$', 
-                 color='mediumspringgreen' 
+            self.raw_data.get('Temp_tot'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='Temp_tot',
+                subclass_name='Temp_tot', # User list #30
+                y_label=r'$Temp_{tot}$', 
+                legend_label=r'$T_{tot}$', 
+                color='mediumspringgreen' 
             )
         )
 
         # 31. |qz_p| (Scatter, Size 5)
         self.qz_p_abs = plot_manager( # Absolute heat flux
-             self.raw_data.get('|qz_p|'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='|qz_p|',
-                 subclass_name='qz_p_abs', # MATCH ATTRIBUTE NAME (User list #31) - UPDATED
-                 y_label=r'$|Q_p| W/m^2$',
-                 legend_label=r'$|Q_p|$',
-                 color='mediumspringgreen'
+            self.raw_data.get('|qz_p|'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='|qz_p|',
+                subclass_name='qz_p_abs', # MATCH ATTRIBUTE NAME (User list #31) - UPDATED
+                y_label=r'$|Q_p| W/m^2$',
+                legend_label=r'$|Q_p|$',
+                color='mediumspringgreen'
             )
         )
 
@@ -1084,13 +1086,13 @@ class proton_fits_class:
 
         # 33. chi_p_norm (Scatter, Size 5)
         self.chi_p_norm = plot_manager( # Normalized chi of whole proton fit
-             self.raw_data.get('chi_p_norm'),
-             plot_options=self._create_fits_scatter_ploptions(
-                 var_name='chi_p_norm',
-                 subclass_name='chi_p_norm', # User list #33
-                 y_label=r'$\chi_p norm$', 
-                 legend_label=r'$\chi_p norm$', 
-                 color='rebeccapurple' 
+            self.raw_data.get('chi_p_norm'),
+            plot_options=self._create_fits_scatter_ploptions(
+                var_name='chi_p_norm',
+                subclass_name='chi_p_norm', # User list #33
+                y_label=r'$\chi_p norm$', 
+                legend_label=r'$\chi_p norm$', 
+                color='rebeccapurple' 
             )
         )
 

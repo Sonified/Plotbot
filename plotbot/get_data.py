@@ -254,28 +254,23 @@ def get_data(trange: List[str], *variables):
         server_mode = plotbot.config.data_server # <-- With this line
         print_manager.debug(f"Server mode for {data_type}: {server_mode}")
         
-        download_attempted = False
         download_successful = False # Assume files might exist locally
 
         if server_mode == 'spdf':
             print_manager.debug(f"Attempting SPDF download for {data_type}...")
             download_successful = download_spdf_data(trange, data_type)
-            download_attempted = True
         elif server_mode == 'berkeley':
             print_manager.debug(f"Attempting Berkeley download for {data_type}...")
             download_successful = download_berkeley_data(trange, data_type)
-            download_attempted = True
         elif server_mode == 'dynamic':
             print_manager.debug(f"Attempting SPDF download (dynamic mode) for {data_type}...")
             download_successful = download_spdf_data(trange, data_type)
-            download_attempted = True
             if not download_successful:
                 print_manager.debug(f"SPDF download failed/incomplete for {data_type}, falling back to Berkeley...")
                 download_successful = download_berkeley_data(trange, data_type)
         else:
             print_manager.warning(f"Invalid config.data_server mode: '{server_mode}'. Defaulting to Berkeley.")
             download_successful = download_berkeley_data(trange, data_type)
-            download_attempted = True
             
         # The import logic below relies on files being present locally if needed.
         # The download functions are responsible for ensuring this.
