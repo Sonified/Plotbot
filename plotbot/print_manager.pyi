@@ -31,6 +31,7 @@ class print_manager_class:
         show_processing: Enable/disable data processing status messages
         show_category_prefix: Enable/disable category prefixes like [DEBUG], [PROCESS], etc.
         show_warnings: Enable/disable warning messages
+        pyspedas_verbose: Enable/disable pyspedas verbose INFO logging
     """
     
     def __init__(self):
@@ -48,6 +49,7 @@ class print_manager_class:
         self.processing_enabled = True       # Show data processing status messages (enabled by default)
         self.category_prefix_enabled = True  # Show category prefixes (enabled by default)
         self.warnings_enabled = True         # Show warning messages (enabled by default)
+        self._pyspedas_verbose: bool = False # Add type hint for init
         
         # Print formatting prefixes
         self.debug_prefix = "[DEBUG] "
@@ -387,6 +389,17 @@ class print_manager_class:
     def show_warnings(self, value):
         """Set whether to show warning messages."""
         self.warnings_enabled = value
+        
+    @property
+    def pyspedas_verbose(self) -> bool:
+        """Get the current state of pyspedas verbose INFO logging."""
+        return self._pyspedas_verbose
+
+    @pyspedas_verbose.setter
+    def pyspedas_verbose(self, value: bool):
+        """Set whether pyspedas INFO messages should be shown."""
+        self._pyspedas_verbose = value
+        # Note: The actual configuration logic happens in the .py file
         
     # Initialize show_datacubby for backward compatibility
     show_datacubby = False

@@ -66,11 +66,8 @@ def plotbot(trange, *args):
     """Plot multiple time series with shared x-axis and optional right y-axes."""
     from collections import defaultdict
     
-    print("Plotbot starting...")
-    print("Version: 2025_04_25_v1.07")  # Update version tag
-    print("Commit: Fix(download): Fix SPDF local check failure due to filename case sensitivity") # Update commit message
-    print("For detailed usage instructions and examples, please refer to the README.md file and the Plotbot.ipynb Jupyter Notebook.")
-
+    print_manager.status("🤖 Plotbot starting...")
+    
     # Validate time range using dateutil.parser for flexibility
     try:
         start_time = dateutil_parse(trange[0]).replace(tzinfo=timezone.utc)
@@ -231,7 +228,7 @@ def plotbot(trange, *args):
 
     # Get data for regular variables
     if regular_vars:
-        print_manager.status(f"Downloading data for {len(regular_vars)} regular variables...")
+        print_manager.status(f"Acquiring data for {len(regular_vars)} regular variables...")
         get_data(trange, *regular_vars)
 
     #------------------ Prepare Plot Variables ------------------#

@@ -189,7 +189,7 @@ def download_spdf_data(trange, plotbot_key):
     
     try:
         # 1. Check locally ONLY (reliable offline)
-        print_manager.debug(f"Checking SPDF locally (no_update=True) for {pyspedas_datatype}...")
+        # print_manager.debug(f"Checking SPDF locally (no_update=True) for {pyspedas_datatype}...") # Old debug message
         returned_data = pyspedas_func(
             trange=trange,
             datatype=pyspedas_datatype,
@@ -201,11 +201,10 @@ def download_spdf_data(trange, plotbot_key):
         )
         if returned_data and isinstance(returned_data, list) and len(returned_data) > 0:
             file_path = returned_data[0]
-            print_manager.status(f"✓ Found {plotbot_key} locally (SPDF check): {file_path}")
 
         # 2. If not found locally, attempt download (only if online)
         if not file_path:
-            print_manager.debug(f"Attempting SPDF download (no_update=False) for {pyspedas_datatype}...")
+            # print_manager.debug(f"Attempting SPDF download (no_update=False) for {pyspedas_datatype}...") # Old debug message
             returned_data = pyspedas_func(
                 trange=trange,
                 datatype=pyspedas_datatype,
@@ -217,7 +216,6 @@ def download_spdf_data(trange, plotbot_key):
             )
             if returned_data and isinstance(returned_data, list) and len(returned_data) > 0:
                 file_path = returned_data[0]
-                print_manager.status(f"✓ Downloaded {plotbot_key} via SPDF: {file_path}")
                 # TODO: Add this file path to a cleanup list?
             else:
                 print_manager.warning(f"SPDF download attempt for {plotbot_key} did not return a file path.")
