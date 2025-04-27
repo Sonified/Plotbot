@@ -138,14 +138,15 @@ __all__ = [
     'config'          # ADDED config to __all__
 ]
 
-# Final initialization step: Print Version and Commit
-# ANSI color codes
+# --- Version and Commit Message ---
 BLUE = '\033[94m'
 RESET = '\033[0m'
+COMMIT_MSG = "fix: Correct Pyspedas verbosity & cleanup notebooks"
+print(f'{BLUE}   Version: 2025_04_26_v1.11{RESET}')
+print(f'{BLUE}   Commit: {COMMIT_MSG}{RESET}')
 
-# Use the latest known version/commit for the library init display
-print(f'{BLUE}   Version: 2025_04_25_v1.10{RESET}')
-print(f'{BLUE}   Previous Commit: Fix: Silence pyspedas logs by filtering root logger{RESET}')
+# --- Final Print Message ---
+print(f"\n{BLUE}🤖 Plotbot Initialized{RESET}")
 
 # Note: Previous logic had this at the end of plotbot_main.py, moved here 
 #       to ensure it prints after all imports in __init__ are processed.

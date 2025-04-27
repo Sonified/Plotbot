@@ -642,16 +642,16 @@ def test_pyspedas_internal_variable_names(plotbot_key, config):
 
     phase(4, f"Read CDF and Check Variables ({plotbot_key})")
     missing_vars = []
+    internal_vars = {} # Initialize the dictionary here
     try:
         print(f"  Opening CDF: {os.path.basename(file_path)}")
         with cdflib.CDF(file_path) as cdf_file:
             cdf_info = cdf_file.cdf_info()
             # Correct way to get variable names using cdf_info()
-            cdf_info = cdf_file.cdf_info()
             all_vars = cdf_info.rVariables + cdf_info.zVariables
-            internal_vars[dt_key] = list(all_vars) # Combine rVariables and zVariables
-            # print_manager.debug(f"  Extracted variables for {dt_key} (Count: {len(all_vars)}): {internal_vars[dt_key][:10]}...") # Print first 10
-            print_manager.debug(f"  Extracted variables for {dt_key} (Count: {len(all_vars)}): {internal_vars[dt_key]}") # Print the FULL list
+            internal_vars[plotbot_key] = list(all_vars) # Use plotbot_key here
+            # print_manager.debug(f"  Extracted variables for {plotbot_key} (Count: {len(all_vars)}): {internal_vars[plotbot_key][:10]}...") # Print first 10
+            print_manager.debug(f"  Extracted variables for {plotbot_key} (Count: {len(all_vars)}): {internal_vars[plotbot_key]}") # Print the FULL list
 
         if not missing_vars:
              print(f"  ✅ All expected variables found in {os.path.basename(file_path)}.")
@@ -800,7 +800,7 @@ def _get_internal_vars(server_mode, trange, variables_to_load):
                         # Correct way to get variable names using cdf_info()
                         cdf_info = cdf_file.cdf_info()
                         all_vars = cdf_info.rVariables + cdf_info.zVariables
-                        internal_vars[dt_key] = list(all_vars) # Combine rVariables and zVariables
+                        internal_vars[dt_key] = list(all_vars) # Use plotbot_key here
                         # print_manager.debug(f"  Extracted variables for {dt_key} (Count: {len(all_vars)}): {internal_vars[dt_key][:10]}...") # Print first 10
                         print_manager.debug(f"  Extracted variables for {dt_key} (Count: {len(all_vars)}): {internal_vars[dt_key]}") # Print the FULL list
                 except Exception as e:
