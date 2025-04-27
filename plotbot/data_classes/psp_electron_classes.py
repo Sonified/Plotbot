@@ -1,6 +1,8 @@
+#plotbot/data_classes/psp_electron_classes.py
+
 import numpy as np
-import pandas as pd
-import cdflib
+import pandas as pd 
+import cdflib 
 from datetime import datetime, timedelta, timezone
 
 # Import our custom managers (UPDATED PATHS)

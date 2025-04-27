@@ -699,1070 +699,280 @@ class plot_manager(np.ndarray):
             empty_array = np.zeros(1)
             return empty_array, empty_array, np.array([])
             
-    def __add__(self, other):
-        """Add two variables or a variable and a scalar."""
-        # No longer importing from derived_variable
+    def _perform_operation(self, other, operation_name, operation_func, reverse_op=False):
+        """Helper method to perform arithmetic operations."""
         from .print_manager import print_manager
         from .data_classes.custom_variables import custom_variable
+        from .ploptions import ploptions
+        import numpy as np
         
-        print_manager.custom_debug(f"[MATH] Adding {getattr(self, 'subclass_name', 'var1')} + {getattr(other, 'subclass_name', str(other))}")
-        
-        # Check if other is a plot_manager instance
-        if isinstance(other, plot_manager):
-            # Object addition case - align variables first
-            self_aligned, other_aligned, dt_array = self.align_variables(other)
+        # Special handling for unary operations (where other is None)
+        if other is None:  # Unary operation like __neg__ or __abs__
+            print_manager.custom_debug(f"[MATH] Performing unary {operation_name}: {getattr(self, 'subclass_name', 'var1')}")
             
-            # Additional safety check before addition 
-            if self_aligned is None or other_aligned is None:
-                print_manager.warning(f"Cannot perform addition: One or both variables are None after alignment")
-                # Return an empty array instead of trying to add None values
-                result_var = plot_manager(np.zeros(1))
-                # Store source info
-                object.__setattr__(result_var, 'source_var', [self, other])
-                object.__setattr__(result_var, 'operation', 'add_failed')
-                var_name = f"{getattr(self, 'subclass_name', 'var1')}_{getattr(other, 'subclass_name', 'var2')}_add_failed"
+            # Track source variables
+            source_vars = []
+            if hasattr(self, 'source_var') and self.source_var is not None:
+                source_vars.extend(self.source_var)
+            elif hasattr(self, 'class_name') and hasattr(self, 'subclass_name'):
+                source_vars.append(self)
+            
+            try:
+                # Apply the unary operation to self's data
+                self_data = self.view(np.ndarray)
+                # The lambda in the method call handles applying just to first arg
+                result = operation_func(self_data, None)
+                
+                # Create variable name
+                var_name = f"{operation_name}_{getattr(self, 'subclass_name', 'var1')}"
+                
+                # Create result plot_manager
+                result_plot_options = ploptions(
+                    data_type="derived",
+                    class_name="derived", 
+                    subclass_name=var_name,
+                    plot_type="time_series",
+                    datetime_array=self.datetime_array if hasattr(self, 'datetime_array') else None
+                )
+                
+                # Create the result
+                result_var = plot_manager(result, result_plot_options)
+                
+                # Set metadata
+                object.__setattr__(result_var, 'operation', operation_name)
+                object.__setattr__(result_var, 'source_var', source_vars)
+                
+                # Return wrapped in custom_variable
                 return custom_variable(var_name, result_var)
             
-            # If we got here, both variables should have valid data arrays to add
-            try:
-                # Safety check for empty arrays
-                if len(self_aligned) == 0 or len(other_aligned) == 0:
-                    result = np.zeros(1)
-                else:
-                    result = self_aligned + other_aligned
             except Exception as e:
-                # Return an empty array instead of trying to add problematic values
-                print_manager.custom_debug(f"[MATH] Error during addition: {str(e)}")
-                result = np.zeros(1)
-            
-            # Create a name for the variable
-            var_name = f"{getattr(self, 'subclass_name', 'var1')}_{getattr(other, 'subclass_name', 'var2')}_add"
-            
-            # Set up the result with datetime array from alignment using proper methods
-            # that avoid truth value errors with arrays
-            result_var = plot_manager(result)
-            if dt_array is not None:
-                # Use direct attribute setting to avoid truth value errors
-                object.__setattr__(result_var, 'datetime_array', dt_array)
-            
-            # Store source info for later updates
-            object.__setattr__(result_var, 'source_var', [self, other])
-            object.__setattr__(result_var, 'operation', 'add')
-            
-            # Create a custom variable directly
-            return custom_variable(var_name, result_var)
-        else:
-            # Scalar addition case
-            try:
-                result = self.view(np.ndarray) + other
-            except Exception as e:
-                print_manager.custom_debug(f"[MATH] Error during scalar addition: {str(e)}")
-                result = np.zeros(1)
-            
-            # Create a result variable with datetime array from self using proper methods
-            # that avoid truth value errors with arrays
-            result_var = plot_manager(result)
-            if hasattr(self, 'datetime_array') and self.datetime_array is not None:
-                # Use direct attribute setting to avoid truth value errors
-                object.__setattr__(result_var, 'datetime_array', self.datetime_array)
-            
-            # Store source info for later updates
-            object.__setattr__(result_var, 'source_var', [self])
-            object.__setattr__(result_var, 'operation', 'add')
-            object.__setattr__(result_var, 'scalar_value', other)
-            
-            # Create a custom variable directly
-            var_name = f"{getattr(self, 'subclass_name', 'var1')}_scalar_add"
-            return custom_variable(var_name, result_var)
-    
-    def __radd__(self, other):
-        """Handle right-sided addition (other + self)."""
-        # For scalar + plot_manager
-        print_manager.variable_testing(f"Right-sided addition: {other} + {self.class_name}.{self.subclass_name}")
+                print_manager.custom_debug(f"[MATH] Error during unary {operation_name}: {str(e)}")
+                # For unary ops, return self on error as fallback
+                return self
         
-        # Import here to avoid circular imports
-        from .data_classes.custom_variables import custom_variable
-        import numpy as np
+        # Rest of the existing method for binary operations...
+        print_manager.custom_debug(f"[MATH] Performing {operation_name}: {getattr(self, 'subclass_name', 'var1')} vs {getattr(other, 'subclass_name', str(other))}")
         
-        # Track source variables for the operation
         source_vars = []
+        scalar_value = None
+        dt_array = None
+        
+        # Initial source tracking for 'self'
         if hasattr(self, 'source_var') and self.source_var is not None:
             source_vars.extend(self.source_var)
         elif hasattr(self, 'class_name') and hasattr(self, 'subclass_name'):
             source_vars.append(self)
+        
+        if isinstance(other, plot_manager):
+            # --- Plot Manager vs Plot Manager ---
+            # Also track other variable's sources if available
+            if hasattr(other, 'source_var') and other.source_var is not None:
+                source_vars.extend(other.source_var)
+            elif hasattr(other, 'class_name') and hasattr(other, 'subclass_name'):
+                source_vars.append(other)
+                
+            self_aligned, other_aligned, dt_array = self.align_variables(other)
+
+            # Safety check after alignment
+            if self_aligned is None or other_aligned is None:
+                print_manager.warning(f"Cannot perform {operation_name}: Alignment failed.")
+                result = np.zeros(1)
+                var_name = f"{getattr(self, 'subclass_name', 'var1')}_{getattr(other, 'subclass_name', 'var2')}_{operation_name}_failed"
+                # Early return for failure case, maybe wrapped? Or handle below?
+                # For simplicity, let's create a placeholder result below.
+            else:
+                try:
+                    # Safety check for empty arrays
+                    if len(self_aligned) == 0 or len(other_aligned) == 0:
+                        print_manager.warning(f"Cannot perform {operation_name}: Empty array after alignment.")
+                        result = np.zeros(1) # Or maybe shape of dt_array if available?
+                    else:
+                        # Perform the actual operation
+                        if reverse_op: # Handle things like scalar / variable
+                            result = operation_func(other_aligned, self_aligned)
+                        else:
+                            result = operation_func(self_aligned, other_aligned)
+
+                    # STATUS PRINT (Optional - Add back if needed)
+                    # print_manager.variable_basic(f"📊 Operation complete: {self.class_name}.{self.subclass_name} {op_symbol} {other.class_name}.{other.subclass_name}")
+                    # print_manager.variable_basic(f"   → Interpolation may have occurred.")
+
+                except Exception as e:
+                    print_manager.custom_debug(f"[MATH] Error during {operation_name}: {str(e)}")
+                    result = np.zeros(1) # Fallback result on error
+
+            # Create variable name
+            var_name = f"{getattr(self, 'subclass_name', 'var1')}_{getattr(other, 'subclass_name', 'var2')}_{operation_name}"
+
+        else:
+            # --- Plot Manager vs Scalar ---
+            scalar_value = other
             
-        if not isinstance(other, plot_manager):
-            result_array = other + self.data
-            
-            # STATUS PRINT: Show operation complete message for scalar operation
-            print_manager.variable_basic(f"📊 Operation complete: {other} + {self.class_name}.{self.subclass_name}")
-            print_manager.variable_basic(f"   → No interpolation needed for scalar operation\n")
-            
-            # Create a new plot_manager with the result
-            from .ploptions import ploptions
-            result_plot_options = ploptions(
-                data_type="custom_data_type",
-                class_name="custom_class", 
-                subclass_name=f"scalar_{other}_add_{self.subclass_name}",
-                plot_type="time_series",
-                datetime_array=self.datetime_array,
-                y_label=f"{other}+{self.subclass_name}",
-                legend_label=f"{other}+{self.subclass_name}"
-            )
-            
-            # Create the result using plot_manager
-            result = plot_manager(result_array, result_plot_options)
-            
-            # Store the operation type and sources for custom variable container to use
-            result.operation = 'add'
-            result.source_var = source_vars
-            
-            # Return the computed result
-            return result
-        return NotImplemented  # Let the left operand handle it
-    
-    def __radd__(self, other):
-        """Support right addition (e.g., 5 + variable)."""
-        return self.__add__(other)
-    
+            # Add self to source vars if not already tracked (e.g. if self was already a derived var)
+            if not any(sv is self for sv in source_vars):
+                if hasattr(self, 'class_name') and hasattr(self, 'subclass_name'):
+                    source_vars.append(self)
+
+            try:
+                self_data = self.view(np.ndarray)
+                # Perform the actual operation
+                if reverse_op: # Handle things like scalar / variable
+                    # Special handling for division by zero if needed
+                    if operation_name == 'div' or operation_name == 'floordiv':
+                        safe_self_data = np.where(self_data == 0, np.nan, self_data)
+                        result = operation_func(scalar_value, safe_self_data)
+                    else:
+                        result = operation_func(scalar_value, self_data)
+                else:
+                    # Special handling for division by zero if needed
+                    if (operation_name == 'div' or operation_name == 'floordiv') and scalar_value == 0:
+                        result = np.full_like(self_data, np.nan)
+                    else:
+                        result = operation_func(self_data, scalar_value)
+
+                # STATUS PRINT (Optional - Add back if needed)
+                # print_manager.variable_basic(f"📊 Operation complete: {self.class_name}.{self.subclass_name} {op_symbol} {scalar_value}")
+                # print_manager.variable_basic(f"   → No interpolation needed for scalar operation.")
+
+            except Exception as e:
+                print_manager.custom_debug(f"[MATH] Error during scalar {operation_name}: {str(e)}")
+                result = np.zeros(1) # Fallback result on error
+
+            # Create variable name
+            var_name = f"{getattr(self, 'subclass_name', 'var1')}_scalar_{operation_name}"
+            if reverse_op:
+                var_name = f"scalar_{scalar_value}_{operation_name}_{getattr(self, 'subclass_name', 'var1')}"
+
+        # --- Create result plot_manager ---
+        # Use placeholder options initially, custom_variable will refine
+        result_plot_options = ploptions(
+            data_type="derived", # Let custom_variable set to custom_data_type
+            class_name="derived", # Let custom_variable set to custom_class
+            subclass_name=var_name, # Temporary, custom_variable uses this
+            plot_type="time_series",
+            # We need to ensure dt_array is handled correctly
+            datetime_array=(dt_array if dt_array is not None else (self.datetime_array if hasattr(self, 'datetime_array') else None))
+        )
+        
+        # Create the result using plot_manager constructor
+        result_var = plot_manager(result, result_plot_options)
+
+        # --- Set metadata on the result object ---
+        # Explicitly using object.__setattr__ might be safer here
+        object.__setattr__(result_var, 'operation', operation_name)
+        object.__setattr__(result_var, 'source_var', source_vars) # Set the tracked sources
+        if scalar_value is not None:
+            object.__setattr__(result_var, 'scalar_value', scalar_value)
+
+        # --- Wrap in custom_variable for registration ---
+        # custom_variable will set final names, labels, and register it
+        return custom_variable(var_name, result_var)
+
+    def __add__(self, other):
+        """Add two variables or a variable and a scalar."""
+        import numpy as np
+        return self._perform_operation(other, 'add', np.add)
+
     def __sub__(self, other):
         """Subtract two variables or a variable and a scalar."""
-        # No longer importing from derived_variable
-        from .print_manager import print_manager
-        from .data_classes.custom_variables import custom_variable
-        
-        print_manager.custom_debug(f"[MATH] Subtracting {getattr(self, 'subclass_name', 'var1')} - {getattr(other, 'subclass_name', str(other))}")
-        
-        # Check if other is a plot_manager instance
-        if isinstance(other, plot_manager):
-            # Object subtraction case - align variables first
-            self_aligned, other_aligned, dt_array = self.align_variables(other)
-            result = self_aligned - other_aligned
-            
-            # Create a name for the variable
-            var_name = f"{getattr(self, 'subclass_name', 'var1')}_{getattr(other, 'subclass_name', 'var2')}_sub"
-            
-            # Set up the result with datetime array from alignment using proper methods
-            # that avoid truth value errors with arrays
-            result_var = plot_manager(result)
-            if dt_array is not None:
-                # Use direct attribute setting to avoid truth value errors
-                object.__setattr__(result_var, 'datetime_array', dt_array)
-            
-            # Store source info for later updates
-            object.__setattr__(result_var, 'source_var', [self, other])
-            object.__setattr__(result_var, 'operation', 'sub')
-            
-            # Create a custom variable directly
-            return custom_variable(var_name, result_var)
-        else:
-            # Scalar subtraction case
-            result = self.view(np.ndarray) - other
-            
-            # Create a result variable with datetime array from self using proper methods
-            # that avoid truth value errors with arrays
-            result_var = plot_manager(result)
-            if hasattr(self, 'datetime_array') and self.datetime_array is not None:
-                # Use direct attribute setting to avoid truth value errors
-                object.__setattr__(result_var, 'datetime_array', self.datetime_array)
-            
-            # Store source info for later updates
-            object.__setattr__(result_var, 'source_var', [self])
-            object.__setattr__(result_var, 'operation', 'sub')
-            object.__setattr__(result_var, 'scalar_value', other)
-            
-            # Create a custom variable directly
-            var_name = f"{getattr(self, 'subclass_name', 'var1')}_scalar_sub"
-            return custom_variable(var_name, result_var)
-    
-    def __rsub__(self, other):
-        """Support right subtraction (e.g., 5 - variable)."""
-        print_manager.variable_testing(f"Right-sided subtraction: {other} - {self.class_name}.{self.subclass_name}")
-        
-        # Import here to avoid circular imports
-        from .data_classes.custom_variables import custom_variable
         import numpy as np
-        
-        # Track source variables for the operation
-        source_vars = []
-        if hasattr(self, 'source_var') and self.source_var is not None:
-            source_vars.extend(self.source_var)
-        elif hasattr(self, 'class_name') and hasattr(self, 'subclass_name'):
-            source_vars.append(self)
-        
-        # This is scalar - variable, so we flip and negate
-        result_array = -(self.data - other)
-        
-        # STATUS PRINT: Show operation complete message for scalar operation
-        print_manager.variable_basic(f"📊 Operation complete: {other} - {self.class_name}.{self.subclass_name}")
-        print_manager.variable_basic(f"   → No interpolation needed for scalar operation\n")
-        
-        # Create a new plot_manager with the result
-        from .ploptions import ploptions
-        result_plot_options = ploptions(
-            data_type="custom_data_type",
-            class_name="custom_class", 
-            subclass_name=f"scalar_{other}_rsub_{self.subclass_name}",
-            plot_type="time_series",
-            datetime_array=self.datetime_array,
-            y_label=f"{other}-{self.subclass_name}",
-            legend_label=f"{other}-{self.subclass_name}"
-        )
-        
-        # Create the result using plot_manager
-        result = plot_manager(result_array, result_plot_options)
-        
-        # Store the operation type and sources for custom variable container to use
-        result.operation = 'sub'
-        result.source_var = source_vars
-        result.scalar_value = other
-        
-        # Return the computed result
-        return result
-    
-    def __rmul__(self, other):
-        """Support right multiplication (e.g., 5 * variable)."""
-        return self.__mul__(other)
-    
-    def __rsub__(self, other):
-        """Support right subtraction (e.g., 5 - variable)."""
-        # Import within function to avoid circular dependency
-        from .derived_variable import RecalculableDerived
-        from .print_manager import print_manager
-        
-        print_manager.custom_debug(f"[MATH] Right subtraction {other} - {getattr(self, 'subclass_name', 'var1')}")
-        
-        # This is scalar - variable, so we flip and negate
-        result = -(self.view(np.ndarray) - other)
-        
-        # Create a recalculable derived variable
-        if hasattr(self, 'datetime_array'):
-            dt_array = self.datetime_array
-        else:
-            dt_array = None
-            
-        # Store source variables for recalculation
-        source_vars = [self]
-        
-        return RecalculableDerived(
-            result,
-            dt_array,
-            'sub',
-            source_vars,
-            scalar_value=other,
-            operation_str=f"{other} - {getattr(self, 'subclass_name', 'var1')}"
-        )
-    
-    def __mul__(self, other):
-        """Multiply two variables or a variable and a scalar."""
-        print_manager.variable_testing(f"Multiplication: {self.class_name}.{self.subclass_name} * {getattr(other, 'subclass_name', str(other))}")
-        
-        # Import here to avoid circular imports
-        from .data_classes.custom_variables import custom_variable
-        import numpy as np
-        
-        # Track source variables for the operation
-        source_vars = []
-        if hasattr(self, 'source_var') and self.source_var is not None:
-            source_vars.extend(self.source_var)
-        elif hasattr(self, 'class_name') and hasattr(self, 'subclass_name'):
-            source_vars.append(self)
-        
-        # Check if other is a plot_manager instance
-        if isinstance(other, plot_manager):
-            # Also track other variable's sources if available
-            if hasattr(other, 'source_var') and other.source_var is not None:
-                source_vars.extend(other.source_var)
-            elif hasattr(other, 'class_name') and hasattr(other, 'subclass_name'):
-                source_vars.append(other)
-                
-            # Object multiplication case - align variables first
-            self_aligned, other_aligned, dt_array = self.align_variables(other)
-            result_array = self_aligned * other_aligned
-            
-            # STATUS PRINT: Show operation complete message after interpolation
-            print_manager.variable_basic(f"📊 Operation complete: {self.class_name}.{self.subclass_name} * {other.class_name}.{other.subclass_name}")
-            
-            # Create a new plot_manager with the result
-            from .ploptions import ploptions
-            result_plot_options = ploptions(
-                data_type="custom_data_type",
-                class_name="custom_class", 
-                subclass_name=f"{self.subclass_name}_{other.subclass_name}_mul",
-                plot_type="time_series",
-                datetime_array=dt_array
-                # Don't set y_label or legend_label here to let custom_variable set them
-            )
-            
-            # Create the result using plot_manager
-            result = plot_manager(result_array, result_plot_options)
-            
-            # Store the operation type and sources for custom variable container to use
-            result.operation = 'mul'
-            result.source_var = source_vars
-            
-            # Return the result directly, without calling custom_variable
-            return result
-        else:
-            # Scalar multiplication case
-            result_array = self.data * other
-            
-            # STATUS PRINT: Show operation complete message for scalar operation
-            print_manager.variable_basic(f"📊 Operation complete: {self.class_name}.{self.subclass_name} * {other}")
-            print_manager.variable_basic(f"   → No interpolation needed for scalar operation\n")
-            
-            # Create a new plot_manager with the result
-            from .ploptions import ploptions
-            result_plot_options = ploptions(
-                data_type="custom_data_type",
-                class_name="custom_class", 
-                subclass_name=f"{self.subclass_name}_scalar_mul",
-                plot_type="time_series",
-                datetime_array=self.datetime_array
-                # Don't set y_label or legend_label here to let custom_variable set them
-            )
-            
-            # Create the result using plot_manager
-            result = plot_manager(result_array, result_plot_options)
-            
-            # Store the operation type and sources for custom variable container to use
-            result.operation = 'mul'
-            result.source_var = source_vars
-            result.scalar_value = other
-            
-            # Return the result directly, without calling custom_variable
-            return result
-    
-    def __truediv__(self, other):
-        """Divide two variables or a variable and a scalar."""
-        # No longer importing from derived_variable
-        from .print_manager import print_manager
-        from .data_classes.custom_variables import custom_variable
-        
-        print_manager.custom_debug(f"[MATH] Dividing {getattr(self, 'subclass_name', 'var1')} / {getattr(other, 'subclass_name', str(other))}")
-        
-        # Check if other is a plot_manager instance
-        if isinstance(other, plot_manager):
-            # Object division case - align variables first
-            self_aligned, other_aligned, dt_array = self.align_variables(other)
-            
-            # Avoid division by zero
-            other_aligned = np.where(other_aligned == 0, np.nan, other_aligned)
-            result = self_aligned / other_aligned
-            
-            # Create a name for the variable
-            var_name = f"{getattr(self, 'subclass_name', 'var1')}_{getattr(other, 'subclass_name', 'var2')}_div"
-            
-            # Set up the result with datetime array from alignment using proper methods
-            # that avoid truth value errors with arrays
-            result_var = plot_manager(result)
-            if dt_array is not None:
-                # Use direct attribute setting to avoid truth value errors
-                object.__setattr__(result_var, 'datetime_array', dt_array)
-            
-            # Store source info for later updates
-            object.__setattr__(result_var, 'source_var', [self, other])
-            object.__setattr__(result_var, 'operation', 'div')
-            
-            # Create a custom variable directly
-            return custom_variable(var_name, result_var)
-        else:
-            # Scalar division case - avoid division by zero
-            if other == 0:
-                result = np.full_like(self.view(np.ndarray), np.nan)
-            else:
-                result = self.view(np.ndarray) / other
-            
-            # Create a result variable with datetime array from self
-            result_var = plot_manager(result)
-            if hasattr(self, 'datetime_array'):
-                result_var.datetime_array = self.datetime_array
-            
-            # Store source info for later updates
-            result_var.source_var = [self]
-            result_var.operation = 'div'
-            result_var.scalar_value = other
-            
-            # Create a custom variable directly
-            var_name = f"{getattr(self, 'subclass_name', 'var1')}_scalar_div"
-            return custom_variable(var_name, result_var)
-    
-    def __rtruediv__(self, other):
-        """Support right division (e.g., 5 / variable)."""
-        print_manager.variable_testing(f"Right-sided division: {other} / {self.class_name}.{self.subclass_name}")
-        
-        # Import here to avoid circular imports
-        from .data_classes.custom_variables import custom_variable
-        import numpy as np
-        
-        # Track source variables for the operation
-        source_vars = []
-        if hasattr(self, 'source_var') and self.source_var is not None:
-            source_vars.extend(self.source_var)
-        elif hasattr(self, 'class_name') and hasattr(self, 'subclass_name'):
-            source_vars.append(self)
-        
-        # Avoid division by zero
-        safe_data = np.where(self.data == 0, np.nan, self.data)
-        result_array = other / safe_data
-        
-        # STATUS PRINT: Show operation complete message for scalar operation
-        print_manager.variable_basic(f"📊 Operation complete: {other} / {self.class_name}.{self.subclass_name}")
-        print_manager.variable_basic(f"   → No interpolation needed for scalar operation")
-        print_manager.variable_basic(f"   → Any division by zero has been replaced with NaN values\n")
-        
-        # Create a new plot_manager with the result
-        from .ploptions import ploptions
-        result_plot_options = ploptions(
-            data_type="custom_data_type",
-            class_name="custom_class", 
-            subclass_name=f"scalar_{other}_div_{self.subclass_name}",
-            plot_type="time_series",
-            datetime_array=self.datetime_array,
-            y_label=f"{other}/{self.subclass_name}",
-            legend_label=f"{other}/{self.subclass_name}"
-        )
-        
-        # Create the result using plot_manager
-        result = plot_manager(result_array, result_plot_options)
-        
-        # Store the operation type and sources for custom variable container to use
-        result.operation = 'div'
-        result.source_var = source_vars
-        result.scalar_value = other
-        
-        # Return the computed result
-        return result
-
-    def __pow__(self, other):
-        """Support exponentiation (e.g., variable ** 2)."""
-        print_manager.variable_testing(f"Power operation: {self.class_name}.{self.subclass_name} ** {other}")
-        
-        # Import here to avoid circular imports
-        from .data_classes.custom_variables import custom_variable
-        import numpy as np
-        
-        # Track source variables for the operation
-        source_vars = []
-        if hasattr(self, 'source_var') and self.source_var is not None:
-            source_vars.extend(self.source_var)
-        elif hasattr(self, 'class_name') and hasattr(self, 'subclass_name'):
-            source_vars.append(self)
-            
-        result_array = np.power(self.data, other)
-        
-        # STATUS PRINT: Show operation complete message for scalar operation
-        print_manager.variable_basic(f"📊 Operation complete: {self.class_name}.{self.subclass_name} ** {other}")
-        print_manager.variable_basic(f"   → No interpolation needed for scalar operation\n")
-        
-        # Create a new plot_manager with the result
-        from .ploptions import ploptions
-        result_plot_options = ploptions(
-            data_type="custom_data_type",
-            class_name="custom_class", 
-            subclass_name=f"{self.subclass_name}_pow_{other}",
-            plot_type="time_series",
-            datetime_array=self.datetime_array,
-            y_label=f"{self.subclass_name}^{other}",
-            legend_label=f"{self.subclass_name}^{other}"
-        )
-        
-        # Create the result using plot_manager
-        result = plot_manager(result_array, result_plot_options)
-        
-        # Store the operation type and sources for custom variable container to use
-        result.operation = 'pow'
-        result.source_var = source_vars
-        result.scalar_value = other
-        
-        # Return the computed result
-        return result
-
-    def __neg__(self):
-        """Handle negation with automatic recalculation capability."""
-        print_manager.variable_testing(f"Negating {self.class_name}.{self.subclass_name}")
-        
-        # Import here to avoid circular imports
-        from .data_classes.custom_variables import custom_variable
-        import numpy as np
-        
-        # Track source variables for the operation
-        source_vars = []
-        if hasattr(self, 'source_var') and self.source_var is not None:
-            source_vars.extend(self.source_var)
-        elif hasattr(self, 'class_name') and hasattr(self, 'subclass_name'):
-            source_vars.append(self)
-        
-        result_array = -self.data
-        
-        # STATUS PRINT: Show operation details for __neg__
-        print_manager.variable_basic(f"📊 Operation complete: -{self.class_name}.{self.subclass_name}")
-        print_manager.variable_basic(f"   → Unary operation (no interpolation needed)\n")
-        
-        # Operation string for debugging
-        operation_str = f"-{self.class_name}.{self.subclass_name}"
-        
-        # Create a new plot_manager with the result
-        from .ploptions import ploptions
-        result_plot_options = ploptions(
-            data_type="custom_data_type",
-            class_name="custom_class", 
-            subclass_name=f"neg_{self.subclass_name}",
-            plot_type="time_series",
-            datetime_array=self.datetime_array,
-            y_label=f"-{self.subclass_name}",
-            legend_label=f"-{self.subclass_name}"
-        )
-        
-        # Create the result using plot_manager
-        result = plot_manager(result_array, result_plot_options)
-        
-        # Store the operation type and sources for custom variable container to use
-        result.operation = 'neg'
-        result.source_var = source_vars
-        
-        # Return the computed result
-        return result
-
-    def __abs__(self):
-        """Handle absolute value with automatic recalculation capability."""
-        print_manager.variable_testing(f"Taking absolute value of {self.class_name}.{self.subclass_name}")
-        
-        # Import here to avoid circular imports
-        from .data_classes.custom_variables import custom_variable
-        import numpy as np
-        
-        # Track source variables for the operation
-        source_vars = []
-        if hasattr(self, 'source_var') and self.source_var is not None:
-            source_vars.extend(self.source_var)
-        elif hasattr(self, 'class_name') and hasattr(self, 'subclass_name'):
-            source_vars.append(self)
-        
-        result_array = abs(self.data)
-        
-        # STATUS PRINT: Show operation details for __abs__
-        print_manager.variable_basic(f"📊 Operation complete: abs({self.class_name}.{self.subclass_name})")
-        print_manager.variable_basic(f"   → Unary operation (no interpolation needed)\n")
-        
-        # Operation string for debugging
-        operation_str = f"abs({self.class_name}.{self.subclass_name})"
-        
-        # Create a new plot_manager with the result
-        from .ploptions import ploptions
-        result_plot_options = ploptions(
-            data_type="custom_data_type",
-            class_name="custom_class", 
-            subclass_name=f"abs_{self.subclass_name}",
-            plot_type="time_series",
-            datetime_array=self.datetime_array,
-            y_label=f"|{self.subclass_name}|",
-            legend_label=f"|{self.subclass_name}|"
-        )
-        
-        # Create the result using plot_manager
-        result = plot_manager(result_array, result_plot_options)
-        
-        # Store the operation type and sources for custom variable container to use
-        result.operation = 'abs'
-        result.source_var = source_vars
-        
-        # Return the computed result
-        return result
-
-    def __floordiv__(self, other):
-        """Handle floor division with automatic recalculation capability."""
-        print_manager.variable_testing(f"Floor dividing {self.class_name}.{self.subclass_name} by {other}")
-        
-        # Import here to avoid circular imports
-        from .data_classes.custom_variables import custom_variable
-        import numpy as np
-
-        # Track source variables for the operation
-        source_vars = []
-        if hasattr(self, 'source_var') and self.source_var is not None:
-            source_vars.extend(self.source_var)
-        elif hasattr(self, 'class_name') and hasattr(self, 'subclass_name'):
-            source_vars.append(self)
-        
-        if isinstance(other, plot_manager):
-            # Also track other variable's sources if available
-            if hasattr(other, 'source_var') and other.source_var is not None:
-                source_vars.extend(other.source_var)
-            elif hasattr(other, 'class_name') and hasattr(other, 'subclass_name'):
-                source_vars.append(other)
-                
-            # Get datetime arrays
-            self_times = self.datetime_array
-            other_times = other.datetime_array
-            
-            print_manager.variable_testing(f"First array time points: {len(self_times)}, Second array time points: {len(other_times)}")
-            
-            # For user-friendly status message
-            first_var = f"{self.class_name}.{self.subclass_name}"
-            second_var = f"{other.class_name}.{other.subclass_name}"
-            interpolated_var = None
-            target_var = None
-            
-            # Check sampling rates if possible - handle numpy.datetime64 objects
-            if len(self_times) > 1 and len(other_times) > 1:
-                try:
-                    # Try with total_seconds() for Python datetime objects
-                    self_cadence = (self_times[1] - self_times[0]).total_seconds()
-                    other_cadence = (other_times[1] - other_times[0]).total_seconds()
-                except AttributeError:
-                    # For numpy.datetime64 objects
-                    self_cadence = (self_times[1] - self_times[0]) / np.timedelta64(1, 's')
-                    other_cadence = (other_times[1] - other_times[0]) / np.timedelta64(1, 's')
-                
-                print_manager.variable_testing(f"First array sampling cadence: {self_cadence} seconds")
-                print_manager.variable_testing(f"Second array sampling cadence: {other_cadence} seconds")
-            
-            # Determine which variable has fewer time points to use as target
-            if len(self_times) <= len(other_times):
-                # Use self's time points as the target (fewer points)
-                target_times = self_times
-                target_var = first_var
-                interpolated_var = second_var
-                print_manager.variable_testing(f"Using first array ({self.class_name}.{self.subclass_name}) time points as target (fewer points)")
-                print_manager.variable_testing(f"Interpolating {other.class_name}.{other.subclass_name} using method: {self.__class__.interp_method}")
-                
-                # Interpolate other's values to align with self's time points
-                interpolated_values = self.interpolate_to_times(
-                    other_times, other.data, target_times, self.__class__.interp_method)
-                
-                # Perform the floor division with the interpolated values
-                result_array = self.data // interpolated_values
-                dt_array = target_times
-            else:
-                # Use other's time points as the target (fewer points)
-                target_times = other_times
-                target_var = second_var
-                interpolated_var = first_var
-                print_manager.variable_testing(f"Using second array ({other.class_name}.{other.subclass_name}) time points as target (fewer points)")
-                print_manager.variable_testing(f"Interpolating {self.class_name}.{self.subclass_name} using method: {self.__class__.interp_method}")
-                
-                # Interpolate self's values to align with other's time points
-                interpolated_values = self.interpolate_to_times(
-                    self_times, self.data, target_times, self.__class__.interp_method)
-                
-                # Perform the floor division with the interpolated values
-                result_array = interpolated_values // other.data
-                dt_array = target_times
-                
-            print_manager.variable_testing(f"Floor division complete. Result length: {len(result_array)}")
-            
-            # STATUS PRINT: Show interpolation details after the operation is complete
-            print_manager.variable_basic(f"📊 Operation complete: {first_var} // {second_var}")
-            print_manager.variable_basic(f"   → Interpolated {interpolated_var} to match {target_var}'s {len(target_times)} time points using '{self.__class__.interp_method}' method\n")
-            
-            # Operation string for debugging
-            operation_str = f"{self.class_name}.{self.subclass_name} // {other.class_name}.{other.subclass_name}"
-            
-            # Create a new plot_manager with the result
-            from .ploptions import ploptions
-            result_plot_options = ploptions(
-                data_type="custom_data_type",
-                class_name="custom_class", 
-                subclass_name=f"{self.subclass_name}_floordiv_{other.subclass_name}",
-                plot_type="time_series",
-                datetime_array=dt_array,
-                y_label=f"{self.subclass_name}//{other.subclass_name}",
-                legend_label=f"{self.subclass_name}//{other.subclass_name}"
-            )
-            
-            # Create the result using plot_manager
-            result = plot_manager(result_array, result_plot_options)
-            
-            # Store the operation type and sources for custom variable container to use
-            result.operation = 'floordiv'
-            result.source_var = source_vars
-            
-            # Return the computed result
-            return result
-        else:
-            # Handle scalar floor division
-            result_array = self.data // other
-            
-            # STATUS PRINT: Show operation complete message for scalar operation
-            print_manager.variable_basic(f"📊 Operation complete: {self.class_name}.{self.subclass_name} // {other}")
-            print_manager.variable_basic(f"   → No interpolation needed for scalar operation\n")
-            
-            # Operation string for debugging
-            operation_str = f"{self.class_name}.{self.subclass_name} // {other}"
-            
-            # Create a new plot_manager with the result
-            from .ploptions import ploptions
-            result_plot_options = ploptions(
-                data_type="custom_data_type",
-                class_name="custom_class", 
-                subclass_name=f"{self.subclass_name}_floordiv_{other}",
-                plot_type="time_series",
-                datetime_array=self.datetime_array,
-                y_label=f"{self.subclass_name}//{other}",
-                legend_label=f"{self.subclass_name}//{other}"
-            )
-            
-            # Create the result using plot_manager
-            result = plot_manager(result_array, result_plot_options)
-            
-            # Store the operation type and sources for custom variable container to use
-            result.operation = 'floordiv'
-            result.source_var = source_vars
-            
-            # Return the computed result
-            return result
+        return self._perform_operation(other, 'sub', np.subtract)
 
     def __radd__(self, other):
         """Handle right-sided addition (other + self)."""
-        # For scalar + plot_manager
-        print_manager.variable_testing(f"Right-sided addition: {other} + {self.class_name}.{self.subclass_name}")
-        
-        # Import here to avoid circular imports
-        from .data_classes.custom_variables import custom_variable
         import numpy as np
-        
-        # Track source variables for the operation
-        source_vars = []
-        if hasattr(self, 'source_var') and self.source_var is not None:
-            source_vars.extend(self.source_var)
-        elif hasattr(self, 'class_name') and hasattr(self, 'subclass_name'):
-            source_vars.append(self)
-        
-        if not isinstance(other, plot_manager):
-            result_array = other + self.data
-            
-            # STATUS PRINT: Show operation complete message for scalar operation
-            print_manager.variable_basic(f"📊 Operation complete: {other} + {self.class_name}.{self.subclass_name}")
-            print_manager.variable_basic(f"   → No interpolation needed for scalar operation\n")
-            
-            # Create a new plot_manager with the result
-            from .ploptions import ploptions
-            result_plot_options = ploptions(
-                data_type="custom_data_type",
-                class_name="custom_class", 
-                subclass_name=f"scalar_{other}_add_{self.subclass_name}",
-                plot_type="time_series",
-                datetime_array=self.datetime_array,
-                y_label=f"{other}+{self.subclass_name}",
-                legend_label=f"{other}+{self.subclass_name}"
-            )
-            
-            # Create the result using plot_manager
-            result = plot_manager(result_array, result_plot_options)
-            
-            # Store the operation type and sources for custom variable container to use
-            result.operation = 'add'
-            result.source_var = source_vars
-            
-            # Return the computed result
-            return result
-        return NotImplemented  # Let the left operand handle it
+        return self._perform_operation(other, 'add', np.add, reverse_op=True)
 
     def __rsub__(self, other):
         """Handle right-sided subtraction (other - self)."""
-        # For scalar - plot_manager
-        print_manager.variable_testing(f"Right-sided subtraction: {other} - {self.class_name}.{self.subclass_name}")
-        
-        # Import here to avoid circular imports
-        from .data_classes.custom_variables import custom_variable
         import numpy as np
-        
-        # Track source variables for the operation
-        source_vars = []
-        if hasattr(self, 'source_var') and self.source_var is not None:
-            source_vars.extend(self.source_var)
-        elif hasattr(self, 'class_name') and hasattr(self, 'subclass_name'):
-            source_vars.append(self)
-        
-        if not isinstance(other, plot_manager):
-            result_array = other - self.data
-            
-            # STATUS PRINT: Show operation complete message for scalar operation
-            print_manager.variable_basic(f"📊 Operation complete: {other} - {self.class_name}.{self.subclass_name}")
-            print_manager.variable_basic(f"   → No interpolation needed for scalar operation\n")
-            
-            # Create a new plot_manager with the result
-            from .ploptions import ploptions
-            result_plot_options = ploptions(
-                data_type="custom_data_type",
-                class_name="custom_class", 
-                subclass_name=f"scalar_{other}_sub_{self.subclass_name}",
-                plot_type="time_series",
-                datetime_array=self.datetime_array,
-                y_label=f"{other}-{self.subclass_name}",
-                legend_label=f"{other}-{self.subclass_name}"
-            )
-            
-            # Create the result using plot_manager
-            result = plot_manager(result_array, result_plot_options)
-            
-            # Store the operation type and sources for custom variable container to use
-            result.operation = 'sub'
-            result.source_var = source_vars
-            
-            # Return the computed result
-            return result
-        return NotImplemented  # Let the left operand handle it
+        return self._perform_operation(other, 'sub', np.subtract, reverse_op=True)
+
+    def __mul__(self, other):
+        """Multiply two variables or a variable and a scalar."""
+        import numpy as np
+        # This would now consistently call custom_variable via the helper
+        return self._perform_operation(other, 'mul', np.multiply)
 
     def __rmul__(self, other):
         """Support right multiplication (e.g., 5 * variable)."""
-        return self.__mul__(other)
+        import numpy as np
+        return self._perform_operation(other, 'mul', np.multiply, reverse_op=True)
 
+    def __truediv__(self, other):
+        """Divide two variables or a variable and a scalar."""
+        import numpy as np
+        # Helper needs to handle division by zero for scalar case
+        return self._perform_operation(other, 'div', np.true_divide)
+    
     def __rtruediv__(self, other):
         """Handle right-sided division (other / self)."""
-        # For scalar / plot_manager
-        print_manager.variable_testing(f"Right-sided division: {other} / {self.class_name}.{self.subclass_name}")
-        
-        # Import here to avoid circular imports
-        from .data_classes.custom_variables import custom_variable
         import numpy as np
-        
-        # Track source variables for the operation
-        source_vars = []
-        if hasattr(self, 'source_var') and self.source_var is not None:
-            source_vars.extend(self.source_var)
-        elif hasattr(self, 'class_name') and hasattr(self, 'subclass_name'):
-            source_vars.append(self)
-        
-        if not isinstance(other, plot_manager):
-            # Avoid division by zero
-            safe_data = np.where(self.data == 0, np.nan, self.data)
-            result_array = other / safe_data
-            
-            # STATUS PRINT: Show operation complete message for scalar operation
-            print_manager.variable_basic(f"📊 Operation complete: {other} / {self.class_name}.{self.subclass_name}")
-            print_manager.variable_basic(f"   → No interpolation needed for scalar operation")
-            print_manager.variable_basic(f"   → Any division by zero has been replaced with NaN values\n")
-            
-            # Create a new plot_manager with the result
-            from .ploptions import ploptions
-            result_plot_options = ploptions(
-                data_type="custom_data_type",
-                class_name="custom_class", 
-                subclass_name=f"scalar_{other}_div_{self.subclass_name}",
-                plot_type="time_series",
-                datetime_array=self.datetime_array,
-                y_label=f"{other}/{self.subclass_name}",
-                legend_label=f"{other}/{self.subclass_name}"
-            )
-            
-            # Create the result using plot_manager
-            result = plot_manager(result_array, result_plot_options)
-            
-            # Store the operation type and sources for custom variable container to use
-            result.operation = 'div'
-            result.source_var = source_vars
-            
-            # Return the computed result
-            return result
-        return NotImplemented  # Let the left operand handle it
+        return self._perform_operation(other, 'div', np.true_divide, reverse_op=True)
 
+    def __pow__(self, other):
+        """Support exponentiation (e.g., variable ** 2)."""
+        import numpy as np
+        return self._perform_operation(other, 'pow', np.power)
+        
     def __rpow__(self, other):
         """Handle right-sided power (other ** self)."""
-        # For scalar ** plot_manager
-        print_manager.variable_testing(f"Right-sided power: {other} ** {self.class_name}.{self.subclass_name}")
-        
-        # Import here to avoid circular imports
-        from .data_classes.custom_variables import custom_variable
         import numpy as np
-        
-        # Track source variables for the operation
-        source_vars = []
-        if hasattr(self, 'source_var') and self.source_var is not None:
-            source_vars.extend(self.source_var)
-        elif hasattr(self, 'class_name') and hasattr(self, 'subclass_name'):
-            source_vars.append(self)
-        
-        if not isinstance(other, plot_manager):
-            result_array = other ** self.data
-            
-            # STATUS PRINT: Show operation complete message for scalar operation
-            print_manager.variable_basic(f"📊 Operation complete: {other} ** {self.class_name}.{self.subclass_name}")
-            print_manager.variable_basic(f"   → No interpolation needed for scalar operation\n")
-            
-            # Create a new plot_manager with the result
-            from .ploptions import ploptions
-            result_plot_options = ploptions(
-                data_type="custom_data_type",
-                class_name="custom_class", 
-                subclass_name=f"scalar_{other}_pow_{self.subclass_name}",
-                plot_type="time_series",
-                datetime_array=self.datetime_array,
-                y_label=f"{other}^{self.subclass_name}",
-                legend_label=f"{other}^{self.subclass_name}"
-            )
-            
-            # Create the result using plot_manager
-            result = plot_manager(result_array, result_plot_options)
-            
-            # Store the operation type and sources for custom variable container to use
-            result.operation = 'pow'
-            result.source_var = source_vars
-            
-            # Return the computed result
-            return result
-        return NotImplemented  # Let the left operand handle it
+        return self._perform_operation(other, 'pow', np.power, reverse_op=True)
+
+    def __floordiv__(self, other):
+        """Handle floor division with automatic recalculation capability."""
+        import numpy as np
+        return self._perform_operation(other, 'floordiv', np.floor_divide)
 
     def __rfloordiv__(self, other):
         """Handle right-sided floor division (other // self)."""
-        # For scalar // plot_manager
-        print_manager.variable_testing(f"Right-sided floor division: {other} // {self.class_name}.{self.subclass_name}")
-        
-        # Import here to avoid circular imports
-        from .data_classes.custom_variables import custom_variable
         import numpy as np
-        
-        # Track source variables for the operation
-        source_vars = []
-        if hasattr(self, 'source_var') and self.source_var is not None:
-            source_vars.extend(self.source_var)
-        elif hasattr(self, 'class_name') and hasattr(self, 'subclass_name'):
-            source_vars.append(self)
-        
-        if not isinstance(other, plot_manager):
-            # Avoid division by zero
-            safe_data = np.where(self.data == 0, np.nan, self.data)
-            result_array = other // safe_data
-            
-            # STATUS PRINT: Show operation complete message for scalar operation
-            print_manager.variable_basic(f"📊 Operation complete: {other} // {self.class_name}.{self.subclass_name}")
-            print_manager.variable_basic(f"   → No interpolation needed for scalar operation")
-            print_manager.variable_basic(f"   → Any division by zero has been replaced with NaN values\n")
-            
-            # Create a new plot_manager with the result
-            from .ploptions import ploptions
-            result_plot_options = ploptions(
-                data_type="custom_data_type",
-                class_name="custom_class", 
-                subclass_name=f"scalar_{other}_floordiv_{self.subclass_name}",
-                plot_type="time_series",
-                datetime_array=self.datetime_array,
-                y_label=f"{other}//{self.subclass_name}",
-                legend_label=f"{other}//{self.subclass_name}"
-            )
-            
-            # Create the result using plot_manager
-            result = plot_manager(result_array, result_plot_options)
-            
-            # Store the operation type and sources for custom variable container to use
-            result.operation = 'floordiv'
-            result.source_var = source_vars
-            
-            # Return the computed result
-            return result
-        return NotImplemented  # Let the left operand handle it
-    
-    def _create_derived(self, operation, source_vars, input_name=None, scalar_value=None):
-        """Create a derived variable from operations."""
-        from .print_manager import print_manager
-        from .custom_variables import custom_variable
-        import types
+        return self._perform_operation(other, 'floordiv', np.floor_divide, reverse_op=True)
+
+    def __neg__(self):
+        """Handle negation with automatic recalculation capability."""
         import numpy as np
-        
-        # CRITICAL BUGFIX: Debug what's being passed in
-        print_manager.variable_testing(f"_create_derived called with operation='{operation}', source_vars={[getattr(v, 'subclass_name', str(v)) for v in source_vars]}")
-        
-        # Generate a unique name for this derived variable if not provided
-        if not input_name:
-            if len(source_vars) == 1 and scalar_value is not None:
-                var_name = f"{source_vars[0].class_name}_{source_vars[0].subclass_name}_{operation}_{scalar_value}"
-            elif len(source_vars) == 2:
-                var_name = f"{source_vars[0].class_name}_{source_vars[0].subclass_name}_{operation}_{source_vars[1].class_name}_{source_vars[1].subclass_name}"
-            else:
-                var_name = f"derived_{operation}_{np.random.randint(1000, 9999)}"
-        else:
-            var_name = input_name
-        
-        # Apply appropriate operation with proper interpolation
-        if operation == 'add':
-            if len(source_vars) == 1 and scalar_value is not None:
-                # Scalar operation - no interpolation needed
-                result_array = source_vars[0].data + scalar_value
-                datetime_array = source_vars[0].datetime_array
-                # Add user-friendly status message for scalar
-                print_manager.variable_basic(f"📊 Operation complete: {source_vars[0].class_name}.{source_vars[0].subclass_name} + {scalar_value}")
-                print_manager.variable_basic(f"   → No interpolation needed for scalar operation\n")
-            elif len(source_vars) == 2:
-                # Vector operation - needs interpolation
-                var1 = source_vars[0]
-                var2 = source_vars[1]
-                
-                # Get datetime arrays
-                var1_times = var1.datetime_array
-                var2_times = var2.datetime_array
-                
-                print_manager.variable_testing(f"First array time points: {len(var1_times)}, Second array time points: {len(var2_times)}")
-                
-                # For user-friendly status message
-                first_var = f"{var1.class_name}.{var1.subclass_name}"
-                second_var = f"{var2.class_name}.{var2.subclass_name}"
-                
-                # Determine which variable has fewer time points to use as target
-                if len(var1_times) <= len(var2_times):
-                    # Use var1's time points as the target (fewer points)
-                    target_times = var1_times
-                    print_manager.variable_testing(f"Using first array ({var1.class_name}.{var1.subclass_name}) time points as target (fewer points)")
-                    print_manager.variable_testing(f"Interpolating {var2.class_name}.{var2.subclass_name} using method: {self.__class__.interp_method}")
-                    
-                    # Interpolate var2's values to align with var1's time points
-                    interpolated_values = self.interpolate_to_times(
-                        var2_times, var2.data, target_times, self.__class__.interp_method)
-                    
-                    # Perform the addition with the interpolated values
-                    result_array = var1.data + interpolated_values
-                    
-                    # Add user-friendly status message
-                    print_manager.variable_basic(f"📊 Operation complete: {var1.class_name}.{var1.subclass_name} + {var2.class_name}.{var2.subclass_name}")
-                    print_manager.variable_basic(f"   → Interpolated {var2.class_name}.{var2.subclass_name} to match {var1.class_name}.{var1.subclass_name}'s {len(target_times)} time points using '{self.__class__.interp_method}' method\n")
-                else:
-                    # Use var2's time points as the target (fewer points)
-                    target_times = var2_times
-                    print_manager.variable_testing(f"Using second array ({var2.class_name}.{var2.subclass_name}) time points as target (fewer points)")
-                    print_manager.variable_testing(f"Interpolating {var1.class_name}.{var1.subclass_name} using method: {self.__class__.interp_method}")
-                    
-                    # Interpolate var1's values to align with var2's time points
-                    interpolated_values = self.interpolate_to_times(
-                        var1_times, var1.data, target_times, self.__class__.interp_method)
-                    
-                    # Perform the addition with the interpolated values
-                    result_array = interpolated_values + var2.data
-                    
-                    # Add user-friendly status message
-                    print_manager.variable_basic(f"📊 Operation complete: {var1.class_name}.{var1.subclass_name} + {var2.class_name}.{var2.subclass_name}")
-                    print_manager.variable_basic(f"   → Interpolated {var1.class_name}.{var1.subclass_name} to match {var2.class_name}.{var2.subclass_name}'s {len(target_times)} time points using '{self.__class__.interp_method}' method\n")
-                
-                datetime_array = target_times
-            else:
-                print_manager.variable_testing(f"Invalid number of source variables for add operation: {len(source_vars)}")
-                return None
-                
-        # Other operations would be handled similarly...
-        # For brevity, let's just return a result for the add operation
-        
-        # Create a plot_manager result
-        from .ploptions import ploptions
-        result_plot_options = ploptions(
-            data_type="custom_data_type",
-            class_name="custom_class", 
-            subclass_name=var_name,
-            plot_type="time_series",
-            datetime_array=datetime_array,
-            y_label=var_name,
-            legend_label=var_name
-        )
-        
-        # Create the result using plot_manager
-        result_var = plot_manager(result_array, result_plot_options)
-        
-        # Store the operation type and sources for custom variable container to use
-        result_var.operation = operation
-        result_var.source_var = source_vars
-        if scalar_value is not None:
-            result_var.scalar_value = scalar_value
-        
-        # Use custom_variable to register it
-        return custom_variable(var_name, result_var)
+        # For unary operations, we can pass None as 'other', only perform op on self
+        # The operation func needs to handle just the data, not two arguments
+        return self._perform_operation(None, 'neg', lambda x, _: np.negative(x))
+
+    def __abs__(self):
+        """Handle absolute value with automatic recalculation capability."""
+        import numpy as np
+        # For unary operations, we can pass None as 'other', only perform op on self
+        # The operation func needs to handle just the data, not two arguments
+        return self._perform_operation(None, 'abs', lambda x, _: np.abs(x))
+
+    def __radd__(self, other):
+        """Handle right-sided addition (other + self)."""
+        import numpy as np
+        return self._perform_operation(other, 'add', np.add, reverse_op=True)
+
+    def __rsub__(self, other):
+        """Handle right-sided subtraction (other - self)."""
+        import numpy as np
+        return self._perform_operation(other, 'sub', np.subtract, reverse_op=True)
+
+    def __rmul__(self, other):
+        """Support right multiplication (e.g., 5 * variable)."""
+        import numpy as np
+        return self._perform_operation(other, 'mul', np.multiply, reverse_op=True)
+
+    def __rtruediv__(self, other):
+        """Handle right-sided division (other / self)."""
+        import numpy as np
+        return self._perform_operation(other, 'div', np.true_divide, reverse_op=True)
+
+    def __rpow__(self, other):
+        """Handle right-sided power (other ** self)."""
+        import numpy as np
+        return self._perform_operation(other, 'pow', np.power, reverse_op=True)
+
+    def __rfloordiv__(self, other):
+        """Handle right-sided floor division (other // self)."""
+        import numpy as np
+        return self._perform_operation(other, 'floordiv', np.floor_divide, reverse_op=True)
     
     def _check_default_value(self, name):
         """Check if a default value exists for a given attribute."""

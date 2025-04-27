@@ -48,7 +48,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 # Import plotbot modules - used for demonstration purposes only
 from plotbot import get_data, mag_rtn_4sa, proton, plt
-from plotbot.custom_variables import custom_variable
+from plotbot.data_classes.custom_variables import custom_variable
 from plotbot.test_pilot import phase, system_check
 from plotbot.print_manager import print_manager
 from plotbot.data_cubby import data_cubby

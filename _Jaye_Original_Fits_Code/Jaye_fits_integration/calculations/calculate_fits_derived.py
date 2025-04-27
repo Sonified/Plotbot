@@ -1,3 +1,5 @@
+# This is Jaye's original code for calculating derived variables from FITS data.
+
 import numpy as np
 import pandas as pd
 
@@ -98,9 +100,9 @@ def calculate_sf00_fits_vars(df_sf00, vmag_spi=None, datetime_spi=None):
     df['Temp_tot'] = (2*df['Tperp_tot'] + df['Tpar_tot'])/3
     
     df['vp1_mag'] = np.sqrt(df['vp1_x']**2 + df['vp1_y']**2 + df['vp1_z']**2)
-    df['vcm_x'] = df['vp1_x'] + df['np2']/df['n_tot'] * df['vdrift'] * df['bhat_x'] # Corrected CoM (p2 * vdrift)
-    df['vcm_y'] = df['vp1_y'] + df['np2']/df['n_tot'] * df['vdrift'] * df['bhat_y'] # Corrected CoM
-    df['vcm_z'] = df['vp1_z'] + df['np2']/df['n_tot'] * df['vdrift'] * df['bhat_z'] # Corrected CoM
+    df['vcm_x'] = df['vp1_x'] + df['np2']/df['n_tot'] * df['vdrift'] * df['bhat_x'] # Corrected CoM (p2 * vdrift) ✨✨✨ For center of mass velocity is it np2/n_tot or np2/Np1
+    df['vcm_y'] = df['vp1_y'] + df['np2']/df['n_tot'] * df['vdrift'] * df['bhat_y'] # Corrected CoM ✨✨✨
+    df['vcm_z'] = df['vp1_z'] + df['np2']/df['n_tot'] * df['vdrift'] * df['bhat_z'] # Corrected CoM ✨✨✨
     df['vcm_mag'] = np.sqrt(df['vcm_x']**2 + df['vcm_y']**2 + df['vcm_z']**2)
 
     df['vp2_x'] = df['vp1_x'] + df['vdrift'] * df['bhat_x']

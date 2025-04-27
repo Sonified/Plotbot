@@ -61,7 +61,7 @@ def _get_dates_in_range(start_str, end_str):
                 continue # Try next format
         
         if start_date is None or end_date is None:
-             raise ValueError("Could not parse start or end date string")
+            raise ValueError("Could not parse start or end date string")
 
         delta = timedelta(days=1)
         current_date = start_date
@@ -108,7 +108,7 @@ def download_spdf_data(trange, plotbot_key):
             config = data_types.get(plotbot_key)
             # Proceed only if we have the necessary config keys and it's a daily file format
             if config and config.get('file_time_format') == 'daily' and \
-               'local_path' in config and 'file_pattern_import' in config:
+                'local_path' in config and 'file_pattern_import' in config:
                 
                 local_path_template = config['local_path']
                 berkeley_pattern_tmpl = config['file_pattern_import'] # Berkeley case pattern

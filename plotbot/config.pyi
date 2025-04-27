@@ -1,26 +1,19 @@
-# plotbot/config.py
-"""
-Global configuration settings for Plotbot.
-"""
+# Stubs for plotbot.config
+# -*- coding: utf-8 -*-
 
+from typing import Optional, Any
+
+# --- PlotbotConfig Class ---
 class PlotbotConfig:
-    """
-    Manages global configuration settings for Plotbot.
-    """
-    def __init__(self):
-# --- Data Server Selection ---
-        self.data_server = 'dynamic'
-"""
-Controls which data source is prioritized.
-Options:
-    'dynamic': (Default) Try SPDF/CDAWeb first via pyspedas.
-               If data is unavailable there, fall back to Berkeley server.
-    'spdf':    Use SPDF/CDAWeb (pyspedas) exclusively. No fallback.
-    'berkeley': Use Berkeley server exclusively. No pyspedas calls.
-"""
+    # --- Public Attributes (with type hints) ---
+    data_server: str # Options: 'dynamic', 'spdf', 'berkeley'
+    # Add hints for any other future config attributes here
+    # Example: default_plot_style: Optional[str]
 
-# --- Other Future Configuration Settings Can Go Here --- 
-        # Example: self.default_plot_style = 'seaborn-v0_8-darkgrid'
+    # --- Methods ---
+    def __init__(self) -> None: ...
 
-# Create a single, global instance of the configuration
-config = PlotbotConfig() 
+# --- Module-level Instances ---
+config: PlotbotConfig
+
+# Reminder: If you add functions or classes directly to the .py file, add their signatures here too, ending with '...'.
