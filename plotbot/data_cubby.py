@@ -81,25 +81,79 @@ class data_cubby:
         """Determine storage path based *only* on the identifier and psp_data_types.py config."""
         print_manager.debug(f"--> _get_storage_path called with identifier: {identifier}") # DEBUG
         from .data_classes.psp_data_types import data_types
+        import numpy as np # Needed for np.ndarray check
+        import pandas as pd # Needed for Timestamp conversion
         
         # Default fallback path
         storage_path = os.path.join(cls.base_pkl_directory, 'general')
         path_derived = False # Flag to track if we found a specific path
+        year_str = None # Initialize year string
+
+        # --- Extract Year from Object --- 
+        try:
+            if hasattr(obj, 'datetime_array') and isinstance(obj.datetime_array, np.ndarray) and obj.datetime_array.size > 0:
+                # Ensure it's datetime64[ns] or convert if possible (e.g., TT2000)
+                dt_array_to_check = obj.datetime_array
+                if not np.issubdtype(dt_array_to_check.dtype, np.datetime64):
+                    if np.issubdtype(dt_array_to_check.dtype, np.integer):
+                        from datetime import datetime as dt_conv, timezone as tz_conv, timedelta as td_conv
+                        tt2000_epoch_conv = dt_conv(2000, 1, 1, 12, 0, 0, tzinfo=tz_conv.utc)
+                        # Assuming TT2000 nanoseconds, convert first element only for year extraction
+                        first_timestamp_ns = dt_array_to_check[0]
+                        dt_datetime = tt2000_epoch_conv + td_conv(microseconds=int(first_timestamp_ns) / 1000.0)
+                        first_pd_timestamp = pd.Timestamp(dt_datetime)
+                    else:
+                        raise TypeError("Cannot convert non-integer, non-datetime64 array for year extraction.")
+                else:
+                    # If already datetime64, convert first element to Pandas Timestamp
+                    first_pd_timestamp = pd.Timestamp(dt_array_to_check[0])
+                
+                year_str = str(first_pd_timestamp.year)
+                print_manager.debug(f"    Extracted year {year_str} from object's datetime_array.")
+            elif hasattr(obj, 'source_filenames') and obj.source_filenames: 
+                # Fallback: Try extracting year from the first source filename
+                first_source_file = os.path.basename(obj.source_filenames[0])
+                # Basic regex to find a 4-digit year (like 20xx)
+                match = re.search(r'(20\d{2})', first_source_file)
+                if match:
+                    year_str = match.group(1)
+                    print_manager.debug(f"    Extracted year {year_str} from first source filename: {first_source_file}")
+                else:
+                    print_manager.debug(f"    Could not extract year from source filename: {first_source_file}")
+            else:
+                 print_manager.debug(f"    Object has no datetime_array or source_filenames to extract year from.")
+        except Exception as e:
+            print_manager.warning(f"    Error extracting year from object: {e}. Year subdirectory will not be added.")
+            year_str = None
+        # --- End Year Extraction ---
         
         # Use the identifier directly as the key for psp_data_types
         if identifier and identifier in data_types:
             print_manager.debug(f"    Identifier '{identifier}' found in data_types.") # DEBUG
             config = data_types[identifier]
             if 'local_path' in config:
-                configured_path = config['local_path']
-                if isinstance(configured_path, str) and '{data_level}' in configured_path:
+                configured_path_base = config['local_path']
+                if isinstance(configured_path_base, str) and '{data_level}' in configured_path_base:
                     data_level = config.get('data_level', 'l2')
-                    configured_path = configured_path.format(data_level=data_level)
+                    configured_path_base = configured_path_base.format(data_level=data_level)
                 
-                # Join directly with base_pkl_directory (keeping psp_data/ prefix)
-                storage_path = os.path.join(cls.base_pkl_directory, configured_path)
+                # --- NEW: Insert year if available --- 
+                if year_str:
+                    # Insert year before the last component of the path
+                    path_parts = configured_path_base.split(os.sep)
+                    # Example: ['psp_data', 'fields', 'l2', 'mag_rtn_4_per_cycle']
+                    # Becomes: ['psp_data', 'fields', 'l2', 'mag_rtn_4_per_cycle', '2024']
+                    final_path_with_year = os.path.join(*path_parts, year_str) # Use * to unpack list into arguments
+                    storage_path = os.path.join(cls.base_pkl_directory, final_path_with_year)
+                    print_manager.debug(f"    Inserted year: Final storage path: {storage_path}") # DEBUG
+                else:
+                    # Original logic if no year extracted
+                    storage_path = os.path.join(cls.base_pkl_directory, configured_path_base)
+                    print_manager.debug(f"    No year extracted. Using original derived path: {storage_path}") # DEBUG
+                # --- END NEW --- 
+                
                 path_derived = True
-                print_manager.debug(f"    Derived storage path from config: {storage_path}") # DEBUG
+                # print_manager.debug(f"    Derived storage path from config: {storage_path}") # DEBUG - Redundant with above prints
             else:
                 print_manager.debug(f"    Identifier '{identifier}' found, but no 'local_path' in config. Using default.") # DEBUG
         else:
@@ -219,13 +273,14 @@ class data_cubby:
 
                     # --- Filename Determination & Saving Logic (Modified for Daily Files) ---
                     if hasattr(obj, 'source_filenames') and obj.source_filenames:
+                        print_manager.debug(f"DAILY_SAVE: Entered daily processing block for {identifier}.") # <-- ADDED
                         print_manager.debug(f"Object {identifier} has {len(obj.source_filenames)} source filenames. Processing daily.")
                         
                         # Ensure datetime_array exists and is usable for filtering
                         if not (hasattr(obj, 'datetime_array') and isinstance(obj.datetime_array, np.ndarray) and obj.datetime_array.size > 0):
                             print_manager.error(f"Cannot process daily PKLs for {identifier}: Missing or invalid datetime_array.")
                             success = False
-                            continue # Skip to the next identifier
+                            continue # Skip to next identifier
 
                         # Convert datetime_array to Pandas Timestamps for easier filtering (once)
                         try:
@@ -248,6 +303,7 @@ class data_cubby:
                             success = False
                             continue # Skip to next identifier
 
+                        print_manager.debug(f"DAILY_SAVE: Starting loop over {len(obj.source_filenames)} source filenames for {identifier}.") # <-- ADDED
                         # Loop through each source filename to create daily PKLs
                         for source_file_full_path in obj.source_filenames:
                             try:
@@ -346,7 +402,7 @@ class data_cubby:
                                 # --- Apply Mask to CORE Time Arrays ---
                                 try:
                                     original_datetime_array = obj.datetime_array
-                                    daily_data_to_save['datetime_array'] = original_datetime_array[day_mask]
+                                    daily_data_to_save['datetime_array'] = np.copy(original_datetime_array[day_mask])
                                     print_manager.debug(f"  Sliced datetime_array: new len={len(daily_data_to_save['datetime_array'])}")
                                 except Exception as e:
                                     print_manager.error(f"Error slicing datetime_array: {e}")
@@ -355,7 +411,7 @@ class data_cubby:
                                 if hasattr(obj, 'time') and isinstance(obj.time, np.ndarray):
                                     try:
                                         original_time_array = obj.time
-                                        daily_data_to_save['time'] = original_time_array[day_mask]
+                                        daily_data_to_save['time'] = np.copy(original_time_array[day_mask])
                                         print_manager.debug(f"  Sliced time array: new len={len(daily_data_to_save['time'])}")
                                     except Exception as e:
                                         print_manager.warning(f"Error slicing time array: {e}")
@@ -386,9 +442,9 @@ class data_cubby:
                                                         print_manager.debug(f"        Attempting to slice {attr_name} data...") # DEBUG
                                                         # Slice the DATA from the ORIGINAL plot_manager's data
                                                         if original_pm_data.ndim == 1:
-                                                            sliced_pm_data = original_pm_data[day_mask]
+                                                            sliced_pm_data = np.copy(original_pm_data[day_mask])
                                                         elif original_pm_data.ndim > 1:
-                                                            sliced_pm_data = original_pm_data[day_mask, ...]
+                                                            sliced_pm_data = np.copy(original_pm_data[day_mask, ...])
 
                                                         # Store sliced data in the dictionary
                                                         import copy # Needs to be imported here or globally
@@ -435,6 +491,7 @@ class data_cubby:
                                 # --- END ADDED Check ---
 
                                 print(f"DEBUG_SAVE: >>> Attempting pickle.dump of SIMPLIFIED dict to {daily_obj_path}") # Existing line
+                                print_manager.debug(f"DAILY_SAVE: About to pickle {daily_filename} for {identifier}.") # <-- ADDED
                                 print_manager.debug(f"Saving simplified dict for {identifier} ({date_str_for_mask}) with {len(daily_data_to_save['datetime_array'])} points.") # Modified log
 
                                 file_saved_successfully = False # Flag for this specific file
@@ -443,6 +500,7 @@ class data_cubby:
                                         # Using HIGHEST_PROTOCOL for efficiency
                                         pickle.dump(daily_data_to_save, f, protocol=pickle.HIGHEST_PROTOCOL)
                                     # If dump finishes without error, assume success for now
+                                    print_manager.debug(f"DAILY_SAVE: Successfully pickled {daily_filename}.") # <-- ADDED
                                     file_saved_successfully = True
                                     saved_something = True # Mark that we saved *something* overall
 
@@ -601,39 +659,20 @@ class data_cubby:
                     print_manager.debug(traceback.format_exc()) # Add traceback
                     success = False # Mark overall success as False if any object fails
 
-            # --- Save the updated index file (only if something was potentially saved) ---
-            # Moved index saving outside the identifier loop, should happen only once at the end.
-            # if saved_something or not identifier_to_save: # Save index if we processed anything or if doing a full save
-            #     try:
-            #         with open(index_path, 'w') as f:
-            #             json.dump(index, f, indent=2)
-            #         print_manager.debug(f"Updated index file: {index_path}")
-            #     except Exception as e:
-            #         print_manager.error(f"Error writing index file {index_path}: {e}")
-            #         success = False
-            # --- End Moved Index Saving Block ---
-
-            # --- Final Status Update (after identifier loop) ---
-            # Moved outside the loop
-            # if success and saved_something:
-            #     status_msg = f"Successfully saved object '{identifier_to_save}'" if identifier_to_save else "Successfully saved data_cubby state"
-            #     print_manager.storage_status(f"{status_msg} to {cls.base_pkl_directory}") # Use storage_status
-            #     print(f"DEBUG: save_to_disk successful for '{identifier_to_save or 'All'}'.")
-            # elif not success:
-            #      print(f"DEBUG: save_to_disk had errors for '{identifier_to_save or 'All'}'.")
-            # else: # Success but saved_nothing (e.g. specific object not found)
-            #      print(f"DEBUG: save_to_disk did not save anything for '{identifier_to_save}'.")
-            # --- End Moved Status Update ---
-
+            print_manager.debug(f"COMPLETED_LOOP: Finished processing loop for all identifiers.") # <-- ADDED PRINT
             # --- New location for Index Saving and Status Update (After identifier loop) ---
             if saved_something: # Only update index if something was actually saved (daily or single)
+                print_manager.debug(f"INDEX_SAVE: 'saved_something' is True. Attempting to write index to {index_path}") # <-- ADDED PRINT
                 try:
                     with open(index_path, 'w') as f:
                         json.dump(index, f, indent=2)
                     print_manager.debug(f"Final index file update: {index_path}")
                 except Exception as e:
                     print_manager.error(f"Error writing final index file {index_path}: {e}")
+                    print_manager.debug(f"INDEX_SAVE: Exception occurred during json.dump: {e}") # <-- ADDED PRINT
                     success = False # Mark failure if index writing fails
+            else: # <-- ADDED ELSE BLOCK FOR DEBUGGING
+                print_manager.debug(f"INDEX_SAVE: 'saved_something' is False. Skipping index file write.") # <-- ADDED PRINT
 
             if success and saved_something:
                 status_msg = f"Successfully saved object(s) for '{identifier_to_save}'" if identifier_to_save else "Successfully saved data_cubby state"
@@ -742,37 +781,37 @@ class data_cubby:
                             load_success_flag = False
                             items_to_remove_cr.append(identifier_cr)
                     else:
-                         print_manager.warning(f"Missing pickle file referenced in index [class_registry]: {obj_path_cr}")
-                         load_success_flag = False
-                         items_to_remove_cr.append(identifier_cr)
+                        print_manager.warning(f"Missing pickle file referenced in index [class_registry]: {obj_path_cr}")
+                        load_success_flag = False
+                        items_to_remove_cr.append(identifier_cr)
                 # Clean up index if needed
                 # for item_id in items_to_remove_cr: del index['class_registry'][item_id]
 
             # ... (code for subclass_registry loop) ...
             print_manager.debug("--- Loading objects from subclass_registry index ---")
             if 'subclass_registry' in index:
-                 items_to_remove_sr = []
-                 for identifier_sr, rel_path_sr in index['subclass_registry'].items():
-                      if identifier_sr in cls.cubby or identifier_sr in cls.class_registry: continue # Avoid reloading
-                      obj_path_sr = os.path.join(cls.base_pkl_directory, rel_path_sr)
-                      print_manager.debug(f"Attempting to load [subclass_registry]: {identifier_sr} from {obj_path_sr}")
-                      if os.path.exists(obj_path_sr):
-                           try:
+                items_to_remove_sr = []
+                for identifier_sr, rel_path_sr in index['subclass_registry'].items():
+                    if identifier_sr in cls.cubby or identifier_sr in cls.class_registry: continue # Avoid reloading
+                    obj_path_sr = os.path.join(cls.base_pkl_directory, rel_path_sr)
+                    print_manager.debug(f"Attempting to load [subclass_registry]: {identifier_sr} from {obj_path_sr}")
+                    if os.path.exists(obj_path_sr):
+                        try:
                                 with open(obj_path_sr, 'rb') as f_sr:
-                                     loaded_item_sr = pickle.load(f_sr) # Load directly
+                                    loaded_item_sr = pickle.load(f_sr) # Load directly
                                 cls.subclass_registry[identifier_sr] = loaded_item_sr # Store directly
                                 item_type_sr = type(loaded_item_sr).__name__
                                 print_manager.debug(f"---> Successfully loaded [subclass_registry]: {identifier_sr} (type: {item_type_sr})")
-                           except Exception as load_err_sr:
+                        except Exception as load_err_sr:
                                 print_manager.error(f"ERROR loading pickle file {obj_path_sr} for [subclass_registry] {identifier_sr}: {load_err_sr}")
                                 load_success_flag = False
                                 items_to_remove_sr.append(identifier_sr)
-                      else: # Correct alignment with if os.path.exists(...)
-                           print_manager.warning(f"Missing pickle file referenced in index [subclass_registry]: {obj_path_sr}")
-                           load_success_flag = False
-                           items_to_remove_sr.append(identifier_sr)
-                 # Clean up index if needed
-                 # for item_id in items_to_remove_sr: del index['subclass_registry'][item_id]
+                    else: # Correct alignment with if os.path.exists(...)
+                        print_manager.warning(f"Missing pickle file referenced in index [subclass_registry]: {obj_path_sr}")
+                        load_success_flag = False
+                        items_to_remove_sr.append(identifier_sr)
+                # Clean up index if needed
+                # for item_id in items_to_remove_sr: del index['subclass_registry'][item_id]
 
             # --- Final status update based on load_success_flag ---
             if load_success_flag:
@@ -785,13 +824,13 @@ class data_cubby:
                 return False # Return False if any individual load failed OR file missing
 
         except json.JSONDecodeError:
-             print_manager.error(f"Error loading data_cubby: Index file {index_path} is corrupted.")
-             print(f"DEBUG: load_from_disk failed with JSONDecodeError")
-             return False
+            print_manager.error(f"Error loading data_cubby: Index file {index_path} is corrupted.")
+            print(f"DEBUG: load_from_disk failed with JSONDecodeError")
+            return False
         except KeyError as e:
-             print_manager.error(f"Error loading data_cubby: Index file {index_path} is missing expected key: {e}")
-             print(f"DEBUG: load_from_disk failed with KeyError in index")
-             return False
+            print_manager.error(f"Error loading data_cubby: Index file {index_path} is missing expected key: {e}")
+            print(f"DEBUG: load_from_disk failed with KeyError in index")
+            return False
         except Exception as e: # Catch other broad errors during index loading/parsing
             print_manager.error(f"Error loading data_cubby from disk: {str(e)}")
             print(f"DEBUG: load_from_disk failed with general error: {str(e)}")
@@ -805,12 +844,12 @@ class data_cubby:
         print_manager.debug(f"\n=== Stashing Debug (INSIDE DATA CUBBY) for {class_name}.{subclass_name or ''} ===") # Use debug
         identifier = f"{class_name}.{subclass_name}" if class_name and subclass_name else class_name
         if not identifier:
-             # Fallback needed if only obj is provided?
-             # Potentially use object's class name, but could be ambiguous.
-             # For now, require at least class_name for stashing.
-             print_manager.error("Stash requires at least a class_name to form an identifier.")
-             return obj # Return object without stashing/saving
-             
+            # Fallback needed if only obj is provided?
+            # Potentially use object's class name, but could be ambiguous.
+            # For now, require at least class_name for stashing.
+            print_manager.error("Stash requires at least a class_name to form an identifier.")
+            return obj # Return object without stashing/saving
+            
         print_manager.debug(f"Stashing with identifier: {identifier}") # Use debug
         
         # Debug print object attributes before stashing
@@ -839,7 +878,7 @@ class data_cubby:
                             preview = preview[:80] + '...'
                     print_manager.debug(f"- {attr}: {preview}")
                 except Exception as e:
-                     print_manager.debug(f"- {attr}: <Error getting attribute: {e}>")
+                    print_manager.debug(f"- {attr}: <Error getting attribute: {e}>")
             
         cls.cubby[identifier] = obj
         if class_name:
@@ -889,8 +928,8 @@ class data_cubby:
                 print_manager.custom_debug(f"Found derived object with attributes: {', '.join(attrs_info)}")
         
         result = (cls.cubby.get(identifier) or 
-                 cls.class_registry.get(identifier) or 
-                 cls.subclass_registry.get(identifier))
+                cls.class_registry.get(identifier) or 
+                cls.subclass_registry.get(identifier))
         
         if result is not None:
             print_manager.debug(f"✅ Successfully retrieved {identifier}") # Use debug

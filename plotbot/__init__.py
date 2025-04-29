@@ -136,14 +136,12 @@ __all__ = [
 ]
 
 # --- Version and Commit Message ---
-BLUE = '\033[94m'
-RESET = '\033[0m'
-COMMIT_MSG = "fix: Correct PKL save regex case sensitivity"
-print(f'{BLUE}   Version: 2025_04_26_v1.12{RESET}')
-print(f'{BLUE}   Commit: {COMMIT_MSG}{RESET}')
+COMMIT_MSG = "test: Update pickle tests, 7 failed 6 passed (v2025-04-29_v1.00)"
+print_manager.title("Plotbot v1.00 (2025-04-29) Ready to Plot!") # Use print_manager.title
+print_manager.info(f"   Commit: {COMMIT_MSG}") # Use print_manager.info
 
 # --- Final Print Message ---
-print(f"\n{BLUE}🤖 Plotbot Initialized{RESET}")
+print_manager.info("🤖 Plotbot Initialized") # Use info for consistency
 
 # Note: Previous logic had this at the end of plotbot_main.py, moved here 
 #       to ensure it prints after all imports in __init__ are processed.

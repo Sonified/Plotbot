@@ -1039,7 +1039,7 @@ class mag_sc_class:
         
         # NEW: Save after update if storage enabled
         if data_cubby.use_pkl_storage:
-             data_cubby.save_to_disk(obj_to_save=self, identifier_to_save=self.all.plot_options.data_type)
+            data_cubby.save_to_disk(obj_to_save=self, identifier_to_save=self.all.plot_options.data_type)
     
     def get_subclass(self, subclass_name):  # Dynamic component retrieval method
         """Retrieve a specific component"""

@@ -597,5 +597,4 @@ def plotbot(trange, *args):
 print('\n🤖 Plotbot Initialized')
 print("✨ Showdahodo initialized")
 print("📈📉 Multiplot Initialized")
-print("   Version: 2025_04_28_v1.02") # Updated version
-print("   Commit: fix: Resolve basic plot test errors and document PKL state") # Added commit message print
+print("   Version: 2025_04_28_v1.02") # Updated versionprint("   Commit: fix: Resolve basic plot test errors and document PKL state") # Added commit message print
