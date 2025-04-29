@@ -16,6 +16,7 @@ from .data_classes.psp_data_types import data_types # To get pyspedas datatype m
 # Import the casing helper
 from .data_download_helpers import _ensure_spdf_casing 
 # Add other necessary imports (time, etc.) as needed
+from .data_tracker import store_downloaded_cdfs # Added for tracker update
 
 # Define the mapping from Plotbot keys to pyspedas specifics
 # (Borrowed from tests/test_pyspedas_download.py - may need refinement)
@@ -248,20 +249,21 @@ def download_spdf_data(trange, plotbot_key):
                 print_manager.warning(f"Skipping invalid path returned by pyspedas: {path}")
                 continue
             try:
-                # Extract just the filename to apply casing
-                directory, filename = os.path.split(path)
-                spdf_cased_filename = _ensure_spdf_casing(filename, plotbot_key)
-                # Reconstruct the path
-                spdf_cased_paths.append(os.path.join(directory, spdf_cased_filename))
-            except Exception as e_case:
-                print_manager.warning(f"Error applying casing to path '{path}' for key '{plotbot_key}': {e_case}. Using original path.")
-                spdf_cased_paths.append(path) # Append original path on error
+                spdf_path = _ensure_spdf_casing(path, plotbot_key)
+                spdf_cased_paths.append(spdf_path)
+            except Exception as e:
+                print_manager.warning(f"Error ensuring SPDF casing for path '{path}': {e}")
+                # Append original path if casing fails?
+                spdf_cased_paths.append(path)
         
         # Log if any changes were actually made (more accurate logging)
         made_changes = any(orig != new for orig, new in zip(returned_data_paths, spdf_cased_paths) if orig and new)
         if made_changes:
              print_manager.debug(f"Applied SPDF casing adjustments to one or more paths.")
                  
+        # Store the final list of paths in the tracker
+        store_downloaded_cdfs(plotbot_key, trange, spdf_cased_paths)
+
         return spdf_cased_paths
     else:
         # This handles cases where pyspedas returned None, empty list, or an error occurred

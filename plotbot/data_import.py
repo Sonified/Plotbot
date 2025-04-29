@@ -625,6 +625,7 @@ def import_data_function(trange, data_type):
         # DATA EXTRACTION AND PROCESSING (CDF specific)
         times_list = []
         data_dict = {var: [] for var in variables}
+        processed_files = [] # <--- Initialize list for successfully processed files
 
         for file_path in found_files:
             print_manager.debug(f"\nProcessing CDF file: {file_path}")
@@ -688,12 +689,13 @@ def import_data_function(trange, data_type):
                         print_manager.debug("No data within time range for this file after indexing - skipping")
                         continue
 
-                    # Extract time slice (TT2000)
+                    # --- File Contributes Data ---
                     time_slice = time_data[start_idx:end_idx]
                     times_list.append(time_slice)
                     print_manager.debug(f"Extracted {len(time_slice)} time points within requested range")
 
                     # Extract variable data slices
+                    file_processed_successfully = True # Assume success for appending file path
                     for var_name in variables:
                         try:
                             print_manager.debug(f"\nReading variable: {var_name}")
@@ -701,37 +703,38 @@ def import_data_function(trange, data_type):
                             var_data = cdf_file.varget(var_name, startrec=start_idx, endrec=end_idx-1)
                             if var_data is None:
                                 print_manager.warning(f"Could not read data for {var_name} - filling with NaNs")
-                                # Create an array of NaNs with the expected shape
-                                # Determine expected shape: (len(time_slice), ...) based on var inquiry?
-                                # For simplicity, assume shape based on time slice length for now
-                                var_data = np.full(len(time_slice), np.nan) # Adjust shape if needed
-                            else:
-                                print_manager.debug(f"Raw data shape: {var_data.shape}")
+                                data_dict[var_name].append(np.full(len(time_slice), np.nan)) # Append NaNs matching time slice length
+                                file_processed_successfully = False # Mark as partially failed if var read fails? Optional.
+                                continue # Skip to next variable if this one fails
 
-                                # Handle fill values
-                                var_atts = cdf_file.varattsget(var_name)
-                                if "FILLVAL" in var_atts:
-                                    fill_val = var_atts["FILLVAL"]
-                                    if np.issubdtype(var_data.dtype, np.floating) or np.issubdtype(var_data.dtype, np.integer):
+                            # Handle fill values
+                            var_atts = cdf_file.varattsget(var_name)
+                            if "FILLVAL" in var_atts:
+                                fill_val = var_atts["FILLVAL"]
+                                # Check if var_data is numeric before comparison
+                                if np.issubdtype(var_data.dtype, np.number):
+                                    try: # Add try-except for comparison
                                         fill_mask = (var_data == fill_val)
                                         if np.any(fill_mask):
-                                            # Ensure var_data is float before assigning NaN
-                                            if not np.issubdtype(var_data.dtype, np.floating):
-                                                var_data = var_data.astype(float)
-                                            var_data[fill_mask] = np.nan
-                                            print_manager.debug(f"Replaced {np.sum(fill_mask)} fill values ({fill_val}) with NaN")
-                                    else:
-                                        print_manager.debug("Skipping fill value check for non-numeric data type.")
+                                             if not np.issubdtype(var_data.dtype, np.floating): var_data = var_data.astype(float)
+                                             var_data[fill_mask] = np.nan
+                                    except (TypeError, ValueError) as fill_err:
+                                         print_manager.warning(f"Could not compare fill value for {var_name}: {fill_err}")
                                 else:
-                                    print_manager.debug("No FILLVAL attribute found.")
+                                     print_manager.debug(f"Skipping fill value check for non-numeric {var_name} (dtype: {var_data.dtype})")
 
-                                data_dict[var_name].append(var_data)
-                                print_manager.debug(f"Successfully stored data slice for {var_name}")
+                            data_dict[var_name].append(var_data)
+                            # print_manager.debug(f"Successfully stored data slice for {var_name}") # Less verbose
 
                         except Exception as e:
                             print_manager.warning(f"Error processing {var_name} in {os.path.basename(file_path)}: {e}")
-                            # Append NaNs of the correct length if a variable fails
-                            data_dict[var_name].append(np.full(len(time_slice), np.nan))
+                            data_dict[var_name].append(np.full(len(time_slice), np.nan)) # Append NaNs
+                            file_processed_successfully = False # Mark as partially failed
+
+                    # Add file path to list *if it contributed time points*
+                    if len(time_slice) > 0: # Check if time_slice is not empty
+                        processed_files.append(file_path) # <--- Add file path HERE
+
             except Exception as e:
                 print_manager.error(f"Error processing CDF file {file_path}: {e}")
                 import traceback
@@ -742,7 +745,8 @@ def import_data_function(trange, data_type):
         if not times_list:
             print_manager.warning(f"No CDF data found in the specified time range after processing files for {data_type}.")
             print_manager.time_output("import_data_function", "no data found")
-            return None
+            # Return empty object but potentially with the list of files that *were* downloaded
+            return DataObject(times=np.array([]), data={}, source_filenames=downloaded_filenames)
 
         times = np.concatenate(times_list)
         concatenated_data = {}
@@ -751,37 +755,66 @@ def import_data_function(trange, data_type):
             data_list = data_dict[var_name]
             if data_list:
                 try:
-                    # Attempt to concatenate, handle potential shape mismatches
-                    concatenated_data[var_name] = np.concatenate(data_list)
-                    print_manager.debug(f"  Concatenated {var_name} (Shape: {concatenated_data[var_name].shape})")
+                    # Ensure all arrays in the list have the same number of dimensions (except the first axis)
+                    # before attempting concatenation.
+                    first_shape = data_list[0].shape
+                    expected_ndim = data_list[0].ndim
+                    consistent_dims = True
+                    for arr in data_list[1:]:
+                        if arr.ndim != expected_ndim or (expected_ndim > 1 and arr.shape[1:] != first_shape[1:]):
+                            consistent_dims = False
+                            print_manager.error(f"Inconsistent shapes for {var_name}: Expected {first_shape}, got {arr.shape}")
+                            break
+                    
+                    if consistent_dims:
+                        concatenated_data[var_name] = np.concatenate(data_list, axis=0)
+                    else:
+                         raise ValueError(f"Cannot concatenate arrays with inconsistent shapes for {var_name}")
+
                 except ValueError as ve:
                     print_manager.error(f"Error concatenating {var_name} from CDFs: {ve}. Filling with NaNs.")
                     concatenated_data[var_name] = np.full(len(times), np.nan)
             else:
-                print_manager.warning(f"No data collected for {var_name}, filling with NaNs.")
-                concatenated_data[var_name] = np.full(len(times), np.nan) # Store NaNs if no data
+                 # This case should ideally not happen if times_list is not empty, but handle defensively
+                 print_manager.warning(f"No data collected for {var_name}, filling with NaNs.")
+                 concatenated_data[var_name] = np.full(len(times), np.nan) # Store NaNs if no data
 
         print_manager.debug(f"\nTotal CDF data points after concatenation: {len(times)}")
-
-        # Sort based on time (already TT2000)
         sort_indices = np.argsort(times)
         times_sorted = times[sort_indices]
         data_sorted = {}
         for var_name in variables:
-            if concatenated_data[var_name] is not None:
-                try:
-                    data_sorted[var_name] = concatenated_data[var_name][sort_indices]
-                except IndexError as ie:
-                    print_manager.error(f"Sorting IndexError for CDF var '{var_name}': {ie}")
-                    data_sorted[var_name] = np.full(len(times_sorted), np.nan)
-            else:
-                data_sorted[var_name] = None
+             if concatenated_data.get(var_name) is not None: # Check key exists
+                 try:
+                     # Check if data exists and has the same length as sort_indices before attempting to sort
+                     current_data = concatenated_data[var_name]
+                     if isinstance(current_data, np.ndarray) and current_data.shape[0] == len(sort_indices):
+                         data_sorted[var_name] = current_data[sort_indices]
+                     else:
+                          print_manager.warning(f"Shape mismatch or invalid data for {var_name} before sorting. Shape: {current_data.shape if isinstance(current_data, np.ndarray) else type(current_data)}, Indices: {len(sort_indices)}. Filling with NaNs.")
+                          data_sorted[var_name] = np.full(len(times_sorted), np.nan)
+                 except IndexError as ie:
+                     print_manager.error(f"Sorting IndexError for CDF var '{var_name}': {ie}")
+                     data_sorted[var_name] = np.full(len(times_sorted), np.nan)
+                 except KeyError: # Should not happen with check above, but safety
+                      print_manager.error(f"KeyError during sorting for {var_name}")
+                      data_sorted[var_name] = np.full(len(times_sorted), np.nan)
+             else:
+                 print_manager.warning(f"No concatenated data found for {var_name} before sorting.")
+                 data_sorted[var_name] = np.full(len(times_sorted), np.nan)
 
-        # Create and return DataObject for CDF
-        data_object = DataObject(times=times_sorted, data=data_sorted, source_filenames=downloaded_filenames)
-        global_tracker.update_imported_range(trange, data_type)
-        print_manager.status(f"☑️ - CDF Data import complete for {data_type} range {trange}.\n")
-        output_range = [cdflib.epochs.CDFepoch.to_datetime(times_sorted[0]),
-                        cdflib.epochs.CDFepoch.to_datetime(times_sorted[-1])]
-        print_manager.time_output("import_data_function", output_range)
+
+        # Create and return DataObject for CDF using the ACTUAL PROCESSED files
+        data_object = DataObject(times=times_sorted, data=data_sorted, source_filenames=processed_files) # <--- Use processed_files
+        # global_tracker.update_imported_range(trange, data_type) # Tracker update maybe better in get_data after successful object update
+        print_manager.status(f"☑️ - CDF Data import complete for {data_type} range {trange}.")
+        print_manager.debug(f"DEBUG_RETURN: Returning DataObject with {len(processed_files)} source_filenames: {processed_files}") # <--- Log the correct list
+
+        # Calculate output range from sorted TT2000 times for logging
+        if len(times_sorted) > 0:
+            output_range = [cdflib.epochs.CDFepoch.to_datetime(times_sorted[0]),
+                            cdflib.epochs.CDFepoch.to_datetime(times_sorted[-1])]
+            print_manager.time_output("import_data_function", output_range)
+        else:
+            print_manager.time_output("import_data_function", "success - empty range") # Or error?
         return data_object

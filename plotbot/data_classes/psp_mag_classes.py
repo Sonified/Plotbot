@@ -65,12 +65,15 @@ class mag_rtn_4sa_class:
         
         # Store the source filenames associated with this data update
         if hasattr(imported_data, 'source_filenames'):
+            print(f"DEBUG_UPDATE: Received source_filenames in update: {imported_data.source_filenames}")
             self.source_filenames = imported_data.source_filenames
+            print(f"DEBUG_UPDATE: Assigned self.source_filenames: {self.source_filenames}")
             print_manager.debug(f"Stored {len(self.source_filenames)} source filenames on {self.__class__.__name__} instance.")
         else:
             # Ensure the attribute exists even if data_object didn't have it
             # Keep existing ones if update doesn't provide new ones? Or clear? Let's clear for now.
             self.source_filenames = []
+            print(f"DEBUG_UPDATE: imported_data missing source_filenames. Set self.source_filenames to [].")
             print_manager.debug(f"No source_filenames found on data_object for {self.__class__.__name__}.")
         
         print_manager.datacubby("\n=== Update Debug ===")

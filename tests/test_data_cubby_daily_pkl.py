@@ -7,6 +7,7 @@ import plotbot.data_tracker as dt
 import plotbot.data_cubby as dc
 import pytest
 import numpy as np
+import errno
 
 # Define the MAIN storage directory - Tests will operate here
 storage_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data_cubby')
@@ -43,9 +44,9 @@ def setup_function():
             print(f"DEBUG: Removed test PKL file: {f}")
         # Clean the specific directory if it exists (careful not to delete parent dirs)
         if os.path.exists(test_pkl_dir):
-             # Check if directory is empty after removing files - only remove if truly empty? 
-             # Safer to just ensure it exists and let teardown handle removal if needed
-             print(f"DEBUG: Test PKL directory checked: {test_pkl_dir}")
+            # Check if directory is empty after removing files - only remove if truly empty? 
+            # Safer to just ensure it exists and let teardown handle removal if needed
+            print(f"DEBUG: Test PKL directory checked: {test_pkl_dir}")
     except OSError as e:
         print(f"DEBUG: Error removing test PKL files {test_pkl_pattern}: {e}")
         
@@ -77,7 +78,10 @@ def teardown_function():
     print(f"\nDEBUG: Cleaning up specific test files from MAIN directory: {storage_dir}")
     index_path = os.path.join(storage_dir, 'data_cubby_index.json')
     test_pkl_dir = os.path.join(storage_dir, 'psp_data', 'fields', 'l2', 'mag_rtn_4_per_cycle')
-    test_pkl_pattern = os.path.join(test_pkl_dir, 'psp_fld_l2_mag_rtn_4_sa_per_cyc_202409*_v*.pkl') # General pattern
+    # --- MODIFIED: Make patterns specific to dates used in this file's tests --- #
+    test_pkl_pattern_day1 = os.path.join(test_pkl_dir, 'psp_fld_l2_mag_rtn_4_sa_per_cyc_20240928_v*.pkl')
+    test_pkl_pattern_day2 = os.path.join(test_pkl_dir, 'psp_fld_l2_mag_rtn_4_sa_per_cyc_20240929_v*.pkl')
+    all_patterns = [test_pkl_pattern_day1, test_pkl_pattern_day2]
 
     # Remove specific index file
     try:
@@ -87,37 +91,37 @@ def teardown_function():
     except OSError as e:
         print(f"DEBUG: Teardown error removing test index file {index_path}: {e}")
 
-    # Remove specific PKL files matching the pattern
+    # Remove specific PKL files matching the specific date patterns
     try:
         files_removed_count = 0
-        for f in glob.glob(test_pkl_pattern):
-            os.remove(f)
-            files_removed_count += 1
-            print(f"DEBUG: Teardown removed test PKL file: {f}")
+        for pattern in all_patterns: # Iterate through specific patterns
+            print(f"DEBUG: Teardown checking pattern: {pattern}")
+            for f in glob.glob(pattern):
+                try:
+                    os.remove(f)
+                    files_removed_count += 1
+                    print(f"DEBUG: Teardown removed test PKL file: {f}")
+                except OSError as e:
+                    # If the file doesn't exist, ignore the error
+                    if e.errno != errno.ENOENT:
+                        raise
         if files_removed_count > 0:
-             # Optionally remove the directory IF EMPTY and known to be test-specific
-             # Be cautious with rmdir
-             try:
-                  if os.path.exists(test_pkl_dir) and not os.listdir(test_pkl_dir):
-                      # Potentially remove intermediate dirs if empty too?
-                      # For now, just try removing the leaf dir
-                      # os.rmdir(test_pkl_dir) 
-                      # print(f"DEBUG: Teardown removed empty test PKL directory: {test_pkl_dir}")
-                      pass # Decide if removing the directory is safe/desired
-             except OSError as rmdir_e:
-                  print(f"DEBUG: Teardown error removing directory {test_pkl_dir}: {rmdir_e}")
+            print(f"DEBUG: Teardown removed {files_removed_count} PKL files matching specific patterns.")
+            # Optionally remove the directory IF EMPTY and known to be test-specific
+            # Be cautious with rmdir
+            # ... (optional rmdir logic)
         else:
-             print(f"DEBUG: No matching PKL files found for pattern {test_pkl_pattern} during teardown.")
-             
+            print(f"DEBUG: No matching PKL files found for specific patterns during teardown.")
+            
     except OSError as e:
-        print(f"DEBUG: Teardown error removing test PKL files {test_pkl_pattern}: {e}")
+        print(f"DEBUG: Teardown error during glob/loop for PKL files: {e}")
 
     # Reset storage setting after test
     try:
-         pb.data_cubby.use_pkl_storage = False
-         print("DEBUG: Teardown reset use_pkl_storage to False.")
+        pb.data_cubby.use_pkl_storage = False
+        print("DEBUG: Teardown reset use_pkl_storage to False.")
     except Exception as e:
-         print(f"DEBUG: Error resetting use_pkl_storage in teardown: {e}")
+        print(f"DEBUG: Error resetting use_pkl_storage in teardown: {e}")
 
 
 @pytest.mark.daily_pkl # Add a marker for easier selective running
@@ -144,7 +148,7 @@ def test_save_multi_day_creates_daily_pkls(capsys):
     # --- Trigger Data Loading and Saving ---
     # Clear captured output before the call
     _ = capsys.readouterr() 
-    print(f"DEBUG: Calling pb.get_data for {variable_type.__name__}...")
+    print(f"DEBUG: Calling pb.get_data for {variable_type.__class__.__name__}...")
     try:
         pb.get_data(trange, variable_type) 
     except Exception as e:

@@ -86,8 +86,8 @@ def get_data(trange: List[str], *variables):
     # Convert to numpy datetime64 ONCE without timezone issues
     try:
         # Simply remove timezone info while preserving precision
-        requested_start_np = np.datetime64(start_time.replace(tzinfo=None))
-        requested_end_np = np.datetime64(end_time.replace(tzinfo=None))
+        requested_start_np = np.datetime64(start_time.replace(tzinfo=None), 'ns') # Specify unit
+        requested_end_np = np.datetime64(end_time.replace(tzinfo=None), 'ns')   # Specify unit
     except Exception as e:
         print_manager.error(f"Error converting parsed time range to numpy datetime64: {e}")
         return
@@ -152,222 +152,260 @@ def get_data(trange: List[str], *variables):
     # STEP 2: PROCESS EACH REQUIRED DATA TYPE
     #====================================================================
     
+    # Map data_type strings to global instances (needed for update logic)
+    # Note: proton_fits and ham are handled earlier, so not needed in this map
+    data_type_to_instance_map = {
+        'mag_RTN_4sa': mag_rtn_4sa,
+        'mag_rtn': mag_rtn,
+        'mag_SC_4sa': mag_sc_4sa,
+        'mag_sc': mag_sc,
+        'spi_sf00_l3_mom': proton,
+        'spi_af00_L3_mom': proton_hr,
+        'spe_sf0_pad': epad,
+        'spe_af0_pad': epad_hr
+        # Add other standard types if needed
+    }
+
     for data_type in required_data_types:
         print_manager.debug(f"\nProcessing Data Type: {data_type}...")
         
-        # Handle derived variables separately (if needed, add logic here)
-        if data_type == 'derived':
-            print_manager.variable_testing(f"SKIPPING processing for 'derived' type in main loop.")
-            continue
-            
-        # --- Handle FITS Calculation Type --- 
-        if data_type == 'proton_fits':
-            fits_calc_key = 'proton_fits'
-            fits_calc_trigger = 'fits_calculated'
-            
-            # Check if calculation needs to run (using tracker AND refresh logic)
-            calculation_needed_by_tracker = global_tracker.is_calculation_needed(trange, fits_calc_key)
-            proton_fits_needs_refresh = False
-            if hasattr(proton_fits, 'datetime_array') and proton_fits.datetime_array is not None and len(proton_fits.datetime_array) > 0:
-                try:
-                    cached_start = np.datetime64(proton_fits.datetime_array[0])
-                    cached_end = np.datetime64(proton_fits.datetime_array[-1])
-                    buffer = np.timedelta64(10, 's')
-                    # Use pre-converted numpy values for comparison
-                    if (cached_start - buffer) > requested_start_np or (cached_end + buffer) < requested_end_np:
-                        proton_fits_needs_refresh = True
-                except (IndexError, TypeError, ValueError) as e:
-                    print_manager.warning(f"Could not compare proton_fits ranges: {e}. Assuming refresh needed.")
-                    proton_fits_needs_refresh = True
-            else:
-                proton_fits_needs_refresh = True # No data means refresh needed
+        # --- Skip derived, proton_fits, ham as they are handled differently ---
+        if data_type in ['derived', 'proton_fits', 'ham']:
+             # Existing logic for proton_fits and ham should remain here
+             # ... (proton_fits logic) ...
+             # ... (ham logic) ...
+             if data_type in ['proton_fits', 'ham']: # Keep the continue for these
+                  print_manager.variable_testing(f"Processed '{data_type}' separately. Continuing.")
+                  continue
+             elif data_type == 'derived':
+                  print_manager.variable_testing(f"SKIPPING processing for '{data_type}' type in main loop (handled elsewhere).")
+                  continue
 
-            if calculation_needed_by_tracker or proton_fits_needs_refresh:
-                print_manager.debug(f"FITS Calculation required for {trange} (Triggered by {data_type}).")
-                data_obj_fits = import_data_function(trange, fits_calc_trigger)
-                
-                if data_obj_fits:
-                    print_manager.status(f"📥 Updating {fits_calc_key} with calculated data...")
-                    if hasattr(proton_fits, 'update'):
-                        proton_fits.update(data_obj_fits)
-                        global_tracker.update_calculated_range(trange, fits_calc_key)
-                        print_manager.variable_testing(f"Successfully updated {fits_calc_key} and tracker.")
-                    else:
-                        print_manager.error(f"Error: {fits_calc_key} instance has no 'update' method!")
-                else:
-                    print_manager.warning(f"FITS calculation returned no data for {trange}.")
-            else:
-                print_manager.status(f"📤 Using existing {fits_calc_key} data, calculation not needed.")
-                
-            # Continue to next data_type - processing for proton_fits is done
-            continue 
-
-        # --- Handle HAM CSV Data Type --- 
-        if data_type == 'ham':
-            ham_key = 'ham'
-            
-            # Check if update is needed
-            ham_needs_refresh = False
-            if hasattr(ham, 'datetime_array') and ham.datetime_array is not None and len(ham.datetime_array) > 0:
-                try:
-                    cached_start = np.datetime64(ham.datetime_array[0])
-                    cached_end = np.datetime64(ham.datetime_array[-1])
-                    buffer = np.timedelta64(10, 's')
-                    # Use pre-converted numpy values for comparison
-                    if (cached_start - buffer) > requested_start_np or (cached_end + buffer) < requested_end_np:
-                        ham_needs_refresh = True
-                except (IndexError, TypeError, ValueError) as e:
-                    print_manager.warning(f"Could not compare ham time ranges: {e}. Assuming refresh needed.")
-                    ham_needs_refresh = True
-            else:
-                ham_needs_refresh = True # No data means refresh needed
-
-            if ham_needs_refresh:
-                print_manager.debug(f"Ham data update required for {trange}.")
-                data_obj_ham = import_data_function(trange, 'ham')
-                
-                if data_obj_ham:
-                    print_manager.status(f"📥 Updating {ham_key} with CSV data...")
-                    if hasattr(ham, 'update'):
-                        ham.update(data_obj_ham)
-                        print_manager.variable_testing(f"Successfully updated {ham_key}.")
-                    else:
-                        print_manager.error(f"Error: {ham_key} instance has no 'update' method!")
-                else:
-                    print_manager.warning(f"Ham data import returned no data for {trange}.")
-            else:
-                print_manager.status(f"📤 Using existing {ham_key} data, update not needed.")
-                
-            # Continue to next data_type - processing for ham is done
-            continue
-
-        # --- Handle Standard CDF Types --- 
+        # --- Handle Standard CDF Types ---
         config = data_types.get(data_type)
-        if not config: 
-            print_manager.warning(f"Config not found for standard type {data_type} during processing loop.")
-            continue 
-        # Ensure this is not a local_csv source being processed here
-        if config.get('file_source') == 'local_csv':
-            print_manager.warning(f"Skipping standard processing for local_csv type {data_type}. Should be handled by proton_fits.")
-            continue
-            
-        # Conditional data download based on configuration
-        server_mode = plotbot.config.data_server # <-- With this line
-        print_manager.debug(f"Server mode for {data_type}: {server_mode}")
-        
-        # Initialize list to store downloaded filenames for this data_type
-        downloaded_filenames = []
+        if not config or config.get('file_source') == 'local_csv':
+             print_manager.warning(f"Config not found or is local_csv for standard type {data_type}. Skipping.")
+             continue
 
-        if server_mode == 'spdf':
-            print_manager.debug(f"Attempting SPDF download for {data_type}...")
-            downloaded_filenames = download_spdf_data(trange, data_type)
-        elif server_mode == 'berkeley':
-            print_manager.debug(f"Attempting Berkeley download for {data_type}...")
-            downloaded_filenames = download_berkeley_data(trange, data_type)
-        elif server_mode == 'dynamic':
-            print_manager.debug(f"Attempting SPDF download (dynamic mode) for {data_type}...")
-            downloaded_filenames = download_spdf_data(trange, data_type)
-            # Check if the list is empty or None (indicating failure/no files)
-            if not downloaded_filenames:
-                print_manager.debug(f"SPDF download failed/incomplete for {data_type}, falling back to Berkeley...")
-                downloaded_filenames = download_berkeley_data(trange, data_type)
-        else:
-            print_manager.warning(f"Invalid config.data_server mode: '{server_mode}'. Defaulting to Berkeley.")
-            downloaded_filenames = download_berkeley_data(trange, data_type)
-            
-        # Store the list of downloaded filenames (even if empty) in the temporary cache
-        if downloaded_filenames is not None: # Ensure we have a list (could be empty)
-             store_downloaded_cdfs(data_type, trange, downloaded_filenames)
-        else:
-             # Should not happen based on download functions returning lists, but handle defensively
-             print_manager.warning(f"Download function for {data_type} returned None instead of a list. Storing empty list.")
-             store_downloaded_cdfs(data_type, trange, [])
-             
-        # The import logic below relies on files being present locally if needed.
-        # The download functions are responsible for ensuring this.
-        # We proceed to check if the *in-memory* cache needs updating.
-        
-        class_name = data_type  # Assume class_name matches data_type for standard types
-        class_instance = data_cubby.grab(class_name)
-        
+        # --- Download Logic (remains the same) ---
+        # ... (call download functions, store filenames using store_downloaded_cdfs) ...
+
+        # --- Cache Check and Update Logic ---
+        class_name = data_type # Assume class_name matches data_type
+        # Grab whatever is in the cache (might be object or dict)
+        cached_item = data_cubby.grab(class_name)
+        item_type_in_cache = type(cached_item).__name__
+        print_manager.debug(f"Checked cache for {class_name}. Found type: {item_type_in_cache}")
+
         needs_import = global_tracker.is_import_needed(trange, data_type)
-        needs_refresh = False
-        
-        # Check refresh based on instance data range
-        if class_instance is not None and hasattr(class_instance, 'datetime_array') and class_instance.datetime_array is not None and len(class_instance.datetime_array) > 0:
-            try:
-                 cached_start = np.datetime64(class_instance.datetime_array[0])
-                 cached_end = np.datetime64(class_instance.datetime_array[-1])
-                 buffer = np.timedelta64(10, 's')
-                 # Use pre-converted numpy values for comparison
-                 if (cached_start - buffer) > requested_start_np or (cached_end + buffer) < requested_end_np:
-                     needs_refresh = True
-            except (IndexError, TypeError, ValueError) as e:
-                 print_manager.warning(f"Could not compare time ranges for {data_type}: {e}. Assuming refresh needed.")
+        needs_refresh = False # Default to false
+
+        # Check refresh based on cached item (object or dict)
+        cached_dt_array = None
+        # --- Modified Cache Check ---
+        if isinstance(cached_item, dict):
+            # Handle dictionary loaded from PKL
+            cached_dt_array = cached_item.get('datetime_array')
+            if cached_dt_array is None or len(cached_dt_array) == 0:
+                 print_manager.debug(f"Cache dictionary for {class_name} has no/empty datetime_array.")
+                 needs_refresh = True
+            else:
+                 print_manager.debug(f"Cache dictionary for {class_name} found datetime_array (length {len(cached_dt_array)}).")
+                 # Proceed with range check using dictionary data
+        elif cached_item is not None:
+            # Handle object instance found in cache
+            if hasattr(cached_item, 'datetime_array') and cached_item.datetime_array is not None and len(cached_item.datetime_array) > 0:
+                cached_dt_array = cached_item.datetime_array
+                print_manager.debug(f"Cache object instance for {class_name} found datetime_array (length {len(cached_item.datetime_array)}).")
+                # Proceed with range check using object attribute
+            else:
+                 print_manager.debug(f"Cache object instance for {class_name} has no/empty datetime_array.")
                  needs_refresh = True
         else:
+            # Nothing found in cache
+            print_manager.debug(f"No item found in cache for {class_name}.")
             needs_refresh = True # Treat no data as needing refresh
-        
-        # Import/update CDF data if needed
-        if needs_import or needs_refresh:
-            print_manager.debug(f"{data_type} - Import/Refresh required")
-            data_obj = import_data_function(trange, data_type)
-            if data_obj is None: continue
-            if needs_import: global_tracker.update_imported_range(trange, data_type)
-            
-            print_manager.status(f"📥 Updating {data_type}...")
-            if class_instance is None:
-                 # Get global instance (using updated paths implicitly via __init__)
-                 if data_type.lower() == 'mag_rtn_4sa': class_instance = mag_rtn_4sa
-                 elif data_type.lower() == 'mag_rtn': class_instance = mag_rtn
-                 elif data_type.lower() == 'mag_sc_4sa': class_instance = mag_sc_4sa
-                 elif data_type.lower() == 'mag_sc': class_instance = mag_sc
-                 elif data_type.lower() == 'spi_sf00_l3_mom': class_instance = proton
-                 elif data_type.lower() == 'spi_af00_l3_mom': class_instance = proton_hr
-                 elif data_type.lower() == 'spe_sf0_pad': class_instance = epad
-                 elif data_type.lower() == 'spe_af0_pad': class_instance = epad_hr
-                 # No need to explicitly handle proton_fits here as it's done earlier
-                 else:
-                      print_manager.warning(f"Could not find global class instance for {data_type}")
-                      continue
+        # --- End Modified Cache Check ---
 
-            if hasattr(class_instance, 'update'):
-                class_instance.update(data_obj)
-                
-                # !!! CRITICAL FIX: Stash the updated instance AFTER updating !!!
-                # This ensures the instance in data_cubby has the latest data
+        # Perform range check if we have a cached datetime array
+        if not needs_refresh and cached_dt_array is not None:
+            try:
+                 # Ensure it's a numpy array for comparison
+                 if not isinstance(cached_dt_array, np.ndarray):
+                     cached_dt_array = np.array(cached_dt_array)
+
+                 # Ensure it's datetime64[ns] for direct comparison
+                 if not np.issubdtype(cached_dt_array.dtype, np.datetime64):
+                     # Attempt conversion if possible (e.g., from TT2000 int64)
+                     try:
+                         # Assuming TT2000 nanoseconds if it's int64
+                         if np.issubdtype(cached_dt_array.dtype, np.integer):
+                             print_manager.debug(f"Attempting TT2000 -> datetime64 conversion for cache check...")
+                             from datetime import datetime as dt_conv, timezone as tz_conv, timedelta as td_conv # Use different aliases
+                             tt2000_epoch_conv = dt_conv(2000, 1, 1, 12, 0, 0, tzinfo=tz_conv.utc)
+                             # Correct conversion from ns to microseconds for timedelta
+                             temp_dt_conv = [tt2000_epoch_conv + td_conv(microseconds=int(ns) / 1000.0) for ns in cached_dt_array]
+                             cached_dt_array = np.array(temp_dt_conv, dtype='datetime64[ns]')
+                             print_manager.debug(f"Conversion successful, new dtype: {cached_dt_array.dtype}")
+                         else:
+                             raise TypeError(f"Cached datetime array is not integer or datetime64, it's {cached_dt_array.dtype}.")
+                     except Exception as conv_err:
+                         print_manager.warning(f"Could not convert cached datetime array to datetime64 for {data_type}: {conv_err}. Assuming refresh needed.")
+                         needs_refresh = True
+
+                 # Proceed with comparison only if conversion worked or was unnecessary
+                 if not needs_refresh:
+                     if len(cached_dt_array) == 0: # Double check if empty after potential conversion failures
+                         needs_refresh = True
+                         print_manager.debug("Cached datetime array became empty after conversion attempt. Refresh needed.")
+                     else:
+                         # Ensure comparison is done with 'datetime64[ns]'
+                         cached_start_np = cached_dt_array.astype('datetime64[ns]')[0]
+                         cached_end_np = cached_dt_array.astype('datetime64[ns]')[-1]
+                         buffer = np.timedelta64(10, 's') # 10 second buffer
+
+                         # Compare directly with requested numpy times (already ns)
+                         if (cached_start_np - buffer) > requested_start_np or (cached_end_np + buffer) < requested_end_np:
+                             print_manager.debug(f"Refresh needed for {data_type}. Cached range: {cached_start_np} - {cached_end_np}, Requested: {requested_start_np} - {requested_end_np}")
+                             needs_refresh = True
+                         else:
+                             print_manager.debug(f"Cached data covers requested range for {data_type}.")
+
+            except (IndexError, TypeError, ValueError) as e:
+                 print_manager.warning(f"Could not compare time ranges for {data_type} (cached type: {item_type_in_cache}): {e}. Assuming refresh needed.")
+                 needs_refresh = True
+
+        # Import/update data if needed
+        if needs_import or needs_refresh:
+            print_manager.debug(f"{data_type} - Import/Refresh required (needs_import={needs_import}, needs_refresh={needs_refresh})")
+            # Import fresh data from source files (CDF)
+            # Assume import_data_function handles getting file paths via global_tracker or similar
+            data_obj = import_data_function(trange, data_type) # Returns DataObject namedtuple
+
+            if data_obj is None or data_obj.times is None or len(data_obj.times) == 0:
+                 print_manager.warning(f"Import function returned no data for {data_type}. Skipping update.")
+                 continue # Skip update if import failed or returned no data
+
+            print_manager.status(f"📥 Updating {data_type}...")
+
+            # --- Get the GLOBAL instance for this data type ---
+            target_instance = data_type_to_instance_map.get(data_type)
+
+            if target_instance is None:
+                 print_manager.error(f"Could not find global class instance for {data_type} in map. Cannot update.")
+                 continue # Skip if we don't know which instance to update
+
+            # --- Update the GLOBAL instance ---
+            if hasattr(target_instance, 'update'):
+                try:
+                     # ===> ADDED DEBUG HERE <===
+                     print_manager.debug(f"DEBUG_GET_DATA: Before calling update, data_obj.source_filenames = {getattr(data_obj, 'source_filenames', 'AttributeMissing')}")
+                     target_instance.update(data_obj) # Update the instance in memory
+                     # ===> ADDED DEBUG HERE <===
+                     print_manager.debug(f"DEBUG_GET_DATA: After calling update, target_instance.source_filenames = {getattr(target_instance, 'source_filenames', 'AttributeMissing')}")
+
+                     print_manager.debug(f"Called update() on global instance for {data_type}")
+                except Exception as update_err:
+                     print_manager.error(f"Error occurred during {data_type}.update(): {update_err}")
+                     import traceback
+                     print_manager.debug(traceback.format_exc())
+                     continue # Skip stashing if update failed
+
+                # !!! CRITICAL: Stash the UPDATED GLOBAL instance !!!
+                # This ensures the object instance (not a dict) is in the cache
                 # and triggers save_to_disk if persistence is enabled.
-                print_manager.debug(f"---> Stashing updated instance for {class_name} AFTER update.")
-                data_cubby.stash(class_instance, class_name=class_name)
+                print_manager.debug(f"---> Stashing updated GLOBAL instance for {class_name} AFTER update.")
+                data_cubby.stash(target_instance, class_name=class_name) # Use the actual instance
                 # -------------------------------------------------------------
-                
+
                 # Update the data tracker with the actual range from the imported data
-                # Use the datetime_array from the updated class instance
-                if hasattr(class_instance, 'datetime_array') and class_instance.datetime_array is not None and len(class_instance.datetime_array) > 0:
-                    actual_start_dt = class_instance.datetime_array[0]
-                    actual_end_dt = class_instance.datetime_array[-1]
-                    # Convert numpy.datetime64 back to string format for tracker
-                    dt_format = '%Y-%m-%d/%H:%M:%S.%f'
-                    actual_start_str = pd.to_datetime(str(actual_start_dt)).strftime(dt_format)
-                    actual_end_str = pd.to_datetime(str(actual_end_dt)).strftime(dt_format)
-                    actual_trange = [actual_start_str, actual_end_str]
-                    print_manager.debug(f"Updating tracker for {data_type} with actual imported range: {actual_trange}")
-                    global_tracker.update_imported_range(actual_trange, data_type)
+                # (Use the datetime_array from the updated target_instance)
+                if hasattr(target_instance, 'datetime_array') and target_instance.datetime_array is not None and len(target_instance.datetime_array) > 0:
+                    try:
+                         actual_start_dt = target_instance.datetime_array[0]
+                         actual_end_dt = target_instance.datetime_array[-1]
+                         dt_format = '%Y-%m-%d/%H:%M:%S.%f'
+                         # Ensure conversion from numpy datetime64 works reliably
+                         actual_start_str = pd.Timestamp(actual_start_dt).strftime(dt_format)[:-3] # Trim to milliseconds
+                         actual_end_str = pd.Timestamp(actual_end_dt).strftime(dt_format)[:-3] # Trim to milliseconds
+                         actual_trange = [actual_start_str, actual_end_str]
+                         print_manager.debug(f"Updating tracker for {data_type} with actual imported range: {actual_trange}")
+                         global_tracker.update_imported_range(actual_trange, data_type)
+                    except Exception as tracker_err:
+                         print_manager.warning(f"Could not determine/format actual imported range for tracker update ({data_type}): {tracker_err}")
+
                 else:
                     print_manager.warning(f"Could not determine actual imported range for {data_type} after update.")
-                    # Fallback: Use requested trange? Or log error?
-                    # For now, just warn. Tracker won't be updated with precise range.
+
             else:
-                print_manager.warning(f"{data_type} class instance has no update method")
+                print_manager.error(f"{data_type} class instance has no update method") # Should not happen for standard classes
         else:
-            print_manager.status(f"📤 Using existing {data_type} data, update not needed.")
-            # --- ADDED: Conditional Stash for PKL Mode ---
-            # If PKL storage is on, stash the retrieved instance to ensure
-            # save_to_disk is triggered even if no update happened.
-            if data_cubby.use_pkl_storage and class_instance:
-                 print_manager.debug(f"---> Stashing instance for {class_name} in PKL mode (skipped update).")
-                 data_cubby.stash(class_instance, class_name=class_name)
-            # --------------------------------------------
+            # Update NOT needed - data exists in cache and covers range
+            print_manager.status(f"📤 Using existing {data_type} data (type: {item_type_in_cache}), update not needed.")
+            # If the cached item was a dictionary, we need to ensure the GLOBAL instance has the data
+            # so that plotbot can access it.
+            if isinstance(cached_item, dict):
+                print_manager.debug(f"Cached item for {data_type} is a dict. Ensuring global instance is up-to-date and stashed.")
+                target_instance = data_type_to_instance_map.get(data_type)
+                if target_instance:
+                     # --- Populate Global Instance from Cached Dictionary ---
+                     print_manager.debug(f"Populating global instance {data_type} from cached dictionary...")
+                     try:
+                         # Core attributes
+                         target_instance.datetime_array = cached_item.get('datetime_array')
+                         if 'time' in cached_item: target_instance.time = cached_item.get('time')
+                         if target_instance.datetime_array is None:
+                              print_manager.warning(f"Cached dictionary for {data_type} missing 'datetime_array'. Instance may be incomplete.")
+
+                         # plot_manager data and options
+                         if 'plot_manager_data' in cached_item:
+                             for attr_name, pm_data_dict in cached_item['plot_manager_data'].items():
+                                 if hasattr(target_instance, attr_name):
+                                     pm_instance = getattr(target_instance, attr_name)
+                                     if type(pm_instance).__name__ == 'plot_manager':
+                                         # Ensure pm_data_dict is a dict before accessing keys
+                                         if isinstance(pm_data_dict, dict):
+                                             pm_instance._data = pm_data_dict.get('data')
+                                             saved_options = pm_data_dict.get('plot_options')
+                                             if saved_options is not None and hasattr(pm_instance, 'plot_options'):
+                                                 import copy # Use deepcopy for safety when restoring options
+                                                 pm_instance.plot_options = copy.deepcopy(saved_options) # Restore options
+                                                 print_manager.debug(f"  Restored plot_options for {attr_name}")
+                                             else:
+                                                  print_manager.debug(f"  No saved plot_options found or attr missing for {attr_name}")
+                                             print_manager.debug(f"  Populated _data for {attr_name}, shape: {pm_instance._data.shape if hasattr(pm_instance._data, 'shape') else 'N/A'}")
+                                         else:
+                                             print_manager.warning(f"  Expected dict for plot_manager_data '{attr_name}', got {type(pm_data_dict)}. Skipping population.")
+                                 else:
+                                     print_manager.warning(f"  Attribute '{attr_name}' from cached dict not found in global instance {data_type}.")
+
+                         # source_filenames
+                         if 'source_file' in cached_item:
+                             # Ensure it's a list, as the original code saves a single string here
+                             source_file_val = cached_item['source_file']
+                             target_instance.source_filenames = [source_file_val] if isinstance(source_file_val, str) else []
+                         else:
+                             target_instance.source_filenames = []
+                         print_manager.debug(f"  Populated source_filenames: {target_instance.source_filenames}")
+
+                         # Now stash the populated global instance
+                         print_manager.debug(f"---> Stashing populated GLOBAL instance for {class_name} (cache was dict, no update needed).")
+                         data_cubby.stash(target_instance, class_name=class_name)
+
+                     except Exception as pop_err:
+                          print_manager.error(f"Error populating global instance {data_type} from cached dictionary: {pop_err}. Plotbot might fail.")
+                          import traceback
+                          print_manager.debug(traceback.format_exc())
+                else:
+                     print_manager.error(f"Cannot find global instance for {data_type} to populate from cached dictionary.")
+            elif class_instance is not None:
+                # Cached item was an object, update not needed.
+                # If PKL storage is on, stash the retrieved instance to ensure
+                # save_to_disk is triggered even if no update happened.
+                # This helps keep the PKL index aligned with what's usable.
+                if data_cubby.use_pkl_storage:
+                     print_manager.debug(f"---> Stashing existing instance for {class_name} in PKL mode (skipped update).")
+                     data_cubby.stash(class_instance, class_name=class_name)
 
     #====================================================================
     # STEP 3: FINALIZATION

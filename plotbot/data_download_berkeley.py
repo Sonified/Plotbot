@@ -8,6 +8,7 @@ from .data_download_helpers import check_local_files, create_pattern_string, pro
 from .server_access import server_access
 from .time_utils import daterange, get_needed_6hour_blocks
 from .data_classes.psp_data_types import data_types
+from .data_tracker import global_tracker, retrieve_downloaded_cdfs, store_downloaded_cdfs
 
 #====================================================================
 # FUNCTION: download_berkeley_data
@@ -69,6 +70,8 @@ def download_berkeley_data(trange, data_type):
         print_manager.status("📂 " + ", ".join(found_files))
         print_manager.time_output("download_berkeley_data", [str(start_time), str(end_time)])
         print_manager.time_tracking(f"Found all files locally for time range: {start_time} to {end_time}")
+        # Store the locally found files in the tracker
+        store_downloaded_cdfs(data_type, trange, found_files)
         # Return the list of locally found files (previously returned empty list)
         return found_files
 
@@ -165,5 +168,7 @@ def download_berkeley_data(trange, data_type):
     # Add at the end of the function before returning
     print_manager.time_output("download_berkeley_data", [str(start_time), str(end_time)])
     print_manager.time_tracking(f"Completed download for time range: {start_time} to {end_time}")
+    # Store the downloaded files in the tracker
+    store_downloaded_cdfs(data_type, trange, downloaded_cdf_files)
     # Return the list of successfully downloaded filenames (SPDF-cased)
     return downloaded_cdf_files

@@ -595,3 +595,7 @@ def plotbot(trange, *args):
     plt.show()                                                    # Display the complete figure
 
 print('\n🤖 Plotbot Initialized')
+print("✨ Showdahodo initialized")
+print("📈📉 Multiplot Initialized")
+print("   Version: 2025_04_28_v1.02") # Updated version
+print("   Commit: fix: Resolve basic plot test errors and document PKL state") # Added commit message print

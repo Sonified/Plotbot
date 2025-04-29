@@ -13,6 +13,7 @@ import copy # Add copy for deepcopy mock
 from plotbot.data_import import DataObject # Import DataObject for mocking
 from datetime import datetime, timezone
 import cdflib
+import pickle
 
 # Define the MAIN storage directory - Tests will operate here
 storage_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data_cubby')
@@ -318,14 +319,16 @@ def test_pkl_integrity_and_cache_load(capsys): # Add capsys fixture to capture o
     identifier = "mag_rtn_4sa" # The identifier used
     date_str = "20240929" # From the trange used
     version_str = "vXX" # Placeholder
-    expected_filename = f"psp_fld_l2_mag_RTN_4_Sa_per_Cyc_{date_str}_{version_str}.pkl"
+    # --- MODIFIED: Use correct case in expected filename base ---
+    expected_filename_base = f"psp_fld_l2_mag_RTN_4_Sa_per_Cyc_{date_str}_v*.pkl"
     
     # Get the expected directory components from psp_data_types (consistent with save_to_disk)
     # Path needs to include 'psp_data' as per _get_storage_path_for_object logic
     expected_pkl_dir_components = ['psp_data', 'fields', 'l2', 'mag_rtn_4_per_cycle'] 
     expected_pkl_dir = os.path.join(storage_dir, *expected_pkl_dir_components)
     # Use glob to find the actual file regardless of version
-    expected_pkl_pattern = os.path.join(expected_pkl_dir, 'psp_fld_l2_mag_rtn_4_sa_per_cyc_20240929_v*.pkl')
+    # --- MODIFIED: Use exact casing from save_to_disk logs ---
+    expected_pkl_pattern = os.path.join(expected_pkl_dir, expected_filename_base)
     print(f"DEBUG: Checking for PKL file pattern at correct location: {expected_pkl_pattern}")
 
     found_files = glob.glob(expected_pkl_pattern)
@@ -598,30 +601,34 @@ def test_pkl_saving_two_days():
     expected_pkl_dir_components = ['psp_data', 'fields', 'l2', 'mag_rtn_4_per_cycle']
     expected_pkl_dir = os.path.join(storage_dir, *expected_pkl_dir_components)
     
+    # --- MODIFIED: Use os.path.exists with specific filename --- #
     # Define patterns for both days
-    pattern_day1 = os.path.join(expected_pkl_dir, 'psp_fld_l2_mag_rtn_4_sa_per_cyc_20240928_v*.pkl')
-    pattern_day2 = os.path.join(expected_pkl_dir, 'psp_fld_l2_mag_rtn_4_sa_per_cyc_20240929_v*.pkl')
-    
-    print(f"DEBUG: Checking for Day 1 PKL file pattern: {pattern_day1}")
-    found_day1 = glob.glob(pattern_day1)
-    assert len(found_day1) > 0, f"Expected PKL file pattern for Day 1 ({pattern_day1}) was not found."
-    print(f"DEBUG: Found Day 1 PKL file(s): {found_day1}")
-    
-    print(f"DEBUG: Checking for Day 2 PKL file pattern: {pattern_day2}")
-    found_day2 = glob.glob(pattern_day2)
-    assert len(found_day2) > 0, f"Expected PKL file pattern for Day 2 ({pattern_day2}) was not found."
-    print(f"DEBUG: Found Day 2 PKL file(s): {found_day2}")
+    # --- MODIFIED: Use exact casing from save_to_disk logs ---
+    file_base_name = "psp_fld_l2_mag_RTN_4_Sa_per_Cyc" # Base name
+    expected_version = "v02" # Specific version from source CDF
 
+    exact_file_day1 = os.path.join(expected_pkl_dir, f'{file_base_name}_20240928_{expected_version}.pkl')
+    exact_file_day2 = os.path.join(expected_pkl_dir, f'{file_base_name}_20240929_{expected_version}.pkl')
+    
+    print(f"DEBUG: Checking for Day 1 PKL exact file: {exact_file_day1}")
+    assert os.path.exists(exact_file_day1), f"Expected exact PKL file for Day 1 ({exact_file_day1}) was not found."
+    print(f"DEBUG: Found Day 1 PKL file: {exact_file_day1}")
+    
+    print(f"DEBUG: Checking for Day 2 PKL exact file: {exact_file_day2}")
+    assert os.path.exists(exact_file_day2), f"Expected exact PKL file for Day 2 ({exact_file_day2}) was not found."
+    print(f"DEBUG: Found Day 2 PKL file: {exact_file_day2}")
+
+    # --- MODIFIED: Use exact filenames for size check --- #
     # Check size of both found files
-    actual_pkl_day1 = found_day1[0]
-    size_day1 = os.path.getsize(actual_pkl_day1)
+    # actual_pkl_day1 = found_day1[0]
+    size_day1 = os.path.getsize(exact_file_day1)
     print(f"DEBUG: Day 1 PKL file size: {size_day1} bytes")
-    assert size_day1 > 100, f"Day 1 PKL file {actual_pkl_day1} size ({size_day1} bytes) seems too small."
+    assert size_day1 > 100, f"Day 1 PKL file {exact_file_day1} size ({size_day1} bytes) seems too small."
 
-    actual_pkl_day2 = found_day2[0]
-    size_day2 = os.path.getsize(actual_pkl_day2)
+    # actual_pkl_day2 = found_day2[0]
+    size_day2 = os.path.getsize(exact_file_day2)
     print(f"DEBUG: Day 2 PKL file size: {size_day2} bytes")
-    assert size_day2 > 100, f"Day 2 PKL file {actual_pkl_day2} size ({size_day2} bytes) seems too small."
+    assert size_day2 > 100, f"Day 2 PKL file {exact_file_day2} size ({size_day2} bytes) seems too small."
 
     print("--- Finished test_pkl_saving_two_days ---")
 
@@ -914,6 +921,164 @@ def test_load_specific_mag_rtn_hourly_pkl():
         print("DEBUG: Loaded object does not have a 'source_filenames' attribute.")
 
     print("--- Test finished: test_load_specific_mag_rtn_hourly_pkl ---")
+
+def test_inspect_saved_daily_pkl_content():
+    """Load the daily PKL files created by test_pkl_saving_two_days and verify their contents."""
+    # Use the imported pb and globally defined storage_dir
+    print("\n--- Starting test_inspect_saved_daily_pkl_content ---")
+
+    # --- MODIFICATION: Explicitly generate the files within this test ---
+    print("DEBUG: Explicitly generating PKL files for inspection...")
+    pb.data_cubby.set_storage_directory(storage_dir)
+    pb.data_cubby.use_pkl_storage = True
+    pb.print_manager.show_status = True # Keep minimal prints for this part
+    pb.print_manager.show_debug = False # Disable verbose debug during generation
+
+    # Define TWO DAY time range needed to create the files
+    trange_gen = ['2024-09-28/00:00:00.000', '2024-09-29/23:59:59.999']
+    variable_gen = pb.mag_rtn_4sa.br # Need a variable to trigger the class load
+
+    try:
+        pb.plotbot(trange_gen, variable_gen, 1) # Call plotbot to trigger save
+        print("DEBUG: File generation step completed.")
+    except Exception as e:
+        print(f"ERROR during file generation step: {e}")
+        pytest.fail(f"Failed to generate prerequisite PKL files: {e}")
+
+    # Restore debug prints for inspection part
+    pb.print_manager.show_debug = True
+    # --- END MODIFICATION ---
+
+    # --- Pre-requisite: Ensure the files are generated ---
+    # This check should now reliably pass because we just generated them
+    # print("INFO: Assuming test_pkl_saving_two_days has run and created PKL files.") # Removed assumption
+
+    # --- Define expected file paths ---
+    from plotbot.data_classes.psp_data_types import data_types
+    identifier = 'mag_RTN_4sa'
+    config = data_types[identifier]
+    sub_path_template = config['local_path']
+    data_level = config.get('data_level', 'l2')
+    sub_path = sub_path_template.format(data_level=data_level)
+
+    # --- MODIFIED: Use exact casing from save_to_disk logs ---
+    file_base_name = "psp_fld_l2_mag_RTN_4_Sa_per_Cyc" # Use correct case
+
+    # --- MODIFIED: Be specific about the expected version ---
+    # We know the source file is v02 for these test dates
+    expected_version = "v02"
+    pkl_filename_day1 = f"{file_base_name}_20240928_{expected_version}.pkl"
+    pkl_filename_day2 = f"{file_base_name}_20240929_{expected_version}.pkl"
+
+    file_path_day1 = os.path.join(storage_dir, sub_path, pkl_filename_day1)
+    file_path_day2 = os.path.join(storage_dir, sub_path, pkl_filename_day2)
+
+    print(f"DEBUG: Explicitly checking for Day 1 PKL file: {file_path_day1}")
+    assert os.path.exists(file_path_day1), f"Specific PKL file for 2024-09-28 ({pkl_filename_day1}) not found."
+    print(f"DEBUG: Explicitly checking for Day 2 PKL file: {file_path_day2}")
+    assert os.path.exists(file_path_day2), f"Specific PKL file for 2024-09-29 ({pkl_filename_day2}) not found."
+
+    # --- Load and Inspect Day 1 PKL Dictionary ---
+    print(f"\n--- Inspecting PKL Dictionary: {os.path.basename(file_path_day1)} ---")
+    try:
+        with open(file_path_day1, 'rb') as f:
+            pkl_dict_day1 = pickle.load(f)
+    except Exception as e:
+        assert False, f"Failed to load PKL file {file_path_day1}: {e}"
+
+    # Verify it's a dictionary with expected keys
+    assert isinstance(pkl_dict_day1, dict), f"Loaded item from {file_path_day1} is not a dict, type is {type(pkl_dict_day1)}"
+    expected_keys = ['identifier', 'source_file', 'datetime_array', 'plot_manager_data']
+    for key in expected_keys:
+        assert key in pkl_dict_day1, f"Key '{key}' missing from loaded dictionary day 1"
+    print(f"DEBUG: Day 1 PKL is a dict with expected top-level keys.")
+
+    # Check datetime_array
+    dt_array_day1 = pkl_dict_day1['datetime_array']
+    assert isinstance(dt_array_day1, np.ndarray), "Day 1 'datetime_array' is not a NumPy array"
+    assert len(dt_array_day1) > 0, "Day 1 'datetime_array' is empty"
+    print(f"DEBUG: Day 1 datetime_array checks passed (length={len(dt_array_day1)}).")
+
+    # Convert to pandas Timestamps for easier comparison
+    ts_day1_index = pd.to_datetime(dt_array_day1, unit='ns') # Assume ns if loaded from pkl
+    ts_day1 = ts_day1_index.tz_localize('UTC') if ts_day1_index.tz is None else ts_day1_index.tz_convert('UTC')
+    min_ts_day1 = ts_day1.min()
+    max_ts_day1 = ts_day1.max()
+    print(f"DEBUG: Day 1 PKL Dict - Loaded Time Range: {min_ts_day1} to {max_ts_day1}")
+
+    day1_start = pd.Timestamp('2024-09-28 00:00:00', tz='UTC')
+    day1_end = pd.Timestamp('2024-09-29 00:00:00', tz='UTC') # End is exclusive
+
+    assert min_ts_day1 >= day1_start, f"Day 1 min timestamp {min_ts_day1} is before {day1_start}"
+    assert max_ts_day1 < day1_end, f"Day 1 max timestamp {max_ts_day1} is not before {day1_end}"
+    print(f"✅ Day 1 Time Range OK.")
+
+    # Check plot_manager_data structure
+    pm_data_day1 = pkl_dict_day1['plot_manager_data']
+    assert isinstance(pm_data_day1, dict), "Day 1 'plot_manager_data' is not a dictionary"
+    assert 'br' in pm_data_day1, "Day 1 plot_manager_data missing 'br' key" # Check for a known variable
+    br_data_dict = pm_data_day1['br']
+    assert isinstance(br_data_dict, dict), "Day 1 'br' data is not a dictionary"
+    assert 'data' in br_data_dict, "Day 1 'br' data dict missing 'data' key"
+    assert 'plot_options' in br_data_dict, "Day 1 'br' data dict missing 'plot_options' key"
+    br_data_array = br_data_dict['data']
+    assert isinstance(br_data_array, np.ndarray), "Day 1 'br' data is not a NumPy array"
+    shape_day1 = br_data_array.shape
+    len_day1 = shape_day1[0] if len(shape_day1) > 0 else 0
+    print(f"DEBUG: Day 1 PKL Dict - br data shape: {shape_day1}, Length: {len_day1}")
+    assert len_day1 == len(dt_array_day1), f"Day 1 br data length {len_day1} != datetime_array length {len(dt_array_day1)}"
+    print(f"✅ Day 1 plot_manager_data structure OK.")
+
+    # --- Load and Inspect Day 2 PKL Dictionary ---
+    print(f"\n--- Inspecting PKL Dictionary: {os.path.basename(file_path_day2)} ---")
+    try:
+        with open(file_path_day2, 'rb') as f:
+            pkl_dict_day2 = pickle.load(f)
+    except Exception as e:
+        assert False, f"Failed to load PKL file {file_path_day2}: {e}"
+
+    # Verify it's a dictionary with expected keys
+    assert isinstance(pkl_dict_day2, dict), f"Loaded item from {file_path_day2} is not a dict, type is {type(pkl_dict_day2)}"
+    for key in expected_keys:
+        assert key in pkl_dict_day2, f"Key '{key}' missing from loaded dictionary day 2"
+    print(f"DEBUG: Day 2 PKL is a dict with expected top-level keys.")
+
+    # Check datetime_array
+    dt_array_day2 = pkl_dict_day2['datetime_array']
+    assert isinstance(dt_array_day2, np.ndarray), "Day 2 'datetime_array' is not a NumPy array"
+    assert len(dt_array_day2) > 0, "Day 2 'datetime_array' is empty"
+    print(f"DEBUG: Day 2 datetime_array checks passed (length={len(dt_array_day2)}).")
+
+    ts_day2_index = pd.to_datetime(dt_array_day2, unit='ns') # Assume ns
+    ts_day2 = ts_day2_index.tz_localize('UTC') if ts_day2_index.tz is None else ts_day2_index.tz_convert('UTC')
+    min_ts_day2 = ts_day2.min()
+    max_ts_day2 = ts_day2.max()
+    print(f"DEBUG: Day 2 PKL Dict - Loaded Time Range: {min_ts_day2} to {max_ts_day2}")
+
+    day2_start = pd.Timestamp('2024-09-29 00:00:00', tz='UTC')
+    day2_end = pd.Timestamp('2024-09-30 00:00:00', tz='UTC') # Exclusive end
+
+    assert min_ts_day2 >= day2_start, f"Day 2 min timestamp {min_ts_day2} is before {day2_start}"
+    assert max_ts_day2 < day2_end, f"Day 2 max timestamp {max_ts_day2} is not before {day2_end}"
+    print(f"✅ Day 2 Time Range OK.")
+
+    # Check plot_manager_data structure
+    pm_data_day2 = pkl_dict_day2['plot_manager_data']
+    assert isinstance(pm_data_day2, dict), "Day 2 'plot_manager_data' is not a dictionary"
+    assert 'br' in pm_data_day2, "Day 2 plot_manager_data missing 'br' key"
+    br_data_dict_day2 = pm_data_day2['br']
+    assert isinstance(br_data_dict_day2, dict), "Day 2 'br' data is not a dictionary"
+    assert 'data' in br_data_dict_day2, "Day 2 'br' data dict missing 'data' key"
+    assert 'plot_options' in br_data_dict_day2, "Day 2 'br' data dict missing 'plot_options' key"
+    br_data_array_day2 = br_data_dict_day2['data']
+    assert isinstance(br_data_array_day2, np.ndarray), "Day 2 'br' data is not a NumPy array"
+    shape_day2 = br_data_array_day2.shape
+    len_day2 = shape_day2[0] if len(shape_day2) > 0 else 0
+    print(f"DEBUG: Day 2 PKL Dict - br data shape: {shape_day2}, Length: {len_day2}")
+    assert len_day2 == len(dt_array_day2), f"Day 2 br data length {len_day2} != datetime_array length {len(dt_array_day2)}"
+    print(f"✅ Day 2 plot_manager_data structure OK.")
+
+    print("\n✅ test_inspect_saved_daily_pkl_content PASSED (Dictionary Structure).")
 
 # =============================================================================
 # Run Tests (if executed directly)

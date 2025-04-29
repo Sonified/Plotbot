@@ -41,6 +41,32 @@
 - **The Fix:** Modified `save_to_disk` in `plotbot/data_cubby.py` to use the `re.IGNORECASE` flag when compiling the dynamic regex pattern (`re.compile(pattern_template, re.IGNORECASE)`).
 - **Outcome:** The `test_pkl_saving_two_days` test now passes, confirming that PKL saving correctly handles case differences in filenames and saves data spanning multiple days into separate daily PKLs.
 
---- Pushing Changes (April 28, 2025) ---
-- **Version Tag:** `2025-04-28_v1.01`
-- **Commit Message:** `fix: Correct PKL save regex case sensitivity`
+## Further PKL Debugging (April 28, 2025 - Late Session)
+
+- **Session Focus:** Attempted to resolve remaining PKL test failures after fixing regex issues.
+- **Progress:** Fixed several `IndentationError`s in `plotbot/data_cubby.py` and `tests/test_data_cubby_daily_pkl.py`. Modified `test_pkl_saving_two_days` to use `os.path.exists` for checking daily PKL files directly.
+- **Outcome:** 
+    - `test_pkl_saving_two_days` **PASSED**.
+    - `test_inspect_saved_daily_pkl_content` **PASSED**.
+- **Remaining Failures:**
+    - `test_save_multi_day_creates_daily_pkls`: Still fails due to `data_cubby_index.json` not being created, despite daily PKLs being saved.
+    - `test_pkl_integrity_and_cache_load`: Now fails with a `RecursionError: maximum recursion depth exceeded` when accessing attributes (`__getattr__`) of the `plot_manager` object after it's loaded from a PKL file (likely the full object pickle, not the simplified daily one). This suggests an issue with how `plot_manager` handles pickling/unpickling its state.
+- **Conclusion:** Reverting to this state as further attempts led to more complex issues. The core problem seems to lie in either the final index file writing logic or the pickling/unpickling behavior of the `plot_manager` class itself.
+
+--- Pushing Changes (April 28, 2025 - End of Session) ---
+- **Version Tag:** `2025-04-28_v1.02`
+- **Commit Message:** `fix: Resolve basic plot test errors and document PKL state`
+
+## End of Session Summary (April 28, 2025)
+
+- **Final Status:** We successfully ran the basic plotting tests (`tests/test_all_plot_basics.py`) which all passed. We also confirmed that the two previously passing PKL tests (`test_pkl_saving_two_days`, `test_inspect_saved_daily_pkl_content`) still pass when run individually via `pytest tests/test_data_cubby_pkl_saving.py`.
+- **IndentationError Mystery:** Encountered a persistent `IndentationError` in `plotbot/data_cubby.py` (around line 291) *only* when attempting to run multiple test files together (e.g., `pytest tests/test_all_plot_basics.py tests/test_data_cubby_pkl_saving.py ...` or via `pytest tests/test_all_plot_basics.py -s` which likely triggered collection involving `conftest.py`). Since the error disappeared when running the affected test files individually, and manual/automated fixes didn't resolve it for the combined run, we concluded it's likely an artifact of pytest's test collection/caching mechanism rather than a true syntax error in `data_cubby.py`.
+- **Remaining PKL Test Failures (when run together):** 
+    1.  `test_save_multi_day_creates_daily_pkls` (in `tests/test_data_cubby_daily_pkl.py`): Fails because `data_cubby_index.json` is not created (`AssertionError: data_cubby_index.json was not created.`). This suggests the final `json.dump(index, ...)` step in `data_cubby.save_to_disk` might not be executing correctly in this specific test context, even though the daily `.pkl` files *are* being created.
+    2.  `test_pkl_integrity_and_cache_load` (in `tests/test_data_cubby_pkl_saving.py`): Fails with `RecursionError: maximum recursion depth exceeded`. The traceback points deep into `plot_manager.__getattr__` being called repeatedly *after* an object (likely the full `plot_manager`, not a simplified daily dict) is loaded via `data_cubby.load_from_disk`. This strongly indicates an issue with how the `plot_manager` class interacts with Python's pickle mechanism, potentially related to its internal state (`_plot_state`?) or how `__getattr__` is implemented.
+- **Potential Next Steps for Tomorrow:**
+    - Investigate the `RecursionError`: Examine `plot_manager.py`, focusing on `__getattr__`, `__setattr__`, `__getstate__`, and `__setstate__` (if they exist) to understand how its state is managed and how that might interfere with unpickling and subsequent attribute access.
+    - Debug the missing index file: Step through `data_cubby.save_to_disk` specifically within the context of the `test_save_multi_day_creates_daily_pkls` test to see why the final `json.dump` isn't creating the index file.
+    - Consider clearing the pytest cache (`pytest --cache-clear`) before running tests again, just in case the `IndentationError` artifact persists.
+
+*(Session concluded for the day. Resting up is important!)*
