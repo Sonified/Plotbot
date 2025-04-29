@@ -69,8 +69,8 @@ def download_berkeley_data(trange, data_type):
         print_manager.status("📂 " + ", ".join(found_files))
         print_manager.time_output("download_berkeley_data", [str(start_time), str(end_time)])
         print_manager.time_tracking(f"Found all files locally for time range: {start_time} to {end_time}")
-        # Return empty list as no files were downloaded *in this run*
-        return []
+        # Return the list of locally found files (previously returned empty list)
+        return found_files
 
     print_manager.debug(f"\nDownloading missing files for {data_type}:")
     for file in missing_files:

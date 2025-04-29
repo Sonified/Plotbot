@@ -18,7 +18,7 @@ try:
     from plotbot.plotbot_main import plotbot
     from plotbot.multiplot import multiplot
     from plotbot.showdahodo import showdahodo
-    from plotbot.test_pilot import phase, system_check
+    from .test_pilot import phase, system_check
     from plotbot.print_manager import print_manager
 except ImportError as e:
     print(f"Failed to import Plotbot components: {e}")
@@ -39,9 +39,9 @@ except ImportError as e:
 
 # --- Test Configuration ---
 # Use the date from pyspedas tests, but only for 1 hour
-TRANGE = ['2023-09-28/06:00:00.000', '2023-09-28/07:00:00.000']
+TRANGE = ['2024-09-29/12:00:00', '2024-09-29/13:00:00']
 # Center time for multiplot (within the TRANGE)
-CENTER_TIME = '2023-09-28/06:30:00.000'
+CENTER_TIME = '2024-09-29/12:30:00'
 
 @pytest.fixture(autouse=True)
 def setup_test():

@@ -121,18 +121,19 @@ class mag_rtn_4sa_class:
             return None  # Return None if not found
 
     def __getattr__(self, name): # Prints a friendly error message if an attribute is not found
-        # --- FIX: Prevent recursion with deepcopy and raise AttributeError ---
-        # Avoid handling special methods that deepcopy might look for
-        if name.startswith('__') and name.endswith('__'):
-            raise AttributeError(f"Special method {name} not handled by __getattr__")
+        # --- FIX: Simplify __getattr__ to correctly raise AttributeError ---
+        # Remove the explicit check for __*__ methods here.
+        # __getattr__ is only called if standard lookup fails.
+        # if name.startswith('__') and name.endswith('__'):
+        #     raise AttributeError(f"Special method {name} not handled by __getattr__")
             
-        print_manager.debug('mag_rtn_4sa getattr helper!')
-        print_manager.variable_testing(f"__getattr__ called for mag_rtn_4sa.{name}")
+        print_manager.debug(f'{self.__class__.__name__} getattr helper!') # Use class name
+        print_manager.variable_testing(f"__getattr__ called for {self.__class__.__name__}.{name}")
         
         # Attempt to generate helpful message, but ensure AttributeError is raised
         try:
             available_attrs = list(self.raw_data.keys()) if hasattr(self, 'raw_data') and self.raw_data else []
-            print(f"\n'{name}\' is not a recognized attribute for {self.__class__.__name__}, friend!") # Added class name for clarity
+            print(f"\n'{name}\' is not a recognized attribute for {self.__class__.__name__}, friend!")
             if available_attrs:
                 print(f"Try one of these: {', '.join(available_attrs)}")
             else:
@@ -141,7 +142,7 @@ class mag_rtn_4sa_class:
             # Avoid errors within getattr itself from hiding the main issue
             print(f"Error generating suggestion in __getattr__: {e}")
             
-        # CRITICAL: Raise AttributeError as expected
+        # CRITICAL: Always raise AttributeError as expected for __getattr__
         raise AttributeError(f"'{self.__class__.__name__}\' object has no attribute '{name}\'")
         # ------------------------------------------------------------------
     
@@ -463,18 +464,19 @@ class mag_rtn_class:
             return None  # Return None if not found
 
     def __getattr__(self, name): # Prints a friendly error message if an attribute is not found
-        # --- FIX: Prevent recursion with deepcopy and raise AttributeError ---
-        # Avoid handling special methods that deepcopy might look for
-        if name.startswith('__') and name.endswith('__'):
-            raise AttributeError(f"Special method {name} not handled by __getattr__")
+        # --- FIX: Simplify __getattr__ to correctly raise AttributeError ---
+        # Remove the explicit check for __*__ methods here.
+        # __getattr__ is only called if standard lookup fails.
+        # if name.startswith('__') and name.endswith('__'):
+        #     raise AttributeError(f"Special method {name} not handled by __getattr__")
             
-        print_manager.debug('mag_rtn getattr helper!')
-        print_manager.variable_testing(f"__getattr__ called for mag_rtn.{name}")
+        print_manager.debug(f'{self.__class__.__name__} getattr helper!') # Use class name
+        print_manager.variable_testing(f"__getattr__ called for {self.__class__.__name__}.{name}")
         
         # Attempt to generate helpful message, but ensure AttributeError is raised
         try:
             available_attrs = list(self.raw_data.keys()) if hasattr(self, 'raw_data') and self.raw_data else []
-            print(f"\n'{name}\' is not a recognized attribute for {self.__class__.__name__}, friend!") # Added class name for clarity
+            print(f"\n'{name}\' is not a recognized attribute for {self.__class__.__name__}, friend!")
             if available_attrs:
                 print(f"Try one of these: {', '.join(available_attrs)}")
             else:
@@ -483,7 +485,7 @@ class mag_rtn_class:
             # Avoid errors within getattr itself from hiding the main issue
             print(f"Error generating suggestion in __getattr__: {e}")
             
-        # CRITICAL: Raise AttributeError as expected
+        # CRITICAL: Always raise AttributeError as expected for __getattr__
         raise AttributeError(f"'{self.__class__.__name__}\' object has no attribute '{name}\'")
         # ------------------------------------------------------------------
     
@@ -1048,18 +1050,19 @@ class mag_sc_class:
             return None  # Return None if not found
 
     def __getattr__(self, name): # Prints a friendly error message if an attribute is not found
-        # --- FIX: Prevent recursion with deepcopy and raise AttributeError ---
-        # Avoid handling special methods that deepcopy might look for
-        if name.startswith('__') and name.endswith('__'):
-            raise AttributeError(f"Special method {name} not handled by __getattr__")
+        # --- FIX: Simplify __getattr__ to correctly raise AttributeError ---
+        # Remove the explicit check for __*__ methods here.
+        # __getattr__ is only called if standard lookup fails.
+        # if name.startswith('__') and name.endswith('__'):
+        #     raise AttributeError(f"Special method {name} not handled by __getattr__")
             
-        print_manager.debug('mag_sc getattr helper!')
-        print_manager.variable_testing(f"__getattr__ called for mag_sc.{name}")
+        print_manager.debug(f'{self.__class__.__name__} getattr helper!') # Use class name
+        print_manager.variable_testing(f"__getattr__ called for {self.__class__.__name__}.{name}")
         
         # Attempt to generate helpful message, but ensure AttributeError is raised
         try:
             available_attrs = list(self.raw_data.keys()) if hasattr(self, 'raw_data') and self.raw_data else []
-            print(f"\n'{name}\' is not a recognized attribute for {self.__class__.__name__}, friend!") # Added class name for clarity
+            print(f"\n'{name}\' is not a recognized attribute for {self.__class__.__name__}, friend!")
             if available_attrs:
                 print(f"Try one of these: {', '.join(available_attrs)}")
             else:
@@ -1068,7 +1071,7 @@ class mag_sc_class:
             # Avoid errors within getattr itself from hiding the main issue
             print(f"Error generating suggestion in __getattr__: {e}")
             
-        # CRITICAL: Raise AttributeError as expected
+        # CRITICAL: Always raise AttributeError as expected for __getattr__
         raise AttributeError(f"'{self.__class__.__name__}\' object has no attribute '{name}\'")
         # ------------------------------------------------------------------
     

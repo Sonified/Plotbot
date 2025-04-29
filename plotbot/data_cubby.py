@@ -5,6 +5,7 @@ import pickle
 import json
 import re
 import pandas as pd
+from datetime import datetime
 
 class data_cubby:
     cubby = {}
@@ -181,6 +182,9 @@ class data_cubby:
         success = True # Assume success initially
         saved_something = False # Flag to track if any object was actually saved
 
+        # Import data types config HERE to ensure it's available
+        from .data_classes.psp_data_types import data_types
+
         try: # Wrap the main saving logic
             # Determine which objects to save
             items_to_process = {}
@@ -218,14 +222,27 @@ class data_cubby:
                         print_manager.debug(f"Object {identifier} has {len(obj.source_filenames)} source filenames. Processing daily.")
                         
                         # Ensure datetime_array exists and is usable for filtering
-                        if not (hasattr(obj, 'datetime_array') and isinstance(obj.datetime_array, np.ndarray) and len(obj.datetime_array) > 0):
+                        if not (hasattr(obj, 'datetime_array') and isinstance(obj.datetime_array, np.ndarray) and obj.datetime_array.size > 0):
                              print_manager.error(f"Cannot process daily PKLs for {identifier}: Missing or invalid datetime_array.")
                              success = False
                              continue # Skip to the next identifier
 
                         # Convert datetime_array to Pandas Timestamps for easier filtering (once)
                         try:
-                             timestamps_utc = pd.to_datetime(obj.datetime_array, unit='ns').tz_localize('UTC') # Ensure UTC
+                             # FIX: Handle both naive and timezone-aware arrays correctly
+                             # Convert raw array to pandas DatetimeIndex
+                             dt_index = pd.to_datetime(obj.datetime_array, unit='ns')
+                             
+                             # Check if timezone-aware or naive
+                             if dt_index.tz is None:
+                                 # Naive: Localize to UTC
+                                 timestamps_utc = dt_index.tz_localize('UTC')
+                                 print_manager.debug(f"Localized naive datetime_array to UTC for {identifier}")
+                             else:
+                                 # Already aware: Convert to UTC
+                                 timestamps_utc = dt_index.tz_convert('UTC')
+                                 print_manager.debug(f"Converted timezone-aware datetime_array to UTC for {identifier}")
+                             
                         except Exception as ts_err:
                              print_manager.error(f"Error converting datetime_array to Timestamps for {identifier}: {ts_err}")
                              success = False
@@ -236,37 +253,90 @@ class data_cubby:
                              try:
                                  print(f"DEBUG_SAVE: Processing source file: {source_file_full_path}")
                                  source_filename_base = os.path.basename(source_file_full_path)
-                                 # Attempt to extract date and version from the current source filename
-                                 match = re.search(r'_(20\d{6})_v(\d{2})\.cdf$', source_filename_base, flags=re.IGNORECASE) # Daily file pattern
-                                 # Add check for 6-hourly pattern too
-                                 if not match:
-                                     match = re.search(r'_(20\d{8})\d{2}_v(\d{2})\.cdf$', source_filename_base, flags=re.IGNORECASE) # 6-hourly pattern
+                                 print(f"DEBUG_SAVE: repr(source_filename_base): {repr(source_filename_base)}")
 
-                                 if not match:
-                                     print(f"DEBUG_SAVE: Regex NO MATCH for {source_filename_base}")
+                                 # --- NEW: Dynamically build regex from psp_data_types.py ---
+                                 if identifier not in data_types:
+                                     print_manager.warning(f"Identifier '{identifier}' not found in psp_data_types.py. Cannot determine file pattern. Skipping PKL for {source_filename_base}.")
+                                     continue
+
+                                 config = data_types[identifier]
+                                 pattern_template = config.get('file_pattern')
+                                 file_time_format = config.get('file_time_format', 'daily') # Default to daily
+                                 data_level = config.get('data_level', 'l2') # Default to l2
+
+                                 if not pattern_template:
+                                     print_manager.warning(f"No 'file_pattern' defined for identifier '{identifier}' in psp_data_types.py. Skipping PKL for {source_filename_base}.")
+                                     continue
+
+                                 # Prepare substitutions for the pattern template
+                                 date_group = r'(\d{8})' # Regex group for YYYYMMDD
+                                 if file_time_format == '6-hour':
+                                      # Corrected to expect 8 digits after '20' (10 total) for YYYYMMDDHH
+                                      date_group = r'(20\d{8})'  # Regex group for YYYYMMDDHH (10 digits total, starting with 20)
+                                      pattern_template = pattern_template.replace('{date_hour_str}', date_group)
+                                 else: # daily or other formats assumed to use date_str
+                                      pattern_template = pattern_template.replace('{date_str}', date_group)
+
+                                 # Substitute other placeholders
+                                 pattern_template = pattern_template.replace('{data_level}', data_level)
+                                 # Make sure version group is standard (d{2}) - removing f-string curly braces from config
+                                 pattern_template = pattern_template.replace(r'(\d{{2}})', r'(\d{2})')
+
+                                 # Escape regex special characters just in case (though pattern should be raw string)
+                                 # pattern_template = re.escape(pattern_template) # Let's NOT escape for now, assume config pattern is correct regex
+
+                                 # Compile and Match ---
+                                 # FIX: Use re.IGNORECASE flag
+                                 dynamic_pattern_compiled = re.compile(pattern_template, re.IGNORECASE)
+                                 print(f"DEBUG_RE: Compiled dynamic pattern for '{identifier}': {dynamic_pattern_compiled.pattern}")
+                                 final_match = dynamic_pattern_compiled.search(source_filename_base)
+
+                                 # --- END NEW Regex Logic ---
+
+                                 # Check the final result from the dynamic pattern
+                                 if not final_match:
+                                     print(f"DEBUG_SAVE: Dynamic Regex NO MATCH for {source_filename_base} using pattern {dynamic_pattern_compiled.pattern}")
                                      print_manager.warning(f"Could not extract date/version from source filename: {source_filename_base}. Skipping this file for daily PKL.")
                                      continue
 
-                                 date_str = match.group(1)[:8] # Extract YYYYMMDD part
-                                 version_str = f"v{match.group(2)}"
-                                 base_name = re.sub(r'(_' + match.group(1) + r'.*_v\d{2})\.cdf$', '', source_filename_base, flags=re.IGNORECASE) # Remove date/version/ext
+                                 # --- Use final_match from here on --- 
+                                 # FIX: Extract full date/date-hour string from group 1
+                                 full_date_str = final_match.group(1)
+                                 # Use only YYYYMMDD for daily mask filtering regardless of source pattern
+                                 date_str_for_mask = full_date_str[:8]
+                                 version_str = f"v{final_match.group(2)}"
+                                 # FIX: Use the full captured date string (group 1) in re.sub
+                                 # Use final_match variable here too
+                                 # IMPORTANT: Construct the removal pattern carefully based on the dynamic match
+                                 # We know the date part is group(1) and version is group(2)
+                                 date_version_part_str = final_match.group(0) # Get the full matched part (e.g., _YYYYMMDDHH_v01.cdf)
+                                 # Need to escape it before using in re.sub
+                                 escaped_date_version_part = re.escape(date_version_part_str)
+                                 # Replace the full matched part to get the base name
+                                 base_name = re.sub(escaped_date_version_part + '$', '', source_filename_base)
+                                 # base_name = re.sub(r'(_' + full_date_str + r'_v\\d{2})\\.cdf$', '', source_filename_base, flags=re.IGNORECASE) # Old way
 
                                  # Construct the daily PKL filename
-                                 print(f"DEBUG_SAVE: Extracted date={date_str}, version={version_str}, base={base_name}")
-                                 daily_filename = f"{base_name}_{date_str}_{version_str}.pkl"
+                                 # Use the full date string (YYYYMMDD or YYYYMMDDHH) for the PKL filename itself
+                                 print(f"DEBUG_SAVE: Extracted date/hour={full_date_str}, version={version_str}, base={base_name}")
+                                 daily_filename = f"{base_name}_{full_date_str}_{version_str}.pkl"
                                  daily_obj_path = os.path.join(storage_path, daily_filename)
                                  print_manager.debug(f"Target daily PKL path: {daily_obj_path}")
 
                                  # --- Filter Data for the Current Day ---
-                                 current_day = pd.to_datetime(date_str, format='%Y%m%d').tz_localize('UTC')
+                                 # Use YYYYMMDD part for day boundaries
+                                 current_day = pd.to_datetime(date_str_for_mask, format='%Y%m%d').tz_localize('UTC')
                                  next_day = current_day + pd.Timedelta(days=1)
                                  
                                  # Create mask based on the full timestamps array
+                                 print_manager.debug(f"DEBUG_SAVE: Checking mask. Object time range: {timestamps_utc.min()} to {timestamps_utc.max()}") # DEBUG
+                                 print_manager.debug(f"DEBUG_SAVE: Mask range: {current_day} to {next_day}") # DEBUG
                                  day_mask = (timestamps_utc >= current_day) & (timestamps_utc < next_day)
 
                                  if not np.any(day_mask):
-                                    print(f"DEBUG_SAVE: Day mask is EMPTY for {date_str}")
-                                    print_manager.debug(f"No data found for date {date_str} ({current_day.date()}) in {identifier}. Skipping PKL for this day.")
+                                    print(f"DEBUG_SAVE: Day mask is EMPTY for {date_str_for_mask}")
+                                    print_manager.debug(f"No data found for date {date_str_for_mask} ({current_day.date()}) in {identifier}. Skipping PKL for this day.")
                                     continue
 
                                  # --- Create a Subset Object for the Day ---
@@ -294,10 +364,10 @@ class data_cubby:
                                                    else: # 0-dim array?
                                                         daily_obj.raw_data[key] = data_array # Keep as is if 0-dim
                                               except IndexError:
-                                                   print_manager.warning(f"IndexError applying mask to {key} for {date_str}. Shape: {data_array.shape}. Mask sum: {np.sum(day_mask)}")
+                                                   print_manager.warning(f"IndexError applying mask to {key} for {date_str_for_mask}. Shape: {data_array.shape}. Mask sum: {np.sum(day_mask)}")
                                                    # Decide on fallback? Fill with NaNs? Skip? For now, skip modification for this key.
                                               except Exception as mask_err:
-                                                   print_manager.warning(f"Error applying mask to raw_data key '{key}' for {date_str}: {mask_err}")
+                                                   print_manager.warning(f"Error applying mask to raw_data key '{key}' for {date_str_for_mask}: {mask_err}")
                                                    # Fallback?
                                  # Also update plot_manager instances if they hold the data directly
                                  for attr_name in dir(daily_obj):
@@ -314,9 +384,9 @@ class data_cubby:
                                                    if hasattr(attr_value, '_shape'):
                                                         attr_value._shape = attr_value._data.shape
                                                except IndexError:
-                                                    print_manager.warning(f"IndexError applying mask to plot_manager {attr_name} for {date_str}. Shape: {attr_value._data.shape}. Mask sum: {np.sum(day_mask)}")
+                                                    print_manager.warning(f"IndexError applying mask to plot_manager {attr_name} for {date_str_for_mask}. Shape: {attr_value._data.shape}. Mask sum: {np.sum(day_mask)}")
                                                except Exception as pm_mask_err:
-                                                     print_manager.warning(f"Error applying mask to plot_manager '{attr_name}' for {date_str}: {pm_mask_err}")
+                                                     print_manager.warning(f"Error applying mask to plot_manager '{attr_name}' for {date_str_for_mask}: {pm_mask_err}")
 
 
                                  # Update the source_filenames in the daily object to only the current file
@@ -324,10 +394,14 @@ class data_cubby:
 
                                  # --- Save the Daily Subset Object ---
                                  print(f"DEBUG_SAVE: >>> Attempting pickle.dump to {daily_obj_path}")
-                                 print_manager.debug(f"Saving daily object for {identifier} ({date_str}) to {daily_obj_path}")
-                                 with open(daily_obj_path, 'wb') as f:
-                                      pickle.dump(daily_obj, f)
-                                 saved_something = True # Mark that we saved at least one daily file
+                                 print_manager.debug(f"Saving daily object for {identifier} ({date_str_for_mask}) to {daily_obj_path}")
+                                 try: # <-- Add try/except around pickle.dump
+                                     with open(daily_obj_path, 'wb') as f:
+                                          pickle.dump(daily_obj, f)
+                                     saved_something = True # Mark that we saved at least one daily file
+                                 except Exception as pickle_err:
+                                      print_manager.error(f"ERROR during pickle.dump for {daily_obj_path}: {pickle_err}")
+                                      success = False # Mark overall save as failed if pickling fails
 
                                  # --- Index Update (Skipped for now in daily loop) ---
                                  # We need to decide how to handle the index for multiple files per identifier.
@@ -350,7 +424,7 @@ class data_cubby:
 
                         # Determine filename using timestamp if no source_filename
                         date_str = None
-                        if hasattr(obj, 'datetime_array') and isinstance(obj.datetime_array, np.ndarray) and len(obj.datetime_array) > 0:
+                        if hasattr(obj, 'datetime_array') and isinstance(obj.datetime_array, np.ndarray) and obj.datetime_array.size > 0:
                             try:
                                 if np.issubdtype(obj.datetime_array.dtype, np.datetime64):
                                     first_timestamp = pd.Timestamp(obj.datetime_array[0]) # Use pandas Timestamp
@@ -374,7 +448,29 @@ class data_cubby:
                                 # Build regex dynamically (Example - needs refinement based on actual patterns)
                                 # Assuming pattern like prefix_{date}_v*.cdf or prefix_{date}{hour}_v*.cdf
                                 date_part_regex = r'(\d{8})' if time_format == 'daily' else r'(\d{10})' # Capture YYYYMMDD or YYYYMMDDHH
-                                prefix_match = re.match(rf"(.*?)_{date_part_regex}.*_v.*\.cdf", pattern.format(data_level=data_types[identifier].get('data_level', 'l2')))
+                                
+                                # --- FIX: Provide necessary keys to pattern.format ---
+                                format_args = {'data_level': data_types[identifier].get('data_level', 'l2')}
+                                if time_format == '6-hour':
+                                    hour_str = first_timestamp.strftime('%H') # Get hour
+                                    block_start_hour = (int(hour_str) // 6) * 6 # Calculate 6-hour block start
+                                    date_hour_str = f"{date_str}{block_start_hour:02d}"
+                                    format_args['date_hour_str'] = date_hour_str # Add date_hour_str if needed
+                                elif time_format == 'daily':
+                                     format_args['date_str'] = date_str # Add date_str if needed for daily
+                                # Add other potential placeholders as needed
+                                
+                                # Now format the pattern with the correct arguments
+                                try:
+                                    formatted_pattern = pattern.format(**format_args)
+                                except KeyError as fmt_err:
+                                     print_manager.error(f"KeyError formatting pattern '{pattern}' for {identifier}: {fmt_err}. Missing key?")
+                                     formatted_pattern = None # Skip prefix extraction if formatting fails
+                                
+                                prefix_match = None
+                                if formatted_pattern:
+                                     prefix_match = re.match(rf"(.*?)_{date_part_regex}.*_v.*\.cdf", formatted_pattern)
+                                # --- END FIX ---
 
                                 if prefix_match:
                                     prefix = prefix_match.group(1)
@@ -405,9 +501,13 @@ class data_cubby:
                         obj_path = os.path.join(storage_path, filename)
 
                         print_manager.debug(f"Saving object '{identifier}' (single file) to {obj_path}")
-                        with open(obj_path, 'wb') as f:
-                            pickle.dump(obj, f)
-                        saved_something = True
+                        try: # <-- Add try/except around pickle.dump
+                            with open(obj_path, 'wb') as f:
+                                pickle.dump(obj, f)
+                            saved_something = True
+                        except Exception as pickle_err:
+                            print_manager.error(f"ERROR during pickle.dump for {obj_path}: {pickle_err}")
+                            success = False # Mark overall save as failed if pickling fails
 
                         # --- Update index entry (Standard Logic) ---
                         rel_path = os.path.relpath(obj_path, cls.base_pkl_directory)
@@ -499,69 +599,93 @@ class data_cubby:
             with open(index_path, 'r') as f:
                 index = json.load(f)
                 
+            load_success_flag = True # Track overall success
+
             # Load objects from cubby
             print_manager.debug("--- Loading objects from cubby index ---")
-            for identifier, rel_path in index['cubby'].items():
-                obj_path = os.path.join(cls.base_pkl_directory, rel_path)
-                print_manager.debug(f"Attempting to load [cubby]: {identifier} from {obj_path}") # DEBUG PRINT
-                if os.path.exists(obj_path):
-                    try: # Add try/except around individual loads
-                        with open(obj_path, 'rb') as f:
-                            obj = pickle.load(f)
-                            cls.cubby[identifier] = obj
-                            print_manager.debug(f"---> Successfully loaded [cubby]: {identifier}") # DEBUG PRINT
-                    except Exception as load_err:
-                        print_manager.error(f"ERROR loading pickle file {obj_path} for [cubby] {identifier}: {load_err}")
-                        # Optionally re-raise or handle differently
-                else:
-                    print_manager.warning(f"Missing pickle file: {obj_path}")
-            
+            if 'cubby' in index: # Check if key exists
+                for identifier, rel_path in index['cubby'].items():
+                    obj_path = os.path.join(cls.base_pkl_directory, rel_path)
+                    print_manager.debug(f"Attempting to load [cubby]: {identifier} from {obj_path}") # DEBUG PRINT
+                    if os.path.exists(obj_path):
+                        try: # Add try/except around individual loads
+                            with open(obj_path, 'rb') as f:
+                                obj = pickle.load(f)
+                                cls.cubby[identifier] = obj
+                                print_manager.debug(f"---> Successfully loaded [cubby]: {identifier}") # DEBUG PRINT
+                        except Exception as load_err:
+                            print_manager.error(f"ERROR loading pickle file {obj_path} for [cubby] {identifier}: {load_err}")
+                            load_success_flag = False # Mark failure
+                    else:
+                        print_manager.warning(f"Missing pickle file referenced in index [cubby]: {obj_path}")
+                        load_success_flag = False # Mark failure # Also mark failure if file is missing
+
             # Load objects from class_registry
             print_manager.debug("--- Loading objects from class_registry index ---")
-            for class_name, rel_path in index['class_registry'].items():
-                # Avoid reloading if already loaded via cubby
-                if class_name in cls.cubby: 
-                    print_manager.debug(f"Skipping load [class_registry]: {class_name} (already in cubby)")
-                    continue 
-                obj_path = os.path.join(cls.base_pkl_directory, rel_path)
-                print_manager.debug(f"Attempting to load [class_registry]: {class_name} from {obj_path}") # DEBUG PRINT
-                if os.path.exists(obj_path):
-                    try: # Add try/except around individual loads
-                        with open(obj_path, 'rb') as f:
-                            obj = pickle.load(f)
-                            cls.class_registry[class_name] = obj
-                            print_manager.debug(f"---> Successfully loaded [class_registry]: {class_name}") # DEBUG PRINT
-                    except Exception as load_err:
-                        print_manager.error(f"ERROR loading pickle file {obj_path} for [class_registry] {class_name}: {load_err}")
-                else:
-                    print_manager.warning(f"Missing pickle file: {obj_path}")
-            
+            if 'class_registry' in index: # Check if key exists
+                for class_name, rel_path in index['class_registry'].items():
+                    # Avoid reloading if already loaded via cubby
+                    if class_name in cls.cubby:
+                        print_manager.debug(f"Skipping load [class_registry]: {class_name} (already in cubby)")
+                        continue
+                    obj_path = os.path.join(cls.base_pkl_directory, rel_path)
+                    print_manager.debug(f"Attempting to load [class_registry]: {class_name} from {obj_path}") # DEBUG PRINT
+                    if os.path.exists(obj_path):
+                        try: # Add try/except around individual loads
+                            with open(obj_path, 'rb') as f:
+                                obj = pickle.load(f)
+                                cls.class_registry[class_name] = obj
+                                print_manager.debug(f"---> Successfully loaded [class_registry]: {class_name}") # DEBUG PRINT
+                        except Exception as load_err:
+                            print_manager.error(f"ERROR loading pickle file {obj_path} for [class_registry] {class_name}: {load_err}")
+                            load_success_flag = False # Mark failure
+                    else:
+                        print_manager.warning(f"Missing pickle file referenced in index [class_registry]: {obj_path}")
+                        load_success_flag = False # Mark failure # Also mark failure if file is missing
+
             # Load objects from subclass_registry
             print_manager.debug("--- Loading objects from subclass_registry index ---")
-            for subclass_name, rel_path in index['subclass_registry'].items():
-                 # Avoid reloading if already loaded via cubby or class_registry
-                if subclass_name in cls.cubby or subclass_name in cls.class_registry: 
-                    print_manager.debug(f"Skipping load [subclass_registry]: {subclass_name} (already loaded)")
-                    continue
-                obj_path = os.path.join(cls.base_pkl_directory, rel_path)
-                print_manager.debug(f"Attempting to load [subclass_registry]: {subclass_name} from {obj_path}") # DEBUG PRINT
-                if os.path.exists(obj_path):
-                    try: # Add try/except around individual loads
-                        with open(obj_path, 'rb') as f:
-                            obj = pickle.load(f)
-                            cls.subclass_registry[subclass_name] = obj
-                            print_manager.debug(f"---> Successfully loaded [subclass_registry]: {subclass_name}") # DEBUG PRINT
-                    except Exception as load_err:
-                        print_manager.error(f"ERROR loading pickle file {obj_path} for [subclass_registry] {subclass_name}: {load_err}")
-                else:
-                    print_manager.warning(f"Missing pickle file: {obj_path}")
-                
-            print_manager.storage_status(f"Successfully loaded data_cubby state from {cls.base_pkl_directory}") # Use storage_status
-            print("DEBUG: load_from_disk successful.")
-            return True
-        except Exception as e:
+            if 'subclass_registry' in index: # Check if key exists
+                for subclass_name, rel_path in index['subclass_registry'].items():
+                     # Avoid reloading if already loaded via cubby or class_registry
+                    if subclass_name in cls.cubby or subclass_name in cls.class_registry:
+                        print_manager.debug(f"Skipping load [subclass_registry]: {subclass_name} (already loaded)")
+                        continue
+                    obj_path = os.path.join(cls.base_pkl_directory, rel_path)
+                    print_manager.debug(f"Attempting to load [subclass_registry]: {subclass_name} from {obj_path}") # DEBUG PRINT
+                    if os.path.exists(obj_path):
+                        try: # Add try/except around individual loads
+                            with open(obj_path, 'rb') as f:
+                                obj = pickle.load(f)
+                                cls.subclass_registry[subclass_name] = obj
+                                print_manager.debug(f"---> Successfully loaded [subclass_registry]: {subclass_name}") # DEBUG PRINT
+                        except Exception as load_err:
+                            print_manager.error(f"ERROR loading pickle file {obj_path} for [subclass_registry] {subclass_name}: {load_err}")
+                            load_success_flag = False # Mark failure
+                    else:
+                        print_manager.warning(f"Missing pickle file referenced in index [subclass_registry]: {obj_path}")
+                        load_success_flag = False # Mark failure # Also mark failure if file is missing
+
+            if load_success_flag:
+                print_manager.storage_status(f"Successfully loaded data_cubby state from {cls.base_pkl_directory}") # Use storage_status
+                print("DEBUG: load_from_disk successful.")
+                return True
+            else:
+                print_manager.warning(f"Load from disk completed BUT encountered errors loading/finding some pickle files.")
+                print("DEBUG: load_from_disk finished with errors.")
+                return False # Return False if any individual load failed OR file missing
+
+        except json.JSONDecodeError:
+             print_manager.error(f"Error loading data_cubby: Index file {index_path} is corrupted.")
+             print(f"DEBUG: load_from_disk failed with JSONDecodeError")
+             return False
+        except KeyError as e:
+             print_manager.error(f"Error loading data_cubby: Index file {index_path} is missing expected key: {e}")
+             print(f"DEBUG: load_from_disk failed with KeyError in index")
+             return False
+        except Exception as e: # Catch other broad errors during index loading/parsing
             print_manager.error(f"Error loading data_cubby from disk: {str(e)}")
-            print(f"DEBUG: load_from_disk failed with error: {str(e)}")
+            print(f"DEBUG: load_from_disk failed with general error: {str(e)}")
             import traceback
             print_manager.debug(traceback.format_exc()) # Use debug
             return False

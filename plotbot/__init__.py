@@ -138,7 +138,7 @@ __all__ = [
 # --- Version and Commit Message ---
 BLUE = '\033[94m'
 RESET = '\033[0m'
-COMMIT_MSG = "fix: Resolve daily PKL saving issues"
+COMMIT_MSG = "fix: Correct PKL save regex case sensitivity"
 print(f'{BLUE}   Version: 2025_04_26_v1.12{RESET}')
 print(f'{BLUE}   Commit: {COMMIT_MSG}{RESET}')
 
