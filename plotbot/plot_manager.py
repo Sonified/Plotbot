@@ -23,7 +23,8 @@ class plot_manager(np.ndarray):
         # Named variable reference tracking
         'original_derived_var', 'original_derived_name', 'add',
         # Add missing attributes
-        'marker', 'marker_size', 'alpha', 'marker_style' #, 'zorder', 'legend_label_override'
+        'marker', 'marker_size', 'alpha', 'marker_style',
+        'source_filenames'
     ]
 
     # Set up class-level interpolation settings
@@ -311,6 +312,19 @@ class plot_manager(np.ndarray):
         self._plot_state['source_subclass_names'] = value
         self._source_subclass_names = value
         setattr(self.plot_options, 'source_subclass_names', value)
+
+    # NEW property for source_filenames
+    @property
+    def source_filenames(self):
+        if hasattr(self, '_source_filenames'):
+            return self._source_filenames
+        return getattr(self.plot_options, 'source_filenames', None)
+        
+    @source_filenames.setter
+    def source_filenames(self, value):
+        self._plot_state['source_filenames'] = value
+        self._source_filenames = value
+        setattr(self.plot_options, 'source_filenames', value)
 
     #Inline friendly error handling in __setattr__, consistent with your style
     def __setattr__(self, name, value):
@@ -756,12 +770,16 @@ class plot_manager(np.ndarray):
         source_vars = []
         scalar_value = None
         dt_array = None
+        aggregated_source_filenames = [] # NEW: Initialize list for source filenames
         
         # Initial source tracking for 'self'
         if hasattr(self, 'source_var') and self.source_var is not None:
             source_vars.extend(self.source_var)
         elif hasattr(self, 'class_name') and hasattr(self, 'subclass_name'):
             source_vars.append(self)
+        # NEW: Aggregate source filenames for 'self'
+        if hasattr(self, 'source_filenames'):
+            aggregated_source_filenames.extend(self.source_filenames or [])
         
         if isinstance(other, plot_manager):
             # --- Plot Manager vs Plot Manager ---
@@ -770,6 +788,9 @@ class plot_manager(np.ndarray):
                 source_vars.extend(other.source_var)
             elif hasattr(other, 'class_name') and hasattr(other, 'subclass_name'):
                 source_vars.append(other)
+            # NEW: Aggregate source filenames for 'other'
+            if hasattr(other, 'source_filenames'):
+                 aggregated_source_filenames.extend(other.source_filenames or [])
                 
             self_aligned, other_aligned, dt_array = self.align_variables(other)
 
@@ -861,6 +882,8 @@ class plot_manager(np.ndarray):
         # Explicitly using object.__setattr__ might be safer here
         object.__setattr__(result_var, 'operation', operation_name)
         object.__setattr__(result_var, 'source_var', source_vars) # Set the tracked sources
+        # NEW: Set aggregated source filenames (unique)
+        object.__setattr__(result_var, 'source_filenames', list(set(aggregated_source_filenames)))
         if scalar_value is not None:
             object.__setattr__(result_var, 'scalar_value', scalar_value)
 

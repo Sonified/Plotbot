@@ -41,7 +41,7 @@ from .data_classes.custom_variables import custom_variable, CustomVariablesConta
 
 # Import test_pilot for testing - safely importing the test functions
 # (test_pilot handles the fallback if pytest is not available)
-from .test_pilot import run_missions, phase, system_check
+# from .test_pilot import run_missions, phase, system_check
 
 # Add a method to debug custom variables
 def debug_custom_variables():
@@ -131,9 +131,6 @@ __all__ = [
     'audifier',
     'custom_variable',  # Using custom_variable instead of new_variable
     'debug_custom_variables',  # Add debug function for custom variables
-    'run_missions',   # Add test_pilot functions
-    'phase',
-    'system_check',
     'time_clip',      # ADDED time_clip helper function
     'config'          # ADDED config to __all__
 ]
@@ -141,8 +138,8 @@ __all__ = [
 # --- Version and Commit Message ---
 BLUE = '\033[94m'
 RESET = '\033[0m'
-COMMIT_MSG = "fix: Correct Pyspedas verbosity & cleanup notebooks"
-print(f'{BLUE}   Version: 2025_04_26_v1.11{RESET}')
+COMMIT_MSG = "fix: Resolve daily PKL saving issues"
+print(f'{BLUE}   Version: 2025_04_26_v1.12{RESET}')
 print(f'{BLUE}   Commit: {COMMIT_MSG}{RESET}')
 
 # --- Final Print Message ---

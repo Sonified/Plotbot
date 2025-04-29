@@ -15,6 +15,9 @@ from .data_classes.psp_data_types import data_types
 def download_berkeley_data(trange, data_type):
     """Download new PSP data from the Berkeley server for a given data type and time range."""
     
+    # Initialize list to store names of files actually downloaded in this run
+    downloaded_cdf_files = []
+    
     #====================================================================
     # VALIDATE DATA TYPE AND GET CONFIG
     #====================================================================
@@ -27,7 +30,7 @@ def download_berkeley_data(trange, data_type):
         print(f"Data type {data_type} is not recognized.")
         print_manager.variable_testing(f"Unrecognized data_type: {data_type}, not in psp_data_types")
         print_manager.time_output("download_berkeley_data", "error: invalid data_type")
-        return
+        return []
     
     print_manager.variable_testing(f"Found {data_type} in psp_data_types, retrieving configuration")
     config = data_types[data_type]                       # Extract the specific configuration settings for this data type (URLs, paths, patterns etc.)
@@ -44,7 +47,7 @@ def download_berkeley_data(trange, data_type):
     except ValueError as e:
         print(f"Error parsing time range: {e}")
         print_manager.time_output("download_berkeley_data", "error: time parsing failed")
-        return
+        return []
     
     # Adjust end time if midnight
     if (end_time.hour == 0 and end_time.minute == 0 and             # Check if time is exactly 00:00:00.000 - this needs special handling
@@ -66,7 +69,8 @@ def download_berkeley_data(trange, data_type):
         print_manager.status("📂 " + ", ".join(found_files))
         print_manager.time_output("download_berkeley_data", [str(start_time), str(end_time)])
         print_manager.time_tracking(f"Found all files locally for time range: {start_time} to {end_time}")
-        return
+        # Return empty list as no files were downloaded *in this run*
+        return []
 
     print_manager.debug(f"\nDownloading missing files for {data_type}:")
     for file in missing_files:
@@ -106,12 +110,19 @@ def download_berkeley_data(trange, data_type):
                 dir_url = f"{config['url'].format(data_level=config['data_level'])}{block_date.year}/{block_date.month:02d}/"
                 pattern_str = create_pattern_string(config['file_pattern'], config['data_level'], date_info)
                 
-                process_directory(
+                # Call process_directory and capture the result tuple
+                download_status, downloaded_filename = process_directory(
                     dir_url=dir_url,
                     pattern_str=pattern_str,
                     date_info=date_info,
-                    base_local_path=config['local_path'].format(data_level=config['data_level'])
+                    base_local_path=config['local_path'].format(data_level=config['data_level']),
+                    plotbot_key=data_type # Pass the data_type as the key
                 )
+                
+                # If a file was successfully downloaded, add its name to our list
+                if download_status and downloaded_filename:
+                    downloaded_cdf_files.append(downloaded_filename)
+
             except Exception as e:
                 print("🤷🏾‍♂️ The data you're looking for can't be retrieved from the server, friend!")
                 print(f'An error occurred: {e}')
@@ -133,12 +144,19 @@ def download_berkeley_data(trange, data_type):
                 dir_url = f"{config['url'].format(data_level=config['data_level'])}{single_date.year}/{single_date.month:02d}/"
                 pattern_str = create_pattern_string(config['file_pattern'], config['data_level'], date_info)
                 
-                process_directory(
+                # Call process_directory and capture the result tuple
+                download_status, downloaded_filename = process_directory(
                     dir_url=dir_url,
                     pattern_str=pattern_str,
                     date_info=date_info,
-                    base_local_path=config['local_path'].format(data_level=config['data_level'])
+                    base_local_path=config['local_path'].format(data_level=config['data_level']),
+                    plotbot_key=data_type # Pass the data_type as the key
                 )
+                
+                # If a file was successfully downloaded, add its name to our list
+                if download_status and downloaded_filename:
+                    downloaded_cdf_files.append(downloaded_filename)
+
             except Exception as e:
                 print("🤷🏾‍♂️ The data you're looking for can't be retrieved from the server, friend!")
                 print(f'An error occurred: {e}')
@@ -147,5 +165,5 @@ def download_berkeley_data(trange, data_type):
     # Add at the end of the function before returning
     print_manager.time_output("download_berkeley_data", [str(start_time), str(end_time)])
     print_manager.time_tracking(f"Completed download for time range: {start_time} to {end_time}")
-    # Assume success if we reach this point without returning False earlier
-    return True
+    # Return the list of successfully downloaded filenames (SPDF-cased)
+    return downloaded_cdf_files

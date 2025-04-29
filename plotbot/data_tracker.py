@@ -2,6 +2,11 @@ from datetime import datetime, timezone
 from dateutil.parser import parse
 from .print_manager import print_manager
 
+# Temporary cache to store lists of CDF filenames associated with a specific download/import operation.
+# Key: tuple(data_type, tuple(trange))
+# Value: list[str] (list of SPDF-cased CDF filenames)
+_downloaded_cdf_cache = {}
+
 class DataTracker:
     """Tracks imported and calculated data ranges to prevent redundant operations."""
     
@@ -226,3 +231,34 @@ class DataTracker:
 #====================================================================
 global_tracker = DataTracker()                         # Single instance used throughout application
 print('initialized global_tracker') 
+
+# --- Functions to manage the temporary CDF filename cache ---
+
+def store_downloaded_cdfs(data_type, trange, cdf_filenames):
+    """Stores the list of downloaded CDF filenames for a given data_type and trange."""
+    key = (data_type, tuple(trange)) # Ensure trange is a tuple for dict key
+    _downloaded_cdf_cache[key] = cdf_filenames
+    print_manager.debug(f"Stored {len(cdf_filenames)} CDF names for {key}: {cdf_filenames[:3]}...")
+
+def retrieve_downloaded_cdfs(data_type, trange):
+    """Retrieves the list of downloaded CDF filenames for a given data_type and trange.
+    
+    Returns None if no entry is found.
+    Removes the entry after retrieval to prevent stale data.
+    """
+    key = (data_type, tuple(trange)) # Ensure trange is a tuple for lookup
+    filenames = _downloaded_cdf_cache.pop(key, None) # Use pop to get and remove
+    if filenames is not None:
+        print_manager.debug(f"Retrieved {len(filenames)} CDF names for {key}: {filenames[:3]}...")
+    else:
+        print_manager.debug(f"No stored CDF names found for {key}.")
+    return filenames
+
+def clear_downloaded_cdf_cache():
+    """Clears the entire temporary CDF filename cache."""
+    global _downloaded_cdf_cache
+    count = len(_downloaded_cdf_cache)
+    _downloaded_cdf_cache = {}
+    print_manager.debug(f"Cleared temporary CDF filename cache (removed {count} entries).")
+
+# --- End CDF filename cache functions --- 

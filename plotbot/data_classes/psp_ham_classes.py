@@ -56,6 +56,7 @@ class ham_class:
         })
         object.__setattr__(self, 'time', None) # To store raw TT2000 time
         object.__setattr__(self, 'datetime_array', None) # To store Python datetime objects
+        object.__setattr__(self, 'source_filenames', []) # NEW: Initialize source_filenames
 
         if imported_data is None:
             self.set_ploptions() # Set empty ploptions on init
@@ -74,6 +75,14 @@ class ham_class:
         if imported_data is None:
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
             return
+
+        # Store the source filenames associated with this data update
+        if hasattr(imported_data, 'source_filenames'):
+            self.source_filenames = imported_data.source_filenames
+            print_manager.debug(f"Stored {len(self.source_filenames)} source filenames on {self.__class__.__name__} instance.")
+        else:
+            self.source_filenames = []
+            print_manager.debug(f"No source_filenames found on data_object for {self.__class__.__name__}.")
 
         print_manager.datacubby(f"\n=== Starting {self.__class__.__name__} update... ===")
 

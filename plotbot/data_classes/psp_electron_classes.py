@@ -23,6 +23,7 @@ class epad_strahl_class:
         object.__setattr__(self, 'datetime_array', None)
         object.__setattr__(self, 'times_mesh', [])
         object.__setattr__(self, 'pitch_angle', None)
+        object.__setattr__(self, 'source_filenames', [])
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
@@ -48,6 +49,14 @@ class epad_strahl_class:
         if imported_data is None:                                                # Exit if no new data
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
             return
+        
+        # Store the source filenames associated with this data update
+        if hasattr(imported_data, 'source_filenames'):
+            self.source_filenames = imported_data.source_filenames
+            print_manager.debug(f"Stored {len(self.source_filenames)} source filenames on {self.__class__.__name__} instance.")
+        else:
+            self.source_filenames = []
+            print_manager.debug(f"No source_filenames found on data_object for {self.__class__.__name__}.")
         
         print_manager.datacubby("\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
@@ -225,6 +234,7 @@ class epad_strahl_high_res_class:
         object.__setattr__(self, 'datetime_array', None)
         object.__setattr__(self, 'times_mesh', [])
         object.__setattr__(self, 'pitch_angle', None)
+        object.__setattr__(self, 'source_filenames', [])
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
@@ -248,6 +258,14 @@ class epad_strahl_high_res_class:
         if imported_data is None:                                                # Exit if no new data
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
             return
+        
+        # Store the source filenames associated with this data update
+        if hasattr(imported_data, 'source_filenames'):
+            self.source_filenames = imported_data.source_filenames
+            print_manager.debug(f"Stored {len(self.source_filenames)} source filenames on {self.__class__.__name__} instance.")
+        else:
+            self.source_filenames = []
+            print_manager.debug(f"No source_filenames found on data_object for {self.__class__.__name__}.")
         
         print_manager.datacubby("\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")

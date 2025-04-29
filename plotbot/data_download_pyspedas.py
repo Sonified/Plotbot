@@ -13,6 +13,8 @@ from datetime import datetime, timedelta # Added for date iteration
 
 from .print_manager import print_manager
 from .data_classes.psp_data_types import data_types # To get pyspedas datatype mapping
+# Import the casing helper
+from .data_download_helpers import _ensure_spdf_casing 
 # Add other necessary imports (time, etc.) as needed
 
 # Define the mapping from Plotbot keys to pyspedas specifics
@@ -76,14 +78,17 @@ def download_spdf_data(trange, plotbot_key):
     """Attempts to download data using pyspedas from SPDF.
     
     Uses the no_update=[True, False] strategy for offline reliability.
-    Checks local files first, then attempts download if not found.
+    Performs pre-emptive renaming of existing Berkeley files if necessary.
+    Checks local files first, then attempts download if not found. Ensures
+    returned filenames use SPDF standard casing.
 
     Args:
         trange (list): Time range ['.start', 'end']
         plotbot_key (str): The Plotbot data type key (e.g., 'mag_SC_4sa').
 
     Returns:
-        list: List of relative paths to downloaded files or an empty list if download failed.
+        list: List of relative paths (with SPDF casing) to downloaded files, 
+              or an empty list if download failed or no files found.
     """
     print_manager.debug(f"Attempting SPDF download for {plotbot_key} in range {trange}")
 
@@ -184,13 +189,13 @@ def download_spdf_data(trange, plotbot_key):
     pyspedas_datatype = map_config['pyspedas_datatype']
     kwargs = map_config['kwargs']
     
-    file_path = None
-    returned_data = None
+    # Initialize as empty list
+    returned_data_paths = [] 
     
     try:
         # 1. Check locally ONLY (reliable offline)
-        # print_manager.debug(f"Checking SPDF locally (no_update=True) for {pyspedas_datatype}...") # Old debug message
-        returned_data = pyspedas_func(
+        print_manager.debug(f"Checking SPDF locally (no_update=True) for {pyspedas_datatype}...") 
+        local_check_paths = pyspedas_func(
             trange=trange,
             datatype=pyspedas_datatype,
             no_update=True,
@@ -199,13 +204,15 @@ def download_spdf_data(trange, plotbot_key):
             time_clip=True, # Consistent with tests
             **kwargs
         )
-        if returned_data and isinstance(returned_data, list) and len(returned_data) > 0:
-            file_path = returned_data[0]
+        # Ensure result is a list
+        if local_check_paths and isinstance(local_check_paths, list):
+            returned_data_paths = local_check_paths
+            print_manager.debug(f"Found {len(returned_data_paths)} file(s) locally via SPDF (no_update=True).")
 
         # 2. If not found locally, attempt download (only if online)
-        if not file_path:
-            # print_manager.debug(f"Attempting SPDF download (no_update=False) for {pyspedas_datatype}...") # Old debug message
-            returned_data = pyspedas_func(
+        if not returned_data_paths:
+            print_manager.debug(f"Attempting SPDF download (no_update=False) for {pyspedas_datatype}...")
+            download_attempt_paths = pyspedas_func(
                 trange=trange,
                 datatype=pyspedas_datatype,
                 no_update=False,
@@ -214,24 +221,49 @@ def download_spdf_data(trange, plotbot_key):
                 time_clip=True,
                 **kwargs
             )
-            if returned_data and isinstance(returned_data, list) and len(returned_data) > 0:
-                file_path = returned_data[0]
-                # TODO: Add this file path to a cleanup list?
+            # Ensure result is a list
+            if download_attempt_paths and isinstance(download_attempt_paths, list):
+                returned_data_paths = download_attempt_paths
+                print_manager.debug(f"Found/downloaded {len(returned_data_paths)} file(s) via SPDF (no_update=False).")
+                # TODO: Add these file paths to a cleanup list? (Comment remains)
             else:
-                print_manager.warning(f"SPDF download attempt for {plotbot_key} did not return a file path.")
+                # This case means no files were found even with download attempt
+                print_manager.warning(f"SPDF download attempt for {plotbot_key} did not return any file paths.")
+                returned_data_paths = [] # Ensure it's an empty list
 
     except Exception as e:
         print_manager.error(f"Error during pyspedas check/download for {plotbot_key}: {e}")
         # Optionally, log the full traceback for debugging
         # import traceback
         # print_manager.error(traceback.format_exc())
-        return False # Return False on error
+        return [] # Return empty list on error, consistent with failure below
 
-    if returned_data and isinstance(returned_data, list) and len(returned_data) > 0:
-        # Pyspedas returns a list of relative paths
-        # Return the list as is on success
-        return returned_data 
+    # Ensure all returned paths use SPDF casing before returning
+    spdf_cased_paths = []
+    if returned_data_paths: # Check if list is not empty
+        print_manager.debug(f"Ensuring SPDF casing for {len(returned_data_paths)} paths returned by pyspedas...")
+        for path in returned_data_paths:
+            # Need to handle potential None or non-string paths defensively
+            if not path or not isinstance(path, str):
+                print_manager.warning(f"Skipping invalid path returned by pyspedas: {path}")
+                continue
+            try:
+                # Extract just the filename to apply casing
+                directory, filename = os.path.split(path)
+                spdf_cased_filename = _ensure_spdf_casing(filename, plotbot_key)
+                # Reconstruct the path
+                spdf_cased_paths.append(os.path.join(directory, spdf_cased_filename))
+            except Exception as e_case:
+                print_manager.warning(f"Error applying casing to path '{path}' for key '{plotbot_key}': {e_case}. Using original path.")
+                spdf_cased_paths.append(path) # Append original path on error
+        
+        # Log if any changes were actually made (more accurate logging)
+        made_changes = any(orig != new for orig, new in zip(returned_data_paths, spdf_cased_paths) if orig and new)
+        if made_changes:
+             print_manager.debug(f"Applied SPDF casing adjustments to one or more paths.")
+                 
+        return spdf_cased_paths
     else:
-        print_manager.warning(f"Could not find or download {plotbot_key} from SPDF.")
-        # Return empty list on failure to be consistent with pyspedas downloadonly=True behavior
-        return [] 
+        # This handles cases where pyspedas returned None, empty list, or an error occurred
+        print_manager.warning(f"Could not find or download {plotbot_key} from SPDF (pyspedas returned no paths).")
+        return [] # Return empty list 

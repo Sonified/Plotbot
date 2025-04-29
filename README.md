@@ -462,15 +462,17 @@ For those interested in contributing or understanding the internals:
     *   **`multiplot.py`, `showdahodo.py`, `audifier.py`**: Implement other main features.
     *   **`data_classes/`**: Defines classes for each instrument/data product (e.g., `psp_mag_classes.py`, `psp_proton_classes.py`, `custom_variables.py`). These handle data attributes, plotting defaults, and sometimes calculations.
     *   **`calculations/`**: Houses more complex analysis code, like `calculate_proton_fits.py`.
-    *   **`data_download.py`, `data_import.py`, `get_data.py`**: Handle fetching and loading data.
-    *   **`data_cubby.py`, `data_tracker.py`**: Internal mechanisms for managing loaded data.
+    *   **`data_download*.py`, `data_import.py`, `get_data.py`**: Handle fetching and loading data.
+    *   **`data_cubby.py`**: Internal mechanism for managing loaded data and optional persistence.
+    *   **`data_tracker.py`**: Internal mechanism for tracking loaded time ranges.
     *   **`plot_manager.py`**: Handles the underlying Matplotlib plotting logic.
     *   **`print_manager.py`**: Controls console output.
     *   **`test_pilot.py`**: Custom pytest runner framework.
     *   **`utils.py`, `time_utils.py`, `plotbot_helpers.py`, etc.**: Utility functions.
 *   **`tests/`**: Contains all `pytest` tests.
 *   **`Install_Scripts/`**: Scripts for setting up the Conda environment.
-*   **`psp_data/`**: Default location for downloaded data (can be configured).
+*   **`psp_data/`**: Default location for downloaded raw data files (can be configured).
+*   **`data_cubby/`**: Default location for persistent object storage (if enabled).
 *   **`docs/`**: Additional documentation (if any).
 *   **`environment.yml`**: Defines the Conda environment.
 *   **`run_tests.py`**: Convenience script for running tests.
@@ -648,7 +650,7 @@ The process of getting data from a request (e.g., in `plotbot()` or `get_data()`
 
 1.  **`plotbot/get_data.py` (The Conductor):**
     *   This is the main entry point called by functions like `plotbot()` when data is needed for a specific time range (`trange`) and set of variables.
-    *   It first identifies the unique *types* of data required (e.g., `mag_RTN_4sa`, `proton`, `proton_fits`, `ham`) based on the input variables, consulting the configuration in `plotbot/data_classes/psp_data_types.py`.
+    *   It first identifies the unique *types* of data required (e.g., `mag_RTN_4_Sa_per_Cyc`, `proton`, `proton_fits`, `ham`) based on the input variables, consulting the configuration in `plotbot/data_classes/psp_data_types.py`.
     *   For each required data type, it orchestrates the subsequent steps.
 
 2.  **`plotbot/data_tracker.py` (The Cache Manager):**

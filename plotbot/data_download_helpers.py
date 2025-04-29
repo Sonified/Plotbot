@@ -1,5 +1,6 @@
 import os
 import re
+import glob
 from datetime import datetime, timezone, timedelta
 from dateutil.parser import parse
 from bs4 import BeautifulSoup
@@ -7,6 +8,52 @@ from .print_manager import print_manager
 from .time_utils import daterange, get_needed_6hour_blocks
 from .data_classes.psp_data_types import data_types
 from .server_access import server_access
+
+#====================================================================
+# FUNCTION: _ensure_spdf_casing
+#====================================================================
+def _ensure_spdf_casing(filename, plotbot_key):
+    """
+    Ensures a given filename conforms to the SPDF naming convention casing.
+
+    Looks up the plotbot_key in data_types. If an 'spdf_file_pattern' exists,
+    it applies the necessary case transformations. Otherwise, returns the 
+    original filename.
+
+    Args:
+        filename (str): The input filename (potentially with Berkeley casing).
+        plotbot_key (str): The Plotbot data type key.
+
+    Returns:
+        str: The filename adjusted to SPDF casing, or the original filename.
+    """
+    config = data_types.get(plotbot_key)
+    
+    # Only proceed if config exists and spdf pattern is defined
+    if not config or 'spdf_file_pattern' not in config:
+        print_manager.debug(f"No SPDF casing specified for {plotbot_key}, returning original: {filename}")
+        return filename
+
+    spdf_filename = filename # Start with the original name
+
+    # Apply specific transformations based on the key
+    # These rules mimic the logic previously in download_spdf_data.py
+    if plotbot_key == 'mag_RTN_4sa':
+        spdf_filename = spdf_filename.replace('RTN', 'rtn').replace('Sa', 'sa').replace('Cyc', 'cyc')
+    elif plotbot_key == 'mag_SC_4sa':
+        spdf_filename = spdf_filename.replace('SC', 'sc').replace('Sa', 'sa').replace('Cyc', 'cyc')
+    elif plotbot_key == 'spi_sf00_l3_mom':
+        spdf_filename = spdf_filename.replace('L3', 'l3') # Case sensitive replace
+    elif plotbot_key == 'spe_sf0_pad':
+        spdf_filename = spdf_filename.replace('L3', 'l3') # Case sensitive replace
+    # Add more rules here if other types need specific case adjustments defined by spdf_file_pattern
+
+    if spdf_filename != filename:
+        print_manager.debug(f"Adjusted filename casing for SPDF standard ({plotbot_key}): {filename} -> {spdf_filename}")
+    else:
+        print_manager.debug(f"Filename already matches SPDF casing for {plotbot_key}: {filename}")
+        
+    return spdf_filename
 
 #====================================================================
 # FUNCTION: check_local_files, Verifies data file availability locally
@@ -225,54 +272,66 @@ def case_insensitive_file_search(directory, pattern_base):
 #====================================================================
 # FUNCTION: process_directory, Orchestrates Downloading of latest file version from a directory
 #====================================================================
-def process_directory(dir_url, pattern_str, date_info, base_local_path):
+def process_directory(dir_url, pattern_str, date_info, base_local_path, plotbot_key):
     """
     Orchestrate the process of accessing a remote directory and downloading the 
-    latest version of a needed file.
+    latest version of a needed file, ensuring SPDF filename casing.
 
     Handles authentication, file listing, version comparison, local path setup, 
-    and initiates the download.
+    and initiates the download. Saves the file using SPDF standard casing.
 
     Args:
         dir_url: The URL of the remote directory containing the data file.
         pattern_str: The regex pattern for matching the desired file and 
-                     extracting its version number.
+                     extracting its version number (Berkeley pattern).
         date_info: A dictionary containing date details used for logging and 
                    path construction: {'year': YYYY, ...}.
         base_local_path: The base local directory path template for saving the file.
+        plotbot_key (str): The Plotbot data type key (used for casing).
 
     Returns:
-        True if the file was successfully downloaded, False if an error occurred 
-        or the file already existed locally, None if the directory or file was 
-        not found on the server.
+        tuple[bool, str | None]: A tuple containing:
+            - bool: True if the file was successfully downloaded, False otherwise.
+            - str | None: The SPDF-cased filename if successful, None otherwise.
     """
     response = authenticate_session(dir_url)  # Attempt to access the directory, handling login if needed.
     
     if response.status_code == 404: # Check if the directory itself wasn't found.
         print(f"\nERROR: No data available at {dir_url}") # Indicate directory not found.
-        return None # Step out of function.
+        return (False, None) # Step out of function.
     
     if response.status_code != 200: # Check for other access errors (like permission denied after auth).
         print(f"Failed to access {dir_url} with status code {response.status_code}") # Indicate generic access failure.
-        return None # Step out of function.
+        return (False, None) # Step out of function.
         
     # If directory accessed successfully, parse the HTML listing.
-    latest_file = process_file_listing(response.text, pattern_str, date_info) # Find the filename with the highest version number.
+    # Find the filename with the highest version number (might have Berkeley casing)
+    latest_file_berkeley_case = process_file_listing(response.text, pattern_str, date_info) 
     
-    if not latest_file: # Check if any matching file was found in the listing.
-        return None # Step out of function.
+    if not latest_file_berkeley_case: # Check if any matching file was found in the listing.
+        return (False, None) # Step out of function.
         
-    # Prepare the local save location.
-    local_file_path = setup_local_path(base_local_path, date_info['year'], latest_file) # Get the full local path, checks if it exists.
+    # Ensure the filename uses SPDF standard casing BEFORE checking local existence or downloading
+    latest_file_spdf_case = _ensure_spdf_casing(latest_file_berkeley_case, plotbot_key)
+
+    # Prepare the local save location USING THE SPDF-CASED FILENAME.
+    # This checks if a file with the SPDF name already exists.
+    local_file_path = setup_local_path(base_local_path, date_info['year'], latest_file_spdf_case) 
     
     if not local_file_path:  # Check if setup_local_path returned None (meaning file already exists).
-        return None # Step out of function.
+        print_manager.debug(f"File {latest_file_spdf_case} already exists locally (SPDF case check).")
+        return (False, None) # Indicate file exists, return None for filename
         
-    # Construct the full URL for the specific file to download.
-    file_url = dir_url + latest_file
+    # Construct the full URL for the specific file to download (using the original Berkeley-cased name)
+    file_url = dir_url + latest_file_berkeley_case # Download URL must match server's filename
     
-    # Initiate the actual download process.
-    return download_file(server_access.session, file_url, local_file_path) # Return True on success, False on download failure.
+    # Initiate the actual download process, saving to the SPDF-cased local path.
+    download_success = download_file(server_access.session, file_url, local_file_path) 
+    
+    if download_success:
+        return (True, latest_file_spdf_case) # Return True and the SPDF-cased filename
+    else:
+        return (False, None) # Return False and None for filename
 
 #====================================================================
 # FUNCTION: download_file, ✨ Downloads a single file and saves it locally ✨
@@ -404,7 +463,8 @@ def setup_local_path(base_local_path, year, filename):
     """
     Construct the full local path for a file and check if it exists.
 
-    Ensures the target directory exists before checking for the file.
+    Ensures the target directory exists before checking for the file. 
+    Uses case-insensitive check for existing files.
 
     Args:
         base_local_path: The base directory path template from the 
@@ -412,22 +472,47 @@ def setup_local_path(base_local_path, year, filename):
                          `"psp_data/fields/l2/{data_level}/"`).
         year: The year (integer or string) corresponding to the file's date.
         filename: The name of the file (e.g., 
-                  `"psp_fld_l2_mag_rtn_4sa_20230101_v02.cdf"`).
+                  `"psp_fld_l2_mag_rtn_4sa_per_cyc_20230101_v02.cdf"`). Should be SPDF-cased.
 
     Returns:
-        The full local path string if the file does *not* already exist, 
+        The full local path string if the file does *not* already exist (case-insensitive), 
         otherwise returns None.
     """
     local_dir = os.path.join(base_local_path, str(year))
     if not os.path.exists(local_dir):
-        os.makedirs(local_dir)
-    local_file_path = os.path.join(local_dir, filename)
+        try:
+            os.makedirs(local_dir)
+            print_manager.debug(f"Created directory: {local_dir}")
+        except OSError as e:
+            print_manager.error(f"Failed to create directory {local_dir}: {e}")
+            return None # Cannot proceed if directory creation fails
+
+    local_file_path = os.path.join(local_dir, filename) # Full target path with SPDF case
     
-    # Check if file already exists
-    if os.path.exists(local_file_path):
-        print_manager.debug(f'File {local_file_path} already exists, skipping download.')
-        return None
-    return local_file_path
+    # Perform a case-insensitive check for file existence
+    target_filename_lower = filename.lower()
+    exists_case_insensitive = False
+    try:
+        if os.path.exists(local_dir): # Check again in case of race condition
+             dir_contents = os.listdir(local_dir)
+             for item in dir_contents:
+                 if item.lower() == target_filename_lower:
+                     exists_case_insensitive = True
+                     existing_file_path = os.path.join(local_dir, item) # Get path of actual existing file
+                     print_manager.debug(f"File already exists (case-insensitive check): {existing_file_path}. Target: {local_file_path}")
+                     break
+    except Exception as e:
+        print_manager.warning(f"Error checking directory {local_dir} for case-insensitive existence: {e}")
+        # Fallback to simple existence check if listing fails
+        if os.path.exists(local_file_path):
+             exists_case_insensitive = True
+             print_manager.debug(f"File already exists (fallback check): {local_file_path}")
+
+    if exists_case_insensitive:
+        return None # File exists (case-insensitively), skipping download/overwrite.
+        
+    # If we reach here, the file does not exist case-insensitively
+    return local_file_path # Return the target SPDF-cased path
 
 #====================================================================
 # FUNCTION: create_pattern_string, Creates regex pattern for matching data files

@@ -19,6 +19,7 @@ from .data_classes.psp_electron_classes import epad, epad_hr
 from .data_classes.psp_proton_classes import proton, proton_hr
 from .data_classes.psp_proton_fits_classes import proton_fits_class, proton_fits
 from .data_classes.psp_ham_classes import ham_class, ham
+from .data_tracker import store_downloaded_cdfs
 
 def debug_object(obj, prefix=""):
     """Helper function to debug object attributes"""
@@ -254,24 +255,34 @@ def get_data(trange: List[str], *variables):
         server_mode = plotbot.config.data_server # <-- With this line
         print_manager.debug(f"Server mode for {data_type}: {server_mode}")
         
-        download_successful = False # Assume files might exist locally
+        # Initialize list to store downloaded filenames for this data_type
+        downloaded_filenames = []
 
         if server_mode == 'spdf':
             print_manager.debug(f"Attempting SPDF download for {data_type}...")
-            download_successful = download_spdf_data(trange, data_type)
+            downloaded_filenames = download_spdf_data(trange, data_type)
         elif server_mode == 'berkeley':
             print_manager.debug(f"Attempting Berkeley download for {data_type}...")
-            download_successful = download_berkeley_data(trange, data_type)
+            downloaded_filenames = download_berkeley_data(trange, data_type)
         elif server_mode == 'dynamic':
             print_manager.debug(f"Attempting SPDF download (dynamic mode) for {data_type}...")
-            download_successful = download_spdf_data(trange, data_type)
-            if not download_successful:
+            downloaded_filenames = download_spdf_data(trange, data_type)
+            # Check if the list is empty or None (indicating failure/no files)
+            if not downloaded_filenames:
                 print_manager.debug(f"SPDF download failed/incomplete for {data_type}, falling back to Berkeley...")
-                download_successful = download_berkeley_data(trange, data_type)
+                downloaded_filenames = download_berkeley_data(trange, data_type)
         else:
             print_manager.warning(f"Invalid config.data_server mode: '{server_mode}'. Defaulting to Berkeley.")
-            download_successful = download_berkeley_data(trange, data_type)
+            downloaded_filenames = download_berkeley_data(trange, data_type)
             
+        # Store the list of downloaded filenames (even if empty) in the temporary cache
+        if downloaded_filenames is not None: # Ensure we have a list (could be empty)
+             store_downloaded_cdfs(data_type, trange, downloaded_filenames)
+        else:
+             # Should not happen based on download functions returning lists, but handle defensively
+             print_manager.warning(f"Download function for {data_type} returned None instead of a list. Storing empty list.")
+             store_downloaded_cdfs(data_type, trange, [])
+             
         # The import logic below relies on files being present locally if needed.
         # The download functions are responsible for ensuring this.
         # We proceed to check if the *in-memory* cache needs updating.
@@ -322,11 +333,42 @@ def get_data(trange: List[str], *variables):
 
             if hasattr(class_instance, 'update'):
                 class_instance.update(data_obj)
+                
+                # !!! CRITICAL FIX: Stash the updated instance AFTER updating !!!
+                # This ensures the instance in data_cubby has the latest data
+                # and triggers save_to_disk if persistence is enabled.
+                print_manager.debug(f"---> Stashing updated instance for {class_name} AFTER update.")
+                data_cubby.stash(class_instance, class_name=class_name)
+                # -------------------------------------------------------------
+                
+                # Update the data tracker with the actual range from the imported data
+                # Use the datetime_array from the updated class instance
+                if hasattr(class_instance, 'datetime_array') and class_instance.datetime_array is not None and len(class_instance.datetime_array) > 0:
+                    actual_start_dt = class_instance.datetime_array[0]
+                    actual_end_dt = class_instance.datetime_array[-1]
+                    # Convert numpy.datetime64 back to string format for tracker
+                    dt_format = '%Y-%m-%d/%H:%M:%S.%f'
+                    actual_start_str = pd.to_datetime(str(actual_start_dt)).strftime(dt_format)
+                    actual_end_str = pd.to_datetime(str(actual_end_dt)).strftime(dt_format)
+                    actual_trange = [actual_start_str, actual_end_str]
+                    print_manager.debug(f"Updating tracker for {data_type} with actual imported range: {actual_trange}")
+                    global_tracker.update_imported_range(actual_trange, data_type)
+                else:
+                    print_manager.warning(f"Could not determine actual imported range for {data_type} after update.")
+                    # Fallback: Use requested trange? Or log error?
+                    # For now, just warn. Tracker won't be updated with precise range.
             else:
                 print_manager.warning(f"{data_type} class instance has no update method")
         else:
             print_manager.status(f"📤 Using existing {data_type} data, update not needed.")
-    
+            # --- ADDED: Conditional Stash for PKL Mode ---
+            # If PKL storage is on, stash the retrieved instance to ensure
+            # save_to_disk is triggered even if no update happened.
+            if data_cubby.use_pkl_storage and class_instance:
+                 print_manager.debug(f"---> Stashing instance for {class_name} in PKL mode (skipped update).")
+                 data_cubby.stash(class_instance, class_name=class_name)
+            # --------------------------------------------
+
     #====================================================================
     # STEP 3: FINALIZATION
     #====================================================================

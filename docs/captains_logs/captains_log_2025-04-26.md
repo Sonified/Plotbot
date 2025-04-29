@@ -10,6 +10,16 @@
 - Fixed Pyspedas verbosity issue where INFO logs appeared even when `print_manager.pyspedas_verbose` was `False`. Corrected logic in `print_manager._configure_pyspedas_logging` to always apply/remove the filter based on the flag, regardless of `config.data_server`. Cleaned up diagnostic prints.
 - Cleaned up main `Plotbot.ipynb` and created two new example notebooks: `Plotbot_Examples_Multiplot.ipynb` and `Plotbot_Examples_Custom_Variables.ipynb`.
 
+## PKL Saving Fixes
+
+- **Issue:** Encountered several issues with the daily PKL saving mechanism (`data_cubby.save_to_disk`) when testing (`test_pkl_integrity_and_cache_load`).
+- **Fixes:**
+    - Resolved a `NameError` in `get_data.py` related to the conditional stash logic introduced previously.
+    - Corrected `__getattr__` methods in `psp_mag_classes.py` to properly raise `AttributeError`, preventing a `RecursionError` during `copy.deepcopy` needed for daily PKL creation.
+    - Fixed case-insensitive regex matching (`flags=re.IGNORECASE`) for source CDF filenames within `save_to_disk` in `data_cubby.py`.
+    - Corrected the `re.sub` pattern in `save_to_disk` to properly remove the `.cdf` extension when generating PKL filenames.
+- **Outcome:** The `test_pkl_integrity_and_cache_load` now passes, confirming that daily PKL files are saved correctly, named appropriately, and loaded from cache as expected.
+
 --- Pushing Changes ---
 - **Version Tag:** `2025_04_26_v1.11`
 - **Commit Message:** `fix: Correct Pyspedas verbosity & cleanup notebooks`

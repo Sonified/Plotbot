@@ -15,8 +15,9 @@ import pytest
 import numpy as np
 from plotbot import get_data, mag_rtn_4sa, proton, plt, plotbot
 from plotbot.data_classes.custom_variables import custom_variable, CustomVariablesContainer
-from plotbot.test_pilot import phase, system_check
+from .test_pilot import phase, system_check
 from datetime import datetime
+from plotbot.plot_manager import plot_manager
 
 @pytest.fixture
 def test_environment():

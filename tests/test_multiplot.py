@@ -33,7 +33,7 @@ from plotbot import mag_rtn_4sa, proton, plt
 from plotbot.data_classes.psp_proton_fits_classes import proton_fits as proton_fits_instance
 from plotbot.data_classes.custom_variables import custom_variable
 from plotbot.multiplot import multiplot
-from plotbot.test_pilot import phase, system_check
+from .test_pilot import phase, system_check
 from plotbot.print_manager import print_manager
 from plotbot.data_cubby import data_cubby
 from plotbot.data_import import import_data_function

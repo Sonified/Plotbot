@@ -22,7 +22,8 @@ from plotbot.data_classes.psp_data_types import data_types # For config lookups 
 from plotbot import mag_rtn_4sa, mag_sc_4sa, proton, epad # Data variables needed for tests
 from plotbot import print_manager # For logging
 from plotbot import plt # For plot closing
-from plotbot.test_pilot import phase, system_check # Test helpers
+from .test_pilot import phase, system_check # Changed to relative import
+# from plotbot.time_utils import daterange_to_isostrings # REMOVED ensure_iso_datetime - Also removing this func import
 
 # Remove the old imports
 # import plotbot # Import the main package to access config # Remove this line

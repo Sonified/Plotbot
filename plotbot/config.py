@@ -22,5 +22,10 @@ Options:
 # --- Other Future Configuration Settings Can Go Here --- 
         # Example: self.default_plot_style = 'seaborn-v0_8-darkgrid'
 
+# Data persistence settings are now controlled directly via data_cubby
+# Example: from plotbot.data_cubby import data_cubby
+#          data_cubby.use_pkl_storage = True
+#          data_cubby.set_storage_directory('/custom/path')
+
 # Create a single, global instance of the configuration
-config = PlotbotConfig() 
+config = PlotbotConfig()

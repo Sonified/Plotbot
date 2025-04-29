@@ -144,7 +144,16 @@ def resample(data, times, new_times): #Currently unused
 def debug_plot_variable(var, request, print_manager):
         """Debug function to print detailed information about a plot variable"""
         print_manager.debug(f"\nDEBUG:")
-        print_manager.debug(f"var: {var}")
+        # Modify the print to show only first 2 elements of the data array within var
+        try:
+            # Attempt to show only the first 2 elements/rows of var.data if available
+            data_repr = repr(var.data[:2]) + ('...' if len(var.data) > 2 else '')
+            print_manager.debug(f"var data sample: {data_repr}")
+        except:
+            # Fallback if var.data slicing fails or var doesn't have data
+            print_manager.debug(f"var: (Could not get data sample, printing type) {type(var)}")
+        
+        #print_manager.debug(f"var: {var}") # Original problematic line
         print_manager.debug(f"var type: {type(var)}")
         print_manager.debug(f"var.datetime_array type: {type(var.datetime_array)}")
         

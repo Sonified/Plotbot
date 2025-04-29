@@ -9,7 +9,7 @@ from dateutil.parser import parse
 from fnmatch import fnmatch # Import for wildcard matching
 from .print_manager import print_manager
 from .time_utils import daterange
-from .data_tracker import global_tracker
+from .data_tracker import global_tracker, retrieve_downloaded_cdfs # Added retrieve_downloaded_cdfs
 from .data_classes.psp_data_types import data_types as psp_data_types # UPDATED PATH
 from .data_cubby import data_cubby
 # from .plotbot_helpers import find_local_fits_csvs # This function is defined locally below
@@ -86,7 +86,8 @@ def find_local_csvs(base_path, file_patterns, date_str):
 
     return found_files
 
-DataObject = namedtuple('DataObject', ['times', 'data'])  # Define DataObject structure earlier
+# DataObject = namedtuple('DataObject', ['times', 'data'])  # Define DataObject structure earlier # OLD
+DataObject = namedtuple('DataObject', ['times', 'data', 'source_filenames']) # NEW: Added source_filenames
 
 def import_data_function(trange, data_type):
     """Import data function that reads CDF or calculates FITS CSV data within the specified time range."""
@@ -98,6 +99,13 @@ def import_data_function(trange, data_type):
     # Add time tracking for function entry
     print_manager.time_input("import_data_function", trange)
     
+    # Retrieve the list of downloaded CDF filenames associated with this import request
+    # Do this BEFORE checking the source type (CDF, FITS, HAM)
+    downloaded_filenames = retrieve_downloaded_cdfs(data_type, trange)
+    if downloaded_filenames is None:
+        downloaded_filenames = [] # Ensure it's always a list
+    print_manager.debug(f"Retrieved {len(downloaded_filenames)} potential source filenames for this import request: {downloaded_filenames[:3]}...")
+
     # Determine if this is a request for calculated FITS data
     # We'll use a placeholder data_type like 'fits_calculated' for now
     # OR check if requested data_type requires sf00/sf01 calculation
@@ -177,6 +185,7 @@ def import_data_function(trange, data_type):
         all_raw_data_list = [] # List to store DataFrames from each file
         dates_processed = []
         dates_missing_files = []
+        found_fits_files = [] # List to store paths of FITS files processed
 
         for single_date in daterange(start_time, end_time):
             date_str = single_date.strftime('%Y%m%d')
@@ -192,6 +201,7 @@ def import_data_function(trange, data_type):
                      print_manager.warning(f"Multiple sf00 files found for {date_str}, using first: {sf00_files[0]}")
 
                 sf00_path = sf00_files[0]
+                found_fits_files.append(sf00_path) # Add found file to list
                 print_manager.debug(f"  Found sf00 file: '{os.path.basename(sf00_path)}'")
 
                 try:
@@ -314,13 +324,40 @@ def import_data_function(trange, data_type):
 
         print_manager.debug(f"Sorted all raw FITS data based on time.")
 
-        # Create and return DataObject containing RAW data
-        data_object = DataObject(times=times_sorted, data=data_sorted)
-        global_tracker.update_imported_range(trange, data_type) # Track successful import
-        print_manager.status(f"✅ - FITS raw data import complete for range {trange}.\n")
-        # Calculate output range based on sorted times
-        output_range_dt = cdflib.epochs.CDFepoch.to_datetime(times_sorted[[0, -1]])
-        print_manager.time_output("import_data_function", output_range_dt.tolist())
+        # Filter final combined dataframe by the precise time range
+        if data_sorted.empty:
+             print_manager.warning(f"No raw FITS data found for the requested range: {trange}")
+             # Return an empty DataObject with the collected filenames
+             return DataObject(times=np.array([]), data={}, source_filenames=found_fits_files)
+
+        # Convert numeric time column to datetime objects (assuming TT2000 nanoseconds from epoch 2000-01-01 12:00:00)
+        # TT2000 epoch in UTC
+        tt2000_epoch = datetime(2000, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        # Convert nanoseconds to Timestamps
+        times_dt = [tt2000_epoch + timedelta(microseconds=ns / 1000) for ns in data_sorted['time']]
+        data_sorted['datetime'] = pd.to_datetime(times_dt)
+
+        # Filter by the precise start and end times
+        mask = (data_sorted['datetime'] >= start_time) & (data_sorted['datetime'] <= end_time)
+        filtered_raw_data = data_sorted[mask].copy() # Use copy to avoid SettingWithCopyWarning
+
+        if filtered_raw_data.empty:
+            print_manager.warning(f"Raw FITS data found, but none within the precise time range: {start_time} to {end_time}")
+            # Return an empty DataObject with the collected filenames
+            return DataObject(times=np.array([]), data={}, source_filenames=found_fits_files)
+
+        # Prepare the DataObject
+        times_sorted = filtered_raw_data['time'].values # Use the original numeric time
+        data_sorted = filtered_raw_data.drop(columns=['time', 'datetime']).to_dict(orient='list') # Drop time/datetime, convert rest to dict
+
+        # Convert lists back to numpy arrays for consistency
+        for key in data_sorted:
+            data_sorted[key] = np.array(data_sorted[key])
+
+        data_object = DataObject(times=times_sorted, data=data_sorted, source_filenames=found_fits_files) # Include collected FITS filenames
+
+        print_manager.success(f"Raw FITS data import complete for {len(times_sorted)} points.")
+        print_manager.time_output("import_data_function", trange) # Log output with actual range
         return data_object
 
     # --- Handle Hammerhead (ham) CSV Loading ---
@@ -506,7 +543,7 @@ def import_data_function(trange, data_type):
                   combined_data[key] = np.full(len(times_sorted), np.nan)
 
         # Create DataObject with sorted TT2000 times and sorted data dictionary
-        data_obj = DataObject(times=times_sorted, data=combined_data)
+        data_obj = DataObject(times=times_sorted, data=combined_data, source_filenames=[])
         print_manager.status(f"Successfully loaded Hammerhead data with {len(times_sorted)} time points")
         # Calculate output range from sorted TT2000 times
         if len(times_sorted) > 0:
@@ -741,7 +778,7 @@ def import_data_function(trange, data_type):
                 data_sorted[var_name] = None
 
         # Create and return DataObject for CDF
-        data_object = DataObject(times=times_sorted, data=data_sorted)
+        data_object = DataObject(times=times_sorted, data=data_sorted, source_filenames=downloaded_filenames)
         global_tracker.update_imported_range(trange, data_type)
         print_manager.status(f"☑️ - CDF Data import complete for {data_type} range {trange}.\n")
         output_range = [cdflib.epochs.CDFepoch.to_datetime(times_sorted[0]),

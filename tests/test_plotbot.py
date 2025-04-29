@@ -28,9 +28,11 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from plotbot import mag_rtn_4sa, proton, plt
 from plotbot.data_classes.custom_variables import custom_variable
-from plotbot.plotbot_main import plotbot
-from plotbot.test_pilot import phase, system_check
+from plotbot import plotbot
+from .test_pilot import phase, system_check
 from plotbot.print_manager import print_manager
+from plotbot.plot_manager import plot_manager
+from plotbot.data_cubby import data_cubby
 
 @pytest.mark.mission("Derived Variable Time Range Update")
 def test_derived_variable_time_update():

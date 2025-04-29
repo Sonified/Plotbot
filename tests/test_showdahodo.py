@@ -34,7 +34,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from plotbot import mag_rtn_4sa, proton, epad, proton_fits
 from plotbot.data_classes.custom_variables import custom_variable
 from plotbot.showdahodo import showdahodo
-from plotbot.test_pilot import phase, system_check
+from .test_pilot import phase, system_check
 from plotbot.print_manager import print_manager
 from plotbot.data_cubby import data_cubby
 

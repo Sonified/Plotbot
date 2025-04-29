@@ -14,8 +14,8 @@ cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_comp
 import pytest
 import numpy as np
 from plotbot import get_data, mag_rtn_4sa, proton
-from plotbot.custom_variables import custom_variable
-from plotbot.test_pilot import phase, system_check
+from plotbot.data_classes.custom_variables import custom_variable
+from .test_pilot import phase, system_check
 from plotbot.print_manager import print_manager
 
 @pytest.mark.mission("Complex One-Line Expressions")

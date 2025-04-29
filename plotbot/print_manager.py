@@ -304,7 +304,7 @@ class print_manager_class:
             in_str = f"{input_trange[0]} to {input_trange[1]}" if isinstance(input_trange, list) and len(input_trange) >= 2 else str(input_trange)
             out_str = f"{output_trange[0]} to {output_trange[1]}" if isinstance(output_trange, list) and len(output_trange) >= 2 else str(output_trange)
             print(self._format_message(f"{prefix}🔄 {function_name} TRANSFORM: {in_str} → {out_str}"))
-    
+
     def _get_level_prefix(self, level):
         """Get the prefix for the specified severity level."""
         if level == "critical":
@@ -571,6 +571,17 @@ class print_manager_class:
         if self.processing_enabled:
             prefix = self.processing_prefix if self.category_prefix_enabled else ""
             print(self._format_message(f"{prefix}{msg}"))
+            
+    def storage_status(self, msg):
+        """Print storage/persistence status message."""
+        if self.variable_basic_enabled:  # Use the same condition as status()
+            print(self._format_message(f"💾 {msg}"))
+
+    def storage_debug(self, msg):
+        """Print detailed storage/persistence debug message."""
+        if self.debug_mode:  # Use the same condition as debug()
+            prefix = self.debug_prefix if self.category_prefix_enabled else ""
+            print(self._format_message(f"{prefix}💾 {msg}"))
 
 # Create a singleton instance
 print_manager = print_manager_class()

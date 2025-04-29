@@ -13,9 +13,9 @@ cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_cust
 import pytest
 import numpy as np
 from plotbot import get_data, mag_rtn_4sa, proton
-from plotbot.custom_variables import custom_variable
+from plotbot.data_classes.custom_variables import custom_variable
 from plotbot.plotbot_main import plotbot as plot_main
-from plotbot.test_pilot import phase, system_check
+from .test_pilot import phase, system_check
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
 

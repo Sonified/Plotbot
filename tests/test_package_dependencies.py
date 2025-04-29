@@ -2,7 +2,10 @@
 # conda run -n plotbot_env python -m pytest tests/test_package_dependencies.py -v -s
 
 import pytest
-from plotbot.test_pilot import phase, system_check
+import importlib
+import pkg_resources
+from .test_pilot import phase, system_check
+import warnings
 
 # Attempt to import all major dependencies listed in environment.yml
 # This acts as a basic smoke test to ensure the environment is set up correctly.
