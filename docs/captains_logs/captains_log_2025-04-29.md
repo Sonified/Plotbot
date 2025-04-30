@@ -58,4 +58,4 @@
 - **SPDF Download Tests:** Added a specific SPDF download test (`test_pyspedas_download_with_cleanup`) to `tests/test_pyspedas_download.py`. Also modified this test and the similar one in `tests/test_stardust.py` (`test_stardust_spdf_download_with_cleanup`) to *not* delete the downloaded CDF file after the test runs. This allows the file to remain cached locally for subsequent test runs or manual inspection.
 
 ---
-**Session Closed (April 30, 2025)** 
+**Session Closed (April 29, 2025)** 
