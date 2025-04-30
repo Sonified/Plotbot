@@ -752,5 +752,141 @@ def test_stardust_custom_numpy(test_environment):
 
     # plt.pause(0.5) # Display plot briefly - REMOVED FOR DEBUGGING
 
-# --- End Copied Custom Variable Tests --- 
+# === SPDF Download Test (Adapted from test_pyspedas_download.py) ===
+
+@pytest.mark.mission("Stardust Test: Basic SPDF Download (mag_RTN_4sa)")
+def test_stardust_spdf_download_with_cleanup():
+    """Tests the basic SPDF download logic, ensuring cleanup before download.
+
+    1. Cleans up any existing local file for the target date/type.
+    2. Calls the SPDF download function (expecting download).
+    3. Calls the SPDF download function again (expecting local find).
+    4. Cleans up the downloaded file.
+    Uses mag_RTN_4sa data type.
+    """
+    plotbot_key = 'mag_RTN_4sa'
+    # Use the same time range as the original debug test for consistency
+    trange_test = ['2018-10-22 06:00:00', '2018-10-22 18:00:00']
+    test_date_str = '20181022'
+    test_year = '2018'
+
+    # Import the download function directly
+    from plotbot.data_download_pyspedas import download_spdf_data
+
+    # --- Helper Function to find and delete files ---
+    # (Adapted from test_pyspedas_download.py helpers)
+    def find_and_delete_target_files(data_key, date_str, year_str):
+        print(f"\n--- Attempting cleanup for {data_key} ({date_str}) ---")
+        # Need WORKSPACE_ROOT, data_types
+        if data_key not in data_types:
+            print(f"  Error: Data type key '{data_key}' not found in psp_data_types.")
+            return False
+        config = data_types[data_key]
+        
+        # Construct expected directory (Assuming standard structure)
+        # This might need refinement based on where download_spdf_data *actually* puts things
+        # Let's base it on the 'pyspedas_subpath' logic from the other test file
+        pyspedas_subpath = os.path.join('fields', 'l2', 'mag_rtn_4_per_cycle', year_str) # Specific to mag_RTN_4sa
+        expected_dir = os.path.join(WORKSPACE_ROOT, 'psp_data', pyspedas_subpath)
+        
+        # Construct SPDF pattern from config if available, otherwise guess
+        spdf_pattern_tmpl = config.get('spdf_file_pattern', # Use SPDF pattern directly
+                                      f'psp_fld_l2_mag_rtn_4_sa_per_cyc_{date_str}_v*.cdf') # Fallback guess
+
+        # Format the template if it has placeholders
+        try:
+            spdf_filename_pattern = spdf_pattern_tmpl.format(data_level=config.get('data_level', 'l2'), date_str=date_str)
+        except KeyError:
+            spdf_filename_pattern = spdf_pattern_tmpl # Use as is if no formatting needed/possible
+
+        full_glob_pattern = os.path.join(expected_dir, spdf_filename_pattern)
+        print(f"  Searching for files matching: {full_glob_pattern}")
+        
+        files_to_delete = glob.glob(full_glob_pattern)
+        if not files_to_delete:
+            print("  No matching files found to delete.")
+            return True # No files to delete is success
+
+        print(f"  Found {len(files_to_delete)} file(s) to delete:")
+        all_deleted = True
+        for f_path in files_to_delete:
+            try:
+                if os.path.exists(f_path):
+                    os.remove(f_path)
+                    print(f"    Deleted: {os.path.basename(f_path)}")
+                    if os.path.exists(f_path):
+                        print(f"    ERROR: File still exists after delete attempt: {f_path}")
+                        all_deleted = False
+                else:
+                     print(f"    Already gone: {os.path.basename(f_path)}") # Should not happen if glob found it
+            except OSError as e:
+                print(f"    Error deleting {f_path}: {e}")
+                all_deleted = False
+        return all_deleted
+    # --- End Helper ---
+
+    phase(1, f"Initial Cleanup for {plotbot_key} ({test_date_str})")
+    cleanup_ok = find_and_delete_target_files(plotbot_key, test_date_str, test_year)
+    system_check("Initial File Cleanup", cleanup_ok, "Should ensure no target files exist initially.")
+    if not cleanup_ok:
+        pytest.fail("Initial cleanup failed, cannot proceed.")
+
+    phase(2, f"Enable Debug Logging and First SPDF Call ({plotbot_key})")
+    print_manager.show_debug = True # Enable debug for this test
+    print(f"Debug logging enabled: {print_manager.show_debug}")
+
+    downloaded_file_relative_path = None # To store path for cleanup
+
+    print(f"Calling download_spdf_data (1st time) with trange={trange_test}, key='{plotbot_key}'")
+    result1 = False
+    returned_data1 = None
+    try:
+        # Pyspedas downloadonly=True returns a list of *relative* paths if successful
+        returned_data1 = download_spdf_data(trange_test, plotbot_key)
+        result1 = isinstance(returned_data1, list) and len(returned_data1) > 0
+        if result1:
+             downloaded_file_relative_path = returned_data1[0] # Store relative path
+             print(f"First call successful, returned path: {downloaded_file_relative_path}")
+        else:
+             print(f"First call failed or returned no path. Result: {returned_data1}")
+
+    except Exception as e:
+        print(f"Error during first download_spdf_data call: {e}")
+        traceback.print_exc() # Print detailed traceback
+        pytest.fail(f"First download_spdf_data call raised an exception: {e}")
+
+    system_check("First SPDF Call Execution", result1, "First call should successfully download the file.")
+    if not result1:
+        pytest.fail("First SPDF download call failed, cannot proceed.") # Stop if download failed
+
+    phase(3, f"Second SPDF Call for {plotbot_key} (expect local find)")
+    print(f"Calling download_spdf_data (2nd time) with trange={trange_test}, key='{plotbot_key}'")
+    result2 = False
+    returned_data2 = None
+    try:
+        # This call should now find the file locally
+        returned_data2 = download_spdf_data(trange_test, plotbot_key)
+        result2 = isinstance(returned_data2, list) and len(returned_data2) > 0
+        if result2:
+             print(f"Second call successful, returned path: {returned_data2[0]}")
+             # Verify paths match
+             assert returned_data2[0] == downloaded_file_relative_path, "Path from second call should match first call"
+        else:
+             print(f"Second call failed or returned no path. Result: {returned_data2}")
+
+    except Exception as e:
+        print(f"Error during second download_spdf_data call: {e}")
+        traceback.print_exc() # Print detailed traceback
+        pytest.fail(f"Second download_spdf_data call raised an exception: {e}")
+
+    system_check("Second SPDF Call Execution", result2, "Second call should find the file locally.")
+
+    # phase(4, "Final Cleanup of Downloaded File") # <<< COMMENTED OUT
+    # # Final cleanup uses the helper again
+    # cleanup_final_ok = find_and_delete_target_files(plotbot_key, test_date_str, test_year)
+    # system_check("Final File Cleanup", cleanup_final_ok, f"Should delete the downloaded file for {plotbot_key} ({test_date_str}).")
+
+    print_manager.show_debug = False # Disable debug after test
+
+# === End SPDF Download Test ===
 
