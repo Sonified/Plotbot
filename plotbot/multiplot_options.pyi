@@ -40,9 +40,10 @@ class AxisOptions:
 class MultiplotOptions:
     # --- Class Attributes ---
     PRESET_CONFIGS: ClassVar[Dict[str, Dict[str, Any]]]
-    axes: ClassVar[Dict[int, AxisOptions]] # Stores AxisOptions instances
-
     # --- Instance Attributes (Defaults set in reset) ---
+    _global_y_limit: Optional[Tuple[float, float]]
+    axes: Dict[int, AxisOptions] # Stores AxisOptions instances
+
     window: str
     position: str
     width: Union[int, float] # Can be overridden by presets
@@ -95,6 +96,7 @@ class MultiplotOptions:
     def __init__(self) -> None: ...
     def reset(self) -> None: ...
     # Internal helper omitted: _get_axis_options
+    def set_global_y_limit(self, limits: Optional[Tuple[float, float]]) -> None: ...
     def __getattr__(self, name: str) -> AxisOptions: ... # Dynamic axis access
     def print_state(self) -> None: ...
     # Internal preset helpers omitted: _apply_preset_config, _restore_original_values
