@@ -14,3 +14,9 @@
 - **Version Tag:** `2025_04_26_v1.11`
 - **Commit Message:** `fix: Correct Pyspedas verbosity & cleanup notebooks`
   
+- **Learning:** When performing significant Git operations that alter the working directory (like `reset --hard`, `checkout`, `merge`, `stash apply`), it's crucial to reload the editor window afterwards to ensure its internal cache syncs with the actual file state on disk. This prevents stale cached versions from causing unexpected reversions or conflicts.
+
+---
+**End Log Entry for April 26, 2025**
+---
+  

@@ -1,0 +1,6 @@
+---
+description: Adding commit messages inside the code
+globs: 
+alwaysApply: false
+---
+The commit messages belong in the captains log, and the __init__ file inside the plotbot folder.
