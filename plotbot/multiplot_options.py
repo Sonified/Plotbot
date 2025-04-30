@@ -52,6 +52,7 @@ class AxisOptions:
     @y_limit.setter
     def y_limit(self, value: Optional[Tuple[float, float]]):
         self.__dict__['y_limit'] = value
+        print_manager.debug(f"[AxisOptions Setter] Set y_limit to {value} for instance ID {id(self)}")
         
     @property
     def color(self) -> Optional[str]:
@@ -226,25 +227,21 @@ class MultiplotOptions:
         }
     }
     
-    # Make axes a class-level attribute
-    axes = {}
-
     def __init__(self):
+        # Initialize axes as an instance attribute
+        self.axes = {}
+        self._global_y_limit = None # ADDED: Store the desired global limit
         # No need to initialize axes here since it's a class attribute
         self.reset()
         
-        # Pre-initialize axis options for axes 1-25
-        for i in range(1, 26):
-            if i not in MultiplotOptions.axes:
-                MultiplotOptions.axes[i] = AxisOptions()
-
         self.tick_length = 6.0
         self.tick_width = 1.0
 
     def reset(self):
         """Reset all options to their default values."""
         # Clear existing axes
-        MultiplotOptions.axes.clear()
+        self.axes.clear()
+        self._global_y_limit = None # ADDED: Reset the global limit storage
         
         # General plotting options
         self.window = '00:12:00.000'
@@ -298,11 +295,6 @@ class MultiplotOptions:
         self.save_dpi = None  # Will be set by preset if used
         self.output_dimensions = None # Tuple (width_px, height_px) or None
         
-        # Pre-initialize axis options for axes 1-25
-        for i in range(1, 26):
-            if i not in MultiplotOptions.axes:
-                MultiplotOptions.axes[i] = AxisOptions()
-        
         self.title_pad = 6.0 # Add title_pad default
         self.title_y_position = 0.98
         self.magnetic_field_line_width = 1.0
@@ -312,12 +304,17 @@ class MultiplotOptions:
     def _get_axis_options(self, axis_number: int) -> AxisOptions:
         """Helper method to get or create axis options"""
         print_manager.debug(f"Accessing axis ax{axis_number}")
-        if axis_number not in MultiplotOptions.axes:
+        if axis_number not in self.axes:
             print_manager.debug(f"Creating new axis options for ax{axis_number}")
-            MultiplotOptions.axes[axis_number] = AxisOptions()
+            new_opts = AxisOptions()
+            # Apply stored global limit if it exists
+            if self._global_y_limit is not None:
+                print_manager.debug(f"Applying stored global y_limit {self._global_y_limit} to new ax{axis_number}")
+                new_opts.y_limit = self._global_y_limit # Apply the stored global limit
+            self.axes[axis_number] = new_opts
         else:
             print_manager.debug(f"Using existing axis options for ax{axis_number}")
-        return MultiplotOptions.axes[axis_number]
+        return self.axes[axis_number]
     
     # Define explicit property getters for axes 1-25
     @property
@@ -436,8 +433,8 @@ class MultiplotOptions:
         for key, value in self.__dict__.items():
             if key != 'axes':
                 print(f"{key}: {value}")
-        print("\nAxis-specific options:")
-        for axis_num, axis_opts in MultiplotOptions.axes.items():
+        print("\nAxis-specific options (Instance):")
+        for axis_num, axis_opts in self.axes.items():
             print(f"ax{axis_num}:")
             print(f"  y_limit: {axis_opts.y_limit}")
             print(f"  color: {axis_opts.color}")
@@ -495,6 +492,19 @@ class MultiplotOptions:
              print_manager.warning("Preset uses deprecated 'tick_pad'. Use 'label_padding' instead.")
              self.x_label_pad = config['tick_pad'].get('x', self.x_label_pad)
              self.y_label_pad = config['tick_pad'].get('y', self.y_label_pad)
+
+    def set_global_y_limit(self, limits: Optional[Tuple[float, float]]):
+        """Set the same y_limit for all currently defined axes.
+
+        Args:
+            limits: A tuple (min, max) for the y-axis, or None to clear.
+        """
+        if limits is not None and (not isinstance(limits, (tuple, list)) or len(limits) != 2):
+            print_manager.warning(f"Invalid y_limit format: {limits}. Expected (min, max) tuple or None.")
+            return
+
+        print_manager.status(f"Storing global y_limit: {limits}. Will be applied when axes are created.")
+        self._global_y_limit = limits # Just store the limit
 
     def _restore_original_values(self):
         """Restore original values after using a preset."""

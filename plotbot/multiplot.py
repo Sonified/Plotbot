@@ -673,8 +673,9 @@ def multiplot(plot_list, **kwargs):
                 current_y_scale, 
                 f"axis {i+1}"
             )
-            
+            print_manager.debug(f"Panel {i+1}: Validated limit: {validated_y_limit}")
             axs[i].set_ylim(validated_y_limit)
+            print_manager.debug(f"Panel {i+1}: ylim after setting via axis_options: {axs[i].get_ylim()}")
         elif isinstance(var, list):
             all_data = []
             for single_var in var:
@@ -684,10 +685,14 @@ def multiplot(plot_list, **kwargs):
                 y_min, y_max = min(all_data), max(all_data)
                 axs[i].set_ylim(y_min, y_max)
         elif hasattr(var, 'y_limit') and var.y_limit:
+            print_manager.debug(f"Panel {i+1}: Applying var.y_limit: {var.y_limit}")
             axs[i].set_ylim(var.y_limit)
+            print_manager.debug(f"Panel {i+1}: ylim after setting via var.y_limit: {axs[i].get_ylim()}")
         else:
             # Auto-scaling happens by default
+            print_manager.debug(f"Panel {i+1}: Using auto-scaling.")
             current_ylim = axs[i].get_ylim()
+            print_manager.debug(f"Panel {i+1}: ylim after auto-scaling: {current_ylim}")
     
         axs[i].set_xlim(start_time, end_time)
     
