@@ -13,3 +13,7 @@
 * [ ] Add `pytest` to `environment.yml` / installer.
 * [ ] Add `termcolor` to `environment.yml` / installer.
 * [ ] Add `ipympl` (for `%matplotlib widget`) to `environment.yml` / installer.
+
+## Code Structure / Refactoring
+
+* [ ] Standardize and potentially globalize access to `multiplot` options (`plt.options`) for better consistency and easier configuration across the application.
