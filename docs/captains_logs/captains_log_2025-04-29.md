@@ -53,4 +53,9 @@
   - All 11 tests within `test_stardust.py` now pass.
 
 - **Test Success:** Confirmed that all tests in `tests/test_stardust.py` and `tests/test_sf00_proton_fits_integration.py` pass successfully after recent changes and fixes. 
-- **Next Steps (Alpha FITS):** While the `alpha_fits_class` structure and basic calculations are in place, the next step is to fully integrate alpha FITS data into the plotting functions (`plotbot`, `multiplot`, `showdahodo`), thoroughly validate the calculations against expected results, and ensure the `tests/test_sf01_alpha_fits_integration.py` suite provides comprehensive coverage. 
+- **Next Steps (Alpha FITS):** While the `alpha_fits_class` structure and basic calculations are in place, the next step is to fully integrate alpha FITS data into the plotting functions (`plotbot`, `multiplot`, `showdahodo`), thoroughly validate the calculations against expected results, and ensure the `tests/test_sf01_alpha_fits_integration.py` suite provides comprehensive coverage.
+
+- **SPDF Download Tests:** Added a specific SPDF download test (`test_pyspedas_download_with_cleanup`) to `tests/test_pyspedas_download.py`. Also modified this test and the similar one in `tests/test_stardust.py` (`test_stardust_spdf_download_with_cleanup`) to *not* delete the downloaded CDF file after the test runs. This allows the file to remain cached locally for subsequent test runs or manual inspection.
+
+---
+**Session Closed (April 30, 2025)** 

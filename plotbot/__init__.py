@@ -138,11 +138,12 @@ __all__ = [
     'config'          # ADDED config to __all__
 ]
 
-# --- Version and Commit Message ---
+# Colors for printing
 BLUE = '\033[94m'
 RESET = '\033[0m'
-COMMIT_MSG = "feat: Add alpha FITS class, split tests, fix stardust FITS (v1.13)"
-print(f'{BLUE}   Version: 2025_04_30_v1.13{RESET}')
+
+COMMIT_MSG = "feat: Align proton fits naming & type hints (2025-04-30_v1.14)"
+print(f'{BLUE}   Version: 2025_04_30_v1.14{RESET}')
 print(f'{BLUE}   Commit: {COMMIT_MSG}{RESET}')
 
 # --- Final Print Message ---

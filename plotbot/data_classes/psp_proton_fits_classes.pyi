@@ -42,8 +42,6 @@ class proton_fits_class:
     chi_p: plot_manager  # Changed from 'chi' to 'chi_p' to match usage
     qz_p: plot_manager
     # vsw_mach: plot_manager # Placeholder, might not be plotted
-    beta_ppar: plot_manager
-    beta_pperp: plot_manager
     ham_param: plot_manager
     n_tot: plot_manager
     np2_np1_ratio: plot_manager
@@ -53,7 +51,7 @@ class proton_fits_class:
     vcm_z: plot_manager
     vcm_mag: plot_manager
     vdrift_abs: plot_manager
-    vdrift_va: plot_manager
+    vdrift_va_pfits: plot_manager
     Trat_tot: plot_manager
     Tpar1: plot_manager
     Tpar2: plot_manager
@@ -62,7 +60,7 @@ class proton_fits_class:
     Temp_tot: plot_manager
     abs_qz_p: plot_manager # Renamed from '|qz_p|' for attribute validity
     chi_p_norm: plot_manager
-    valfven: plot_manager
+    valfven_pfits: plot_manager
     B_mag: plot_manager
     # bhat_x: plot_manager # Unit vector components might not be plotted
     # bhat_y: plot_manager
@@ -76,6 +74,9 @@ class proton_fits_class:
     Vcm_mach: plot_manager
     Vp1_mach: plot_manager
     beta_p_tot: plot_manager
+    vsw_mach_pfits: plot_manager
+    beta_ppar_pfits: plot_manager
+    beta_pperp_pfits: plot_manager
     
     # Scatter plot specific attributes (if they are plot_manager instances)
     # qz_p_beta_ppar_scatter: plot_manager 

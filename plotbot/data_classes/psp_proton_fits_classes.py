@@ -596,7 +596,7 @@ class proton_fits_class:
             self.raw_data['vp2_y'] = vp2_y
             self.raw_data['vp2_z'] = vp2_z
             self.raw_data['vp2_mag'] = vp2_mag
-            self.raw_data['|qz_p|'] = qz_p_abs
+            self.raw_data['abs_qz_p'] = qz_p_abs
             self.raw_data['qz_p_perp'] = qz_p_perp
             self.raw_data['qz_p_par'] = qz_p_par
             self.raw_data['vdrift_va'] = vdrift_va
@@ -1061,11 +1061,11 @@ class proton_fits_class:
         )
 
         # 31. |qz_p| (Scatter, Size 5)
-        self.qz_p_abs = plot_manager( # Absolute heat flux
-            self.raw_data.get('|qz_p|'),
+        self.abs_qz_p = plot_manager( # Absolute heat flux - ATTRIBUTE RENAMED to abs_qz_p
+            self.raw_data.get('abs_qz_p'),
             plot_options=self._create_fits_scatter_ploptions(
-                var_name='|qz_p|',
-                subclass_name='qz_p_abs', # MATCH ATTRIBUTE NAME (User list #31) - UPDATED
+                var_name='abs_qz_p',
+                subclass_name='abs_qz_p', # MATCH ATTRIBUTE NAME (User list #31) - UPDATED
                 y_label=r'$|Q_p| W/m^2$',
                 legend_label=r'$|Q_p|$',
                 color='mediumspringgreen'
