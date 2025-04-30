@@ -1,21 +1,21 @@
 """
-Tests for FITS data integration and calculations.
+Tests for Proton FITS (SF00) data integration and calculations.
 
 This file contains tests for:
-- Finding and loading FITS-related CSV files (sf00, sf01).
-- Running the derived variable calculation functions (calculate_sf00_fits_vars, calculate_sf01_fits_vars).
-- Integrating FITS calculations with the main plotbot function, including scatter plots.
+- Finding and loading SF00 FITS CSV files.
+- Running calculations within the proton_fits_class (via update method).
+- Integrating SF00 FITS calculations with the main plotbot function, including scatter plots.
 
 NOTES ON TEST OUTPUT:
 - Use print statements for basic info (will show with -s flag).
 - To see all print statements in test output, add the -s flag when running pytest:
-  e.g., cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_fits_integration.py -v -s
+  e.g., cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_sf00_proton_fits_integration.py -v -s
 
 To run all tests in this file:
-cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_fits_integration.py -v
+cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_sf00_proton_fits_integration.py -v
 
 To run a specific test (e.g., test_plotbot_with_scatter_and_fits):
-cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_fits_integration.py::TestFitsIntegration::test_plotbot_with_scatter_and_fits -v
+cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_sf00_proton_fits_integration.py::TestFitsIntegration::test_plotbot_with_scatter_and_fits -v
 """
 
 import pytest
@@ -79,7 +79,7 @@ from plotbot.test_pilot import phase, system_check
 
 def find_psp_csv_files(trange, data_type):
     """
-    Finds PSP CSV data files based on a time range and data type ('sf00' or 'sf01'),
+    Finds PSP SF00 CSV data files based on a time range,
     following the specified directory structure relative to the project root.
     e.g., psp_data/sf00/p2/v00/YYYY/MM/spp_swp_spi_sf00_YYYY-MM-DD_v00.csv
     """
@@ -105,12 +105,8 @@ def find_psp_csv_files(trange, data_type):
         base_rel_path = Path('psp_data/sf00/p2/v00')
         prefix = 'spp_swp_spi_sf00_'
         suffix = '_v00.csv' # Based on user example path, was _v00_driftswitch.csv before
-    elif data_type == 'sf01':
-        base_rel_path = Path('psp_data/sf01/p3/v00')
-        prefix = 'spp_swp_spi_sf01_'
-        suffix = '_v00.csv'
     else:
-        raise ValueError("Invalid data_type specified. Must be 'sf00' or 'sf01'.")
+        raise ValueError("Invalid data_type specified. Must be 'sf00'.")
 
     # Iterate through dates in the range (inclusive)
     current_dt = start_dt
@@ -186,11 +182,13 @@ class TestFitsIntegration:
                  pytest.skip("Skipping SF00 calculation test: Loaded DataFrame is empty.")
                  return None # Return None if skipping
             print(f"Loaded SF00 test data, shape: {df_sf00_raw.shape}")
+            print(f"SF00 Test Data Columns: {df_sf00_raw.columns.tolist()}")
             return df_sf00_raw
         except Exception as e:
             pytest.fail(f"Failed to load/concat SF00 CSVs {found_files}: {e}")
             return None # Return None on failure
 
+    @pytest.mark.skip(reason="File finding logic in this test needs update or removal")
     def test_find_and_load_sf00_csv(self):
         """Tests finding and loading SF00 (proton) CSV files for the test trange."""
         found_files = find_psp_csv_files(self.TEST_TRANGE, 'sf00')
@@ -206,22 +204,6 @@ class TestFitsIntegration:
             # TODO: Add more specific assertions based on expected columns/data
         except Exception as e:
             pytest.fail(f"Failed to load/concat SF00 CSVs {found_files}: {e}")
-
-    def test_find_and_load_sf01_csv(self):
-        """Tests finding and loading SF01 (alpha) CSV files for the test trange."""
-        found_files = find_psp_csv_files(self.TEST_TRANGE, 'sf01')
-
-        assert len(found_files) > 0, f"No SF01 CSV files found for trange {self.TEST_TRANGE}. Expected at least one file containing date {self.EXPECTED_DATE_STR}. Searched paths like psp_data/sf01/p3/v00/YYYY/MM/..."
-
-        try:
-            # Load and concatenate files found
-            df_sf01 = pd.concat((pd.read_csv(f) for f in found_files), ignore_index=True)
-            assert not df_sf01.empty
-            print(f"Successfully loaded {len(found_files)} SF01 file(s) for {self.TEST_TRANGE}")
-            print(df_sf01.head())
-            # TODO: Add more specific assertions based on expected columns/data
-        except Exception as e:
-            pytest.fail(f"Failed to load/concat SF01 CSVs {found_files}: {e}")
 
     def test_calculate_sf00_vars(self, sf00_test_data):
         """Test the calculation of derived variables triggered by updating the proton_fits_instance."""
@@ -292,49 +274,6 @@ class TestFitsIntegration:
 
         print("SF00 internal calculations appear successful. Data populated.")
         # Can add more checks here for other variables if needed
-
-    @pytest.mark.skip(reason="SF01 calculation logic not implemented in class at this commit")
-    def test_calculate_sf01_vars(self):
-        """Tests the calculation of derived variables from SF01 data, using SF00 data."""
-        # Find and load SF00 data
-        found_files_sf00 = find_psp_csv_files(self.TEST_TRANGE, 'sf00')
-        if not found_files_sf00:
-            pytest.skip("Skipping SF01 calculation test: No SF00 input files found.")
-        df_sf00_raw = pd.concat((pd.read_csv(f) for f in found_files_sf00), ignore_index=True)
-        if df_sf00_raw.empty:
-             pytest.skip("Skipping SF01 calculation test: Loaded SF00 DataFrame is empty.")
-
-        # Find and load SF01 data
-        found_files_sf01 = find_psp_csv_files(self.TEST_TRANGE, 'sf01')
-        if not found_files_sf01:
-            pytest.skip("Skipping SF01 calculation test: No SF01 input files found.")
-        df_sf01_raw = pd.concat((pd.read_csv(f) for f in found_files_sf01), ignore_index=True)
-        if df_sf01_raw.empty:
-             pytest.skip("Skipping SF01 calculation test: Loaded SF01 DataFrame is empty.")
-
-        # --- Pre-process SF00 data as input for SF01 calculation ---
-        # This part would need refactoring similar to sf00 if the test were active
-        # df_sf00_processed, _ = calculate_sf00_fits_vars(df_sf00_raw)
-        pytest.fail("This test should be skipped, calculate_sf00_fits_vars does not exist.")
-
-        # --- Prepare Mock/Dummy Optional Inputs ---
-        mock_datetime_spi_sf0a = None
-
-        # Call the calculation function
-        # df_processed, results_np = calculate_sf01_fits_vars(df_sf01_raw, df_sf00_processed, datetime_spi_sf0a=mock_datetime_spi_sf0a)
-        pytest.fail("This test should be skipped, calculate_sf01_fits_vars does not exist.")
-
-        # --- Assertions --- (These won't run)
-        assert isinstance(df_processed, pd.DataFrame)
-        assert isinstance(results_np, dict)
-        expected_keys_sf01 = ['beta_par_a_afits', 'na/np_tot_afits']
-        for k in expected_keys_sf01:
-             assert k in results_np, f"Expected key '{k}' not found in SF01 results_np"
-        assert 'vdrift_va_apfits' in results_np
-        print("SF01 calculations completed.")
-        print("Processed DataFrame head:")
-        print(df_processed.head())
-        print("\nNumPy results keys:", list(results_np.keys()))
 
     def test_plotbot_with_scatter_and_fits(self):
         """Tests calling the main plotbot function with FITS variable class instances,

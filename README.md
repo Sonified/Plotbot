@@ -525,6 +525,9 @@ conda run -n plotbot_env python -m pytest tests/ -m "Custom Variable Time Range 
 
 The `-v` flag provides verbose output. Add the `-s` flag (`pytest -v -s`) if you want to see output from `print()` statements within the tests (including `print_manager.test()` output when tests are run).
 
+**Stardust Test Suite (`tests/test_stardust.py`):**
+This special test file aggregates key tests from various modules (basic plotting, multiplot, showdahodo, HAM data, FITS data, custom variables, audification). It serves as a rapid, catch-all check for core Plotbot functionality. Running `conda run -n plotbot_env python -m pytest tests/test_stardust.py -v -s` is a good way to quickly verify the system's health after making changes.
+
 Have Fun Plotbotting!
 
 ## Technical Notes For Developers:

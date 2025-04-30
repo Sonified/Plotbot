@@ -20,6 +20,8 @@ def download_berkeley_data(trange, data_type):
     #====================================================================
     print_manager.variable_testing(f"download_berkeley_data called with data_type: {data_type}")
     
+    print_manager.debug(f"Attempting download for {data_type} from Berkeley server")
+    
     # Add time tracking for function entry
     print_manager.time_input("download_berkeley_data", trange)
     
