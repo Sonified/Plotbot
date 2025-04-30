@@ -1,6 +1,0 @@
----
-description: running tests
-globs: 
-alwaysApply: false
----
-Tests are to be completed using Conda
