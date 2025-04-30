@@ -325,6 +325,7 @@ def test_download_performance_mag_rtn_4sa():
 
 
 @pytest.mark.mission("Offline Download Behavior (mag_SC_4sa)")
+@pytest.mark.skip(reason="Requires manual internet disconnection, cannot run automatically")
 def test_offline_download_behavior():
     """Tests if pyspedas checks find local files when offline."""
     # Using mag_SC_4sa as it seemed reliable in previous tests

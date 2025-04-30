@@ -141,8 +141,8 @@ __all__ = [
 # --- Version and Commit Message ---
 BLUE = '\033[94m'
 RESET = '\033[0m'
-COMMIT_MSG = "fix: Correct Pyspedas verbosity & cleanup notebooks"
-print(f'{BLUE}   Version: 2025_04_26_v1.11{RESET}')
+COMMIT_MSG = "fix: Pass tests, correct .pyi stubs, untrack ignored files (v1.12)"
+print(f'{BLUE}   Version: 2025_04_29_v1.12{RESET}')
 print(f'{BLUE}   Commit: {COMMIT_MSG}{RESET}')
 
 # --- Final Print Message ---

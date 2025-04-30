@@ -218,7 +218,7 @@ def multiplot(plot_list, **kwargs):
                     # Download fresh data for base variables if needed
                     if base_vars:
                         print_manager.custom_debug(f"Downloading fresh data for {len(base_vars)} source variables...")
-                        download_berkeley_data(trange, *base_vars)
+                        get_data(trange, *base_vars)
                 
                 # Update the variable for the new time range using its update method
                 if hasattr(var, 'update'):

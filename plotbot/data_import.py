@@ -387,13 +387,15 @@ def import_data_function(trange, data_type):
                             try:
                                 # Using to_numpy() to directly get numpy arrays
                                 datetime_series = pd.to_datetime(ham_df['time'], unit='s', utc=True)
-                                datetime_objs = datetime_series.to_numpy() # numpy array of datetime64[ns]
+                                datetime_series_naive = datetime_series.dt.tz_localize(None) # Convert to timezone-naive UTC
+                                datetime_objs_naive = datetime_series_naive.to_numpy() # numpy array of timezone-naive datetime64[ns]
 
                                 # Convert numpy datetime64 to components list for TT2000
                                 # Need to handle potential NaT values if any times failed parsing
                                 datetime_components_list = []
-                                valid_time_mask = pd.notna(datetime_objs) # Mask for valid times
-                                temp_dt_objs = datetime_objs[valid_time_mask].astype('datetime64[us]').tolist() # Convert valid ones to Python datetimes via intermediate type
+                                valid_time_mask = pd.notna(datetime_objs_naive) # Mask for valid times using naive array
+                                # Use the naive array directly, conversion to datetime64[us] is safer now
+                                temp_dt_objs = datetime_objs_naive[valid_time_mask].astype('datetime64[us]').tolist()
 
                                 comp_idx = 0 # Index for temp_dt_objs
                                 for is_valid in valid_time_mask:
