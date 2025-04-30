@@ -10,6 +10,9 @@ import os
 import glob # Added
 import plotbot # Added for config access
 from datetime import datetime, timedelta # Added for date iteration
+import cdflib
+import numpy as np
+from dateutil.parser import parse
 
 from .print_manager import print_manager
 from .data_classes.psp_data_types import data_types # To get pyspedas datatype mapping

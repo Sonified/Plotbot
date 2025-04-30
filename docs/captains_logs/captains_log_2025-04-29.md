@@ -28,3 +28,29 @@
 - **Version Tag:** `v1.12`
 - **Commit Message:** `fix: Pass tests, correct .pyi stubs, untrack ignored files (v1.12)`
 - **Summary:** Addressed several test failures (`DeprecationWarning`, `TypeError`, `PytestCollectionWarning`), manually corrected `.pyi` files that contained implementation code instead of stubs, and removed previously tracked files/directories (`.vscode/`, `ace_data/.../2018/`) that are now ignored. 
+
+---
+**Update (April 30, 2025):**
+
+- **Alpha FITS Integration:**
+  - Implemented the `alpha_fits_class` in `plotbot/data_classes/psp_alpha_fits_classes.py` to handle data derived from SF01 (alpha particle) FITS CSV files.
+  - This includes internal calculations for derived alpha parameters (e.g., `va_mag`, `Tp_alpha`, `beta_alpha`) based on SF01 inputs and aligned proton data dependencies (fetched from the `proton_fits` instance via `data_cubby`).
+  - Configured `set_ploptions` within the class to create `plot_manager` instances for the 17 target plottable alpha variables.
+
+- **FITS Test Suite Splitting:**
+  - Separated the FITS integration tests into two distinct files:
+    - `tests/test_sf00_proton_fits_integration.py`: Focuses solely on testing the proton FITS (`proton_fits_class`) functionality.
+    - `tests/test_sf01_alpha_fits_integration.py`: Focuses solely on testing the *new* alpha FITS (`alpha_fits_class`) functionality.
+  - This separation provides clearer testing boundaries for each particle species.
+
+- **Stardust Test Refinement (`tests/test_stardust.py`):**
+  - Established `tests/test_stardust.py` as the primary catch-all test suite for verifying core Plotbot functionality across different modules (basic plotting, multiplot, showdahodo, HAM data, FITS data, custom variables, audification).
+  - Modified the FITS test within `test_stardust.py` (`test_stardust_fits_group_1`) to:
+    - Use a known-good data source date (`20240930`) shared with `test_sf00_proton_fits_integration.py`.
+    - Use the correct corresponding time range.
+    - Use the correct variable names (`qz_p`, `vsw_mach_pfits`, etc.) as defined in `test_sf00_proton_fits_integration.py`.
+  - This ensures the stardust FITS test now *runs and passes*, providing a real check of proton FITS integration within the stardust suite, rather than skipping due to missing data for its original test date.
+  - All 11 tests within `test_stardust.py` now pass.
+
+- **Test Success:** Confirmed that all tests in `tests/test_stardust.py` and `tests/test_sf00_proton_fits_integration.py` pass successfully after recent changes and fixes. 
+- **Next Steps (Alpha FITS):** While the `alpha_fits_class` structure and basic calculations are in place, the next step is to fully integrate alpha FITS data into the plotting functions (`plotbot`, `multiplot`, `showdahodo`), thoroughly validate the calculations against expected results, and ensure the `tests/test_sf01_alpha_fits_integration.py` suite provides comprehensive coverage. 

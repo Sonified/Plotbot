@@ -99,7 +99,7 @@ data_types = {
     },
     'sf00_fits': { # FITS sf00 CSV data
         'file_source': 'local_csv',
-        'local_path': os.path.join('psp_data', 'sf00'), # Specific path for SF00 CSVs
+        'local_path': os.path.join('psp_data', 'sweap', 'spi_fits', 'sf00', 'p2', 'v00'), # UPDATED PATH AGAIN
         'file_pattern_import': ['spp_swp_spi_sf00_*.csv'], # More specific pattern
         'file_time_format': 'daily',
         'data_vars': [
@@ -113,7 +113,7 @@ data_types = {
     },
     'sf01_fits': { # FITS sf01 CSV data
         'file_source': 'local_csv',
-        'local_path': os.path.join('psp_data', 'sf01'), # Specific path for SF01 CSVs
+        'local_path': os.path.join('psp_data', 'sweap', 'spi_fits', 'sf01', 'p3', 'v00'), # UPDATED PATH
         'file_pattern_import': ['spp_swp_spi_sf01_*.csv'], # More specific pattern
         'file_time_format': 'daily',
         'data_vars': [

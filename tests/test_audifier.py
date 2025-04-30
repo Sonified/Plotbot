@@ -13,7 +13,7 @@ from scipy.io import wavfile
 from datetime import datetime, timedelta
 
 from plotbot.audifier import Audifier, audifier as global_audifier
-from plotbot.psp_mag_classes import mag_rtn
+from plotbot.data_classes.psp_mag_classes import mag_rtn
 from plotbot.print_manager import print_manager
 
 # Enable test output in print manager
@@ -276,7 +276,7 @@ def test_filename_format():
     """Test that audio filenames follow the correct format pattern."""
     # Import directly from the module like in the notebook
     from plotbot.audifier import audifier
-    from plotbot.psp_mag_classes import mag_rtn
+    from plotbot.data_classes.psp_mag_classes import mag_rtn
     
     # Set up temporary directory for files
     import tempfile

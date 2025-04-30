@@ -8,6 +8,7 @@ import pytest
 import os
 import sys
 import json
+import getpass
 
 # Add the parent directory to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -75,3 +76,23 @@ def reset_ploptions():
     
 # Register the write_test_report fixture to run for the whole session
 pytest.main.write_test_report = write_test_report 
+
+# This fixture runs BEFORE any tests - key for patching authentication
+@pytest.fixture(scope="session", autouse=True)
+def patch_authentication():
+    """Patch getpass.getpass to avoid authentication prompts in all tests."""
+    original_getpass = getpass.getpass
+    
+    # Replace with dummy function that logs the prompt and returns a dummy value
+    def mock_getpass(prompt="Password: "):
+        print(f"[TEST] Auth prompt intercepted: {prompt}")
+        return "dummy_password"
+    
+    # Apply the patch
+    getpass.getpass = mock_getpass
+    
+    # Let tests run
+    yield
+    
+    # Restore original after all tests complete
+    getpass.getpass = original_getpass 
