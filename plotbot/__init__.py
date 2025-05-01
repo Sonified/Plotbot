@@ -8,8 +8,8 @@ import time # For version string
 current_time = time.strftime("%Y-%m-%d %H:%M:%S")
 
 # Version format: YYYY-MM-DD_vX.YY
-__version__ = "2025-04-30_v1.176"
-__commit_message__ = "feat: Update set_ploptions for CWYN properties in proton_fits_class (step 6) (2025-04-30_v1.176)"
+__version__ = "2025-05-01_v1.00"
+__commit_message__ = "fix: Correct FITS CDF downloader regex and importer scope, simplify local path, fix stardust fixture."
 
 def get_version_string():
     # Colors for printing

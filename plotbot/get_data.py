@@ -103,39 +103,67 @@ def get_data(trange: List[str], *variables):
         print_manager.variable_testing(f"Initial check for variable: {type(var)}")
         data_type = None
         subclass_name = None
-        is_proton_fits_var = isinstance(var, proton_fits_class) or getattr(var, 'class_name', None) == 'proton_fits'
-        is_ham_var = isinstance(var, ham_class) or getattr(var, 'class_name', None) == 'ham'
-        
-        if is_proton_fits_var:
-            data_type = 'proton_fits' # Use a consistent identifier
+        # Determine the data_type based on the variable object
+        # Check if it's an instance of a known class OR if it has a class_name attribute
+        if isinstance(var, proton_fits_class) or getattr(var, 'class_name', None) == 'proton_fits':
+            data_type = 'sf00_fits' # Map to the config key
             subclass_name = getattr(var, 'subclass_name', '?')
-        elif is_ham_var:
+        elif isinstance(var, ham_class) or getattr(var, 'class_name', None) == 'ham':
             data_type = 'ham' # Use ham identifier 
             subclass_name = getattr(var, 'subclass_name', '?')
         elif type(var).__name__ in ('module', 'type'):
-            try:
-                data_type = var.__name__
-                # Ensure it's a known type and not a local CSV source (like sf00/sf01 itself)
-                if data_type not in data_types or data_types[data_type].get('file_source') == 'local_csv':
-                     data_type = None # Ignore sf00/sf01 passed directly, handled by proton_fits
-            except (AttributeError, TypeError):
-                data_type = None
-        elif hasattr(var, 'data_type'):
-            dt = var.data_type
-            # Ensure it's not proton_fits (handled above) and not a local CSV source
-            if dt != 'proton_fits' and data_types.get(dt, {}).get('file_source') != 'local_csv':
-                 data_type = dt
-                 subclass_name = getattr(var, 'subclass_name', '?')
+            # If the whole module/class is passed, use its name as data_type
+            # Need to map class/module name back to data_type key if they differ
+            # Example: if user passes `proton`, map it to `spi_sf00_l3_mom`
+            module_or_class_name = var.__name__
+            # Simple mapping for now (expand as needed)
+            mapping = {
+                'mag_rtn_4sa': 'mag_RTN_4sa',
+                'mag_rtn': 'mag_RTN',
+                'mag_sc_4sa': 'mag_SC_4sa',
+                'mag_sc': 'mag_SC',
+                'proton': 'spi_sf00_l3_mom',
+                'proton_hr': 'spi_af00_L3_mom',
+                'epad': 'spe_sf0_pad',
+                'epad_hr': 'spe_af0_pad',
+                'proton_fits': 'sf00_fits', # Map the class name itself
+                'ham': 'ham'
+            }
+            data_type = mapping.get(module_or_class_name)
+        elif hasattr(var, 'class_name'):
+            # If it's an instance (like proton_fits.n_tot), get class_name
+            # Map class_name to the data_type key in psp_data_types
+            class_name_attr = var.class_name
+            mapping = {
+                'mag_rtn_4sa': 'mag_RTN_4sa',
+                'mag_rtn': 'mag_RTN',
+                'mag_sc_4sa': 'mag_SC_4sa',
+                'mag_sc': 'mag_SC',
+                'proton': 'spi_sf00_l3_mom',
+                'proton_hr': 'spi_af00_L3_mom',
+                'epad': 'spe_sf0_pad',
+                'epad_hr': 'spe_af0_pad',
+                'proton_fits': 'sf00_fits', # Map the class name attribute
+                'ham': 'ham'
+            }
+            data_type = mapping.get(class_name_attr)
+            subclass_name = getattr(var, 'subclass_name', '?')
+        elif hasattr(var, 'data_type'): # Fallback, but class_name is preferred
+             dt = var.data_type
+             # Ensure it's not proton_fits (handled above) and not a local CSV source
+             if dt != 'proton_fits' and dt != 'sf00_fits' and data_types.get(dt, {}).get('file_source') != 'local_csv':
+                  data_type = dt
+                  subclass_name = getattr(var, 'subclass_name', '?')
         
-        if data_type:
+        if data_type and data_type in data_types: # Check if valid known type
              required_data_types.add(data_type)
              if data_type not in subclasses_by_type: subclasses_by_type[data_type] = []
-             if subclass_name and subclass_name not in subclasses_by_type[data_type]:
+             if subclass_name and subclass_name != '?' and subclass_name not in subclasses_by_type[data_type]:
                  subclasses_by_type[data_type].append(subclass_name)
         else:
-            print_manager.variable_testing(f"  Warning: Could not determine processable data type for variable: {var}")
+            print_manager.warning(f"  Could not determine a valid, known data type for variable: {var} (Derived type: {data_type})")
 
-    print_manager.variable_testing(f"Data types to process: {required_data_types}")
+    print_manager.debug(f"Data types to process: {required_data_types}")
     
     # Print status summary
     for dt in required_data_types:
@@ -159,48 +187,6 @@ def get_data(trange: List[str], *variables):
             print_manager.variable_testing(f"SKIPPING processing for 'derived' type in main loop.")
             continue
             
-        # --- Handle FITS Calculation Type --- 
-        if data_type == 'proton_fits':
-            fits_calc_key = 'proton_fits'
-            fits_calc_trigger = 'fits_calculated'
-            
-            # Check if calculation needs to run (using tracker AND refresh logic)
-            calculation_needed_by_tracker = global_tracker.is_calculation_needed(trange, fits_calc_key)
-            proton_fits_needs_refresh = False
-            if hasattr(proton_fits, 'datetime_array') and proton_fits.datetime_array is not None and len(proton_fits.datetime_array) > 0:
-                try:
-                    cached_start = np.datetime64(proton_fits.datetime_array[0])
-                    cached_end = np.datetime64(proton_fits.datetime_array[-1])
-                    buffer = np.timedelta64(10, 's')
-                    # Use pre-converted numpy values for comparison
-                    if (cached_start - buffer) > requested_start_np or (cached_end + buffer) < requested_end_np:
-                        proton_fits_needs_refresh = True
-                except (IndexError, TypeError, ValueError) as e:
-                    print_manager.warning(f"Could not compare proton_fits ranges: {e}. Assuming refresh needed.")
-                    proton_fits_needs_refresh = True
-            else:
-                proton_fits_needs_refresh = True # No data means refresh needed
-
-            if calculation_needed_by_tracker or proton_fits_needs_refresh:
-                print_manager.debug(f"FITS Calculation required for {trange} (Triggered by {data_type}).")
-                data_obj_fits = import_data_function(trange, fits_calc_trigger)
-                
-                if data_obj_fits:
-                    print_manager.status(f"📥 Updating {fits_calc_key} with calculated data...")
-                    if hasattr(proton_fits, 'update'):
-                        proton_fits.update(data_obj_fits)
-                        global_tracker.update_calculated_range(trange, fits_calc_key)
-                        print_manager.variable_testing(f"Successfully updated {fits_calc_key} and tracker.")
-                    else:
-                        print_manager.error(f"Error: {fits_calc_key} instance has no 'update' method!")
-                else:
-                    print_manager.warning(f"FITS calculation returned no data for {trange}.")
-            else:
-                print_manager.status(f"📤 Using existing {fits_calc_key} data, calculation not needed.")
-                
-            # Continue to next data_type - processing for proton_fits is done
-            continue 
-
         # --- Handle HAM CSV Data Type --- 
         if data_type == 'ham':
             ham_key = 'ham'
@@ -240,14 +226,14 @@ def get_data(trange: List[str], *variables):
             # Continue to next data_type - processing for ham is done
             continue
 
-        # --- Handle Standard CDF Types --- 
+        # --- Handle Standard CDF Types (Now includes sf00_fits) --- 
         config = data_types.get(data_type)
         if not config: 
             print_manager.warning(f"Config not found for standard type {data_type} during processing loop.")
             continue 
-        # Ensure this is not a local_csv source being processed here
+        # Ensure this is not a local_csv source being processed here (HAM is handled above)
         if config.get('file_source') == 'local_csv':
-            print_manager.warning(f"Skipping standard processing for local_csv type {data_type}. Should be handled by proton_fits.")
+            print_manager.warning(f"Skipping standard CDF processing for local_csv type {data_type}. Should be handled separately.")
             continue
             
         # Conditional data download based on configuration

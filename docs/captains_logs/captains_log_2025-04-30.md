@@ -299,9 +299,7 @@ Following the plan, the implementation of Step 2 will proceed in these stages:
 3.6. **Refactor Dependency Fetching (Helper Method):** Create a second private helper `_fetch_and_validate_dependency(self, cache_key, cubby_key, required_dependency_vars)` to handle fetching the external dependency instance from `data_cubby`, extracting specified variables (checking `raw_data` then attributes), and performing basic validation. Update properties (`vsw_mach`, `vdrift_va_p2p1_apfits`) to use this helper. **(DONE)**
 4.  **Implement `@property abs_vdrift_va_p2p1_apfits`:** Create the property, similar to the above but taking the absolute value of the result (`abs(vdrift / valfven_apfits)`), caching, and error handling. **(DONE)**
 5.  **Adjust `calculate_variables`:** Remove the placeholder logic/assignment for `vsw_mach`, `vdrift_va_p2p1_apfits`, and `abs_vdrift_va_p2p1_apfits` as these are now handled by properties. **(DONE)**
-6.  **Update `set_ploptions`:**
-    *   Modify the `plot_manager` for `vsw_mach_pfits` to use `data_source=lambda: self.vsw_mach`.
-    *   Add new `plot_manager` instances for `self.vdrift_va_p2p1_apfits` and `self.abs_vdrift_va_p2p1_apfits`, linking their `data_source` to the respective properties and using the adapted plot styles documented previously. **(DONE)**
+6.  **Implement Lazy `plot_manager` Instantiation:** Apply the new plan: Modify `set_ploptions` to store CWYN `ploptions` and enhance `__getattr__` to create `plot_manager` instances on first access.
 
 ### Refactor Helper Method (`_create_fits_scatter_ploptions`) (May 1, 2025):
 
@@ -322,3 +320,75 @@ The mechanism is **Dependency Injection**, orchestrated by the `DataCubby` itsel
 This pattern ensures that data classes remain focused on their specific data type but have a controlled way to access the broader application context (`PlotBot` and its `DataCubby`) when they need to resolve dependencies on other datasets.
 
 **Note on CWYN Cache Invalidation:** The internal cache (`self._cwyn_cache`) used by the `@property` methods is intentionally simple (an instance-level dictionary). Cache invalidation primarily relies on the `DataCubby`'s behavior. When a new time range is requested, `DataCubby` typically creates a *new* instance of the data class (e.g., `proton_fits_class`), automatically discarding the old instance and its cache. Therefore, explicit invalidation logic within the data class itself is not required for handling time range changes. However, this relies on the assumption that `DataCubby` instantiates fresh objects per request/time range. Invalidation due to updates in the *source data files* (e.g., newer versions of CDFs for the same time period) would depend on `DataCubby` detecting these changes and triggering a reload, which would again likely lead to a new instance. If `DataCubby` lacks this source-update detection, the `_cwyn_cache` (like `DataCubby`'s own cache) could potentially hold stale data under those specific circumstances.
+
+### Addressing the `set_ploptions`/CWYN Issue (May 1, 2025)
+
+The previous comparison identified that the `plot_manager` constructor needs data at initialization, which conflicts with the lazy calculation goal of the CWYN properties. The `data_source=lambda:` approach in `set_ploptions` is incorrect.
+
+A revised approach using lazy initialization via `__getattr__` will be implemented:
+
+**Plan:**
+
+1.  **Modify `set_ploptions()`:**
+    *   Remove the direct creation of `plot_manager` instances for CWYN variables (`vsw_mach_pfits`, `vdrift_va_p2p1_apfits`, `abs_vdrift_va_p2p1_apfits`).
+    *   Instead, create and store *only* their `ploptions` configurations in a new internal dictionary, e.g., `self._cwyn_ploptions = { 'vsw_mach_pfits': ploptions(...), ... }`.
+
+2.  **Enhance `__getattr__(self, name)`:**
+    *   Intercept attribute access.
+    *   Check if `name` corresponds to a key in `self._cwyn_ploptions`.
+    *   If it is a CWYN variable:
+        *   Call the corresponding `@property` method (e.g., `getattr(self, property_name)`) to trigger the calculation and get the actual data array.
+        *   Create the `plot_manager` instance using this data array and the stored `ploptions` from `self._cwyn_ploptions[name]`.
+        *   Cache the newly created `plot_manager` instance directly as an attribute on `self` using `setattr(self, name, pm)`.
+        *   Return the new `plot_manager` instance.
+    *   If `name` is not a CWYN variable, proceed with the existing `__getattr__` logic (listing available attributes, raising `AttributeError`).
+    *   Ensure the available attributes listed in the error message include the keys from `_cwyn_ploptions`.
+
+**Benefits:**
+*   Implements true lazy calculation for CWYN variables.
+*   Keeps configuration in `set_ploptions`.
+*   Minimal changes needed to the `@property` methods themselves.
+
+**(Implementation of this plan replaces the previous incorrect Step 6)**
+
+### Comparison: `proton_fits_class` vs. `proton_class` (May 1, 2025)
+
+A comparison between the newly refactored `proton_fits_class` and the existing `proton_class` reveals key differences in their data handling strategies:
+
+*   **Data Source & Calculation Model:**
+    *   `proton_class`: Relies solely on `spi_sf00_l3_mom` input. Performs all calculations eagerly within `calculate_variables`.
+    *   `proton_fits_class`: Uses the `sf00_fits` CDF as its primary source. Calculates variables derived *only* from this source eagerly in `calculate_variables`. Uses a **mixed Calculate What You Need (CWYN)** approach for variables requiring external data (`spi_sf00_l3_mom`, `sf01_fits`).
+*   **Dependency Management:**
+    *   `proton_class`: No external dependencies required beyond its primary input.
+    *   `proton_fits_class`: Manages external dependencies via `@property` methods (`vsw_mach`, `vdrift_va_p2p1_apfits`, `abs_vdrift_va_p2p1_apfits`) which utilize helper methods (`_check_cwyn_cache_and_prereqs`, `_fetch_and_validate_dependency`) to fetch data from `data_cubby` and cache results lazily.
+*   **Identified Issue:**
+    *   The current implementation in `proton_fits_class.set_ploptions` attempts to link `plot_manager` instances to the CWYN properties using a `data_source=lambda: self.property_name` argument.
+    *   **Problem:** The `plot_manager.__new__` method does *not* accept a `data_source` argument. It requires the actual data array at initialization.
+    *   **Next Step:** This linkage mechanism needs to be redesigned. Potential solutions involve modifying the `@property` methods to create/cache the `plot_manager` instance upon first calculation, or exploring other ways to defer `plot_manager` creation or update its data after the property is evaluated.
+
+### Implementation Sub-steps for `proton_fits_class` CWYN (May 1, 2025):
+
+Following the plan, the implementation of Step 2 will proceed in these stages:
+
+1.  **Initialize Structure:** Add `_cwyn_cache = {}` and `self.plotbot = None` to `__init__`. Add necessary imports (`numpy`, `scipy.interpolate`, `matplotlib.dates`, `logging`). **(DONE)**
+2.  **Add Interpolation Helper:** Implement the private `_interpolate_to_self_time(self, source_time, source_data)` method using `scipy.interpolate.interp1d` with `kind='linear'`, `bounds_error=False`, and `fill_value=np.nan`. **(DONE)**
+3.  **Implement `@property vsw_mach`:** Create the property, including cache check, dependency fetch (`spi_sf00_l3_mom`), checking for `vp` or calculating magnitude from `V_rtn`, calling the interpolation helper, performing the Mach number calculation (`vp / valfven`), caching the result, and error handling. **(DONE)**
+3.5. **Refactor CWYN Boilerplate (Helper Method):** Create a private helper `_check_cwyn_cache_and_prereqs(self, cache_key, required_internal_keys)` to handle the common logic for checking the `_cwyn_cache` and validating prerequisites (`self.plotbot`, `self.time`, required `self.raw_data` entries). Update existing properties (`vsw_mach`, `vdrift_va_p2p1_apfits`) to use this helper. **(DONE)**
+3.6. **Refactor Dependency Fetching (Helper Method):** Create a second private helper `_fetch_and_validate_dependency(self, cache_key, cubby_key, required_dependency_vars)` to handle fetching the external dependency instance from `data_cubby`, extracting specified variables (checking `raw_data` then attributes), and performing basic validation. Update properties (`vsw_mach`, `vdrift_va_p2p1_apfits`) to use this helper. **(DONE)**
+4.  **Implement `@property abs_vdrift_va_p2p1_apfits`:** Create the property, similar to the above but taking the absolute value of the result (`abs(vdrift / valfven_apfits)`), caching, and error handling. **(DONE)**
+5.  **Adjust `calculate_variables`:** Remove the placeholder logic/assignment for `vsw_mach`, `vdrift_va_p2p1_apfits`, and `abs_vdrift_va_p2p1_apfits` as these are now handled by properties. **(DONE)**
+6.  **Implement Lazy `plot_manager` Instantiation:** Apply the new plan: Modify `set_ploptions` to store CWYN `ploptions` and enhance `__getattr__` to create `plot_manager` instances on first access.
+
+### Refactor Helper Method (`_create_fits_scatter_ploptions`) (May 1, 2025):
+
+*   **Goal:** Update the `_create_fits_scatter_ploptions` helper in `psp_proton_fits_classes.py` to match the more flexible parameter pattern used in `psp_alpha_fits_classes.py` (`_create_alpha_scatter_ploptions`). This involves adding optional parameters for `marker_style`, `marker_size`, `alpha`, `y_scale`, and `y_limit` with appropriate defaults. **(DONE)**
+
+### May 1st, 2025 - FITS CDF Integration Debugging
+
+- **Identified Download Issue:** Ran into `ValueError: invalid literal for int()` during download attempt for `sf00_fits`. The root cause was in `plotbot/data_download_helpers.py` (`process_file_listing`). The regex for FITS files captures the date as group 1 and version as group 2, but the code assumed the version was always group 1.
+- **Fixed Downloader:** Modified `process_file_listing` to check the number of captured groups. If 1 group, use group 1 for version; if 2+ groups, use group 2. This handles both old and new filename patterns.
+- **Identified Importer Scope Issue:** Encountered `UnboundLocalError: cannot access local variable 'config'` in `plotbot/data_import.py`. The `config` variable (holding settings from `psp_data_types.py`) was only being defined within the `if data_type == 'ham':` block, making it unavailable to the subsequent `else` block used for CDF imports.
+- **Fixed Importer Scope:** Moved the `config = psp_data_types[data_type]` assignment earlier in `import_data_function`, before the `if/else` split, making it accessible to both branches.
+- **Simplified FITS Path:** Updated the `local_path` for `sf00_fits` in `plotbot/data_classes/psp_data_types.py` to remove the redundant `/cdf_files/` directory segment, resulting in a cleaner local path: `psp_data/sweap/spi_fits/sf00/p2/v00/`. Confirmed the file wasn't actually present in the old incorrect location, so no deletion was needed.
+- **Stardust Test Issue:** Encountered `TypeError: len() of unsized object` and `RecursionError` when running `test_stardust.py::test_stardust_fits_group_1`. This seems related to the test fixture (`stardust_sf00_test_data`) manually calling `proton_fits_instance.update()` without ensuring the instance has a valid `.plotbot` reference, which is needed for CWYN properties. Attempted a fix by assigning the reference within the fixture, but the recursion error persisted.
+- **Decision:** Pausing debugging of the Stardust FITS test for now. Proceeding with pushing the downloader and importer fixes as they appear functional based on manual testing and the progress in the `test_fits_cdf_server_integration.py` test.

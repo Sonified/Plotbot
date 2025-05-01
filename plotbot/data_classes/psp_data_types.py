@@ -117,7 +117,7 @@ data_types = {
     },
     'sf00_fits': { # UPDATED: Now points to CDF FITS data
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/sweap/.sav/spi_fits/cdf_files/sf00/p2/v00/', # ADDED: URL for CDFs
-        'local_path': os.path.join('psp_data', 'sweap', 'spi_fits', 'cdf_files', 'sf00', 'p2', 'v00'), # UPDATED: Path reflects new structure
+        'local_path': os.path.join('psp_data', 'sweap', 'spi_fits', 'sf00', 'p2', 'v00'), # UPDATED: Path simplified, removed 'cdf_files'
         'password_type': 'sweap', # ADDED: Password needed
         'file_pattern': r'spp_swp_spi_sf00_fits_(\d{{4}}-\d{{2}}-\d{{2}})_v(\d{{2}})\.cdf', # UPDATED: CDF pattern for download
         'file_pattern_import': r'spp_swp_spi_sf00_fits_{date_str}_v*.cdf', # UPDATED: CDF pattern for import

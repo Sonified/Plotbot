@@ -362,40 +362,62 @@ def authenticate_session(dir_url):
 #====================================================================
 def process_file_listing(html_content, pattern_str, date_info):
     """
-    Extract filenames from an HTML directory listing and find the latest version.
-
-    Parses the HTML, finds links matching the provided regex pattern, 
-    extracts version numbers, and returns the filename with the highest version.
+    Parse the HTML directory listing to find the latest version of the desired file.
 
     Args:
-        html_content: A string containing the HTML source of the directory listing page.
-        pattern_str: The regex pattern string (created by `create_pattern_string`) 
-                     to match filenames and capture the version number.
-        date_info: A dictionary containing date details for logging purposes:
-                   {'date_str': 'YYYYMMDD', 'is_hourly': bool, 'hour_str': 'HH' or None}.
+        html_content: The HTML text content of the directory listing page.
+        pattern_str: The regex pattern string to match filenames and extract version.
+        date_info: Dictionary containing date details for logging.
 
     Returns:
-        A string containing the filename of the latest version found, or None if 
-        no matching files are found.
+        The filename of the latest version found, or None if no matching file found.
     """
     soup = BeautifulSoup(html_content, 'html.parser')
     links = soup.find_all('a')
-    filenames = [link.get('href') for link in links if link.get('href')]
-    
-    pattern = re.compile(pattern_str)
-    files_with_versions = [(fname, int(m.group(1)))
-                          for fname in filenames
-                          if (m := pattern.match(fname))]
-    
-    if not files_with_versions:
-        if date_info['is_hourly']:
-            print(f'No files found for date {date_info["date_str"]} hour {date_info["hour_str"]}')
-        else:
-            print(f'No files found for date {date_info["date_str"]}')
-        return None
-        
-    return max(files_with_versions, key=lambda x: x[1])[0]
+    latest_version = -1
+    latest_file = None
+    regex = re.compile(pattern_str, re.IGNORECASE)  # Compile the regex pattern once
+    print_manager.debug(f"Regex pattern being used: {pattern_str}")
 
+    for link in links:
+        filename = link.get('href')
+        match = regex.search(filename)
+        print_manager.debug(f"Checking filename: {filename}")
+        if match:
+            print_manager.debug(f"  Matched pattern. Groups: {match.groups()}")
+            try:
+                # Determine which group contains the version number
+                if len(match.groups()) == 1:
+                    # Assume the first group is the version if only one group
+                    version_str = match.group(1)
+                    print_manager.debug(f"    Extracted version (Group 1): {version_str}")
+                elif len(match.groups()) >= 2:
+                    # Assume the second group is the version if two or more groups (e.g., date + version)
+                    version_str = match.group(2)
+                    print_manager.debug(f"    Extracted version (Group 2): {version_str}")
+                else:
+                    # Should not happen with valid patterns, but handle defensively
+                    print_manager.warning(f"    Pattern matched but found no/unexpected capture groups in '{filename}'")
+                    continue
+                    
+                version = int(version_str) # Convert the correct group to int
+                if version > latest_version:
+                    latest_version = version
+                    latest_file = filename
+                    print_manager.debug(f"    New latest version found: v{version:02d} ({filename})")
+            except ValueError as e:
+                print_manager.warning(f"    Could not parse version number from '{version_str}' in file '{filename}': {e}")
+            except IndexError as e:
+                 print_manager.warning(f"    IndexError accessing match group for '{filename}': {e} (Groups: {match.groups()})")
+        # else:
+            # print_manager.debug(f"  Did not match pattern.")
+            
+    if latest_file:
+        print_manager.debug(f"Selected latest file: {latest_file}")
+    else:
+        print_manager.debug(f"No file matching pattern '{pattern_str}' found in directory listing.")
+        
+    return latest_file
 
 #====================================================================
 # FUNCTION: setup_local_path, Constructs local path and checks existence

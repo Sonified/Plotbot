@@ -528,7 +528,32 @@ def stardust_sf00_test_data():
         # Create a simple container mimicking DataObject
         from collections import namedtuple
         FitsTestDataContainer = namedtuple('FitsTestDataContainer', ['times', 'data'])
-        return FitsTestDataContainer(times=tt2000_times, data=data_dict)
+        test_data = FitsTestDataContainer(times=tt2000_times, data=data_dict) # Store data first
+
+        # --- Ensure proton_fits_instance has plotbot reference --- 
+        # Import the main function if not already available globally in this context
+        from plotbot.plotbot_main import plotbot as plotbot_function 
+        # Import the global instance
+        from plotbot.data_classes.psp_proton_fits_classes import proton_fits as proton_fits_instance
+        
+        if proton_fits_instance.plotbot is None:
+             print("Assigning plotbot reference to global proton_fits_instance in fixture...")
+             # Assign a reference to the main plotbot object/function needed by CWYN properties
+             # We need the actual plotbot *instance* or function that contains the data_cubby.
+             # Assigning the function might be sufficient if the cubby is globally accessible via it,
+             # but ideally, we'd have the actual running instance.
+             # For now, let's try assigning the main function.
+             proton_fits_instance.plotbot = plotbot_function # Assign the function itself
+             # Check if plotbot_function has the cubby directly
+             if not hasattr(plotbot_function, 'data_cubby'):
+                  print("Warning: Assigned plotbot_function does not directly have data_cubby. CWYN might still fail if it relies on instance state.")
+             else:
+                  print("Assigned plotbot_function appears to have data_cubby.")
+        else:
+             print("proton_fits_instance already has a plotbot reference.")
+        # --------------------------------------------------------
+        
+        return test_data # Return the loaded data
     except Exception as e:
         pytest.fail(f"Failed to load/prep SF00 CSVs for stardust test: {e}")
         return None

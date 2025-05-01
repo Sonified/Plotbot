@@ -98,32 +98,36 @@ def import_data_function(trange, data_type):
     # Add time tracking for function entry
     print_manager.time_input("import_data_function", trange)
     
-    # Determine if this is a request for calculated FITS data
-    # We'll use a placeholder data_type like 'fits_calculated' for now
-    # OR check if requested data_type requires sf00/sf01 calculation
-    # For simplicity, let's assume a specific trigger type for now.
-    # We need a clear way to know when to perform the FITS calculation.
-    # Maybe check if data_type is NOT in data_types but is a known calculated product?
-    # Let's refine this trigger logic. How should plotbot request this calculation?
-    #
-    # --> TEMPORARY APPROACH: Define a specific data_type trigger
-    FITS_CALCULATED_TRIGGER = 'fits_calculated' # Define a trigger name
-
-    is_fits_calculation = (data_type == FITS_CALCULATED_TRIGGER)
-
-    if not is_fits_calculation and data_type not in psp_data_types:
-        print_manager.variable_testing(f"Error: {data_type} not found in psp_data_types and is not the FITS calculation trigger.")
-        print_manager.time_output("import_data_function", "error: invalid data_type")
-        return None
     
-    # Get config - if it's a standard type, get its config.
-    # If it's the FITS calculation, we'll fetch sf00/sf01 configs later.
-    if not is_fits_calculation:
-        print_manager.variable_testing(f"Getting configuration for standard data type: {data_type}")
-        config = psp_data_types[data_type]
-    else:
-        # config = None # Explicitly set config to None or handle later
-        print_manager.variable_testing(f"Recognized request for calculated FITS data.")
+    ##✨✨✨✨ fits are now handled like any other cdf data type ✨✨✨✨
+    ##✨✨✨✨ Keeping this code here for reference but we can delete soon ✨✨✨✨
+    
+    # # Determine if this is a request for calculated FITS data
+    # # We'll use a placeholder data_type like 'fits_calculated' for now
+    # # OR check if requested data_type requires sf00/sf01 calculation
+    # # For simplicity, let's assume a specific trigger type for now.
+    # # We need a clear way to know when to perform the FITS calculation.
+    # # Maybe check if data_type is NOT in data_types but is a known calculated product?
+    # # Let's refine this trigger logic. How should plotbot request this calculation?
+    # #
+    # # --> TEMPORARY APPROACH: Define a specific data_type trigger
+    # FITS_CALCULATED_TRIGGER = 'fits_calculated' # Define a trigger name
+    
+    # is_fits_calculation = (data_type == FITS_CALCULATED_TRIGGER)
+    
+    # if not is_fits_calculation and data_type not in psp_data_types:
+    #     print_manager.variable_testing(f"Error: {data_type} not found in psp_data_types and is not the FITS calculation trigger.")
+    #     print_manager.time_output("import_data_function", "error: invalid data_type")
+    #     return None
+    
+    # # Get config - if it's a standard type, get its config.
+    # # If it's the FITS calculation, we'll fetch sf00/sf01 configs later.
+    # if not is_fits_calculation:
+    #     print_manager.variable_testing(f"Getting configuration for standard data type: {data_type}")
+    #     config = psp_data_types[data_type]
+    # else:
+    #     # config = None # Explicitly set config to None or handle later
+    #     print_manager.variable_testing(f"Recognized request for calculated FITS data.")
     
     # Parse times using flexible parser and ensure UTC timezone
     try:
@@ -137,202 +141,19 @@ def import_data_function(trange, data_type):
     
     print_manager.debug(f"\nImporting data for UTC time range: {trange}")
 
-    #====================================================================
-    # CHECK DATA SOURCE TYPE (FITS Calculation vs CDF vs Other Local CSV)
-    #====================================================================
-
-    if is_fits_calculation:
-        # --- FITS Data Loading Logic (Modified) ---
-        print_manager.debug(f"\n=== Starting FITS Raw Data Import for {trange} ===")
-
-        # Get config for the required input type (sf00 only needed now)
-        try:
-            sf00_config = psp_data_types['sf00_fits']
-        except KeyError as e:
-            print_manager.error(f"Configuration error: Missing 'sf00_fits' data type definition in psp_data_types.py")
-            print_manager.time_output("import_data_function", "error: config error")
-            return None
-
-        if not sf00_config:
-            print_manager.error(f"Configuration error: Could not load config for sf00_fits.")
-            print_manager.time_output("import_data_function", "error: config error")
-            return None
-
-        sf00_base_path = sf00_config.get('local_path')
-        sf00_patterns = sf00_config.get('file_pattern_import')
-
-        if not sf00_base_path or not sf00_patterns:
-            print_manager.error(f"Configuration error: Missing 'local_path' or 'file_pattern_import' for sf00.")
-            print_manager.time_output("import_data_function", "error: config error")
-            return None
-
-        # Define the raw columns needed by proton_fits_class internal calculation
-        raw_cols_needed = [
-            'time', 'np1', 'np2', 'Tperp1', 'Tperp2', 'Trat1', 'Trat2',
-            'vdrift', 'B_inst_x', 'B_inst_y', 'B_inst_z', 'vp1_x', 'vp1_y', 'vp1_z',
-            'chi' # ADDED chi column
-            # Add any other raw columns identified as necessary from calculate_proton_fits_vars
-        ]
-
-        all_raw_data_list = [] # List to store DataFrames from each file
-        dates_processed = []
-        dates_missing_files = []
-
-        for single_date in daterange(start_time, end_time):
-            date_str = single_date.strftime('%Y%m%d')
-            print_manager.debug(f"Searching for SF00 FITS CSV for date: {date_str}")
-
-            # Find sf00 file(s) for the date
-            print_manager.debug(f" Searching sf00 in: {sf00_base_path} with patterns: {sf00_patterns}")
-            sf00_files = find_local_csvs(sf00_base_path, sf00_patterns, date_str)
-
-            if sf00_files:
-                # Assuming only one match per pattern per day is expected
-                if len(sf00_files) > 1:
-                     print_manager.warning(f"Multiple sf00 files found for {date_str}, using first: {sf00_files[0]}")
-
-                sf00_path = sf00_files[0]
-                print_manager.debug(f"  Found sf00 file: '{os.path.basename(sf00_path)}'")
-
-                try:
-                    print_manager.processing(f"Loading raw FITS data from {os.path.basename(sf00_path)}...")
-                    # --- Read CSV file, selecting only needed columns ---
-                    try:
-                        # Use 'usecols' to load only necessary data
-                        df_sf00_raw = pd.read_csv(sf00_path, usecols=lambda col: col in raw_cols_needed)
-                        # Check if all needed columns were actually present
-                        missing_cols = [col for col in raw_cols_needed if col not in df_sf00_raw.columns]
-                        if missing_cols:
-                             print_manager.warning(f"  ! Missing required columns in {os.path.basename(sf00_path)}: {missing_cols}. Skipping file.")
-                             dates_missing_files.append(date_str)
-                             continue
-                    except FileNotFoundError:
-                         print_manager.error(f"  ✗ Could not find CSV file: {sf00_path}")
-                         dates_missing_files.append(date_str)
-                         continue # Skip to next date
-                    except pd.errors.EmptyDataError:
-                         print_manager.warning(f"  ✗ CSV file is empty: {sf00_path}")
-                         dates_missing_files.append(date_str)
-                         continue # Skip to next date
-                    except ValueError as ve: # Catches errors from usecols if a required col doesn't exist
-                         print_manager.error(f"  ✗ Error reading specific columns from {sf00_path}: {ve}. Check if required columns exist.")
-                         dates_missing_files.append(date_str)
-                         continue
-                    except Exception as read_e:
-                         print_manager.error(f"  ✗ Error reading CSV file {sf00_path}: {read_e}")
-                         dates_missing_files.append(date_str)
-                         continue # Skip to next date
-
-                    if not df_sf00_raw.empty:
-                        all_raw_data_list.append(df_sf00_raw)
-                        dates_processed.append(date_str)
-                        print_manager.processing(f"  ✓ Raw data loaded for {date_str}")
-                    else:
-                        print_manager.warning(f"  ✗ DataFrame empty after loading {sf00_path}")
-                        dates_missing_files.append(date_str)
-
-                except Exception as e:
-                    print_manager.error(f"  ✗ Error during FITS data loading for {date_str}: {e}")
-                    import traceback
-                    print_manager.debug(traceback.format_exc())
-                    dates_missing_files.append(date_str)
-            else:
-                print_manager.debug(f"  ✗ Missing sf00 file for date {date_str}")
-                dates_missing_files.append(date_str)
-
-        if not all_raw_data_list:
-            print_manager.warning(f"No raw FITS data could be loaded for the time range {trange}. Missing files for dates: {dates_missing_files}")
-            print_manager.time_output("import_data_function", "no raw data loaded")
-            return None
-
-        # Consolidate raw data
-        print_manager.debug("Consolidating raw FITS data...")
-        try:
-            final_raw_df = pd.concat(all_raw_data_list, ignore_index=True)
-        except Exception as concat_e:
-            print_manager.error(f"Error concatenating raw FITS DataFrames: {concat_e}")
-            return None
-
-        # Convert time to datetime objects, then to TT2000
-        try:
-            # Assuming 'time' column contains Unix epoch seconds
-            # Using to_numpy() to directly get numpy arrays, avoiding to_pydatetime() completely
-            datetime_series = pd.to_datetime(final_raw_df['time'], unit='s', utc=True)
-            # Convert to numpy array of datetime64 objects
-            datetime_objs = datetime_series.to_numpy()
-            # Convert to Python datetime objects for components extraction
-            datetime_components_list = [
-                [dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, int(dt.microsecond / 1000)]
-                for dt in datetime_objs
-            ]
-            tt2000_array = cdflib.cdfepoch.compute_tt2000(datetime_components_list)
-            print_manager.debug(f"Converted final times to TT2000 (Length: {len(tt2000_array)})")
-        except Exception as time_e:
-            print_manager.error(f"Error converting FITS time column to TT2000: {time_e}")
-            return None
-
-        # Create final data dictionary with NumPy arrays
-        final_data = {}
-        for col in raw_cols_needed:
-            if col != 'time': # Exclude the original time column
-                try:
-                    # Convert column to numpy array, handling potential errors
-                    final_data[col] = final_raw_df[col].to_numpy()
-                except KeyError:
-                    print_manager.warning(f"Column '{col}' not found during final conversion, filling with NaNs.")
-                    final_data[col] = np.full(len(tt2000_array), np.nan)
-                except Exception as np_e:
-                    print_manager.error(f"Error converting column '{col}' to NumPy array: {np_e}")
-                    final_data[col] = np.full(len(tt2000_array), np.nan)
-
-
-        # Sort based on TT2000 times
-        try:
-            sort_indices = np.argsort(tt2000_array)
-            times_sorted = tt2000_array[sort_indices]
-            data_sorted = {}
-            for var_name in final_data:
-                 if final_data[var_name] is not None:
-                     # Ensure the data array exists and is not empty before trying to sort
-                     if isinstance(final_data[var_name], np.ndarray) and final_data[var_name].size > 0:
-                         try:
-                             data_sorted[var_name] = final_data[var_name][sort_indices]
-                         except IndexError as ie:
-                             print_manager.error(f"Sorting IndexError for '{var_name}': {ie}")
-                             print_manager.error(f"  Data shape: {final_data[var_name].shape}, Sort indices length: {len(sort_indices)}")
-                             # Fill with NaNs as a fallback
-                             data_sorted[var_name] = np.full(len(times_sorted), np.nan)
-                     else:
-                          # Handle cases where data might be None or empty after potential errors
-                          print_manager.warning(f"Data for '{var_name}' is empty or None before sorting, filling with NaNs.")
-                          data_sorted[var_name] = np.full(len(times_sorted), np.nan)
-                 else:
-                     data_sorted[var_name] = None # Keep None if it was None
-        except Exception as sort_e:
-            print_manager.error(f"Error during sorting of raw FITS data: {sort_e}")
-            return None
-
-        print_manager.debug(f"Sorted all raw FITS data based on time.")
-
-        # Create and return DataObject containing RAW data
-        data_object = DataObject(times=times_sorted, data=data_sorted)
-        global_tracker.update_imported_range(trange, data_type) # Track successful import
-        print_manager.status(f"✅ - FITS raw data import complete for range {trange}.\n")
-        # Calculate output range based on sorted times
-        output_range_dt = cdflib.epochs.CDFepoch.to_datetime(times_sorted[[0, -1]])
-        print_manager.time_output("import_data_function", output_range_dt.tolist())
-        return data_object
+    # Get config for the requested data type - MUST HAPPEN BEFORE if/else
+    if data_type not in psp_data_types:
+        print_manager.error(f"Invalid data_type '{data_type}' passed to import_data_function.")
+        print_manager.time_output("import_data_function", "error: invalid data_type")
+        return None
+    config = psp_data_types[data_type]
+    print_manager.debug(f"Retrieved config for {data_type}")
 
     # --- Handle Hammerhead (ham) CSV Loading ---
-    elif data_type == 'ham':
+    if data_type == 'ham':
         print_manager.debug(f"\n=== Starting Hammerhead CSV Data Import for {trange} ===")
-
-        # Get config for the ham data type
-        config = psp_data_types['ham']
-        if not config:
-            print_manager.error(f"Configuration error: Missing 'ham' data type definition in psp_data_types.py")
-            print_manager.time_output("import_data_function", "error: config error")
-            return None
+        # No need to get config again, it's already set
+        # config = psp_data_types['ham'] # REMOVED
 
         ham_base_path = config.get('local_path')
         ham_patterns = config.get('file_pattern_import', ['*.csv'])  # Default to all CSVs if not specified

@@ -197,22 +197,63 @@ class proton_fits_class:
             return None # Return None if not found
 
     def __getattr__(self, name):
-        """Provide a helpful error message when an attribute is not found.
-        Lists the available plot_manager attributes that can be accessed.
+        """
+        Provide a helpful error message when an attribute is not found.
+        
+        For CWYN (Calculate-What-You-Need) variables, this method creates
+        plot_manager instances on first access, triggering calculation only
+        when actually needed for plotting.
         """
         print_manager.debug(f'proton_fits __getattr__ triggered for: {name}')
         
-        # Generate the list of ACTUAL plottable attributes (plot_manager instances)
+        # Check if this is a CWYN variable with stored plot options
+        if hasattr(self, '_cwyn_ploptions') and name in self._cwyn_ploptions:
+            print_manager.debug(f"Creating CWYN plot_manager: {name}")
+            
+            # Map plot attribute names to property names
+            property_mapping = {
+                'vsw_mach_pfits': 'vsw_mach',
+                'vdrift_va_p2p1_apfits': 'vdrift_va_p2p1_apfits',
+                'abs_vdrift_va_p2p1_apfits': 'abs_vdrift_va_p2p1_apfits'
+            }
+            
+            # Get data through the property (this triggers the calculation!)
+            property_name = property_mapping.get(name)
+            if property_name:
+                print_manager.debug(f"Getting data from property: {property_name}")
+                data = getattr(self, property_name)
+                
+                # Create plot_manager with the calculated data
+                pm = plot_manager(
+                    data,
+                    plot_options=self._cwyn_ploptions[name]
+                )
+                
+                # Cache the result for future access
+                setattr(self, name, pm)
+                
+                # Mark it as a CWYN variable for debugging
+                pm._is_cwyn = True
+                
+                return pm
+        
+        # Generate the list of available plot_manager attributes
         available_attrs = [attr for attr in dir(self) 
                            if isinstance(getattr(self, attr, None), plot_manager) 
                            and not attr.startswith('_')]
         
+        # Include CWYN variables in the available attributes list
+        if hasattr(self, '_cwyn_ploptions'):
+            for var in self._cwyn_ploptions.keys():
+                if var not in available_attrs:
+                    available_attrs.append(var)
+        
         # Construct the error message
         error_message = f"'{name}' is not a recognized attribute, friend!"
         if available_attrs:
-            error_message += f"\nAvailable plot managers: {', '.join(sorted(available_attrs))}"
+            error_message += f"\\nAvailable plot managers: {', '.join(sorted(available_attrs))}"
         else:
-            error_message += "\nNo plot manager attributes seem to be available yet." # Should not happen after init
+            error_message += "\\nNo plot manager attributes seem to be available yet."
             
         # Raise AttributeError, which is standard practice for __getattr__
         raise AttributeError(error_message)
@@ -395,7 +436,7 @@ class proton_fits_class:
                  extracted_data['Vcm_mach'] = None
                  extracted_data['Vp1_mach'] = None
                  # print_manager.warning("Could not calculate Mach numbers (missing valfven).")
-            
+
             # --- 4. Store Final Data --- 
             for key, value in extracted_data.items():
                  if key in self.raw_data:
@@ -742,18 +783,19 @@ class proton_fits_class:
         print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Successfully fetched and validated dependency '{cubby_key}'.")
         return extracted_vars
 
-    def _create_fits_scatter_ploptions(self, var_name, subclass_name, y_label, legend_label, color,
+    def _create_fits_scatter_ploptions(self, var_name, subclass_name, y_label, legend_label, color='black',
+                                       data_type='proton_fits', class_name='proton_fits', plot_type='scatter',
                                        marker_style='*', marker_size=5, alpha=0.7, y_scale='linear', y_limit=None):
-        """Helper method to create ploptions for standard FITS scatter plots."""
+        """Helper method to create ploptions for standard FITS plots (scatter or time_series)."""
         # Ensure datetime_array is handled correctly if None
         dt_array = self.datetime_array if hasattr(self, 'datetime_array') and self.datetime_array is not None else None
         
         return ploptions(
             var_name=var_name,
-            data_type='proton_fits',
-            class_name='proton_fits',
+            data_type=data_type,       # Use passed argument
+            class_name=class_name,     # Use passed argument
             subclass_name=subclass_name,
-            plot_type='scatter',         
+            plot_type=plot_type,         # Use passed argument
             datetime_array=dt_array, # Use potentially None dt_array
             y_label=y_label,
             legend_label=legend_label,
@@ -788,22 +830,8 @@ class proton_fits_class:
             )
         )
 
-        # 2. vsw_mach_pfits (Scatter, Size 20)
-        self.vsw_mach_pfits = plot_manager( # Solar wind Mach number - ATTRIBUTE NAME CHANGED
-            data_source=lambda: self.vsw_mach, # NEW: Link to @property
-            plot_options=self._create_fits_scatter_ploptions(
-                var_name='vsw_mach', 
-                subclass_name='vsw_mach_pfits', # User list #2
-                y_label=r'$V_{sw}/V_A$', 
-                legend_label=r'V$_{A}$', 
-                color='gold', 
-                y_scale='linear',
-                y_limit=None,
-                marker_style='*',
-                marker_size=20, 
-                alpha=0.7
-            )
-        )
+        # 2. vsw_mach_pfits (Scatter, Size 20) - Removed direct initialization
+        # self.vsw_mach_pfits = plot_manager( ... ) 
 
         # 3. beta_ppar_pfits (Scatter, Size 20)
         self.beta_ppar_pfits = plot_manager( # Total Proton parallel beta - ATTRIBUTE NAME CHANGED
@@ -1201,56 +1229,57 @@ class proton_fits_class:
                 class_name='proton_fits',
                 subclass_name='valfven_pfits', # User list #34 (Updated name)
                 plot_type='time_series', 
-                datetime_array=self.datetime_array,
                 y_label=r'V$_{A}$ (km/s)', 
-                legend_label=r'V$_{A}$'   
+                legend_label=r'V$_{A}$',   
+                color='deepskyblue' # Added back the missing color argument
             )
         )
 
         # --- NEW CWYN Variables --- 
-
-        # 35. vdrift_va_p2p1_apfits (Normalized drift using Va including alphas)
-        self.vdrift_va_p2p1_apfits = plot_manager(
-            data_source=lambda: self.vdrift_va_p2p1_apfits, # Link to @property
-            plot_options=ploptions(
-                var_name='vdrift_va_p2p1_apfits', # Internal property name
-                data_type='proton_fits',
-                class_name='proton_fits',
-                subclass_name='vdrift_va_p2p1_apfits', # PlotBot attribute name
-                plot_type='scatter',
-                datetime_array=self.datetime_array, # Use current datetime array
+        # For CWYN variables, just store their plot options for later use 
+        # (don't create plot_managers yet)
+        self._cwyn_ploptions = {
+            'vsw_mach_pfits': self._create_fits_scatter_ploptions(
+                var_name='vsw_mach', 
+                subclass_name='vsw_mach_pfits',
+                y_label=r'$V_{sw}/V_A$', 
+                legend_label=r'$V_{sw}/V_A$', # Corrected label to match y_label
+                color='gold', 
+                y_scale='linear',
+                y_limit=None,
+                marker_style='*',
+                marker_size=20, 
+                alpha=0.7
+            ),
+            
+            'vdrift_va_p2p1_apfits': self._create_fits_scatter_ploptions(
+                var_name='vdrift_va_p2p1_apfits',
+                subclass_name='vdrift_va_p2p1_apfits',
                 y_label=r'$V_{drift}/V_A$',
-                legend_label=r'$Vd_{p2-p1}/V_{A,ap}$', # Adapted label
-                color='navy',                  # Adapted style
-                y_scale='linear',
-                marker_style='*',              # Adapted style
-                marker_size=5,                 # Adapted style
-                alpha=0.7,                     # Adapted style
+                legend_label=r'$Vd_{p2-p1}/V_{A,ap}$',
+                color='navy',
+                marker_style='*',
+                marker_size=5,
+                alpha=0.7,
                 y_limit=None
-            )
-        )
-
-        # 36. abs_vdrift_va_p2p1_apfits (Absolute normalized drift using Va including alphas)
-        self.abs_vdrift_va_p2p1_apfits = plot_manager(
-            data_source=lambda: self.abs_vdrift_va_p2p1_apfits, # Link to @property
-            plot_options=ploptions(
-                var_name='abs_vdrift_va_p2p1_apfits', # Internal property name
-                data_type='proton_fits',
-                class_name='proton_fits',
-                subclass_name='abs_vdrift_va_p2p1_apfits', # PlotBot attribute name
-                plot_type='scatter',
-                datetime_array=self.datetime_array, # Use current datetime array
+            ),
+            
+            'abs_vdrift_va_p2p1_apfits': self._create_fits_scatter_ploptions(
+                var_name='abs_vdrift_va_p2p1_apfits',
+                subclass_name='abs_vdrift_va_p2p1_apfits',
                 y_label=r'$|V_{drift}|/V_A$',
-                legend_label=r'$|Vd_{p2-p1}|/V_{A,ap}|$', # Adapted label (Corrected closing $$)
-                color='darkred',                 # Adapted style (Changed color slightly for distinction)
-                y_scale='linear',
-                marker_style='*',               # Adapted style
-                marker_size=5,                  # Adapted style
-                alpha=0.7,                      # Adapted style
+                legend_label=r'$|Vd_{p2-p1}|/V_{A,ap}$', # Corrected label formatting
+                color='darkred',
+                marker_style='*',
+                marker_size=5,
+                alpha=0.7,
                 y_limit=None
             )
-        )
+        }
 
+        # The previous direct plot_manager initializations for CWYN vars 
+        # (vsw_mach_pfits, vdrift_va_p2p1_apfits, abs_vdrift_va_p2p1_apfits) 
+        # should be fully removed above or commented out.
 
 # Initialize with no data - this creates the global singleton instance
 proton_fits = proton_fits_class(None)
