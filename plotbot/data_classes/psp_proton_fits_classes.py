@@ -125,9 +125,9 @@ class proton_fits_class:
             self.set_ploptions() # This function will need updates too
             # Add status message after processing
             if self.datetime_array is not None:
-                print_manager.status(f"Successfully processed {self.__class__.__name__} CDF data.")
+                 print_manager.status(f"Successfully processed {self.__class__.__name__} CDF data.")
             else:
-                print_manager.warning(f"Processing for {self.__class__.__name__} completed, but no valid data loaded.")
+                 print_manager.warning(f"Processing for {self.__class__.__name__} completed, but no valid data loaded.")
 
         # Stash the instance in data_cubby
         data_cubby.stash(self, class_name='proton_fits') # Keep key consistent for now?
@@ -204,8 +204,8 @@ class proton_fits_class:
         
         # Generate the list of ACTUAL plottable attributes (plot_manager instances)
         available_attrs = [attr for attr in dir(self) 
-                        if isinstance(getattr(self, attr, None), plot_manager) 
-                        and not attr.startswith('_')]
+                           if isinstance(getattr(self, attr, None), plot_manager) 
+                           and not attr.startswith('_')]
         
         # Construct the error message
         error_message = f"'{name}' is not a recognized attribute, friend!"
@@ -255,10 +255,10 @@ class proton_fits_class:
             self.time = np.asarray(imported_data.times) # TT2000 from CDF Epoch
 
             if self.time is None or self.time.size == 0:
-                logging.error(f"{self.__class__.__name__}: Imported DataObject has empty or None 'times' attribute.")
-                self.datetime_array = None
-                for key in self.raw_data: self.raw_data[key] = None
-                return
+                 logging.error(f"{self.__class__.__name__}: Imported DataObject has empty or None 'times' attribute.")
+                 self.datetime_array = None
+                 for key in self.raw_data: self.raw_data[key] = None
+                 return
 
             self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time))
             print_manager.debug(f"{self.__class__.__name__}: Processing data for time range {self.datetime_array.min()} to {self.datetime_array.max()}")
@@ -276,30 +276,30 @@ class proton_fits_class:
             for key in self.raw_data.keys():
                 data_val = data_dict.get(key)
                 if data_val is not None:
-                    extracted_data[key] = np.asarray(data_val)
-                    # print_manager.debug(f"  Extracted {key}, shape: {extracted_data[key].shape}, type: {extracted_data[key].dtype}") # Verbose
+                     extracted_data[key] = np.asarray(data_val)
+                     # print_manager.debug(f"  Extracted {key}, shape: {extracted_data[key].shape}, type: {extracted_data[key].dtype}") # Verbose
                 elif key not in vars_to_calculate: # If missing and not planned for calculation
-                    potential_missing_keys.append(key)
-                    extracted_data[key] = None # Set to None
+                     potential_missing_keys.append(key)
+                     extracted_data[key] = None # Set to None
                 else:
-                    extracted_data[key] = None # Placeholder for calculation
+                     extracted_data[key] = None # Placeholder for calculation
 
             if potential_missing_keys:
-                print_manager.warning(f"{self.__class__.__name__}: The following expected CDF variables were missing: {potential_missing_keys}")
+                 print_manager.warning(f"{self.__class__.__name__}: The following expected CDF variables were missing: {potential_missing_keys}")
 
             # --- 3. Perform Necessary Calculations --- 
             
             # Calculate B_mag (if not directly present)
             B_mag = extracted_data.get('B_mag')
             if B_mag is None:
-                B_inst = extracted_data.get('B_inst')
-                if B_inst is not None and B_inst.ndim == 2 and B_inst.shape[1] == 3:
-                    with np.errstate(invalid='ignore'):
-                        B_mag = np.sqrt(B_inst[:, 0]**2 + B_inst[:, 1]**2 + B_inst[:, 2]**2)
-                    extracted_data['B_mag'] = B_mag
-                    print_manager.debug("  Calculated B_mag from B_inst vector.")
-                else:
-                    print_manager.warning("Could not find/calculate B_mag (B_mag not in CDF, B_inst missing or wrong shape).")
+                 B_inst = extracted_data.get('B_inst')
+                 if B_inst is not None and B_inst.ndim == 2 and B_inst.shape[1] == 3:
+                      with np.errstate(invalid='ignore'):
+                           B_mag = np.sqrt(B_inst[:, 0]**2 + B_inst[:, 1]**2 + B_inst[:, 2]**2)
+                      extracted_data['B_mag'] = B_mag
+                      print_manager.debug("  Calculated B_mag from B_inst vector.")
+                 else:
+                      print_manager.warning("Could not find/calculate B_mag (B_mag not in CDF, B_inst missing or wrong shape).")
             else:
                 print_manager.debug("Using B_mag directly provided by CDF.")
 
@@ -307,93 +307,93 @@ class proton_fits_class:
             np1 = extracted_data.get('np1')
             np2 = extracted_data.get('np2')
             if np1 is not None and np2 is not None:
-                with np.errstate(divide='ignore', invalid='ignore'):
-                    np1_safe = np.where(np1 != 0, np1, np.nan)
-                    extracted_data['np2_np1_ratio'] = np2 / np1_safe
-                    print_manager.debug("  Calculated np2_np1_ratio.")
+                 with np.errstate(divide='ignore', invalid='ignore'):
+                      np1_safe = np.where(np1 != 0, np1, np.nan)
+                      extracted_data['np2_np1_ratio'] = np2 / np1_safe
+                      print_manager.debug("  Calculated np2_np1_ratio.")
             else:
-                extracted_data['np2_np1_ratio'] = None
+                 extracted_data['np2_np1_ratio'] = None
 
             # Calculate valfven 
             n_tot = extracted_data.get('n_tot')
             valfven = None # Initialize
             if B_mag is not None and n_tot is not None:
-                with np.errstate(divide='ignore', invalid='ignore'):
-                    n_tot_safe = np.where(n_tot > 0, n_tot, np.nan)
-                    valfven = 21.8 * B_mag / np.sqrt(n_tot_safe)
-                extracted_data['valfven'] = valfven
-                print_manager.debug("  Calculated valfven.")
+                 with np.errstate(divide='ignore', invalid='ignore'):
+                      n_tot_safe = np.where(n_tot > 0, n_tot, np.nan)
+                      valfven = 21.8 * B_mag / np.sqrt(n_tot_safe)
+                 extracted_data['valfven'] = valfven
+                 print_manager.debug("  Calculated valfven.")
             else:
-                extracted_data['valfven'] = None
-                # print_manager.warning("Could not calculate valfven (missing B_mag or n_tot).") # Already warned about B_mag
+                 extracted_data['valfven'] = None
+                 # print_manager.warning("Could not calculate valfven (missing B_mag or n_tot).") # Already warned about B_mag
 
             # Calculate beta_ppar, beta_pperp, beta_p_tot
             Tpar_tot = extracted_data.get('Tpar_tot')
             Tperp_tot = extracted_data.get('Tperp_tot')
             if Tpar_tot is not None and Tperp_tot is not None and n_tot is not None and B_mag is not None:
-                with np.errstate(divide='ignore', invalid='ignore'):
-                    n_tot_safe = np.where(n_tot > 0, n_tot, np.nan)
-                    beta_denom = (1e-5 * B_mag)**2
-                    beta_denom_safe = np.where(beta_denom > 0, beta_denom, np.nan)
-                    beta_ppar = (4.03E-11 * n_tot_safe * Tpar_tot) / beta_denom_safe
-                    beta_pperp = (4.03E-11 * n_tot_safe * Tperp_tot) / beta_denom_safe
-                    beta_p_tot = np.sqrt(beta_ppar**2 + beta_pperp**2) 
-                extracted_data['beta_ppar'] = beta_ppar
-                extracted_data['beta_pperp'] = beta_pperp
-                extracted_data['beta_p_tot'] = beta_p_tot
-                print_manager.debug("  Calculated beta parameters.")
+                 with np.errstate(divide='ignore', invalid='ignore'):
+                      n_tot_safe = np.where(n_tot > 0, n_tot, np.nan)
+                      beta_denom = (1e-5 * B_mag)**2
+                      beta_denom_safe = np.where(beta_denom > 0, beta_denom, np.nan)
+                      beta_ppar = (4.03E-11 * n_tot_safe * Tpar_tot) / beta_denom_safe
+                      beta_pperp = (4.03E-11 * n_tot_safe * Tperp_tot) / beta_denom_safe
+                      beta_p_tot = np.sqrt(beta_ppar**2 + beta_pperp**2) 
+                 extracted_data['beta_ppar'] = beta_ppar
+                 extracted_data['beta_pperp'] = beta_pperp
+                 extracted_data['beta_p_tot'] = beta_p_tot
+                 print_manager.debug("  Calculated beta parameters.")
             else:
-                extracted_data['beta_ppar'] = None
-                extracted_data['beta_pperp'] = None
-                extracted_data['beta_p_tot'] = None
-                # print_manager.warning("Could not calculate beta parameters (missing inputs).")
+                 extracted_data['beta_ppar'] = None
+                 extracted_data['beta_pperp'] = None
+                 extracted_data['beta_p_tot'] = None
+                 # print_manager.warning("Could not calculate beta parameters (missing inputs).")
 
             # Calculate ham_param
             Tperp1 = extracted_data.get('Tperp1')
             Tperp2 = extracted_data.get('Tperp2')
             Trat_tot = extracted_data.get('Trat_tot')
             if Tperp1 is not None and Tperp2 is not None and Trat_tot is not None:
-                with np.errstate(divide='ignore', invalid='ignore'):
-                    Trat_tot_safe = np.where(Trat_tot != 0, Trat_tot, np.nan)
-                    Tperp1_safe = np.where(Tperp1 != 0, Tperp1, np.nan)
-                    extracted_data['ham_param'] = (Tperp2 / Tperp1_safe) / Trat_tot_safe
-                    print_manager.debug("  Calculated ham_param.")
+                 with np.errstate(divide='ignore', invalid='ignore'):
+                      Trat_tot_safe = np.where(Trat_tot != 0, Trat_tot, np.nan)
+                      Tperp1_safe = np.where(Tperp1 != 0, Tperp1, np.nan)
+                      extracted_data['ham_param'] = (Tperp2 / Tperp1_safe) / Trat_tot_safe
+                      print_manager.debug("  Calculated ham_param.")
             else:
-                extracted_data['ham_param'] = None
+                 extracted_data['ham_param'] = None
 
             # Calculate chi_p_norm
             chi_p = extracted_data.get('chi_p')
             if chi_p is not None:
-                with np.errstate(divide='ignore', invalid='ignore'):
-                    extracted_data['chi_p_norm'] = chi_p / 2038.0
-                    print_manager.debug("  Calculated chi_p_norm.")
+                 with np.errstate(divide='ignore', invalid='ignore'):
+                      extracted_data['chi_p_norm'] = chi_p / 2038.0
+                      print_manager.debug("  Calculated chi_p_norm.")
             else:
-                extracted_data['chi_p_norm'] = None
+                 extracted_data['chi_p_norm'] = None
 
             # Calculate vdrift_abs (simple)
             vdrift = extracted_data.get('vdrift')
             if vdrift is not None:
-                extracted_data['vdrift_abs'] = np.abs(vdrift)
-                print_manager.debug("  Calculated vdrift_abs.")
+                 extracted_data['vdrift_abs'] = np.abs(vdrift)
+                 print_manager.debug("  Calculated vdrift_abs.")
             else:
-                extracted_data['vdrift_abs'] = None
+                 extracted_data['vdrift_abs'] = None
 
             # Calculate Mach numbers (V/Va)
             valfven_safe = np.where(valfven != 0, valfven, np.nan) if valfven is not None else None
             if valfven_safe is not None:
-                vdrift = extracted_data.get('vdrift')
-                vcm_mag = extracted_data.get('vcm_mag')
-                vp1_mag = extracted_data.get('vp1_mag')
-                with np.errstate(divide='ignore', invalid='ignore'):
-                    if vdrift is not None: extracted_data['vdrift_va'] = vdrift / valfven_safe
-                    if vcm_mag is not None: extracted_data['Vcm_mach'] = vcm_mag / valfven_safe
-                    if vp1_mag is not None: extracted_data['Vp1_mach'] = vp1_mag / valfven_safe
-                print_manager.debug("  Calculated vdrift_va, Vcm_mach, Vp1_mach.")
+                 vdrift = extracted_data.get('vdrift')
+                 vcm_mag = extracted_data.get('vcm_mag')
+                 vp1_mag = extracted_data.get('vp1_mag')
+                 with np.errstate(divide='ignore', invalid='ignore'):
+                      if vdrift is not None: extracted_data['vdrift_va'] = vdrift / valfven_safe
+                      if vcm_mag is not None: extracted_data['Vcm_mach'] = vcm_mag / valfven_safe
+                      if vp1_mag is not None: extracted_data['Vp1_mach'] = vp1_mag / valfven_safe
+                 print_manager.debug("  Calculated vdrift_va, Vcm_mach, Vp1_mach.")
             else:
-                extracted_data['vdrift_va'] = None
-                extracted_data['Vcm_mach'] = None
-                extracted_data['Vp1_mach'] = None
-                # print_manager.warning("Could not calculate Mach numbers (missing valfven).")
+                 extracted_data['vdrift_va'] = None
+                 extracted_data['Vcm_mach'] = None
+                 extracted_data['Vp1_mach'] = None
+                 # print_manager.warning("Could not calculate Mach numbers (missing valfven).")
             
             # --- Placeholder for vsw_mach (Requires external dependency) --- 
             # TODO: Implement fetching spi_sf00_l3_mom and aligning if vsw_mach is needed
@@ -431,99 +431,136 @@ class proton_fits_class:
         and divides by the Alfven speed calculated using only proton density.
         Results are cached.
         """
-        # 1. Check cache
-        if 'vsw_mach' in self._cwyn_cache:
-            print_manager.debug(f"{self.__class__.__name__}: Returning cached vsw_mach.")
-            return self._cwyn_cache['vsw_mach']
+        cache_key = 'vsw_mach'
+        required_internal = ['valfven']
+        cubby_key = 'spi_sf00_l3_mom'
+        # V_rtn needed if vp not present, Epoch needed for alignment
+        required_dependency_vars = ['Epoch', 'V_rtn', 'vp']
 
-        print_manager.debug(f"{self.__class__.__name__}: Calculating vsw_mach (not cached)...")
+        # 1. Use helper to check cache and internal prerequisites
+        cached_result, should_calculate = self._check_cwyn_cache_and_prereqs(cache_key, required_internal)
+        if not should_calculate:
+            return cached_result
+        valfven_p = self.raw_data.get('valfven') # Already validated by helper
 
-        # 2. Check dependencies
-        if self.plotbot is None or self.plotbot.data_cubby is None:
-            logging.error(f"{self.__class__.__name__}: PlotBot/DataCubby reference not available for fetching dependencies.")
-            return np.full(self.time.shape, np.nan) if self.time is not None else None
-
-        # Check if proton Alfven speed is available (calculated eagerly)
-        valfven_p = self.raw_data.get('valfven')
-        if valfven_p is None or np.all(np.isnan(valfven_p)):
-            logging.warning(f"{self.__class__.__name__}: Proton Alfven speed (valfven) not available or all NaN. Cannot calculate vsw_mach.")
-            return np.full(self.time.shape, np.nan) if self.time is not None else None
-        if self.time is None:
-            logging.error(f"{self.__class__.__name__}: Self time array is None. Cannot calculate vsw_mach.")
-            return None
-
-        # 3. Fetch spi_sf00_l3_mom data
+        # 2. Fetch and validate dependency
         try:
-            print_manager.debug(f"{self.__class__.__name__}: Fetching spi_sf00_l3_mom dependency...")
-            mom_data_instance = self.plotbot.data_cubby.grab('spi_sf00_l3_mom')
-            if mom_data_instance is None:
-                logging.error(f"{self.__class__.__name__}: Failed to retrieve 'spi_sf00_l3_mom' from DataCubby.")
-                self._cwyn_cache['vsw_mach'] = np.full(self.time.shape, np.nan) # Cache NaN result
-                return self._cwyn_cache['vsw_mach']
+            # Note: required_dependency_vars includes 'vp' which might be None, 
+            # the helper validates *presence*, not non-None status for optional vars.
+            dependencies = self._fetch_and_validate_dependency(cache_key, cubby_key, required_dependency_vars)
+            if dependencies is None:
+                self._cwyn_cache[cache_key] = np.full(self.time.shape, np.nan)
+                return self._cwyn_cache[cache_key]
+            
+            # Extract validated vars
+            mom_time = dependencies.get('Epoch')
+            mom_v_rtn = dependencies.get('V_rtn')
+            mom_vp = dependencies.get('vp') # Could be None if not present
 
-            # Access raw data dictionary if it exists
-            mom_data = getattr(mom_data_instance, 'raw_data', None)
-            if mom_data is None:
-                 # Fallback: check attributes directly if no raw_data dict (less ideal)
-                 mom_time = getattr(mom_data_instance, 'time', None) # Assumes 'time' holds Epoch
-                 mom_v_rtn = getattr(mom_data_instance, 'V_rtn', None)
-                 mom_vp = getattr(mom_data_instance, 'vp', None)
-                 if mom_time is None or (mom_v_rtn is None and mom_vp is None):
-                     logging.error(f"{self.__class__.__name__}: spi_sf00_l3_mom instance lacks necessary attributes (time/Epoch, V_rtn, vp).")
-                     self._cwyn_cache['vsw_mach'] = np.full(self.time.shape, np.nan)
-                     return self._cwyn_cache['vsw_mach']
-            else:
-                 # Preferentially use raw_data dictionary
-                 mom_time = mom_data.get('Epoch')
-                 mom_v_rtn = mom_data.get('V_rtn')
-                 mom_vp = mom_data.get('vp')
-
-            if mom_time is None or len(mom_time) == 0:
-                logging.error(f"{self.__class__.__name__}: spi_sf00_l3_mom has no time data.")
-                self._cwyn_cache['vsw_mach'] = np.full(self.time.shape, np.nan)
-                return self._cwyn_cache['vsw_mach']
-
-            # 4. Get Vsw (Solar Wind Speed magnitude)
+            # 3. Get Vsw (Solar Wind Speed magnitude)
             if mom_vp is not None:
                 vsw = mom_vp
-                print_manager.debug(f"{self.__class__.__name__}: Using 'vp' magnitude from spi_sf00_l3_mom.")
+                print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Using 'vp' magnitude from {cubby_key}.")
             elif mom_v_rtn is not None and mom_v_rtn.ndim == 2 and mom_v_rtn.shape[1] >= 3:
-                print_manager.debug(f"{self.__class__.__name__}: Calculating Vsw magnitude from 'V_rtn' vector.")
-                with np.errstate(invalid='ignore'): # Ignore sqrt of NaN
+                print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Calculating Vsw magnitude from 'V_rtn' vector.")
+                with np.errstate(invalid='ignore'):
                     vsw = np.sqrt(mom_v_rtn[:, 0]**2 + mom_v_rtn[:, 1]**2 + mom_v_rtn[:, 2]**2)
             else:
-                logging.error(f"{self.__class__.__name__}: Could not find/calculate Vsw (vp or V_rtn) in spi_sf00_l3_mom data.")
-                self._cwyn_cache['vsw_mach'] = np.full(self.time.shape, np.nan)
-                return self._cwyn_cache['vsw_mach']
+                # This case should ideally be caught by the validation helper if both are missing/invalid
+                logging.error(f"{self.__class__.__name__} ({cache_key}): Could not determine Vsw from validated dependencies.")
+                self._cwyn_cache[cache_key] = np.full(self.time.shape, np.nan)
+                return self._cwyn_cache[cache_key]
 
-            # 5. Align Vsw to self.time
-            print_manager.debug(f"{self.__class__.__name__}: Aligning Vsw to FITS time base...")
+            # 4. Align Vsw to self.time
+            print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Aligning Vsw to FITS time base...")
             vsw_aligned = self._interpolate_to_self_time(mom_time, vsw)
-
             if vsw_aligned is None:
-                logging.error(f"{self.__class__.__name__}: Alignment of Vsw failed.")
-                self._cwyn_cache['vsw_mach'] = np.full(self.time.shape, np.nan)
-                return self._cwyn_cache['vsw_mach']
+                logging.error(f"{self.__class__.__name__} ({cache_key}): Alignment of Vsw failed.")
+                self._cwyn_cache[cache_key] = np.full(self.time.shape, np.nan)
+                return self._cwyn_cache[cache_key]
 
-            # 6. Calculate Mach number
-            print_manager.debug(f"{self.__class__.__name__}: Calculating Mach number (Vsw_aligned / valfven_p)...")
+            # 5. Calculate Mach number
+            print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Calculating Mach number...")
             with np.errstate(divide='ignore', invalid='ignore'):
                 valfven_p_safe = np.where(valfven_p != 0, valfven_p, np.nan)
                 mach_number = vsw_aligned / valfven_p_safe
 
-            # 7. Cache and return result
-            self._cwyn_cache['vsw_mach'] = mach_number
-            print_manager.debug(f"{self.__class__.__name__}: Successfully calculated and cached vsw_mach.")
-            return self._cwyn_cache['vsw_mach']
+            # 6. Cache and return result
+            self._cwyn_cache[cache_key] = mach_number
+            print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Successfully calculated and cached.")
+            return self._cwyn_cache[cache_key]
 
         except Exception as e:
-            logging.error(f"!!! UNEXPECTED ERROR calculating vsw_mach in {self.__class__.__name__}: {e}")
+            logging.error(f"!!! UNEXPECTED ERROR calculating {cache_key} in {self.__class__.__name__}: {e}")
             import traceback
             logging.error(traceback.format_exc())
-            # Cache NaN result on unexpected error
             result_shape = self.time.shape if self.time is not None else (0,)
-            self._cwyn_cache['vsw_mach'] = np.full(result_shape, np.nan)
-            return self._cwyn_cache['vsw_mach']
+            self._cwyn_cache[cache_key] = np.full(result_shape, np.nan)
+            return self._cwyn_cache[cache_key]
+
+    @property
+    def vdrift_va_p2p1_apfits(self):
+        """Calculates normalized drift (Vdrift / Va_alphaproton) on demand.
+
+        Fetches sf01_fits data for alpha density (na), calculates the
+        Alfven speed using total density (n_tot + na), and divides the
+        proton drift speed (vdrift) by this mixed Alfven speed.
+        Assumes proton and alpha data are aligned. Results are cached.
+        """
+        cache_key = 'vdrift_va_p2p1_apfits'
+        required_internal = ['vdrift', 'n_tot', 'B_mag']
+        cubby_key = 'sf01_fits'
+        required_dependency_vars = ['na', 'Epoch'] # Epoch needed for length check
+
+        # 1. Use helper to check cache and internal prerequisites
+        cached_result, should_calculate = self._check_cwyn_cache_and_prereqs(cache_key, required_internal)
+        if not should_calculate:
+            return cached_result
+        vdrift = self.raw_data.get('vdrift')
+        n_tot_p = self.raw_data.get('n_tot')
+        b_mag = self.raw_data.get('B_mag')
+
+        # 2. Fetch and validate dependency
+        try:
+            dependencies = self._fetch_and_validate_dependency(cache_key, cubby_key, required_dependency_vars)
+            if dependencies is None:
+                self._cwyn_cache[cache_key] = np.full(self.time.shape, np.nan)
+                return self._cwyn_cache[cache_key]
+            
+            na = dependencies.get('na')
+            # alpha_time = dependencies.get('Epoch') # Not needed for calculation, only length check
+
+            # 3. Verify array lengths (assuming alignment)
+            if len(na) != len(self.time) or len(n_tot_p) != len(self.time) or len(vdrift) != len(self.time) or len(b_mag) != len(self.time):
+                 logging.error(f"{self.__class__.__name__} ({cache_key}): Length mismatch ({len(self.time)=}, {len(na)=}, {len(n_tot_p)=}). Cannot calculate. Data might not be aligned.")
+                 self._cwyn_cache[cache_key] = np.full(self.time.shape, np.nan)
+                 return self._cwyn_cache[cache_key]
+
+            # 4. Calculate Mixed Alfven Speed (Va_ap)
+            print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Calculating mixed Alfven speed (Va_ap)...")
+            with np.errstate(divide='ignore', invalid='ignore'):
+                n_total_ap = n_tot_p + na
+                n_total_ap_safe = np.where(n_total_ap > 0, n_total_ap, np.nan)
+                valfven_ap = 21.8 * b_mag / np.sqrt(n_total_ap_safe)
+
+            # 5. Calculate Normalized Drift (Vdrift / Va_ap)
+            print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Calculating normalized drift (Vdrift / Va_ap)...")
+            with np.errstate(divide='ignore', invalid='ignore'):
+                valfven_ap_safe = np.where(valfven_ap != 0, valfven_ap, np.nan)
+                norm_drift = vdrift / valfven_ap_safe
+
+            # 6. Cache and return result
+            self._cwyn_cache[cache_key] = norm_drift
+            print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Successfully calculated and cached.")
+            return self._cwyn_cache[cache_key]
+
+        except Exception as e:
+            logging.error(f"!!! UNEXPECTED ERROR calculating {cache_key} in {self.__class__.__name__}: {e}")
+            import traceback
+            logging.error(traceback.format_exc())
+            result_shape = self.time.shape if self.time is not None else (0,)
+            self._cwyn_cache[cache_key] = np.full(result_shape, np.nan)
+            return self._cwyn_cache[cache_key]
 
     def _interpolate_to_self_time(self, source_time, source_data):
         """Interpolates external data onto this instance's time base. Used for 
@@ -590,6 +627,98 @@ class proton_fits_class:
             logging.error(traceback.format_exc())
             # Return NaNs in case of any unexpected error
             return np.full(self.time.shape, np.nan)
+
+    def _check_cwyn_cache_and_prereqs(self, cache_key, required_internal_keys=[]):
+        """Checks CWYN cache and internal prerequisites for a property calculation.
+
+        Args:
+            cache_key (str): The key to check in self._cwyn_cache.
+            required_internal_keys (list, optional): List of keys that must be present
+                and not all NaN in self.raw_data. Defaults to [].
+
+        Returns:
+            tuple: (result, should_calculate)
+                - result: The cached value if found, or an array of NaNs if prerequisites fail.
+                - should_calculate (bool): True if calculation should proceed, False otherwise.
+        """
+        # 1. Check cache
+        if cache_key in self._cwyn_cache:
+            print_manager.debug(f"{self.__class__.__name__}: Returning cached {cache_key}.")
+            return self._cwyn_cache[cache_key], False # Return cached value, don't calculate
+
+        print_manager.debug(f"{self.__class__.__name__}: Calculating {cache_key} (not cached)...")
+
+        # 2. Check core prerequisites (plotbot reference and time array)
+        if self.plotbot is None or self.plotbot.data_cubby is None:
+            logging.error(f"{self.__class__.__name__}: PlotBot/DataCubby reference not available. Cannot calculate {cache_key}.")
+            nan_result = np.full(self.time.shape, np.nan) if self.time is not None else None
+            return nan_result, False # Return NaNs, don't calculate
+        if self.time is None:
+            logging.error(f"{self.__class__.__name__}: Self time array is None. Cannot calculate {cache_key}.")
+            return None, False # Return None, don't calculate
+
+        # 3. Check required internal raw_data keys
+        for key in required_internal_keys:
+            data = self.raw_data.get(key)
+            if data is None or np.all(np.isnan(data)):
+                logging.warning(f"{self.__class__.__name__}: Required internal key '{key}' not available or all NaN. Cannot calculate {cache_key}.")
+                nan_result = np.full(self.time.shape, np.nan)
+                return nan_result, False # Return NaNs, don't calculate
+
+        # Prerequisites met, calculation should proceed
+        return None, True
+
+    def _fetch_and_validate_dependency(self, cache_key, cubby_key, required_dependency_vars):
+        """Fetches dependency from DataCubby and validates required variables.
+
+        Args:
+            cache_key (str): The cache key of the calling property (for logging).
+            cubby_key (str): The key to fetch from self.plotbot.data_cubby.
+            required_dependency_vars (list): List of variable names that must be extracted
+                and validated from the dependency instance.
+
+        Returns:
+            dict or None: A dictionary containing the validated dependency variables
+                          (e.g., {'Epoch': time_array, 'na': na_array}) if successful,
+                          otherwise None.
+        """
+        print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Fetching dependency '{cubby_key}'...")
+        dependency_instance = self.plotbot.data_cubby.grab(cubby_key)
+
+        # 1. Check if instance was fetched
+        if dependency_instance is None:
+            logging.error(f"{self.__class__.__name__} ({cache_key}): Failed to retrieve '{cubby_key}' from DataCubby.")
+            return None
+
+        # 2. Try to extract required variables
+        extracted_vars = {}
+        dependency_raw_data = getattr(dependency_instance, 'raw_data', None)
+
+        for var_name in required_dependency_vars:
+            value = None
+            # Prioritize raw_data dictionary
+            if dependency_raw_data is not None and var_name in dependency_raw_data:
+                value = dependency_raw_data[var_name]
+            # Fallback to direct attribute access
+            elif hasattr(dependency_instance, var_name):
+                value = getattr(dependency_instance, var_name)
+
+            # Basic validation: Check if None or all NaN (if array)
+            if value is None:
+                logging.warning(f"{self.__class__.__name__} ({cache_key}): Required variable '{var_name}' not found in '{cubby_key}' instance.")
+                return None # Fail if any required var is missing
+            if isinstance(value, np.ndarray) and value.size > 0 and np.all(np.isnan(value)):
+                logging.warning(f"{self.__class__.__name__} ({cache_key}): Required variable '{var_name}' in '{cubby_key}' is all NaN.")
+                # Decide if all NaN is acceptable or a failure - for now, let's treat it as failure
+                return None
+            if isinstance(value, np.ndarray) and value.size == 0:
+                 logging.warning(f"{self.__class__.__name__} ({cache_key}): Required variable '{var_name}' in '{cubby_key}' is an empty array.")
+                 return None # Treat empty array as failure
+                 
+            extracted_vars[var_name] = value
+
+        print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Successfully fetched and validated dependency '{cubby_key}'.")
+        return extracted_vars
 
     def _create_fits_scatter_ploptions(self, var_name, subclass_name, y_label, legend_label, color,
                                        marker_style='*', marker_size=5, alpha=0.7, y_scale='linear', y_limit=None):

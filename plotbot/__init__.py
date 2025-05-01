@@ -8,8 +8,8 @@ import time # For version string
 current_time = time.strftime("%Y-%m-%d %H:%M:%S")
 
 # Version format: YYYY-MM-DD_vX.YY
-__version__ = "2025-04-30_v1.173"
-__commit_message__ = "refactor: Make _create_fits_scatter_ploptions helper more flexible (2025-04-30_v1.173)"
+__version__ = "2025-04-30_v1.174"
+__commit_message__ = "refactor: Add CWYN helper methods for cache/prereqs and dependency fetching (steps 3.5, 3.6) (2025-04-30_v1.174)"
 
 def get_version_string():
     # Colors for printing
