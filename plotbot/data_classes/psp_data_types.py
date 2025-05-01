@@ -2,6 +2,24 @@
 
 import os
 
+# Notes:
+# `file_pattern` is used when interacting with the remote server during the download process.
+# It often includes a specific regex capture group to capture the two-digit version number.
+# This allows the download logic to identify the latest available version of a file on the server.
+# 
+# `file_pattern_import` is used when searching for files locally after they have been downloaded.
+# It uses a wildcard to locate any matching version on the local disk.
+# This distinction allows the downloader to get the newest file from the source, while the importer can find whatever version was actually downloaded locally.
+
+# `file_time_format` is used to specify the time granularity of the files on the server.
+# This is important because files are often divided into different lengths based on the sampling cadence.
+# Having a pattern for this helps the system to correctly identify and process files of different time resolutions.
+# For example, '6-hour' indicates that files are divided into 6-hour segments, while 'daily' indicates a daily resolution.
+
+# The `data_vars` variable in each data type configuration serves as a container for the specific variables to be imported. 
+# In some cases, like the `mag_RTN` data, `data_vars` returns a composite variable that aggregates related components, such as br, bt, and bn. 
+# In contrast, for data types like `spe` and `spi`, the `data_vars` are more specific, directly identifying the individual variables of interest. 
+
 # CONFIGURATION: Data Types, Defines all available PSP data products
 #====================================================================
 data_types = {
@@ -97,30 +115,45 @@ data_types = {
             'ENERGY_VALS', 'THETA_VALS', 'PHI_VALS'
         ],
     },
-    'sf00_fits': { # FITS sf00 CSV data
-        'file_source': 'local_csv',
-        'local_path': os.path.join('psp_data', 'sweap', 'spi_fits', 'sf00', 'p2', 'v00'), # UPDATED PATH AGAIN
-        'file_pattern_import': ['spp_swp_spi_sf00_*.csv'], # More specific pattern
+    'sf00_fits': { # UPDATED: Now points to CDF FITS data
+        'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/sweap/.sav/spi_fits/cdf_files/sf00/p2/v00/', # ADDED: URL for CDFs
+        'local_path': os.path.join('psp_data', 'sweap', 'spi_fits', 'cdf_files', 'sf00', 'p2', 'v00'), # UPDATED: Path reflects new structure
+        'password_type': 'sweap', # ADDED: Password needed
+        'file_pattern': r'spp_swp_spi_sf00_fits_(\d{{4}}-\d{{2}}-\d{{2}})_v(\d{{2}})\.cdf', # UPDATED: CDF pattern for download
+        'file_pattern_import': r'spp_swp_spi_sf00_fits_{date_str}_v*.cdf', # UPDATED: CDF pattern for import
+        'data_level': 'l3', # Assuming L3, adjust if needed
         'file_time_format': 'daily',
-        'data_vars': [
-            'time', 'np1', 'np2', 'vp1_x', 'vp1_y', 'vp1_z',
-            'B_inst_x', 'B_inst_y', 'B_inst_z', 'B_SC_x', 'B_SC_y', 'B_SC_z',
-            'vdrift', 'Tperp1', 'Tperp2', 'Trat1', 'Trat2',
-            'np1_dpar', 'np2_dpar', 'vp1_x_dpar', 'vp1_y_dpar',
-            'vp1_z_dpar', 'vdrift_dpar', 'Tperp1_dpar', 'Tperp2_dpar',
-            'Trat1_dpar', 'Trat2_dpar', 'chi'
+        'data_vars': [ # UPDATED: List based on observed CDF variables
+            'Epoch', 'np1', 'np2', 'Tperp1', 'Tperp2', 'Trat1', 'Trat2',
+            'vdrift', 'vp1', 'B_inst', 'B_SC', 'chi_p',
+            # Include calculated vars now present in CDF
+            'Tpar1', 'Tpar2', 'Tpar_tot', 'Tperp_tot', 'Temp_tot', 'n_tot', 
+            'vp2', 'vcm', 'bhat_inst', 'qz_p',
+            # Include magnitudes and uncertainties if available/needed
+            'vp1_mag', 'vcm_mag', 'vp2_mag', 
+            'np1_dpar', 'np2_dpar', 'Tperp1_dpar', 'Tperp2_dpar', 
+            'Trat1_dpar', 'Trat2_dpar', 'vdrift_dpar', 'vp1_dpar',
+            # Include other potentially useful vars
+            'epad_strahl_centroid', 'ps_ht1', 'ps_ht2',
+            'qz_p_par', 'qz_p_perp'
+            # Add/remove as needed based on usage in proton_fits_class
         ]
     },
-    'sf01_fits': { # FITS sf01 CSV data
-        'file_source': 'local_csv',
-        'local_path': os.path.join('psp_data', 'sweap', 'spi_fits', 'sf01', 'p3', 'v00'), # UPDATED PATH
-        'file_pattern_import': ['spp_swp_spi_sf01_*.csv'], # More specific pattern
+    'sf01_fits': { # UPDATED: Now points to CDF FITS data
+        'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/sweap/.sav/spi_fits/cdf_files/sf01/p3/v00/', # ADDED: URL for CDFs
+        'local_path': os.path.join('psp_data', 'sweap', 'spi_fits', 'cdf_files', 'sf01', 'p3', 'v00'), # UPDATED: Path reflects new structure
+        'password_type': 'sweap', # ADDED: Password needed
+        'file_pattern': r'spp_swp_spi_sf01_fits_(\d{{4}}-\d{{2}}-\d{{2}})_v(\d{{2}})\.cdf', # UPDATED: CDF pattern for download
+        'file_pattern_import': r'spp_swp_spi_sf01_fits_{date_str}_v*.cdf', # UPDATED: CDF pattern for import
+        'data_level': 'l3', # Assuming L3, adjust if needed
         'file_time_format': 'daily',
-        'data_vars': [
-            'time', 'na', 'va_x', 'va_y', 'va_z', 'Trata', 'Ta_perp',
-            'B_inst_x', 'B_inst_y', 'B_inst_z', # Needed for B_mag calculation
-            'na_dpar', 'va_x_dpar', 'va_y_dpar', 'va_z_dpar',
-            'Trata_dpar', 'Ta_perp_dpar', 'chi'
+        'data_vars': [ # UPDATED: List based on observed CDF variables
+            'Epoch', 'na', 'va', 'Tperpa', 'Trata', 'chi_a',
+            # Include calculated/other vars present in CDF
+            'Tpara', 'B_inst_a', 'B_SC_a', 'vp2_mag',
+            # Uncertainties
+            'na_dpar', 'va_dpar', 'Tperpa_dpar', 'Trata_dpar'
+            # Add/remove as needed based on usage in alpha_fits_class
         ]
     },
     'ham': { # NEW: Hammerhead CSV data

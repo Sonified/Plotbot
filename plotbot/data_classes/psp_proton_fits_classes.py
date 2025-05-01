@@ -5,6 +5,8 @@ import pandas as pd
 import cdflib
 from datetime import datetime, timedelta, timezone
 import logging
+from scipy.interpolate import interp1d # For Calculate What You Need (CWYN) interpolation
+import matplotlib.dates as mdates      # For Calculate What You Need (CWYN) time conversion
 
 # Define constants (moved from calculation file)
 try:
@@ -29,82 +31,108 @@ from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
 # from .psp_proton_classes import proton
 
 class proton_fits_class:
-    def __init__(self, imported_data):
-        # Initialize raw_data with keys for BOTH raw inputs and calculated outputs
+    def __init__(self, imported_data, plotbot_instance=None):
+        # Initialize raw_data with keys matching the expected CDF variables
+        # Includes directly provided variables and any *still* calculated ones.
         object.__setattr__(self, 'raw_data', {
-            # Raw inputs from data_import
+            # --- Variables directly from spi_sf00_cdf --- 
+            'Epoch': None,        # Time base
             'np1': None,
             'np2': None,
             'Tperp1': None,
             'Tperp2': None,
             'Trat1': None,
             'Trat2': None,
-            'vdrift': None,
-            'B_inst_x': None,
-            'B_inst_y': None,
-            'B_inst_z': None,
-            'vp1_x': None,
-            'vp1_y': None,
-            'vp1_z': None,
-            'chi': None, # Source data key
-            # Calculated outputs
-            'qz_p': None,
-            'vsw_mach': None, # Placeholder
-            'beta_ppar': None,
-            'beta_pperp': None,
-            'ham_param': None,
-            'n_tot': None,
-            'np2_np1_ratio': None, # ADDED
-            'vp1_mag': None,
-            'vcm_x': None,
-            'vcm_y': None,
-            'vcm_z': None,
-            'vcm_mag': None,
-            'vdrift_abs': None, # ADDED
-            'vdrift_va': None,
-            'Trat_tot': None,
+            'vdrift': None,       # Scalar drift speed?
+            'vp1': None,          # Proton core velocity vector [vx, vy, vz]
+            'B_inst': None,       # Magnetic field vector (Instrument frame)
+            'B_SC': None,         # Magnetic field vector (Spacecraft frame)
+            'chi_p': None,        # Chi-squared (using CDF name)
+            # Pre-calculated thermal properties from CDF
             'Tpar1': None,
             'Tpar2': None,
             'Tpar_tot': None,
             'Tperp_tot': None,
             'Temp_tot': None,
-            '|qz_p|': None,
-            'chi_p_norm': None, # ADDED
-            'valfven': None,
-            'B_mag': None,
-            'bhat_x': None,
-            'bhat_y': None,
-            'bhat_z': None,
-            'vp2_x': None,
-            'vp2_y': None,
-            'vp2_z': None,
+            # Pre-calculated density/velocity properties from CDF
+            'n_tot': None,
+            'vp2': None,          # Proton beam velocity vector
+            'vcm': None,          # Center of mass velocity vector
+            'bhat_inst': None,    # Unit vector of B_inst
+            'qz_p': None,         # Heat flux
+            # Magnitudes from CDF (if directly available, verify)
+            'vp1_mag': None,
+            'vcm_mag': None,
             'vp2_mag': None,
-            'qz_p_perp': None,
-            'qz_p_par': None,
-            'Vcm_mach': None,
-            'Vp1_mach': None,
-            'beta_p_tot': None,
-            # Use 'chi_p' as the key for the processed/stored chi value
-            'chi_p': None, 
+            'B_mag': None,        # Assume calculated if B_inst/B_SC are vectors
+            # Uncertainties from CDF
+            'np1_dpar': None,
+            'np2_dpar': None,
+            'Tperp1_dpar': None,
+            'Tperp2_dpar': None, 
+            'Trat1_dpar': None,
+            'Trat2_dpar': None,
+            'vdrift_dpar': None,
+            'vp1_dpar': None,       # Uncertainty for vp1 vector?
+            # Other variables from CDF
+            'epad_strahl_centroid': None,
+            'ps_ht1': None,
+            'ps_ht2': None,
+            'qz_p_par': None,     # Parallel heat flux
+            'qz_p_perp': None,    # Perpendicular heat flux
+            
+            # --- Variables potentially *still* calculated HERE ---
+            # Check if these are in CDF or still need calculation
+            'vsw_mach': None,      # Likely still needs calculation (depends on spi_sf00_l3_mom)
+            'valfven': None,       # Alfven speed (might need calculation from B_mag, n_tot)
+            'beta_ppar': None,     # Parallel Beta (might need calc from Tpar_tot, n_tot, B_mag)
+            'beta_pperp': None,    # Perp Beta (might need calc from Tperp_tot, n_tot, B_mag)
+            'beta_p_tot': None,    # Total Beta
+            'ham_param': None,     # Hammerhead parameter
+            'np2_np1_ratio': None, # Density ratio
+            'vdrift_abs': None,   # Absolute drift (redundant if vdrift is scalar?)
+            'vdrift_va': None,     # Drift / Alfven speed
+            'chi_p_norm': None,   # Normalized chi
+            'Vcm_mach': None,      # Vcm / Alfven speed
+            'Vp1_mach': None,      # Vp1 / Alfven speed
+            # Individual vector components (if needed for plotting/calcs and not accessed via slicing)
+            # 'B_inst_x': None, 
+            # 'B_inst_y': None, 
+            # 'B_inst_z': None,
+            # 'vp1_x': None,
+            # 'vp1_y': None,
+            # 'vp1_z': None,
+            # etc. for B_SC, vp2, vcm, bhat_inst...
+            # --- NEW: Variables calculated using CWYN properties ---
+            'vdrift_va_p2p1_apfits': None, # Placeholder for property access
+            'abs_vdrift_va_p2p1_apfits': None, # Placeholder for property access
         })
+        # Initialize time attributes
+        object.__setattr__(self, 'time', None) # Will hold TT2000 epoch
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, '_cwyn_cache', {}) # Initialize Calculate What You Need (CWYN) cache
+        object.__setattr__(self, 'plotbot', plotbot_instance) # Store reference to PlotBot
 
         if imported_data is None:
-            # Set empty plotting options if imported_data is None (this is how we initialize the class)
+            # Set empty plotting options if imported_data is None
             self.set_ploptions()
-            print_manager.debug("No data provided; initialized with empty attributes.")
+            print_manager.debug(f"{self.__class__.__name__} initialized empty.")
         else:
-            # Initialize with data if provided
-            print_manager.debug("Calculating proton fits variables internally...")
-            self.calculate_variables(imported_data)
-            self.set_ploptions()
-            print_manager.status("Successfully calculated proton fits variables.")
+            # Process the imported CDF data
+            print_manager.debug(f"Processing imported CDF data for {self.__class__.__name__}...")
+            self.calculate_variables(imported_data) # This function needs major rewrite
+            self.set_ploptions() # This function will need updates too
+            # Add status message after processing
+            if self.datetime_array is not None:
+                 print_manager.status(f"Successfully processed {self.__class__.__name__} CDF data.")
+            else:
+                 print_manager.warning(f"Processing for {self.__class__.__name__} completed, but no valid data loaded.")
 
-        # Stash the instance in data_cubby for later retrieval / to avoid circular references
-        data_cubby.stash(self, class_name='proton_fits')
+        # Stash the instance in data_cubby
+        data_cubby.stash(self, class_name='proton_fits') # Keep key consistent for now?
 
-    def update(self, imported_data): #This is function is the exact same across all classes :)
+    def update(self, imported_data):
         """Method to update class with new data.
         NOTE: This function updates the class with newly imported data. We need to use the data_cubby
         as a registry to store class instances in order to avoid circular references that would occur
@@ -211,425 +239,188 @@ class proton_fits_class:
         #     # Do not set the attrib - This was the problem!
 
     def calculate_variables(self, imported_data):
-        """Calculates derived FITS variables internally, fetching dependencies as needed."""
-        # --- Import needed functions/instances within method to avoid top-level circular imports --- 
-        # from ..get_data import get_data # NO LONGER NEEDED
-        from ..data_import import import_data_function # Import directly
-        from .psp_proton_classes import proton # Still need the proton class instance for attribute access
-        from dateutil.parser import parse
+        """Processes imported spi_sf00_fits (CDF) data, extracting variables and calculating a few remaining ones."""
+        # --- Import needed functions/instances --- 
+        from ..data_import import import_data_function # Potentially needed for vsw_mach
+        # from .psp_proton_classes import proton # Potentially needed for vsw_mach dependency
 
         try:
-            # imported_data is expected to be a DataObject instance
+            # --- 1. Validate Input --- 
             if not hasattr(imported_data, 'data') or not hasattr(imported_data, 'times'):
-                logging.error("Error in calculate_variables: imported_data is not a valid DataObject.")
-                return # Abort if data object is invalid
-
-            data_dict = imported_data.data # Access the dictionary within the DataObject
-            self.time = np.asarray(imported_data.times) # TT2000 array
-
-            if self.time is None or self.time.size == 0:
-                 logging.error("Imported DataObject has empty or None 'times' attribute.")
-                 self.datetime_array = None
-                 return
-
-            # Convert TT2000 back to datetime objects
-            self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time))
-
-            # --- Determine Time Range Needed --- 
-            fits_start_dt_np = self.datetime_array.min()
-            fits_end_dt_np = self.datetime_array.max()
-            fits_start_dt = pd.Timestamp(fits_start_dt_np)
-            fits_end_dt = pd.Timestamp(fits_end_dt_np)
-            trange_for_deps_str = [
-                fits_start_dt.strftime('%Y-%m-%d/%H:%M:%S.%f'), 
-                fits_end_dt.strftime('%Y-%m-%d/%H:%M:%S.%f')
-            ]
-            print_manager.debug(f"FITS Calculation: Determined dependency trange: {trange_for_deps_str}")
-
-            # --- Fetch Dependency: Proton Moments (spi_sf00_l3_mom) --- 
-            print_manager.debug("FITS Calculation: Importing proton moment data directly...")
-            proton_data_available = False # Default
-            vsw_mom_data = None
-            proton_times = None
-            try:
-                # Directly import the required data type
-                proton_data_obj = import_data_function(trange_for_deps_str, 'spi_sf00_l3_mom') 
-                
-                # --- ADDED DEBUGGING --- 
-                if proton_data_obj and hasattr(proton_data_obj, 'times') and hasattr(proton_data_obj, 'data'):
-                    print_manager.debug(" Checking proton data availability post import_data_function call:")
-                    proton_times = proton_data_obj.times # TT2000 times
-                    proton_data_dict = proton_data_obj.data
-                    
-                    if proton_times is not None:
-                        print_manager.debug(f"  proton_times length: {len(proton_times)}")
-                        if len(proton_times) > 0:
-                             proton_dt_array = np.array(cdflib.cdfepoch.to_datetime(proton_times))
-                             print_manager.debug(f"  proton time range: {proton_dt_array.min()} to {proton_dt_array.max()}")
-                    else:
-                        print_manager.debug("  proton_times is None.")
-                    
-                    # Need to access v_sw data (check exact key in data_types? likely VEL_RTN_SUN -> v_sw)
-                    # Let's assume the calculation within proton class stores it as 'v_sw'
-                    # We might need to calculate it here if import_data doesn't
-                    # For now, let's try getting 'VEL_RTN_SUN' and calculating magnitude
-                    vel_rtn_sun = proton_data_dict.get('VEL_RTN_SUN')
-                    if vel_rtn_sun is not None and vel_rtn_sun.shape[1] == 3:
-                         vsw_mom_data = np.sqrt(vel_rtn_sun[:, 0]**2 + vel_rtn_sun[:, 1]**2 + vel_rtn_sun[:, 2]**2)
-                         print_manager.debug(f"  Calculated vsw_mom_data length: {len(vsw_mom_data)}")
-                         valid_vsw = ~np.isnan(vsw_mom_data)
-                         print_manager.debug(f"  vsw_mom_data valid points: {np.sum(valid_vsw)}")
-                         proton_data_available = (proton_times is not None and len(proton_times) > 0 and 
-                                                  vsw_mom_data is not None and len(vsw_mom_data) > 0)
-                    else:
-                         print_manager.debug("  VEL_RTN_SUN data not found or has wrong shape in proton_data_obj.")
-                else:
-                    print_manager.debug("  import_data_function returned None for proton data.")
-                # --- END DEBUGGING ---
-
-            except Exception as import_e:
-                logging.error(f"Error calling import_data_function for proton dependency: {import_e}")
-                # proton_data_available remains False
-            
-            vsw_mom_aligned = None # Initialize
-            if proton_data_available:
-                print_manager.debug("FITS Calculation: Proton data found. Aligning v_sw...")
-                try:
-                    # --- Align vsw_mom data to FITS time grid --- 
-                    # Convert FITS TT2000 times to Unix timestamps
-                    fits_times_unix = np.array([cdflib.cdfepoch.unixtime(t) for t in self.time])
-                    # Convert Proton TT2000 times to Unix timestamps
-                    proton_times_unix = np.array([cdflib.cdfepoch.unixtime(t) for t in proton_times])
-                    
-                    # Handle potential NaNs in proton data before interpolation
-                    valid_proton_mask = ~np.isnan(proton_times_unix) & ~np.isnan(vsw_mom_data)
-                    if np.sum(valid_proton_mask) > 1: # Need at least 2 points to interpolate
-                        vsw_mom_aligned = np.interp(
-                            fits_times_unix, 
-                            proton_times_unix[valid_proton_mask],
-                            vsw_mom_data[valid_proton_mask],
-                            left=np.nan, 
-                            right=np.nan
-                        )
-                        print_manager.debug(f"Alignment successful. Shape: {vsw_mom_aligned.shape}")
-                    else:
-                        print_manager.warning("Not enough valid proton data points to perform interpolation.")
-                        vsw_mom_aligned = np.full_like(self.datetime_array, np.nan, dtype=float)
-
-                except Exception as interp_e:
-                    logging.error(f"Error during vsw_mom alignment/interpolation: {interp_e}")
-                    vsw_mom_aligned = np.full_like(self.datetime_array, np.nan, dtype=float)
-            else:
-                print_manager.warning("FITS Calculation: Proton moment data (v_sw) not available or empty. vsw_mach will be NaN.")
-                vsw_mom_aligned = np.full_like(self.datetime_array, np.nan, dtype=float)
-
-            # --- Extract raw FITS data (as before) ---
-            np1 = data_dict.get('np1')
-            np2 = data_dict.get('np2')
-            Tperp1 = data_dict.get('Tperp1')
-            Tperp2 = data_dict.get('Tperp2')
-            Trat1 = data_dict.get('Trat1')
-            Trat2 = data_dict.get('Trat2')
-            vdrift = data_dict.get('vdrift')
-            B_inst_x = data_dict.get('B_inst_x')
-            B_inst_y = data_dict.get('B_inst_y')
-            B_inst_z = data_dict.get('B_inst_z')
-            vp1_x = data_dict.get('vp1_x')
-            vp1_y = data_dict.get('vp1_y')
-            vp1_z = data_dict.get('vp1_z')
-
-            # Check if any essential raw data is missing
-            essential_raw = [np1, np2, Tperp1, Tperp2, Trat1, Trat2, vdrift,
-                            B_inst_x, B_inst_y, B_inst_z, vp1_x, vp1_y, vp1_z]
-            if any(v is None for v in essential_raw):
-                missing_keys = [k for k, v in data_dict.items() if v is None and k in [
-                    'np1', 'np2', 'Tperp1', 'Tperp2', 'Trat1', 'Trat2', 'vdrift',
-                    'B_inst_x', 'B_inst_y', 'B_inst_z', 'vp1_x', 'vp1_y', 'vp1_z'
-                ]]
-                logging.error(f"Essential raw data missing from imported_data: {missing_keys}. Cannot perform calculations.")
-                # Clear potentially calculated fields from previous runs
-                for key in self.raw_data:
-                    if key not in data_dict: # Don't clear raw inputs
-                        self.raw_data[key] = None
+                logging.error(f"Error in {self.__class__.__name__}.calculate_variables: imported_data is not a valid DataObject.")
+                self.datetime_array = None; self.time = None
                 return
 
-            # --- Filtering (Apply filtering similar to the original function) ---
-            filter_conditions = (
-                (np1 > 10) &
-                (np2 > 10) &
-                (Tperp1 > .03) &
-                (Tperp2 > .03) &
-                (Trat1 > .01) &
-                (Trat2 > .01) &
-                (Trat1 != 30) &
-                (Trat2 != 30) &
-                (Trat1 != 2.0) &
-                (Trat2 != 2.0) &
-                (Trat1 != 1.0) &
-                (Trat2 != 1.0) &
-                (vdrift != 10000) &
-                (vdrift != -10000)
-            )
-            mask = filter_conditions
+            data_dict = imported_data.data # Data dictionary from DataObject
+            self.time = np.asarray(imported_data.times) # TT2000 from CDF Epoch
 
-            # Apply NaN mask to all input arrays where the mask is False
-            # Important: Create copies or ensure subsequent calculations use masked arrays
-            raw_arrays_to_mask = {
-                'np1': np1, 'np2': np2, 'Tperp1': Tperp1, 'Tperp2': Tperp2,
-                'Trat1': Trat1, 'Trat2': Trat2, 'vdrift': vdrift, 'B_inst_x': B_inst_x,
-                'B_inst_y': B_inst_y, 'B_inst_z': B_inst_z, 'vp1_x': vp1_x,
-                'vp1_y': vp1_y, 'vp1_z': vp1_z
-            }
-            masked_data = {}
-            for key, arr in raw_arrays_to_mask.items():
-                # Ensure array is float before assigning NaN
-                if not np.issubdtype(arr.dtype, np.floating):
-                     masked_data[key] = arr.astype(float)
+            if self.time is None or self.time.size == 0:
+                 logging.error(f"{self.__class__.__name__}: Imported DataObject has empty or None 'times' attribute.")
+                 self.datetime_array = None
+                 for key in self.raw_data: self.raw_data[key] = None
+                 return
+
+            self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time))
+            print_manager.debug(f"{self.__class__.__name__}: Processing data for time range {self.datetime_array.min()} to {self.datetime_array.max()}")
+
+            # --- 2. Extract Variables from CDF Data --- 
+            # Get all variables defined in the __init__ raw_data structure 
+            extracted_data = {}
+            potential_missing_keys = []
+            vars_to_calculate = [ # Define variables we INTEND to calculate here
+                'B_mag', 'valfven', 'beta_ppar', 'beta_pperp', 'beta_p_tot', 
+                'vsw_mach', 'ham_param', 'np2_np1_ratio', 'vdrift_abs', 
+                'vdrift_va', 'chi_p_norm', 'Vcm_mach', 'Vp1_mach'
+            ]
+            
+            for key in self.raw_data.keys():
+                data_val = data_dict.get(key)
+                if data_val is not None:
+                     extracted_data[key] = np.asarray(data_val)
+                     # print_manager.debug(f"  Extracted {key}, shape: {extracted_data[key].shape}, type: {extracted_data[key].dtype}") # Verbose
+                elif key not in vars_to_calculate: # If missing and not planned for calculation
+                     potential_missing_keys.append(key)
+                     extracted_data[key] = None # Set to None
                 else:
-                     masked_data[key] = arr.copy()
-                masked_data[key][~mask] = np.nan
+                     extracted_data[key] = None # Placeholder for calculation
 
-            # Use masked data for subsequent calculations
-            np1 = masked_data['np1']
-            np2 = masked_data['np2']
-            Tperp1 = masked_data['Tperp1']
-            Tperp2 = masked_data['Tperp2']
-            Trat1 = masked_data['Trat1']
-            Trat2 = masked_data['Trat2']
-            vdrift = masked_data['vdrift']
-            B_inst_x = masked_data['B_inst_x']
-            B_inst_y = masked_data['B_inst_y']
-            B_inst_z = masked_data['B_inst_z']
-            vp1_x = masked_data['vp1_x']
-            vp1_y = masked_data['vp1_y']
-            vp1_z = masked_data['vp1_z']
+            if potential_missing_keys:
+                 print_manager.warning(f"{self.__class__.__name__}: The following expected CDF variables were missing: {potential_missing_keys}")
 
-            # --- Perform Derived Parameter Calculations (transplanted logic) ---
-
-            # Calculate magnitudes and unit vectors
-            vp1_mag = np.sqrt(vp1_x**2 + vp1_y**2 + vp1_z**2)
-            with np.errstate(invalid='ignore'): # Ignore warnings for sqrt(NaN)
-                B_mag = np.sqrt(B_inst_x**2 + B_inst_y**2 + B_inst_z**2)
-
-            # Calculate magnetic field unit vector components (handle potential division by zero/NaN)
-            with np.errstate(divide='ignore', invalid='ignore'):
-                b_mag_safe = np.where(B_mag != 0, B_mag, np.nan)
-                bhat_x = B_inst_x / b_mag_safe
-                bhat_y = B_inst_y / b_mag_safe
-                bhat_z = B_inst_z / b_mag_safe
-
-            # Total density and temperatures
-            n_tot = np1 + np2
-            with np.errstate(divide='ignore', invalid='ignore'):
-                n_tot_safe = np.where(n_tot != 0, n_tot, np.nan)
-                Tperp_tot = (np1 * Tperp1 + np2 * Tperp2) / n_tot_safe
-
-                # Calculate parallel temperatures from ratios (handle division by zero/NaN)
-                Trat1_safe = np.where(Trat1 != 0, Trat1, np.nan)
-                Trat2_safe = np.where(Trat2 != 0, Trat2, np.nan)
-                Tpar1 = Tperp1 / Trat1_safe
-                Tpar2 = Tperp2 / Trat2_safe
-
-                # Calculate total parallel temperature (includes drift term)
-                drift_term = (np1 * np2 / n_tot_safe) * m * (vdrift**2)
-                Tpar_tot = (np1 * Tpar1 + np2 * Tpar2 + drift_term) / n_tot_safe
-
-                # Calculate total temperature ratio and average temperature
-                Tpar_tot_safe = np.where(Tpar_tot != 0, Tpar_tot, np.nan)
-                Trat_tot = Tperp_tot / Tpar_tot_safe
-                Temp_tot = (2 * Tperp_tot + Tpar_tot) / 3
-
-            # Center-of-mass velocity
-            with np.errstate(divide='ignore', invalid='ignore'):
-                n_tot_safe = np.where(n_tot != 0, n_tot, np.nan)
-                frac_p2 = np2 / n_tot_safe
-                vcm_x = vp1_x + frac_p2 * vdrift * bhat_x
-                vcm_y = vp1_y + frac_p2 * vdrift * bhat_y
-                vcm_z = vp1_z + frac_p2 * vdrift * bhat_z
-            vcm_mag = np.sqrt(vcm_x**2 + vcm_y**2 + vcm_z**2)
-
-            # Beam velocity (vp2)
-            vp2_x = vp1_x + vdrift * bhat_x
-            vp2_y = vp1_y + vdrift * bhat_y
-            vp2_z = vp1_z + vdrift * bhat_z
-            vp2_mag = np.sqrt(vp2_x**2 + vp2_y**2 + vp2_z**2)
-
-            # Heat flux calculation (handle potential NaNs)
-            with np.errstate(divide='ignore', invalid='ignore'):
-                vt1perp2 = 2 * Tperp1 / m
-                vt2perp2 = 2 * Tperp2 / m
-                vt1par2 = 2 * Tpar1 / m
-                vt2par2 = 2 * Tpar2 / m
-                fac = 1.602E-10 # Conversion factor to W/m^2
-                n_tot_safe = np.where(n_tot != 0, n_tot, np.nan)
-                density_term = (np1 * np2) / n_tot_safe
-                temp_diff_term = 1.5 * (vt2par2 - vt1par2)
-                drift_squared_term = vdrift**2 * (np1**2 - np2**2) / (n_tot_safe**2)
-                perp_temp_diff = (vt2perp2 - vt1perp2)
-
-                qz_p = fac * 0.5 * m * density_term * vdrift * (temp_diff_term + drift_squared_term + perp_temp_diff)
-                qz_p_abs = np.abs(qz_p)
-
-            # Normalized heat flux (handle potential division by zero/NaN)
-            with np.errstate(divide='ignore', invalid='ignore'):
-                n_tot_safe = np.where(n_tot > 0, n_tot, np.nan)
-                vt_perp_tot_sq = 2 * (np1 * Tperp1 + np2 * Tperp2) / (m * n_tot_safe)
-                vt_par_tot_sq = 2 * (np1 * Tpar1+ np2 * Tpar2 + m * vdrift**2 * (np1 * np2)/n_tot_safe) / (m * n_tot_safe)
-
-                vt_perp_tot = np.sqrt(vt_perp_tot_sq)
-                vt_par_tot = np.sqrt(vt_par_tot_sq)
-
-                denom_perp = m * n_tot_safe * vt_perp_tot**3
-                denom_par = m * n_tot_safe * vt_par_tot**3
-
-                denom_perp_safe = np.where(denom_perp != 0, denom_perp, np.nan)
-                denom_par_safe = np.where(denom_par != 0, denom_par, np.nan)
-
-                qz_p_perp = qz_p / denom_perp_safe
-                qz_p_par = qz_p / denom_par_safe
-
-            # Alfven speed, Mach numbers, Beta (MODIFIED SECTION) 
-            with np.errstate(divide='ignore', invalid='ignore'):
-                n_tot_safe = np.where(n_tot > 0, n_tot, np.nan)
-                valfven = 21.8 * B_mag / np.sqrt(n_tot_safe)
-
-                valfven_safe = np.where(valfven != 0, valfven, np.nan)
-                vdrift_va = vdrift / valfven_safe
-                Vcm_mach = vcm_mag / valfven_safe
-                Vp1_mach = vp1_mag / valfven_safe
-                
-                # --- USE ALIGNED vsw_mom_aligned --- 
-                if vsw_mom_aligned is not None:
-                    vsw_mach = vsw_mom_aligned / valfven_safe # Calculate using aligned SPI speed
-                else:
-                    # Fallback if alignment failed or data wasn't available
-                    vsw_mach = np.full_like(valfven, np.nan) 
-                # -------------------------------------
-
-                # Plasma Beta calculations
-                beta_denom = (1e-5 * B_mag)**2
-                beta_denom_safe = np.where(beta_denom > 0, beta_denom, np.nan)
-                beta_ppar = (4.03E-11 * n_tot_safe * Tpar_tot) / beta_denom_safe
-                beta_pperp = (4.03E-11 * n_tot_safe * Tperp_tot) / beta_denom_safe
-                beta_p_tot = np.sqrt(beta_ppar**2 + beta_pperp**2)
-
-            # Hammerhead diagnostic
-            with np.errstate(divide='ignore', invalid='ignore'):
-                Trat_tot_safe = np.where(Trat_tot != 0, Trat_tot, np.nan)
-                Tperp1_safe = np.where(Tperp1 != 0, Tperp1, np.nan)
-                ham_param = (Tperp2 / Tperp1_safe) / Trat_tot_safe
-
-            # --- Extract chi if available ---
-            chi_p = data_dict.get('chi') # Get source data using key 'chi', store locally as chi_p
-
-            # --- Calculate Additional Ratios/Values ---
-            with np.errstate(divide='ignore', invalid='ignore'):
-                np1_safe = np.where(np1 != 0, np1, np.nan) # Avoid division by zero
-                np2_np1_ratio = np2 / np1_safe
-
-            vdrift_abs = np.abs(vdrift)
-
-            # chi_p_norm (use local variable chi_p which holds masked 'chi' data)
-            with np.errstate(divide='ignore', invalid='ignore'):
-                 # Ensure chi_p (the masked data from 'chi' column) exists before dividing
-                 if chi_p is not None:
-                      chi_p_norm = chi_p / 2038.0 # Ensure float division
+            # --- 3. Perform Necessary Calculations --- 
+            
+            # Calculate B_mag (if not directly present)
+            B_mag = extracted_data.get('B_mag')
+            if B_mag is None:
+                 B_inst = extracted_data.get('B_inst')
+                 if B_inst is not None and B_inst.ndim == 2 and B_inst.shape[1] == 3:
+                      with np.errstate(invalid='ignore'):
+                           B_mag = np.sqrt(B_inst[:, 0]**2 + B_inst[:, 1]**2 + B_inst[:, 2]**2)
+                      extracted_data['B_mag'] = B_mag
+                      print_manager.debug("  Calculated B_mag from B_inst vector.")
                  else:
-                      # If source 'chi' column was missing, norm is also undefined
-                      chi_p_norm = np.full_like(np1, np.nan) if np1 is not None else None
-
-            # --- Store calculated results in self.raw_data ---
-            # Store raw inputs as well for completeness/debugging
-            self.raw_data['np1'] = np1
-            self.raw_data['np2'] = np2
-            self.raw_data['Tperp1'] = Tperp1
-            self.raw_data['Tperp2'] = Tperp2
-            self.raw_data['Trat1'] = Trat1
-            self.raw_data['Trat2'] = Trat2
-            self.raw_data['vdrift'] = vdrift
-            self.raw_data['B_inst_x'] = B_inst_x
-            self.raw_data['B_inst_y'] = B_inst_y
-            self.raw_data['B_inst_z'] = B_inst_z
-            self.raw_data['vp1_x'] = vp1_x
-            self.raw_data['vp1_y'] = vp1_y
-            self.raw_data['vp1_z'] = vp1_z
-            # Store chi if it was found
-            if chi_p is not None: # Use local chi_p
-                # Apply the same NaN mask based on filter conditions using local chi_p
-                if not np.issubdtype(chi_p.dtype, np.floating):
-                    chi_p_masked = chi_p.astype(float)
-                else:
-                    chi_p_masked = chi_p.copy()
-                chi_p_masked[~mask] = np.nan
-                # STORE under key 'chi_p' using data from chi_p_masked
-                self.raw_data['chi_p'] = chi_p_masked # STORE USING KEY 'chi_p'
+                      print_manager.warning("Could not find/calculate B_mag (B_mag not in CDF, B_inst missing or wrong shape).")
             else:
-                # Ensure the key exists even if data wasn't found in source
-                self.raw_data['chi_p'] = None # Store None under key 'chi_p'
-                # Warning still refers to the source column name
-                logging.warning("Column 'chi' not found in imported FITS data.") 
+                print_manager.debug("Using B_mag directly provided by CDF.")
 
-            # Store calculated values
-            self.raw_data['beta_ppar'] = beta_ppar
-            self.raw_data['beta_pperp'] = beta_pperp
-            self.raw_data['valfven'] = valfven
-            self.raw_data['qz_p'] = qz_p
-            self.raw_data['ham_param'] = ham_param
-            self.raw_data['vp1_mag'] = vp1_mag
-            self.raw_data['vsw_mach'] = vsw_mach # Store the calculated or NaN value
-            self.raw_data['B_mag'] = B_mag
-            self.raw_data['bhat_x'] = bhat_x
-            self.raw_data['bhat_y'] = bhat_y
-            self.raw_data['bhat_z'] = bhat_z
-            self.raw_data['n_tot'] = n_tot
-            self.raw_data['Tperp_tot'] = Tperp_tot
-            self.raw_data['Tpar1'] = Tpar1
-            self.raw_data['Tpar2'] = Tpar2
-            self.raw_data['Tpar_tot'] = Tpar_tot
-            self.raw_data['Trat_tot'] = Trat_tot
-            self.raw_data['Temp_tot'] = Temp_tot
-            self.raw_data['vcm_x'] = vcm_x
-            self.raw_data['vcm_y'] = vcm_y
-            self.raw_data['vcm_z'] = vcm_z
-            self.raw_data['vcm_mag'] = vcm_mag
-            self.raw_data['vp2_x'] = vp2_x
-            self.raw_data['vp2_y'] = vp2_y
-            self.raw_data['vp2_z'] = vp2_z
-            self.raw_data['vp2_mag'] = vp2_mag
-            self.raw_data['abs_qz_p'] = qz_p_abs
-            self.raw_data['qz_p_perp'] = qz_p_perp
-            self.raw_data['qz_p_par'] = qz_p_par
-            self.raw_data['vdrift_va'] = vdrift_va
-            self.raw_data['Vcm_mach'] = Vcm_mach
-            self.raw_data['Vp1_mach'] = Vp1_mach
-            self.raw_data['beta_p_tot'] = beta_p_tot
-            self.raw_data['np2_np1_ratio'] = np2_np1_ratio
-            self.raw_data['vdrift_abs'] = vdrift_abs
-            self.raw_data['chi_p_norm'] = chi_p_norm
+            # Calculate np2_np1_ratio
+            np1 = extracted_data.get('np1')
+            np2 = extracted_data.get('np2')
+            if np1 is not None and np2 is not None:
+                 with np.errstate(divide='ignore', invalid='ignore'):
+                      np1_safe = np.where(np1 != 0, np1, np.nan)
+                      extracted_data['np2_np1_ratio'] = np2 / np1_safe
+                      print_manager.debug("  Calculated np2_np1_ratio.")
+            else:
+                 extracted_data['np2_np1_ratio'] = None
 
-            # --- Store RAW input 'chi' data separately --- 
-            # (This assumes chi_p is the masked version from earlier)
-            raw_chi = data_dict.get('chi') # Get original raw chi again
-            self.raw_data['chi'] = raw_chi if raw_chi is not None else None
+            # Calculate valfven 
+            n_tot = extracted_data.get('n_tot')
+            valfven = None # Initialize
+            if B_mag is not None and n_tot is not None:
+                 with np.errstate(divide='ignore', invalid='ignore'):
+                      n_tot_safe = np.where(n_tot > 0, n_tot, np.nan)
+                      valfven = 21.8 * B_mag / np.sqrt(n_tot_safe)
+                 extracted_data['valfven'] = valfven
+                 print_manager.debug("  Calculated valfven.")
+            else:
+                 extracted_data['valfven'] = None
+                 # print_manager.warning("Could not calculate valfven (missing B_mag or n_tot).") # Already warned about B_mag
 
+            # Calculate beta_ppar, beta_pperp, beta_p_tot
+            Tpar_tot = extracted_data.get('Tpar_tot')
+            Tperp_tot = extracted_data.get('Tperp_tot')
+            if Tpar_tot is not None and Tperp_tot is not None and n_tot is not None and B_mag is not None:
+                 with np.errstate(divide='ignore', invalid='ignore'):
+                      n_tot_safe = np.where(n_tot > 0, n_tot, np.nan)
+                      beta_denom = (1e-5 * B_mag)**2
+                      beta_denom_safe = np.where(beta_denom > 0, beta_denom, np.nan)
+                      beta_ppar = (4.03E-11 * n_tot_safe * Tpar_tot) / beta_denom_safe
+                      beta_pperp = (4.03E-11 * n_tot_safe * Tperp_tot) / beta_denom_safe
+                      beta_p_tot = np.sqrt(beta_ppar**2 + beta_pperp**2) 
+                 extracted_data['beta_ppar'] = beta_ppar
+                 extracted_data['beta_pperp'] = beta_pperp
+                 extracted_data['beta_p_tot'] = beta_p_tot
+                 print_manager.debug("  Calculated beta parameters.")
+            else:
+                 extracted_data['beta_ppar'] = None
+                 extracted_data['beta_pperp'] = None
+                 extracted_data['beta_p_tot'] = None
+                 # print_manager.warning("Could not calculate beta parameters (missing inputs).")
+
+            # Calculate ham_param
+            Tperp1 = extracted_data.get('Tperp1')
+            Tperp2 = extracted_data.get('Tperp2')
+            Trat_tot = extracted_data.get('Trat_tot')
+            if Tperp1 is not None and Tperp2 is not None and Trat_tot is not None:
+                 with np.errstate(divide='ignore', invalid='ignore'):
+                      Trat_tot_safe = np.where(Trat_tot != 0, Trat_tot, np.nan)
+                      Tperp1_safe = np.where(Tperp1 != 0, Tperp1, np.nan)
+                      extracted_data['ham_param'] = (Tperp2 / Tperp1_safe) / Trat_tot_safe
+                      print_manager.debug("  Calculated ham_param.")
+            else:
+                 extracted_data['ham_param'] = None
+
+            # Calculate chi_p_norm
+            chi_p = extracted_data.get('chi_p')
+            if chi_p is not None:
+                 with np.errstate(divide='ignore', invalid='ignore'):
+                      extracted_data['chi_p_norm'] = chi_p / 2038.0
+                      print_manager.debug("  Calculated chi_p_norm.")
+            else:
+                 extracted_data['chi_p_norm'] = None
+
+            # Calculate vdrift_abs (simple)
+            vdrift = extracted_data.get('vdrift')
+            if vdrift is not None:
+                 extracted_data['vdrift_abs'] = np.abs(vdrift)
+                 print_manager.debug("  Calculated vdrift_abs.")
+            else:
+                 extracted_data['vdrift_abs'] = None
+
+            # Calculate Mach numbers (V/Va)
+            valfven_safe = np.where(valfven != 0, valfven, np.nan) if valfven is not None else None
+            if valfven_safe is not None:
+                 vdrift = extracted_data.get('vdrift')
+                 vcm_mag = extracted_data.get('vcm_mag')
+                 vp1_mag = extracted_data.get('vp1_mag')
+                 with np.errstate(divide='ignore', invalid='ignore'):
+                      if vdrift is not None: extracted_data['vdrift_va'] = vdrift / valfven_safe
+                      if vcm_mag is not None: extracted_data['Vcm_mach'] = vcm_mag / valfven_safe
+                      if vp1_mag is not None: extracted_data['Vp1_mach'] = vp1_mag / valfven_safe
+                 print_manager.debug("  Calculated vdrift_va, Vcm_mach, Vp1_mach.")
+            else:
+                 extracted_data['vdrift_va'] = None
+                 extracted_data['Vcm_mach'] = None
+                 extracted_data['Vp1_mach'] = None
+                 # print_manager.warning("Could not calculate Mach numbers (missing valfven).")
+            
+            # --- Placeholder for vsw_mach (Requires external dependency) --- 
+            # TODO: Implement fetching spi_sf00_l3_mom and aligning if vsw_mach is needed
+            print_manager.debug("Skipping vsw_mach calculation (requires external dependency).")
+            extracted_data['vsw_mach'] = None 
+
+            # --- 4. Store Final Data --- 
+            for key, value in extracted_data.items():
+                 if key in self.raw_data:
+                      self.raw_data[key] = value
+                 # else: # Don't warn if it was just an intermediate calc like B_mag maybe
+                 #      print_manager.warning(f"Key '{key}' calculated/extracted but not in initial raw_data dict. Ignoring.")
+                      
+            if self.datetime_array is None:
+                 print_manager.error(f"{self.__class__.__name__}: No valid time array after processing.")
+            
         except Exception as e:
-            # --- ADDED DEBUG PRINT FOR HIDDEN ERRORS --- 
-            print_manager.error(f"!!! CAUGHT UNEXPECTED ERROR IN calculate_variables: {e}")
-            # --- END DEBUG PRINT --- 
-            logging.error(f"Error during internal FITS calculation in proton_fits_class.calculate_variables: {e}")
+            print_manager.error(f"!!! UNEXPECTED ERROR in {self.__class__.__name__}.calculate_variables: {e}")
             import traceback
             logging.error(traceback.format_exc())
             # Clear potentially calculated fields if error occurs
-            for key in self.raw_data:
-                # Check if key exists in self.raw_data before trying to assign None
-                # Also check if it wasn't part of the original input (data_dict)
-                if key in self.raw_data and key not in data_dict:
-                    self.raw_data[key] = None
-            self.datetime_array = None # Also clear time
+            for key in self.raw_data: self.raw_data[key] = None # Clear everything on error
+            self.datetime_array = None 
             self.time = None
 
         # Stash the instance in data_cubby for later retrieval / to avoid circular references
-        data_cubby.stash(self, class_name='proton_fits')
+        # data_cubby.stash(self, class_name='proton_fits') # Stashing happens in __init__ / update
 
     def _create_fits_scatter_ploptions(self, var_name, subclass_name, y_label, legend_label, color):
         """Helper method to create ploptions for standard FITS scatter plots."""

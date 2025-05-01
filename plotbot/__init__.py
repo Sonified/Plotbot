@@ -1,6 +1,29 @@
 # plotbot package
 # This file exports all components to make them available when importing the package
 
+import time # For version string
+
+# --- Version Information ---
+# Get the current time (Not used directly in version, but maybe useful elsewhere)
+current_time = time.strftime("%Y-%m-%d %H:%M:%S")
+
+# Version format: YYYY-MM-DD_vX.YY
+__version__ = "2025-04-30_v1.171"
+__commit_message__ = "feat: Initialize structure for proton_fits_class CWYN refactor (step 1) (2025-04-30_v1.171)"
+
+def get_version_string():
+    # Colors for printing
+    BLUE = '\033[94m'
+    RESET = '\033[0m'
+    return f"{BLUE}   Plotbot Version: {__version__}{RESET}"
+
+def get_commit_message():
+    # Colors for printing
+    BLUE = '\033[94m'
+    RESET = '\033[0m'
+    return f"{BLUE}   Commit: {__commit_message__}{RESET}"
+# --- End Version Information ---
+
 # Import and configure matplotlib first to ensure consistent styling
 import matplotlib.pyplot as mpl_plt
 import numpy as np
@@ -142,9 +165,9 @@ __all__ = [
 BLUE = '\033[94m'
 RESET = '\033[0m'
 
-COMMIT_MSG = "fix: Correct multiplot global y-limit logic (2025-04-30_v1.15)"
-print(f'{BLUE}   Version: 2025_04_30_v1.15{RESET}')
-print(f'{BLUE}   Commit: {COMMIT_MSG}{RESET}')
+# Print version and commit message using helper functions
+print(get_version_string())
+print(get_commit_message())
 
 # --- Final Print Message ---
 print(f"\n{BLUE}🤖 Plotbot Initialized{RESET}")
