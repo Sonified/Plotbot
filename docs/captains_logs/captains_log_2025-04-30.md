@@ -297,10 +297,9 @@ Following the plan, the implementation of Step 2 will proceed in these stages:
 3.  **Implement `@property vsw_mach`:** Create the property, including cache check, dependency fetch (`spi_sf00_l3_mom`), checking for `vp` or calculating magnitude from `V_rtn`, calling the interpolation helper, performing the Mach number calculation (`vp / valfven`), caching the result, and error handling. **(DONE)**
 3.5. **Refactor CWYN Boilerplate (Helper Method):** Create a private helper `_check_cwyn_cache_and_prereqs(self, cache_key, required_internal_keys)` to handle the common logic for checking the `_cwyn_cache` and validating prerequisites (`self.plotbot`, `self.time`, required `self.raw_data` entries). Update existing properties (`vsw_mach`, `vdrift_va_p2p1_apfits`) to use this helper. **(DONE)**
 3.6. **Refactor Dependency Fetching (Helper Method):** Create a second private helper `_fetch_and_validate_dependency(self, cache_key, cubby_key, required_dependency_vars)` to handle fetching the external dependency instance from `data_cubby`, extracting specified variables (checking `raw_data` then attributes), and performing basic validation. Update properties (`vsw_mach`, `vdrift_va_p2p1_apfits`) to use this helper. **(DONE)**
-4.  **Implement `@property vdrift_va_p2p1_apfits`:** Create the property, including cache check, dependency fetch (`sf01_fits`), calculation of `valfven_apfits` (using `na` from alphas and `n_tot` from self), calculation of normalized drift (`vdrift / valfven_apfits`), caching, and error handling. (No alignment needed for `na`).
-5.  **Implement `@property abs_vdrift_va_p2p1_apfits`:** Create the property, similar to the above but taking the absolute value of the result (`abs(vdrift / valfven_apfits)`), caching, and error handling.
-6.  **Adjust `calculate_variables`:** Remove the placeholder logic/assignment for `vsw_mach`, `vdrift_va_p2p1_apfits`, and `abs_vdrift_va_p2p1_apfits` as these are now handled by properties.
-7.  **Update `set_ploptions`:**
+4.  **Implement `@property abs_vdrift_va_p2p1_apfits`:** Create the property, similar to the above but taking the absolute value of the result (`abs(vdrift / valfven_apfits)`), caching, and error handling. **(DONE)**
+5.  **Adjust `calculate_variables`:** Remove the placeholder logic/assignment for `vsw_mach`, `vdrift_va_p2p1_apfits`, and `abs_vdrift_va_p2p1_apfits` as these are now handled by properties.
+6.  **Update `set_ploptions`:**
     *   Modify the `plot_manager` for `vsw_mach_pfits` to use `data_source=lambda: self.vsw_mach`.
     *   Add new `plot_manager` instances for `self.vdrift_va_p2p1_apfits` and `self.abs_vdrift_va_p2p1_apfits`, linking their `data_source` to the respective properties and using the adapted plot styles documented previously.
 

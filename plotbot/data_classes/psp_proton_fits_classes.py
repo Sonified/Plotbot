@@ -562,6 +562,32 @@ class proton_fits_class:
             self._cwyn_cache[cache_key] = np.full(result_shape, np.nan)
             return self._cwyn_cache[cache_key]
 
+    @property
+    def abs_vdrift_va_p2p1_apfits(self):
+        """Calculates absolute normalized drift (|Vdrift| / Va_alphaproton) on demand.
+
+        Simply calls the vdrift_va_p2p1_apfits property and returns the absolute value.
+        Relies on the caching mechanism within vdrift_va_p2p1_apfits.
+        """
+        print_manager.debug(f"{self.__class__.__name__}: Calculating abs_vdrift_va_p2p1_apfits...")
+        
+        # Get the potentially cached result from the non-absolute property
+        norm_drift = self.vdrift_va_p2p1_apfits
+
+        # Check if the result was valid before taking abs
+        if norm_drift is None:
+            logging.warning(f"{self.__class__.__name__}: Underlying vdrift_va_p2p1_apfits returned None.")
+            return None # Propagate None if calculation failed
+
+        # Calculate and return the absolute value
+        # Use errstate to handle potential NaNs gracefully
+        with np.errstate(invalid='ignore'):
+            abs_norm_drift = np.abs(norm_drift)
+
+        # No separate caching needed here
+        print_manager.debug(f"{self.__class__.__name__}: Returning absolute value of vdrift_va_p2p1_apfits.")
+        return abs_norm_drift
+
     def _interpolate_to_self_time(self, source_time, source_data):
         """Interpolates external data onto this instance's time base. Used for 
 
