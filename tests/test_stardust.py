@@ -155,15 +155,12 @@ def test_stardust_plotbot_basic():
         system_check("Stardust Plotbot Call Completed", True, "plotbot call should complete without error.")
         system_check("Stardust Plotbot Figure Exists", fig is not None and fig_num is not None, "plotbot should have created a figure.")
 
-        plt.pause(0.5) # Restore display plot briefly
-
     except Exception as e:
         pytest.fail(f"Stardust Plotbot test failed: {e}")
     finally:
         # Always try to close the figure using its number
         if fig_num is not None:
             try:
-                # plt.pause(0.1) # Tiny pause before closing - REMOVED
                 plt.close(fig_num)
                 print(f"--- Explicitly closed figure {fig_num} in finally block ---")
             except Exception as close_err:
@@ -220,15 +217,12 @@ def test_stardust_multiplot_basic():
 
         system_check("Stardust Multiplot Axes Returned", axes_valid, f"multiplot should return valid Axes object(s). Got type: {type(axs)}")
 
-        plt.pause(0.5) # Restore display plot briefly
-
     except Exception as e:
         pytest.fail(f"Stardust Multiplot test failed: {e}")
     finally:
         # Explicitly close the figure created by this test using its number
         if fig_num is not None:
             try:
-                # plt.pause(0.1) # Tiny pause before closing - REMOVED
                 plt.close(fig_num)
                 print(f"--- Explicitly closed multiplot figure {fig_num} in finally block ---")
             except Exception as close_err:
@@ -250,15 +244,12 @@ def test_stardust_showdahodo_basic():
         system_check("Stardust Showdahodo Figure Created", fig is not None, "showdahodo should return a figure object.")
         system_check("Stardust Showdahodo Axis Created", ax is not None, "showdahodo should return an axis object.")
 
-        plt.pause(0.5) # Restore display plot briefly
-
     except Exception as e:
         pytest.fail(f"Stardust Showdahodo test failed: {e}")
     finally:
         # Explicitly close the figure created by this test using its number
         if fig_num is not None:
             try:
-                # plt.pause(0.1) # Tiny pause before closing - REMOVED
                 plt.close(fig_num)
                 print(f"--- Explicitly closed showdahodo figure {fig_num} in finally block ---")
             except Exception as close_err:
@@ -484,8 +475,6 @@ def test_stardust_ham_fetch_and_validate():
                f"Data length mismatch for '{var_name}' (stardust)."
 
         print(f"✅ HAM data validated for '{var_name}' (stardust).")
-        
-        plt.pause(0.5) # Display plot briefly
 
     except Exception as e:
         tb_str = traceback.format_exc()
@@ -494,7 +483,6 @@ def test_stardust_ham_fetch_and_validate():
         # Explicitly close the figure using its number
         if fig_num is not None:
              try:
-                 plt.pause(0.1) # Tiny pause before closing
                  plt.close(fig_num)
                  print(f"--- Explicitly closed HAM figure {fig_num} in finally block ---")
              except Exception as close_err:
@@ -590,8 +578,6 @@ def _run_stardust_plotbot_fits_test_group(variables_to_plot):
             print(f"✅ Variable '{name}' verified with data (stardust).")
 
         print(f"--- Stardust FITS Group Test Passed for: {var_names} ---")
-        
-        plt.pause(0.5) # Display plot briefly
 
     except Exception as e:
         tb_str = traceback.format_exc()
