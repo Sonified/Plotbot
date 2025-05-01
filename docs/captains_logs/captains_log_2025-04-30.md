@@ -302,6 +302,10 @@ Following the plan, the implementation of Step 2 will proceed in these stages:
     *   Modify the `plot_manager` for `vsw_mach_pfits` to use `data_source=lambda: self.vsw_mach`.
     *   Add new `plot_manager` instances for `self.vdrift_va_p2p1_apfits` and `self.abs_vdrift_va_p2p1_apfits`, linking their `data_source` to the respective properties and using the adapted plot styles documented previously.
 
+### Refactor Helper Method (`_create_fits_scatter_ploptions`) (May 1, 2025):
+
+*   **Goal:** Update the `_create_fits_scatter_ploptions` helper in `psp_proton_fits_classes.py` to match the more flexible parameter pattern used in `psp_alpha_fits_classes.py` (`_create_alpha_scatter_ploptions`). This involves adding optional parameters for `marker_style`, `marker_size`, `alpha`, `y_scale`, and `y_limit` with appropriate defaults. **(DONE)**
+
 ### Clarification: How Data Classes Access `DataCubby`
 
 A question arose regarding how data class instances (like `proton_fits_class`) gain access to the main `PlotBot` instance and, consequently, its `DataCubby` to fetch dependencies (e.g., accessing `self.plotbot.data_cubby.grab('key')` within an `@property` method).

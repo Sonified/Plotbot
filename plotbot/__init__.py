@@ -8,8 +8,8 @@ import time # For version string
 current_time = time.strftime("%Y-%m-%d %H:%M:%S")
 
 # Version format: YYYY-MM-DD_vX.YY
-__version__ = "2025-04-30_v1.172"
-__commit_message__ = "feat: Implement @property vsw_mach for proton_fits_class CWYN refactor (step 3) (2025-04-30_v1.172)"
+__version__ = "2025-04-30_v1.173"
+__commit_message__ = "refactor: Make _create_fits_scatter_ploptions helper more flexible (2025-04-30_v1.173)"
 
 def get_version_string():
     # Colors for printing

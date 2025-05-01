@@ -125,9 +125,9 @@ class proton_fits_class:
             self.set_ploptions() # This function will need updates too
             # Add status message after processing
             if self.datetime_array is not None:
-                 print_manager.status(f"Successfully processed {self.__class__.__name__} CDF data.")
+                print_manager.status(f"Successfully processed {self.__class__.__name__} CDF data.")
             else:
-                 print_manager.warning(f"Processing for {self.__class__.__name__} completed, but no valid data loaded.")
+                print_manager.warning(f"Processing for {self.__class__.__name__} completed, but no valid data loaded.")
 
         # Stash the instance in data_cubby
         data_cubby.stash(self, class_name='proton_fits') # Keep key consistent for now?
@@ -204,8 +204,8 @@ class proton_fits_class:
         
         # Generate the list of ACTUAL plottable attributes (plot_manager instances)
         available_attrs = [attr for attr in dir(self) 
-                           if isinstance(getattr(self, attr, None), plot_manager) 
-                           and not attr.startswith('_')]
+                        if isinstance(getattr(self, attr, None), plot_manager) 
+                        and not attr.startswith('_')]
         
         # Construct the error message
         error_message = f"'{name}' is not a recognized attribute, friend!"
@@ -255,10 +255,10 @@ class proton_fits_class:
             self.time = np.asarray(imported_data.times) # TT2000 from CDF Epoch
 
             if self.time is None or self.time.size == 0:
-                 logging.error(f"{self.__class__.__name__}: Imported DataObject has empty or None 'times' attribute.")
-                 self.datetime_array = None
-                 for key in self.raw_data: self.raw_data[key] = None
-                 return
+                logging.error(f"{self.__class__.__name__}: Imported DataObject has empty or None 'times' attribute.")
+                self.datetime_array = None
+                for key in self.raw_data: self.raw_data[key] = None
+                return
 
             self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time))
             print_manager.debug(f"{self.__class__.__name__}: Processing data for time range {self.datetime_array.min()} to {self.datetime_array.max()}")
@@ -276,16 +276,16 @@ class proton_fits_class:
             for key in self.raw_data.keys():
                 data_val = data_dict.get(key)
                 if data_val is not None:
-                     extracted_data[key] = np.asarray(data_val)
-                     # print_manager.debug(f"  Extracted {key}, shape: {extracted_data[key].shape}, type: {extracted_data[key].dtype}") # Verbose
+                    extracted_data[key] = np.asarray(data_val)
+                    # print_manager.debug(f"  Extracted {key}, shape: {extracted_data[key].shape}, type: {extracted_data[key].dtype}") # Verbose
                 elif key not in vars_to_calculate: # If missing and not planned for calculation
-                     potential_missing_keys.append(key)
-                     extracted_data[key] = None # Set to None
+                    potential_missing_keys.append(key)
+                    extracted_data[key] = None # Set to None
                 else:
-                     extracted_data[key] = None # Placeholder for calculation
+                    extracted_data[key] = None # Placeholder for calculation
 
             if potential_missing_keys:
-                 print_manager.warning(f"{self.__class__.__name__}: The following expected CDF variables were missing: {potential_missing_keys}")
+                print_manager.warning(f"{self.__class__.__name__}: The following expected CDF variables were missing: {potential_missing_keys}")
 
             # --- 3. Perform Necessary Calculations --- 
             
@@ -318,82 +318,82 @@ class proton_fits_class:
             n_tot = extracted_data.get('n_tot')
             valfven = None # Initialize
             if B_mag is not None and n_tot is not None:
-                 with np.errstate(divide='ignore', invalid='ignore'):
-                      n_tot_safe = np.where(n_tot > 0, n_tot, np.nan)
-                      valfven = 21.8 * B_mag / np.sqrt(n_tot_safe)
-                 extracted_data['valfven'] = valfven
-                 print_manager.debug("  Calculated valfven.")
+                with np.errstate(divide='ignore', invalid='ignore'):
+                    n_tot_safe = np.where(n_tot > 0, n_tot, np.nan)
+                    valfven = 21.8 * B_mag / np.sqrt(n_tot_safe)
+                extracted_data['valfven'] = valfven
+                print_manager.debug("  Calculated valfven.")
             else:
-                 extracted_data['valfven'] = None
-                 # print_manager.warning("Could not calculate valfven (missing B_mag or n_tot).") # Already warned about B_mag
+                extracted_data['valfven'] = None
+                # print_manager.warning("Could not calculate valfven (missing B_mag or n_tot).") # Already warned about B_mag
 
             # Calculate beta_ppar, beta_pperp, beta_p_tot
             Tpar_tot = extracted_data.get('Tpar_tot')
             Tperp_tot = extracted_data.get('Tperp_tot')
             if Tpar_tot is not None and Tperp_tot is not None and n_tot is not None and B_mag is not None:
-                 with np.errstate(divide='ignore', invalid='ignore'):
-                      n_tot_safe = np.where(n_tot > 0, n_tot, np.nan)
-                      beta_denom = (1e-5 * B_mag)**2
-                      beta_denom_safe = np.where(beta_denom > 0, beta_denom, np.nan)
-                      beta_ppar = (4.03E-11 * n_tot_safe * Tpar_tot) / beta_denom_safe
-                      beta_pperp = (4.03E-11 * n_tot_safe * Tperp_tot) / beta_denom_safe
-                      beta_p_tot = np.sqrt(beta_ppar**2 + beta_pperp**2) 
-                 extracted_data['beta_ppar'] = beta_ppar
-                 extracted_data['beta_pperp'] = beta_pperp
-                 extracted_data['beta_p_tot'] = beta_p_tot
-                 print_manager.debug("  Calculated beta parameters.")
+                with np.errstate(divide='ignore', invalid='ignore'):
+                    n_tot_safe = np.where(n_tot > 0, n_tot, np.nan)
+                    beta_denom = (1e-5 * B_mag)**2
+                    beta_denom_safe = np.where(beta_denom > 0, beta_denom, np.nan)
+                    beta_ppar = (4.03E-11 * n_tot_safe * Tpar_tot) / beta_denom_safe
+                    beta_pperp = (4.03E-11 * n_tot_safe * Tperp_tot) / beta_denom_safe
+                    beta_p_tot = np.sqrt(beta_ppar**2 + beta_pperp**2) 
+                extracted_data['beta_ppar'] = beta_ppar
+                extracted_data['beta_pperp'] = beta_pperp
+                extracted_data['beta_p_tot'] = beta_p_tot
+                print_manager.debug("  Calculated beta parameters.")
             else:
-                 extracted_data['beta_ppar'] = None
-                 extracted_data['beta_pperp'] = None
-                 extracted_data['beta_p_tot'] = None
-                 # print_manager.warning("Could not calculate beta parameters (missing inputs).")
+                extracted_data['beta_ppar'] = None
+                extracted_data['beta_pperp'] = None
+                extracted_data['beta_p_tot'] = None
+                # print_manager.warning("Could not calculate beta parameters (missing inputs).")
 
             # Calculate ham_param
             Tperp1 = extracted_data.get('Tperp1')
             Tperp2 = extracted_data.get('Tperp2')
             Trat_tot = extracted_data.get('Trat_tot')
             if Tperp1 is not None and Tperp2 is not None and Trat_tot is not None:
-                 with np.errstate(divide='ignore', invalid='ignore'):
-                      Trat_tot_safe = np.where(Trat_tot != 0, Trat_tot, np.nan)
-                      Tperp1_safe = np.where(Tperp1 != 0, Tperp1, np.nan)
-                      extracted_data['ham_param'] = (Tperp2 / Tperp1_safe) / Trat_tot_safe
-                      print_manager.debug("  Calculated ham_param.")
+                with np.errstate(divide='ignore', invalid='ignore'):
+                    Trat_tot_safe = np.where(Trat_tot != 0, Trat_tot, np.nan)
+                    Tperp1_safe = np.where(Tperp1 != 0, Tperp1, np.nan)
+                    extracted_data['ham_param'] = (Tperp2 / Tperp1_safe) / Trat_tot_safe
+                    print_manager.debug("  Calculated ham_param.")
             else:
-                 extracted_data['ham_param'] = None
+                extracted_data['ham_param'] = None
 
             # Calculate chi_p_norm
             chi_p = extracted_data.get('chi_p')
             if chi_p is not None:
-                 with np.errstate(divide='ignore', invalid='ignore'):
-                      extracted_data['chi_p_norm'] = chi_p / 2038.0
-                      print_manager.debug("  Calculated chi_p_norm.")
+                with np.errstate(divide='ignore', invalid='ignore'):
+                    extracted_data['chi_p_norm'] = chi_p / 2038.0
+                    print_manager.debug("  Calculated chi_p_norm.")
             else:
-                 extracted_data['chi_p_norm'] = None
+                extracted_data['chi_p_norm'] = None
 
             # Calculate vdrift_abs (simple)
             vdrift = extracted_data.get('vdrift')
             if vdrift is not None:
-                 extracted_data['vdrift_abs'] = np.abs(vdrift)
-                 print_manager.debug("  Calculated vdrift_abs.")
+                extracted_data['vdrift_abs'] = np.abs(vdrift)
+                print_manager.debug("  Calculated vdrift_abs.")
             else:
-                 extracted_data['vdrift_abs'] = None
+                extracted_data['vdrift_abs'] = None
 
             # Calculate Mach numbers (V/Va)
             valfven_safe = np.where(valfven != 0, valfven, np.nan) if valfven is not None else None
             if valfven_safe is not None:
-                 vdrift = extracted_data.get('vdrift')
-                 vcm_mag = extracted_data.get('vcm_mag')
-                 vp1_mag = extracted_data.get('vp1_mag')
-                 with np.errstate(divide='ignore', invalid='ignore'):
-                      if vdrift is not None: extracted_data['vdrift_va'] = vdrift / valfven_safe
-                      if vcm_mag is not None: extracted_data['Vcm_mach'] = vcm_mag / valfven_safe
-                      if vp1_mag is not None: extracted_data['Vp1_mach'] = vp1_mag / valfven_safe
-                 print_manager.debug("  Calculated vdrift_va, Vcm_mach, Vp1_mach.")
+                vdrift = extracted_data.get('vdrift')
+                vcm_mag = extracted_data.get('vcm_mag')
+                vp1_mag = extracted_data.get('vp1_mag')
+                with np.errstate(divide='ignore', invalid='ignore'):
+                    if vdrift is not None: extracted_data['vdrift_va'] = vdrift / valfven_safe
+                    if vcm_mag is not None: extracted_data['Vcm_mach'] = vcm_mag / valfven_safe
+                    if vp1_mag is not None: extracted_data['Vp1_mach'] = vp1_mag / valfven_safe
+                print_manager.debug("  Calculated vdrift_va, Vcm_mach, Vp1_mach.")
             else:
-                 extracted_data['vdrift_va'] = None
-                 extracted_data['Vcm_mach'] = None
-                 extracted_data['Vp1_mach'] = None
-                 # print_manager.warning("Could not calculate Mach numbers (missing valfven).")
+                extracted_data['vdrift_va'] = None
+                extracted_data['Vcm_mach'] = None
+                extracted_data['Vp1_mach'] = None
+                # print_manager.warning("Could not calculate Mach numbers (missing valfven).")
             
             # --- Placeholder for vsw_mach (Requires external dependency) --- 
             # TODO: Implement fetching spi_sf00_l3_mom and aligning if vsw_mach is needed
@@ -591,23 +591,28 @@ class proton_fits_class:
             # Return NaNs in case of any unexpected error
             return np.full(self.time.shape, np.nan)
 
-    def _create_fits_scatter_ploptions(self, var_name, subclass_name, y_label, legend_label, color):
+    def _create_fits_scatter_ploptions(self, var_name, subclass_name, y_label, legend_label, color,
+                                       marker_style='*', marker_size=5, alpha=0.7, y_scale='linear', y_limit=None):
         """Helper method to create ploptions for standard FITS scatter plots."""
+        # Ensure datetime_array is handled correctly if None
+        dt_array = self.datetime_array if hasattr(self, 'datetime_array') and self.datetime_array is not None else None
+        
         return ploptions(
             var_name=var_name,
             data_type='proton_fits',
             class_name='proton_fits',
             subclass_name=subclass_name,
-            plot_type='scatter',         # Default
-            datetime_array=self.datetime_array, # Default
+            plot_type='scatter',         
+            datetime_array=dt_array, # Use potentially None dt_array
             y_label=y_label,
             legend_label=legend_label,
             color=color,
-            y_scale='linear',          # Default
-            marker_style='*',           # Default (star marker)
-            marker_size=5,             # Default
-            alpha=0.7,                 # Default
-            y_limit=None               # Default
+            # Use arguments passed to helper (or their defaults)
+            y_scale=y_scale,          
+            marker_style=marker_style,           
+            marker_size=marker_size,             
+            alpha=alpha,                 
+            y_limit=y_limit               
         )
 
     def set_ploptions(self):
@@ -618,13 +623,9 @@ class proton_fits_class:
         # 1. qz_p (Scatter, Size 20)
         self.qz_p = plot_manager( # Heat flux of the proton beam
             self.raw_data.get('qz_p'),
-            plot_options=ploptions(
+            plot_options=self._create_fits_scatter_ploptions(
                 var_name='qz_p',
-                data_type='proton_fits',
-                class_name='proton_fits',
                 subclass_name='qz_p', # User list #1
-                plot_type='scatter',
-                datetime_array=self.datetime_array,
                 y_label=r'$q_{z,p}$ (W/m$^2$)',
                 legend_label=r'$q_{z,p}$',
                 color='blueviolet',
@@ -639,13 +640,9 @@ class proton_fits_class:
         # 2. vsw_mach_pfits (Scatter, Size 20)
         self.vsw_mach_pfits = plot_manager( # Solar wind Mach number - ATTRIBUTE NAME CHANGED
             self.raw_data.get('vsw_mach'), # Still gets raw 'vsw_mach' data
-            plot_options=ploptions(
+            plot_options=self._create_fits_scatter_ploptions(
                 var_name='vsw_mach', 
-                data_type='proton_fits',
-                class_name='proton_fits',
                 subclass_name='vsw_mach_pfits', # User list #2
-                plot_type='scatter',
-                datetime_array=self.datetime_array,
                 y_label=r'$V_{sw}/V_A$', 
                 legend_label=r'$V_{sw}/V_A$', 
                 color='gold', 
@@ -660,13 +657,9 @@ class proton_fits_class:
         # 3. beta_ppar_pfits (Scatter, Size 20)
         self.beta_ppar_pfits = plot_manager( # Total Proton parallel beta - ATTRIBUTE NAME CHANGED
             self.raw_data.get('beta_ppar'), # Still gets raw 'beta_ppar' data
-            plot_options=ploptions(
+            plot_options=self._create_fits_scatter_ploptions(
                 var_name='beta_ppar',
-                data_type='proton_fits',
-                class_name='proton_fits',
                 subclass_name='beta_ppar_pfits', # User list #3 (Updated)
-                plot_type='scatter', 
-                datetime_array=self.datetime_array,
                 y_label=r'$\beta_{\parallel,p}$', 
                 legend_label=r'$\beta_{\parallel,p}$', 
                 color='hotpink', 
@@ -681,13 +674,9 @@ class proton_fits_class:
         # 4. beta_pperp_pfits (Scatter, Size 20)
         self.beta_pperp_pfits = plot_manager( # Total Proton perpendicular beta - ATTRIBUTE NAME CHANGED
             self.raw_data.get('beta_pperp'), # Still gets raw 'beta_pperp' data
-            plot_options=ploptions(
+            plot_options=self._create_fits_scatter_ploptions(
                 var_name='beta_pperp', 
-                data_type='proton_fits',
-                class_name='proton_fits',
                 subclass_name='beta_pperp_pfits', # User list #4 (Updated)
-                plot_type='scatter',
-                datetime_array=self.datetime_array,
                 y_label=r'$\beta_{\perp,p}$',
                 legend_label=r'$\beta_{\perp,p}$',
                 color='lightskyblue',
@@ -702,13 +691,9 @@ class proton_fits_class:
         # 5. ham_param (Scatter, Size 20)
         self.ham_param = plot_manager( # Hammerhead parameter
             self.raw_data.get('ham_param'),
-            plot_options=ploptions(
+            plot_options=self._create_fits_scatter_ploptions(
                 var_name='ham_param',
-                data_type='proton_fits',
-                class_name='proton_fits',
                 subclass_name='ham_param', # User list #5
-                plot_type='scatter',
-                datetime_array=self.datetime_array,
                 y_label='Hamplitude', 
                 legend_label='Hamplitude', 
                 color='palevioletred',
@@ -1059,7 +1044,7 @@ class proton_fits_class:
         # 34. valfven_pfits (Time Series)
         self.valfven_pfits = plot_manager( # Alfven speed (from FITS params) - ATTRIBUTE NAME CHANGED
             self.raw_data.get('valfven'), # Still gets raw 'valfven' data
-            plot_options=ploptions(
+            plot_options=self._create_fits_scatter_ploptions(
                 var_name='valfven',
                 data_type='proton_fits',
                 class_name='proton_fits',
