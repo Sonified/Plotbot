@@ -123,6 +123,7 @@ data_types = {
         'file_pattern_import': r'spp_swp_spi_sf00_fits_{date_str}_v*.cdf', # UPDATED: CDF pattern for import
         'data_level': 'l3', # Assuming L3, adjust if needed
         'file_time_format': 'daily',
+        'time_variable': 'Epoch', # ADDED: Explicitly define time variable -- not yet used
         'data_vars': [ # UPDATED: List based on observed CDF variables
             'Epoch', 'np1', 'np2', 'Tperp1', 'Tperp2', 'Trat1', 'Trat2',
             'vdrift', 'vp1', 'B_inst', 'B_SC', 'chi_p',

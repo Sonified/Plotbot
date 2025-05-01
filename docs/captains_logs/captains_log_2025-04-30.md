@@ -265,6 +265,15 @@ This clarifies where each variable originates or how it's calculated in the *tar
     *   A note has been added to ask Jaye for the definitive plot options.
 *   Then proceed to Step 3 (testing) and Step 4 (refactor `alpha_fits_class`).
 
+### Debugging `plot_manager` and `proton_fits` Integration (May 1, 2025)
+
+- **Problem:** The `test_plotbot_basic_fits_call` test was passing, but the plot generated showed no data for `proton_fits.n_tot`, despite debug prints showing data being loaded.
+- **Debugging Steps:** Added extensive debug prints in `plotbot_main`, `plot_manager` (`__new__`, `__array_finalize__`, `__getattr__`), and `proton_fits_class` (`update`, `set_ploptions`).
+- **`__array_finalize__` Issue Identified:** Traced the loss of `datetime_array` on the `n_tot` plot_manager instance back to the `plot_options` assignment within `plot_manager.__array_finalize__`. When numpy creates internal views/copies, this assignment was unexpectedly overwriting or corrupting the `plot_options` (including `datetime_array`).
+- **Fix:** Commenting out the line `self.plot_options = getattr(obj, 'plot_options', None)` (or the conditional version tried earlier) within `__array_finalize__` resolved the issue of `datetime_array` being lost between the data class update and retrieval in `plotbot_main`. The data and `datetime_array` were confirmed to persist correctly on the `n_tot` object when retrieved.
+- **Remaining Issue:** Despite the fix ensuring `n_tot` had its data and `datetime_array` when passed to the plotting stage, the final plot output still indicated "points=0 (no data in range)". This suggests the problem now lies *within the plotting logic itself* – specifically, how it filters or interprets the data/time arrays based on the requested time range just before calling `plt.scatter`.
+- **Complexity Concerns:** The recent refactoring of `proton_fits_class` to use a complex Calculate What You Need (CWYN) approach (with properties, caching, dependency fetching helpers, and lazy loading via `__getattr__`) has significantly deviated from the simpler, eager calculation model used in working classes like `psp_mag_classes.py`. This complexity might be contributing to the current plotting issue or making it harder to debug.
+
 ### Git Branch Creation (May 1, 2025)
 
 Creating a new branch `proton_fits_class_refactor` to isolate the CWYN refactoring work. The initial commit will include the structural setup (sub-step 1).
@@ -392,3 +401,9 @@ Following the plan, the implementation of Step 2 will proceed in these stages:
 - **Simplified FITS Path:** Updated the `local_path` for `sf00_fits` in `plotbot/data_classes/psp_data_types.py` to remove the redundant `/cdf_files/` directory segment, resulting in a cleaner local path: `psp_data/sweap/spi_fits/sf00/p2/v00/`. Confirmed the file wasn't actually present in the old incorrect location, so no deletion was needed.
 - **Stardust Test Issue:** Encountered `TypeError: len() of unsized object` and `RecursionError` when running `test_stardust.py::test_stardust_fits_group_1`. This seems related to the test fixture (`stardust_sf00_test_data`) manually calling `proton_fits_instance.update()` without ensuring the instance has a valid `.plotbot` reference, which is needed for CWYN properties. Attempted a fix by assigning the reference within the fixture, but the recursion error persisted.
 - **Decision:** Pausing debugging of the Stardust FITS test for now. Proceeding with pushing the downloader and importer fixes as they appear functional based on manual testing and the progress in the `test_fits_cdf_server_integration.py` test.
+
+***
+
+**Session Closed: April 30, 2025**
+
+***

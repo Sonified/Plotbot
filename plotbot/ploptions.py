@@ -32,6 +32,11 @@ class ploptions:
                  colorbar_label=None,
                  **kwargs):
         
+        # <<< ADDED >>> Debug print for __init__
+        if subclass_name == 'n_tot': # Only print for the problematic one for now
+            print(f"DEBUG ploptions __init__ (for {class_name}.{subclass_name}): Receiving datetime_array type={type(datetime_array)}, is None={datetime_array is None}")
+            if datetime_array is not None: print(f"DEBUG ploptions __init__ (for {class_name}.{subclass_name}): Receiving datetime_array len={len(datetime_array)}")
+        
         self.data_type = data_type 
         self.class_name = class_name
         self.subclass_name = subclass_name

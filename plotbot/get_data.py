@@ -236,6 +236,25 @@ def get_data(trange: List[str], *variables):
             print_manager.warning(f"Skipping standard CDF processing for local_csv type {data_type}. Should be handled separately.")
             continue
             
+        # Create a reverse mapping from data_type key to class_name key
+        reverse_map = {
+            'mag_RTN_4sa': 'mag_rtn_4sa',
+            'mag_RTN': 'mag_rtn',
+            'mag_SC_4sa': 'mag_sc_4sa',
+            'mag_SC': 'mag_sc',
+            'spi_sf00_l3_mom': 'proton',
+            'spi_af00_L3_mom': 'proton_hr',
+            'spe_sf0_pad': 'epad',
+            'spe_af0_pad': 'epad_hr',
+            'sf00_fits': 'proton_fits',
+            'sf01_fits': 'alpha_fits' # Assuming alpha_fits is the class for sf01
+            # Add other mappings if necessary
+        }
+        class_name = reverse_map.get(data_type)
+        if not class_name:
+            print_manager.warning(f"Could not determine class_name for data_type '{data_type}'. Using data_type as key.")
+            class_name = data_type # Fallback, might be incorrect
+        
         # Conditional data download based on configuration
         server_mode = plotbot.config.data_server # <-- With this line
         print_manager.debug(f"Server mode for {data_type}: {server_mode}")
@@ -262,7 +281,6 @@ def get_data(trange: List[str], *variables):
         # The download functions are responsible for ensuring this.
         # We proceed to check if the *in-memory* cache needs updating.
         
-        class_name = data_type  # Assume class_name matches data_type for standard types
         class_instance = data_cubby.grab(class_name)
         
         needs_import = global_tracker.is_import_needed(trange, data_type)
@@ -307,9 +325,27 @@ def get_data(trange: List[str], *variables):
                       continue
 
             if hasattr(class_instance, 'update'):
+                # Ensure the PlotBot reference is available on the instance before updating,
+                # especially important for classes with CWYN properties like proton_fits.
+                if hasattr(class_instance, 'plotbot') and class_instance.plotbot is None:
+                    # Check if the main plotbot instance reference is accessible
+                    # (Assuming a global reference like plotbot.plotbot_instance_global_ref exists)
+                    # Note: Need to ensure plotbot.plotbot_instance_global_ref is set somewhere accessible.
+                    # This might require adjustment depending on how the main PlotBot instance is managed.
+                    main_plotbot_instance = getattr(plotbot, 'plotbot_instance_global_ref', None)
+                    if main_plotbot_instance:
+                        print_manager.debug(f"Injecting missing PlotBot reference into {data_type} instance.")
+                        class_instance.plotbot = main_plotbot_instance
+                    else:
+                        print_manager.warning(f"Cannot inject PlotBot reference into {data_type}: Global reference not available.")
+
                 class_instance.update(data_obj)
+                global_tracker.update_imported_range(trange, data_type)
+                # Stash the updated instance back in the cubby
+                print(f"DEBUG get_data STASH: Stashing instance id={id(class_instance)} for class_name='{class_name}'")
+                data_cubby.stash(class_instance, class_name=class_name) # Use class_name as key
             else:
-                print_manager.warning(f"{data_type} class instance has no update method")
+                print_manager.error(f"Error: Instance for {data_type} not found in cubby or lacks 'update' method!") # Improved error
         else:
             print_manager.status(f"📤 Using existing {data_type} data, update not needed.")
     

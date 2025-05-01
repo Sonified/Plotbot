@@ -104,15 +104,13 @@ class proton_fits_class:
             # 'vp1_z': None,
             # etc. for B_SC, vp2, vcm, bhat_inst...
             # --- NEW: Variables calculated using CWYN properties ---
-            'vdrift_va_p2p1_apfits': None, # Placeholder for property access
-            'abs_vdrift_va_p2p1_apfits': None, # Placeholder for property access
+            # 'vdrift_va_p2p1_apfits': None, # Placeholder for property access
+            # 'abs_vdrift_va_p2p1_apfits': None, # Placeholder for property access
         })
         # Initialize time attributes
         object.__setattr__(self, 'time', None) # Will hold TT2000 epoch
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
-        object.__setattr__(self, '_cwyn_cache', {}) # Initialize Calculate What You Need (CWYN) cache
-        object.__setattr__(self, 'plotbot', plotbot_instance) # Store reference to PlotBot
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None
@@ -146,32 +144,88 @@ class proton_fits_class:
 
         # Store current state before update (including any modified ploptions)
         current_state = {}
-        # Make sure to iterate over keys that will eventually have ploptions
-        plot_keys = [k for k, v in self.raw_data.items() if v is not None] # Or use predefined list
-        for subclass_name in plot_keys:
+        # FIXED: Store state for ALL raw_data keys, not just non-None ones
+        for subclass_name in self.raw_data.keys():  # Use all keys, just like mag classes
             if hasattr(self, subclass_name):
                 var = getattr(self, subclass_name)
                 if hasattr(var, '_plot_state'):
-                    current_state[subclass_name] = dict(var._plot_state)       # Save current plot state
+                    current_state[subclass_name] = dict(var._plot_state)
                     print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_ploption_snapshot(current_state[subclass_name])}")
+                    # <<< ADDED >>> Debug print for n_tot state being stored
+                    if subclass_name == 'n_tot':
+                        stored_dt_array = current_state[subclass_name].get('datetime_array', 'MISSING')
+                        print(f"DEBUG update STORE STATE n_tot: Storing datetime_array (type={type(stored_dt_array)}, is None={stored_dt_array is None or stored_dt_array == 'MISSING'})")
+                        if stored_dt_array is not None and stored_dt_array != 'MISSING': print(f"DEBUG update STORE STATE n_tot: Stored datetime_array len: {len(stored_dt_array)}")
+
+        # <<< ADDED >>> Check state BEFORE calculate_variables/set_ploptions
+        print(f"DEBUG update PRE-UPDATE: Entering main update section.")
+        pre_update_dt_array = getattr(self, 'datetime_array', 'ATTRIBUTE_MISSING')
+        pre_update_n_tot_raw = self.raw_data.get('n_tot', 'KEY_MISSING')
+        print(f"DEBUG update PRE-UPDATE: self.datetime_array is None: {pre_update_dt_array is None or pre_update_dt_array == 'ATTRIBUTE_MISSING'}")
+        if pre_update_dt_array is not None and pre_update_dt_array != 'ATTRIBUTE_MISSING': print(f"DEBUG update PRE-UPDATE: datetime_array len: {len(pre_update_dt_array)}")
+        print(f"DEBUG update PRE-UPDATE: self.raw_data['n_tot'] is None: {pre_update_n_tot_raw is None or pre_update_n_tot_raw == 'KEY_MISSING'}")
+        if pre_update_n_tot_raw is not None and pre_update_n_tot_raw != 'KEY_MISSING': print(f"DEBUG update PRE-UPDATE: n_tot_raw shape: {pre_update_n_tot_raw.shape if hasattr(pre_update_n_tot_raw, 'shape') else 'N/A'}")
 
         # Perform update
         self.calculate_variables(imported_data)                                # Update raw data arrays
-        
         self.set_ploptions()                                                  # Recreate plot managers
+        
+        # <<< ADDED >>> Check state AFTER calculate_variables/set_ploptions
+        print(f"DEBUG update POST-UPDATE: Finished calculate_variables/set_ploptions.")
+        post_update_dt_array = getattr(self, 'datetime_array', 'ATTRIBUTE_MISSING')
+        post_update_n_tot_pm = getattr(self, 'n_tot', None)
+        post_update_n_tot_raw = self.raw_data.get('n_tot', 'KEY_MISSING')
+        print(f"DEBUG update POST-UPDATE: self.datetime_array is None: {post_update_dt_array is None or post_update_dt_array == 'ATTRIBUTE_MISSING'}")
+        if post_update_dt_array is not None and post_update_dt_array != 'ATTRIBUTE_MISSING': print(f"DEBUG update POST-UPDATE: datetime_array len: {len(post_update_dt_array)}")
+        print(f"DEBUG update POST-UPDATE: self.raw_data['n_tot'] is None: {post_update_n_tot_raw is None or post_update_n_tot_raw == 'KEY_MISSING'}")
+        if post_update_n_tot_raw is not None and post_update_n_tot_raw != 'KEY_MISSING': print(f"DEBUG update POST-UPDATE: n_tot_raw shape: {post_update_n_tot_raw.shape if hasattr(post_update_n_tot_raw, 'shape') else 'N/A'}")
+        print(f"DEBUG update POST-UPDATE: self.n_tot (plot manager) is None: {post_update_n_tot_pm is None}")
+        if post_update_n_tot_pm:
+            pm_dt_array = getattr(post_update_n_tot_pm.plot_options, 'datetime_array', 'ATTRIBUTE_MISSING')
+            pm_data = getattr(post_update_n_tot_pm, 'data', 'ATTRIBUTE_MISSING')
+            print(f"DEBUG update POST-UPDATE: self.n_tot.plot_options.datetime_array is None: {pm_dt_array is None or pm_dt_array == 'ATTRIBUTE_MISSING'}")
+            if pm_dt_array is not None and pm_dt_array != 'ATTRIBUTE_MISSING': print(f"DEBUG update POST-UPDATE: self.n_tot.plot_options.datetime_array len: {len(pm_dt_array)}")
+            print(f"DEBUG update POST-UPDATE: self.n_tot.data is None: {pm_data is None or pm_data == 'ATTRIBUTE_MISSING'}")
+            if pm_data is not None and pm_data != 'ATTRIBUTE_MISSING': print(f"DEBUG update POST-UPDATE: self.n_tot.data shape: {pm_data.shape if hasattr(pm_data, 'shape') else 'N/A'}")
 
         # Restore state (including any modified ploptions!)
         print_manager.datacubby("Restoring saved state...")
         for subclass_name, state in current_state.items():                    # Restore saved states
             if hasattr(self, subclass_name):
                 var = getattr(self, subclass_name)
-                var._plot_state.update(state)                                 # Restore plot state
+                
+                # <<< ADDED >>> Debug for n_tot before restoring state
+                if subclass_name == 'n_tot':
+                    print(f"DEBUG update RESTORE n_tot: Entering state restore for n_tot.")
+                    state_dt_array = state.get('datetime_array', 'MISSING_KEY')
+                    var_dt_array_before = getattr(var.plot_options, 'datetime_array', 'ATTRIBUTE_MISSING') if hasattr(var, 'plot_options') else 'NoPlotOptions'
+                    print(f"DEBUG update RESTORE n_tot: State dict contains datetime_array: {'datetime_array' in state}")
+                    if 'datetime_array' in state: print(f"DEBUG update RESTORE n_tot: state['datetime_array'] is None: {state_dt_array is None}")
+                    print(f"DEBUG update RESTORE n_tot: var.plot_options.datetime_array BEFORE restore is None: {var_dt_array_before is None or var_dt_array_before == 'ATTRIBUTE_MISSING' or var_dt_array_before == 'NoPlotOptions'}")
+                    if var_dt_array_before is not None and var_dt_array_before not in ['ATTRIBUTE_MISSING', 'NoPlotOptions']: print(f"DEBUG update RESTORE n_tot: var.plot_options.datetime_array BEFORE restore len: {len(var_dt_array_before)}")
+                
+                # Restore individual plot_options attributes, SKIPPING datetime_array AND y_limit
                 for attr, value in state.items():
+                    # Skip datetime_array and y_limit explicitly
+                    if attr == 'datetime_array' or attr == 'y_limit':
+                        if subclass_name == 'n_tot': print(f"DEBUG update RESTORE n_tot: Explicitly skipping setattr for {attr}")
+                        continue 
+                    
                     if hasattr(var.plot_options, attr):
-                        setattr(var.plot_options, attr, value)                # Restore individual options
-                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_ploption_snapshot(state)}")
+                        if subclass_name == 'n_tot': print(f"DEBUG update RESTORE n_tot: Setting var.plot_options.{attr}")
+                        setattr(var.plot_options, attr, value)
 
+                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_ploption_snapshot(state)}")
+                
+        # <<< ADDED DEBUG: Check datetime_array AFTER restoration >>>
+        post_restore_dt_array = getattr(self, 'datetime_array', None)
+        print_manager.debug(f"  [DEBUG] AFTER restore loop: self.datetime_array is None: {post_restore_dt_array is None}")
+        if post_restore_dt_array is not None: print_manager.debug(f"  [DEBUG] AFTER restore loop: self.datetime_array length: {len(post_restore_dt_array)}")
+        
         print_manager.datacubby("=== End Update Debug ===\n")
+        
+        # ADDED: Stash the updated instance back into data_cubby
+        data_cubby.stash(self, class_name='proton_fits') 
 
     def get_subclass(self, subclass_name):
         """Retrieve a specific plot_manager attribute by its name (subclass_name)."""
@@ -197,63 +251,22 @@ class proton_fits_class:
             return None # Return None if not found
 
     def __getattr__(self, name):
-        """
-        Provide a helpful error message when an attribute is not found.
-        
-        For CWYN (Calculate-What-You-Need) variables, this method creates
-        plot_manager instances on first access, triggering calculation only
-        when actually needed for plotting.
+        """Provide a helpful error message when an attribute is not found.
+        Lists the available plot_manager attributes that can be accessed.
         """
         print_manager.debug(f'proton_fits __getattr__ triggered for: {name}')
         
-        # Check if this is a CWYN variable with stored plot options
-        if hasattr(self, '_cwyn_ploptions') and name in self._cwyn_ploptions:
-            print_manager.debug(f"Creating CWYN plot_manager: {name}")
-            
-            # Map plot attribute names to property names
-            property_mapping = {
-                'vsw_mach_pfits': 'vsw_mach',
-                'vdrift_va_p2p1_apfits': 'vdrift_va_p2p1_apfits',
-                'abs_vdrift_va_p2p1_apfits': 'abs_vdrift_va_p2p1_apfits'
-            }
-            
-            # Get data through the property (this triggers the calculation!)
-            property_name = property_mapping.get(name)
-            if property_name:
-                print_manager.debug(f"Getting data from property: {property_name}")
-                data = getattr(self, property_name)
-                
-                # Create plot_manager with the calculated data
-                pm = plot_manager(
-                    data,
-                    plot_options=self._cwyn_ploptions[name]
-                )
-                
-                # Cache the result for future access
-                setattr(self, name, pm)
-                
-                # Mark it as a CWYN variable for debugging
-                pm._is_cwyn = True
-                
-                return pm
-        
-        # Generate the list of available plot_manager attributes
+        # Generate the list of ACTUAL plottable attributes (plot_manager instances)
         available_attrs = [attr for attr in dir(self) 
                            if isinstance(getattr(self, attr, None), plot_manager) 
                            and not attr.startswith('_')]
         
-        # Include CWYN variables in the available attributes list
-        if hasattr(self, '_cwyn_ploptions'):
-            for var in self._cwyn_ploptions.keys():
-                if var not in available_attrs:
-                    available_attrs.append(var)
-        
         # Construct the error message
         error_message = f"'{name}' is not a recognized attribute, friend!"
         if available_attrs:
-            error_message += f"\\nAvailable plot managers: {', '.join(sorted(available_attrs))}"
+            error_message += f"\nAvailable plot managers: {', '.join(sorted(available_attrs))}"
         else:
-            error_message += "\\nNo plot manager attributes seem to be available yet."
+            error_message += "\nNo plot manager attributes seem to be available yet." # Should not happen after init
             
         # Raise AttributeError, which is standard practice for __getattr__
         raise AttributeError(error_message)
@@ -294,14 +307,48 @@ class proton_fits_class:
 
             data_dict = imported_data.data # Data dictionary from DataObject
             self.time = np.asarray(imported_data.times) # TT2000 from CDF Epoch
+            # <<< ADD DEBUG HERE >>>
+            print(f"DEBUG calculate_variables: Raw self.time type={type(self.time)}, shape={self.time.shape if hasattr(self.time, 'shape') else 'N/A'}")
+            print(f"DEBUG calculate_variables: Raw data_dict keys={list(data_dict.keys()) if data_dict else 'None'}")
+            if data_dict and 'n_tot' in data_dict:
+                n_tot_val = data_dict['n_tot']
+                print(f"DEBUG calculate_variables: Raw data_dict['n_tot'] type={type(n_tot_val)}, shape={n_tot_val.shape if hasattr(n_tot_val, 'shape') else 'N/A'}")
+                # <<< ADDED: Print first few values >>>
+                print(f"DEBUG calculate_variables: Raw n_tot values (first 5): {n_tot_val[:5] if hasattr(n_tot_val, '__len__') and len(n_tot_val) > 0 else 'N/A'}")
 
-            if self.time is None or self.time.size == 0:
+            if self.time is None or self.time.size == 0: # Moved this check earlier
                  logging.error(f"{self.__class__.__name__}: Imported DataObject has empty or None 'times' attribute.")
                  self.datetime_array = None
                  for key in self.raw_data: self.raw_data[key] = None
                  return
 
-            self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time))
+            # <<< ADDED: Print first few time values >>>
+            print(f"DEBUG calculate_variables: Raw self.time values (first 5): {self.time[:5] if hasattr(self.time, '__len__') and len(self.time) > 0 else 'N/A'}")
+
+            # <<< REVERTING >>> Using default numpy typing for datetime conversion
+            datetime_list = cdflib.cdfepoch.to_datetime(self.time)
+            # <<< RE-APPLYING FIX >>> Explicitly set dtype for numpy datetime conversion
+            self.datetime_array = np.array(datetime_list, dtype='datetime64[ns]')
+            
+            # <<< ADD DEBUG HERE >>>
+            print(f"DEBUG calculate_variables: Converted datetime_list type={type(datetime_list)}, len={len(datetime_list) if isinstance(datetime_list, list) else 'N/A'}")
+            # <<< ADDED: Print first few datetime values >>>
+            if isinstance(datetime_list, list) and len(datetime_list) > 0:
+                print(f"DEBUG calculate_variables: Converted datetime_list values (first 5): {datetime_list[:5]}")
+                
+            # <<< ADD DEBUG HERE >>>
+            print(f"DEBUG calculate_variables: Final self.datetime_array type={type(self.datetime_array)}, shape={self.datetime_array.shape if hasattr(self.datetime_array, 'shape') else 'N/A'}")
+            # <<< ADDED: Print first few final datetime values >>>
+            if hasattr(self.datetime_array, '__len__') and len(self.datetime_array) > 0:
+                print(f"DEBUG calculate_variables: Final self.datetime_array values (first 5): {self.datetime_array[:5]}")
+                # <<< ADDED >>> Check dtype explicitly
+                if hasattr(self.datetime_array, 'dtype'):
+                    print(f"DEBUG calculate_variables: Final self.datetime_array dtype: {self.datetime_array.dtype}")
+                else:
+                    print("DEBUG calculate_variables: Final self.datetime_array has no dtype attribute")
+            else:
+                 print("DEBUG calculate_variables: Final self.datetime_array is None or empty after creation")
+
             print_manager.debug(f"{self.__class__.__name__}: Processing data for time range {self.datetime_array.min()} to {self.datetime_array.max()}")
 
             # --- 2. Extract Variables from CDF Data --- 
@@ -310,21 +357,51 @@ class proton_fits_class:
             potential_missing_keys = []
             vars_to_calculate = [ # Define variables we INTEND to calculate here
                 'B_mag', 'valfven', 'beta_ppar', 'beta_pperp', 'beta_p_tot', 
-                'ham_param', 'np2_np1_ratio', 'vdrift_abs', 
+                'vsw_mach', 'ham_param', 'np2_np1_ratio', 'vdrift_abs', 
                 'vdrift_va', 'chi_p_norm', 'Vcm_mach', 'Vp1_mach'
-                # vdrift_va_p2p1_apfits and abs_vdrift_va_p2p1_apfits are handled by properties
             ]
             
             for key in self.raw_data.keys():
                 data_val = data_dict.get(key)
                 if data_val is not None:
-                     extracted_data[key] = np.asarray(data_val)
+                     # <<< MODIFIED: Force float64 conversion >>>
+                     extracted_data[key] = np.asarray(data_val, dtype=np.float64)
+                     # Add a debug print specifically for n_tot type after conversion
+                     if key == 'n_tot':
+                         print(f"DEBUG calculate_variables: n_tot type AFTER float64 cast: {extracted_data[key].dtype}")
                      # print_manager.debug(f"  Extracted {key}, shape: {extracted_data[key].shape}, type: {extracted_data[key].dtype}") # Verbose
                 elif key not in vars_to_calculate: # If missing and not planned for calculation
                      potential_missing_keys.append(key)
                      extracted_data[key] = None # Set to None
                 else:
                      extracted_data[key] = None # Placeholder for calculation
+
+            # --- ADDED: Extract Vector Components ---
+            vector_keys = {
+                'vp1': ['vp1_x', 'vp1_y', 'vp1_z'],
+                'vp2': ['vp2_x', 'vp2_y', 'vp2_z'],
+                'vcm': ['vcm_x', 'vcm_y', 'vcm_z'],
+                'B_inst': ['B_inst_x', 'B_inst_y', 'B_inst_z'],
+                'B_SC': ['B_SC_x', 'B_SC_y', 'B_SC_z'],
+                'bhat_inst': ['bhat_inst_x', 'bhat_inst_y', 'bhat_inst_z']
+            }
+
+            for vec_key, comp_keys in vector_keys.items():
+                vector_data = extracted_data.get(vec_key)
+                # Check if vector data exists, is 2D, and has 3 columns
+                if vector_data is not None and vector_data.ndim == 2 and vector_data.shape[1] == 3:
+                    # Check if component keys exist in raw_data definition before assigning
+                    if comp_keys[0] in self.raw_data: extracted_data[comp_keys[0]] = vector_data[:, 0]
+                    if comp_keys[1] in self.raw_data: extracted_data[comp_keys[1]] = vector_data[:, 1]
+                    if comp_keys[2] in self.raw_data: extracted_data[comp_keys[2]] = vector_data[:, 2]
+                    print_manager.debug(f"  Extracted components for {vec_key}.")
+                else:
+                    # Set components to None if vector is missing/malformed, but only if keys exist
+                    if comp_keys[0] in self.raw_data: extracted_data[comp_keys[0]] = None
+                    if comp_keys[1] in self.raw_data: extracted_data[comp_keys[1]] = None
+                    if comp_keys[2] in self.raw_data: extracted_data[comp_keys[2]] = None
+                    if vec_key in extracted_data and extracted_data[vec_key] is not None: # Only warn if vector was present but malformed
+                         print_manager.warning(f"Vector '{vec_key}' has unexpected shape {vector_data.shape if vector_data is not None else 'None'}, cannot extract components.")
 
             if potential_missing_keys:
                  print_manager.warning(f"{self.__class__.__name__}: The following expected CDF variables were missing: {potential_missing_keys}")
@@ -344,6 +421,7 @@ class proton_fits_class:
                       print_manager.warning("Could not find/calculate B_mag (B_mag not in CDF, B_inst missing or wrong shape).")
             else:
                 print_manager.debug("Using B_mag directly provided by CDF.")
+                # pass # Removed pass, debug statement provides the line
 
             # Calculate np2_np1_ratio
             np1 = extracted_data.get('np1')
@@ -367,7 +445,6 @@ class proton_fits_class:
                  print_manager.debug("  Calculated valfven.")
             else:
                  extracted_data['valfven'] = None
-                 # print_manager.warning("Could not calculate valfven (missing B_mag or n_tot).") # Already warned about B_mag
 
             # Calculate beta_ppar, beta_pperp, beta_p_tot
             Tpar_tot = extracted_data.get('Tpar_tot')
@@ -388,64 +465,92 @@ class proton_fits_class:
                  extracted_data['beta_ppar'] = None
                  extracted_data['beta_pperp'] = None
                  extracted_data['beta_p_tot'] = None
-                 # print_manager.warning("Could not calculate beta parameters (missing inputs).")
 
             # Calculate ham_param
             Tperp1 = extracted_data.get('Tperp1')
             Tperp2 = extracted_data.get('Tperp2')
             Trat_tot = extracted_data.get('Trat_tot')
             if Tperp1 is not None and Tperp2 is not None and Trat_tot is not None:
-                 with np.errstate(divide='ignore', invalid='ignore'):
-                      Trat_tot_safe = np.where(Trat_tot != 0, Trat_tot, np.nan)
-                      Tperp1_safe = np.where(Tperp1 != 0, Tperp1, np.nan)
-                      extracted_data['ham_param'] = (Tperp2 / Tperp1_safe) / Trat_tot_safe
-                      print_manager.debug("  Calculated ham_param.")
+                with np.errstate(divide='ignore', invalid='ignore'):
+                    Trat_tot_safe = np.where(Trat_tot != 0, Trat_tot, np.nan)
+                    Tperp1_safe = np.where(Tperp1 != 0, Tperp1, np.nan)
+                    extracted_data['ham_param'] = (Tperp2 / Tperp1_safe) / Trat_tot_safe
+                    print_manager.debug("  Calculated ham_param.")
             else:
-                 extracted_data['ham_param'] = None
+                extracted_data['ham_param'] = None
 
             # Calculate chi_p_norm
             chi_p = extracted_data.get('chi_p')
             if chi_p is not None:
-                 with np.errstate(divide='ignore', invalid='ignore'):
-                      extracted_data['chi_p_norm'] = chi_p / 2038.0
-                      print_manager.debug("  Calculated chi_p_norm.")
+                with np.errstate(divide='ignore', invalid='ignore'):
+                    extracted_data['chi_p_norm'] = chi_p / 2038.0
+                    print_manager.debug("  Calculated chi_p_norm.")
             else:
-                 extracted_data['chi_p_norm'] = None
+                extracted_data['chi_p_norm'] = None
 
             # Calculate vdrift_abs (simple)
             vdrift = extracted_data.get('vdrift')
             if vdrift is not None:
-                 extracted_data['vdrift_abs'] = np.abs(vdrift)
-                 print_manager.debug("  Calculated vdrift_abs.")
+                extracted_data['vdrift_abs'] = np.abs(vdrift)
+                print_manager.debug("  Calculated vdrift_abs.")
             else:
-                 extracted_data['vdrift_abs'] = None
+                extracted_data['vdrift_abs'] = None
+
+            # --- ADDED: Calculate abs_qz_p ---
+            qz_p = extracted_data.get('qz_p')
+            if qz_p is not None:
+                extracted_data['abs_qz_p'] = np.abs(qz_p)
+                print_manager.debug("  Calculated abs_qz_p.")
+            else:
+                extracted_data['abs_qz_p'] = None
 
             # Calculate Mach numbers (V/Va)
             valfven_safe = np.where(valfven != 0, valfven, np.nan) if valfven is not None else None
             if valfven_safe is not None:
-                 vdrift = extracted_data.get('vdrift')
-                 vcm_mag = extracted_data.get('vcm_mag')
-                 vp1_mag = extracted_data.get('vp1_mag')
-                 with np.errstate(divide='ignore', invalid='ignore'):
-                      if vdrift is not None: extracted_data['vdrift_va'] = vdrift / valfven_safe
-                      if vcm_mag is not None: extracted_data['Vcm_mach'] = vcm_mag / valfven_safe
-                      if vp1_mag is not None: extracted_data['Vp1_mach'] = vp1_mag / valfven_safe
-                 print_manager.debug("  Calculated vdrift_va, Vcm_mach, Vp1_mach.")
+                vdrift = extracted_data.get('vdrift')
+                vcm_mag = extracted_data.get('vcm_mag')
+                vp1_mag = extracted_data.get('vp1_mag')
+                with np.errstate(divide='ignore', invalid='ignore'):
+                    if vdrift is not None: extracted_data['vdrift_va'] = vdrift / valfven_safe
+                    if vcm_mag is not None: extracted_data['Vcm_mach'] = vcm_mag / valfven_safe
+                    if vp1_mag is not None: extracted_data['Vp1_mach'] = vp1_mag / valfven_safe
+                print_manager.debug("  Calculated vdrift_va, Vcm_mach, Vp1_mach.")
             else:
-                 extracted_data['vdrift_va'] = None
-                 extracted_data['Vcm_mach'] = None
-                 extracted_data['Vp1_mach'] = None
-                 # print_manager.warning("Could not calculate Mach numbers (missing valfven).")
+                extracted_data['vdrift_va'] = None
+                extracted_data['Vcm_mach'] = None
+                extracted_data['Vp1_mach'] = None
+
+            # --- Placeholder for vsw_mach (Requires external dependency) --- 
+            # TODO: Implement fetching spi_sf00_l3_mom and aligning if vsw_mach is needed
+            print_manager.debug("Skipping vsw_mach calculation (requires external dependency).")
+            extracted_data['vsw_mach'] = None 
 
             # --- 4. Store Final Data --- 
             for key, value in extracted_data.items():
-                 if key in self.raw_data:
-                      self.raw_data[key] = value
-                 # else: # Don't warn if it was just an intermediate calc like B_mag maybe
-                 #      print_manager.warning(f"Key '{key}' calculated/extracted but not in initial raw_data dict. Ignoring.")
-                      
+                if key in self.raw_data:
+                    self.raw_data[key] = value
+                    # <<< ADDED >>> Debug print for n_tot specifically when stored
+                    if key == 'n_tot':
+                        n_tot_val_final = self.raw_data.get('n_tot')
+                        print(f"DEBUG calculate_variables: Storing self.raw_data['n_tot'] type={type(n_tot_val_final)}, shape={n_tot_val_final.shape if hasattr(n_tot_val_final, 'shape') else 'N/A'}")
+                        if n_tot_val_final is not None and hasattr(n_tot_val_final, '__len__') and len(n_tot_val_final) > 0:
+                             print(f"DEBUG calculate_variables: Stored n_tot values (first 5): {n_tot_val_final[:5]}")
+                        elif n_tot_val_final is None:
+                             print("DEBUG calculate_variables: Stored n_tot is None")
+                        else:
+                             print("DEBUG calculate_variables: Stored n_tot is not None but empty or unsized")
+
             if self.datetime_array is None:
-                 print_manager.error(f"{self.__class__.__name__}: No valid time array after processing.")
+                print_manager.error(f"{self.__class__.__name__}: No valid time array after processing.")
+            
+            # <<< ADDED >>> Check state right before exiting calculate_variables
+            print(f"DEBUG calculate_variables END: Exiting method.")
+            final_dt_array = getattr(self, 'datetime_array', None)
+            final_n_tot_raw = self.raw_data.get('n_tot')
+            print(f"DEBUG calculate_variables END: datetime_array is None: {final_dt_array is None}")
+            if final_dt_array is not None: print(f"DEBUG calculate_variables END: datetime_array len: {len(final_dt_array)}")
+            print(f"DEBUG calculate_variables END: raw_data['n_tot'] is None: {final_n_tot_raw is None}")
+            if final_n_tot_raw is not None: print(f"DEBUG calculate_variables END: raw_data['n_tot'] shape: {final_n_tot_raw.shape if hasattr(final_n_tot_raw, 'shape') else 'N/A'}")
             
         except Exception as e:
             print_manager.error(f"!!! UNEXPECTED ERROR in {self.__class__.__name__}.calculate_variables: {e}")
@@ -459,393 +564,81 @@ class proton_fits_class:
         # Stash the instance in data_cubby for later retrieval / to avoid circular references
         # data_cubby.stash(self, class_name='proton_fits') # Stashing happens in __init__ / update
 
-    # --- Calculate What You Need (CWYN) Properties ---
-    @property
-    def vsw_mach(self):
-        """Calculates Solar Wind Mach number (Vsw / Va_proton) on demand.
-
-        Fetches spi_sf00_l3_mom data, aligns Vsw to the FITS time base,
-        and divides by the Alfven speed calculated using only proton density.
-        Results are cached.
-        """
-        cache_key = 'vsw_mach'
-        required_internal = ['valfven']
-        cubby_key = 'spi_sf00_l3_mom'
-        # V_rtn needed if vp not present, Epoch needed for alignment
-        required_dependency_vars = ['Epoch', 'V_rtn', 'vp']
-
-        # 1. Use helper to check cache and internal prerequisites
-        cached_result, should_calculate = self._check_cwyn_cache_and_prereqs(cache_key, required_internal)
-        if not should_calculate:
-            return cached_result
-        valfven_p = self.raw_data.get('valfven') # Already validated by helper
-
-        # 2. Fetch and validate dependency
-        try:
-            # Note: required_dependency_vars includes 'vp' which might be None, 
-            # the helper validates *presence*, not non-None status for optional vars.
-            dependencies = self._fetch_and_validate_dependency(cache_key, cubby_key, required_dependency_vars)
-            if dependencies is None:
-                self._cwyn_cache[cache_key] = np.full(self.time.shape, np.nan)
-                return self._cwyn_cache[cache_key]
-            
-            # Extract validated vars
-            mom_time = dependencies.get('Epoch')
-            mom_v_rtn = dependencies.get('V_rtn')
-            mom_vp = dependencies.get('vp') # Could be None if not present
-
-            # 3. Get Vsw (Solar Wind Speed magnitude)
-            if mom_vp is not None:
-                vsw = mom_vp
-                print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Using 'vp' magnitude from {cubby_key}.")
-            elif mom_v_rtn is not None and mom_v_rtn.ndim == 2 and mom_v_rtn.shape[1] >= 3:
-                print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Calculating Vsw magnitude from 'V_rtn' vector.")
-                with np.errstate(invalid='ignore'):
-                    vsw = np.sqrt(mom_v_rtn[:, 0]**2 + mom_v_rtn[:, 1]**2 + mom_v_rtn[:, 2]**2)
-            else:
-                # This case should ideally be caught by the validation helper if both are missing/invalid
-                logging.error(f"{self.__class__.__name__} ({cache_key}): Could not determine Vsw from validated dependencies.")
-                self._cwyn_cache[cache_key] = np.full(self.time.shape, np.nan)
-                return self._cwyn_cache[cache_key]
-
-            # 4. Align Vsw to self.time
-            print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Aligning Vsw to FITS time base...")
-            vsw_aligned = self._interpolate_to_self_time(mom_time, vsw)
-            if vsw_aligned is None:
-                logging.error(f"{self.__class__.__name__} ({cache_key}): Alignment of Vsw failed.")
-                self._cwyn_cache[cache_key] = np.full(self.time.shape, np.nan)
-                return self._cwyn_cache[cache_key]
-
-            # 5. Calculate Mach number
-            print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Calculating Mach number...")
-            with np.errstate(divide='ignore', invalid='ignore'):
-                valfven_p_safe = np.where(valfven_p != 0, valfven_p, np.nan)
-                mach_number = vsw_aligned / valfven_p_safe
-
-            # 6. Cache and return result
-            self._cwyn_cache[cache_key] = mach_number
-            print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Successfully calculated and cached.")
-            return self._cwyn_cache[cache_key]
-
-        except Exception as e:
-            logging.error(f"!!! UNEXPECTED ERROR calculating {cache_key} in {self.__class__.__name__}: {e}")
-            import traceback
-            logging.error(traceback.format_exc())
-            result_shape = self.time.shape if self.time is not None else (0,)
-            self._cwyn_cache[cache_key] = np.full(result_shape, np.nan)
-            return self._cwyn_cache[cache_key]
-
-    @property
-    def vdrift_va_p2p1_apfits(self):
-        """Calculates normalized drift (Vdrift / Va_alphaproton) on demand.
-
-        Fetches sf01_fits data for alpha density (na), calculates the
-        Alfven speed using total density (n_tot + na), and divides the
-        proton drift speed (vdrift) by this mixed Alfven speed.
-        Assumes proton and alpha data are aligned. Results are cached.
-        """
-        cache_key = 'vdrift_va_p2p1_apfits'
-        required_internal = ['vdrift', 'n_tot', 'B_mag']
-        cubby_key = 'sf01_fits'
-        required_dependency_vars = ['na', 'Epoch'] # Epoch needed for length check
-
-        # 1. Use helper to check cache and internal prerequisites
-        cached_result, should_calculate = self._check_cwyn_cache_and_prereqs(cache_key, required_internal)
-        if not should_calculate:
-            return cached_result
-        vdrift = self.raw_data.get('vdrift')
-        n_tot_p = self.raw_data.get('n_tot')
-        b_mag = self.raw_data.get('B_mag')
-
-        # 2. Fetch and validate dependency
-        try:
-            dependencies = self._fetch_and_validate_dependency(cache_key, cubby_key, required_dependency_vars)
-            if dependencies is None:
-                self._cwyn_cache[cache_key] = np.full(self.time.shape, np.nan)
-                return self._cwyn_cache[cache_key]
-            
-            na = dependencies.get('na')
-            # alpha_time = dependencies.get('Epoch') # Not needed for calculation, only length check
-
-            # 3. Verify array lengths (assuming alignment)
-            if len(na) != len(self.time) or len(n_tot_p) != len(self.time) or len(vdrift) != len(self.time) or len(b_mag) != len(self.time):
-                 logging.error(f"{self.__class__.__name__} ({cache_key}): Length mismatch ({len(self.time)=}, {len(na)=}, {len(n_tot_p)=}). Cannot calculate. Data might not be aligned.")
-                 self._cwyn_cache[cache_key] = np.full(self.time.shape, np.nan)
-                 return self._cwyn_cache[cache_key]
-
-            # 4. Calculate Mixed Alfven Speed (Va_ap)
-            print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Calculating mixed Alfven speed (Va_ap)...")
-            with np.errstate(divide='ignore', invalid='ignore'):
-                n_total_ap = n_tot_p + na
-                n_total_ap_safe = np.where(n_total_ap > 0, n_total_ap, np.nan)
-                valfven_ap = 21.8 * b_mag / np.sqrt(n_total_ap_safe)
-
-            # 5. Calculate Normalized Drift (Vdrift / Va_ap)
-            print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Calculating normalized drift (Vdrift / Va_ap)...")
-            with np.errstate(divide='ignore', invalid='ignore'):
-                valfven_ap_safe = np.where(valfven_ap != 0, valfven_ap, np.nan)
-                norm_drift = vdrift / valfven_ap_safe
-
-            # 6. Cache and return result
-            self._cwyn_cache[cache_key] = norm_drift
-            print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Successfully calculated and cached.")
-            return self._cwyn_cache[cache_key]
-
-        except Exception as e:
-            logging.error(f"!!! UNEXPECTED ERROR calculating {cache_key} in {self.__class__.__name__}: {e}")
-            import traceback
-            logging.error(traceback.format_exc())
-            result_shape = self.time.shape if self.time is not None else (0,)
-            self._cwyn_cache[cache_key] = np.full(result_shape, np.nan)
-            return self._cwyn_cache[cache_key]
-
-    @property
-    def abs_vdrift_va_p2p1_apfits(self):
-        """Calculates absolute normalized drift (|Vdrift| / Va_alphaproton) on demand.
-
-        Simply calls the vdrift_va_p2p1_apfits property and returns the absolute value.
-        Relies on the caching mechanism within vdrift_va_p2p1_apfits.
-        """
-        print_manager.debug(f"{self.__class__.__name__}: Calculating abs_vdrift_va_p2p1_apfits...")
-        
-        # Get the potentially cached result from the non-absolute property
-        norm_drift = self.vdrift_va_p2p1_apfits
-
-        # Check if the result was valid before taking abs
-        if norm_drift is None:
-            logging.warning(f"{self.__class__.__name__}: Underlying vdrift_va_p2p1_apfits returned None.")
-            return None # Propagate None if calculation failed
-
-        # Calculate and return the absolute value
-        # Use errstate to handle potential NaNs gracefully
-        with np.errstate(invalid='ignore'):
-            abs_norm_drift = np.abs(norm_drift)
-
-        # No separate caching needed here
-        print_manager.debug(f"{self.__class__.__name__}: Returning absolute value of vdrift_va_p2p1_apfits.")
-        return abs_norm_drift
-
-    def _interpolate_to_self_time(self, source_time, source_data):
-        """Interpolates external data onto this instance's time base. Used for 
-
-        Args:
-            source_time (np.ndarray): Datetime array of the source data.
-            source_data (np.ndarray): Data values corresponding to source_time.
-
-        Returns:
-            np.ndarray or None: Interpolated data array matching self.time, or None if interpolation fails.
-        """
-        if self.time is None or len(self.time) == 0:
-            logging.error(f"{self.__class__.__name__}: Cannot interpolate, self.time is not set.")
-            return None
-        if source_time is None or len(source_time) < 2 or source_data is None or len(source_data) < 2:
-            logging.warning(f"{self.__class__.__name__}: Insufficient source data points for interpolation.")
-            # Return array of NaNs with the shape of the target time
-            return np.full(self.time.shape, np.nan)
-        if len(source_time) != len(source_data):
-             logging.error(f"{self.__class__.__name__}: Source time and data lengths mismatch for interpolation ({len(source_time)} vs {len(source_data)}).")
-             return np.full(self.time.shape, np.nan)
-
-        try:
-            # Convert times to numeric representation (TT2000/CDF Epoch should already be numeric)
-            # If target time is datetime, convert it
-            target_time_numeric = self.time
-            if isinstance(target_time_numeric[0], datetime):
-                target_time_numeric = mdates.date2num(target_time_numeric)
-
-            # Convert source time to numeric if it's datetime
-            source_time_numeric = source_time
-            if isinstance(source_time_numeric[0], datetime):
-                source_time_numeric = mdates.date2num(source_time_numeric)
-
-            # Handle NaNs in source data
-            valid_mask = ~np.isnan(source_data)
-            if not np.all(valid_mask):
-                if np.sum(valid_mask) < 2:
-                    logging.warning(f"{self.__class__.__name__}: Not enough valid source data points after NaN removal for interpolation.")
-                    return np.full(self.time.shape, np.nan)
-                source_time_numeric = source_time_numeric[valid_mask]
-                source_data_valid = source_data[valid_mask]
-            else:
-                source_data_valid = source_data
-
-            # Create interpolation function
-            # Use bounds_error=False and fill_value=np.nan to handle extrapolation
-            interp_func = interp1d(
-                source_time_numeric,
-                source_data_valid,
-                kind='linear',
-                bounds_error=False,
-                fill_value=np.nan
-            )
-
-            # Perform interpolation
-            interpolated_data = interp_func(target_time_numeric)
-            print_manager.debug(f"{self.__class__.__name__}: Successfully interpolated data onto self.time.")
-            return interpolated_data
-
-        except Exception as e:
-            logging.error(f"!!! UNEXPECTED ERROR during interpolation in {self.__class__.__name__}: {e}")
-            import traceback
-            logging.error(traceback.format_exc())
-            # Return NaNs in case of any unexpected error
-            return np.full(self.time.shape, np.nan)
-
-    def _check_cwyn_cache_and_prereqs(self, cache_key, required_internal_keys=[]):
-        """Checks CWYN cache and internal prerequisites for a property calculation.
-
-        Args:
-            cache_key (str): The key to check in self._cwyn_cache.
-            required_internal_keys (list, optional): List of keys that must be present
-                and not all NaN in self.raw_data. Defaults to [].
-
-        Returns:
-            tuple: (result, should_calculate)
-                - result: The cached value if found, or an array of NaNs if prerequisites fail.
-                - should_calculate (bool): True if calculation should proceed, False otherwise.
-        """
-        # 1. Check cache
-        if cache_key in self._cwyn_cache:
-            print_manager.debug(f"{self.__class__.__name__}: Returning cached {cache_key}.")
-            return self._cwyn_cache[cache_key], False # Return cached value, don't calculate
-
-        print_manager.debug(f"{self.__class__.__name__}: Calculating {cache_key} (not cached)...")
-
-        # 2. Check core prerequisites (plotbot reference and time array)
-        if self.plotbot is None or self.plotbot.data_cubby is None:
-            logging.error(f"{self.__class__.__name__}: PlotBot/DataCubby reference not available. Cannot calculate {cache_key}.")
-            nan_result = np.full(self.time.shape, np.nan) if self.time is not None else None
-            return nan_result, False # Return NaNs, don't calculate
-        if self.time is None:
-            logging.error(f"{self.__class__.__name__}: Self time array is None. Cannot calculate {cache_key}.")
-            return None, False # Return None, don't calculate
-
-        # 3. Check required internal raw_data keys
-        for key in required_internal_keys:
-            data = self.raw_data.get(key)
-            if data is None or np.all(np.isnan(data)):
-                logging.warning(f"{self.__class__.__name__}: Required internal key '{key}' not available or all NaN. Cannot calculate {cache_key}.")
-                nan_result = np.full(self.time.shape, np.nan)
-                return nan_result, False # Return NaNs, don't calculate
-
-        # Prerequisites met, calculation should proceed
-        return None, True
-
-    def _fetch_and_validate_dependency(self, cache_key, cubby_key, required_dependency_vars):
-        """Fetches dependency from DataCubby and validates required variables.
-
-        Args:
-            cache_key (str): The cache key of the calling property (for logging).
-            cubby_key (str): The key to fetch from self.plotbot.data_cubby.
-            required_dependency_vars (list): List of variable names that must be extracted
-                and validated from the dependency instance.
-
-        Returns:
-            dict or None: A dictionary containing the validated dependency variables
-                          (e.g., {'Epoch': time_array, 'na': na_array}) if successful,
-                          otherwise None.
-        """
-        print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Fetching dependency '{cubby_key}'...")
-        dependency_instance = self.plotbot.data_cubby.grab(cubby_key)
-
-        # 1. Check if instance was fetched
-        if dependency_instance is None:
-            logging.error(f"{self.__class__.__name__} ({cache_key}): Failed to retrieve '{cubby_key}' from DataCubby.")
-            return None
-
-        # 2. Try to extract required variables
-        extracted_vars = {}
-        dependency_raw_data = getattr(dependency_instance, 'raw_data', None)
-
-        for var_name in required_dependency_vars:
-            value = None
-            # Prioritize raw_data dictionary
-            if dependency_raw_data is not None and var_name in dependency_raw_data:
-                value = dependency_raw_data[var_name]
-            # Fallback to direct attribute access
-            elif hasattr(dependency_instance, var_name):
-                value = getattr(dependency_instance, var_name)
-
-            # Basic validation: Check if None or all NaN (if array)
-            if value is None:
-                logging.warning(f"{self.__class__.__name__} ({cache_key}): Required variable '{var_name}' not found in '{cubby_key}' instance.")
-                return None # Fail if any required var is missing
-            if isinstance(value, np.ndarray) and value.size > 0 and np.all(np.isnan(value)):
-                logging.warning(f"{self.__class__.__name__} ({cache_key}): Required variable '{var_name}' in '{cubby_key}' is all NaN.")
-                # Decide if all NaN is acceptable or a failure - for now, let's treat it as failure
-                return None
-            if isinstance(value, np.ndarray) and value.size == 0:
-                 logging.warning(f"{self.__class__.__name__} ({cache_key}): Required variable '{var_name}' in '{cubby_key}' is an empty array.")
-                 return None # Treat empty array as failure
-                 
-            extracted_vars[var_name] = value
-
-        print_manager.debug(f"{self.__class__.__name__} ({cache_key}): Successfully fetched and validated dependency '{cubby_key}'.")
-        return extracted_vars
-
-    def _create_fits_scatter_ploptions(self, var_name, subclass_name, y_label, legend_label, color='black',
-                                       data_type='proton_fits', class_name='proton_fits', plot_type='scatter',
-                                       marker_style='*', marker_size=5, alpha=0.7, y_scale='linear', y_limit=None):
-        """Helper method to create ploptions for standard FITS plots (scatter or time_series)."""
-        # Ensure datetime_array is handled correctly if None
-        dt_array = self.datetime_array if hasattr(self, 'datetime_array') and self.datetime_array is not None else None
-        
-        return ploptions(
-            var_name=var_name,
-            data_type=data_type,       # Use passed argument
-            class_name=class_name,     # Use passed argument
-            subclass_name=subclass_name,
-            plot_type=plot_type,         # Use passed argument
-            datetime_array=dt_array, # Use potentially None dt_array
-            y_label=y_label,
-            legend_label=legend_label,
-            color=color,
-            # Use arguments passed to helper (or their defaults)
-            y_scale=y_scale,          
-            marker_style=marker_style,           
-            marker_size=marker_size,             
-            alpha=alpha,                 
-            y_limit=y_limit               
-        )
-
     def set_ploptions(self):
         """Initialize or update plot_manager instances with data and plot options."""
         
+        # <<< ADDED >>> Debugging start of set_ploptions
+        print(f"DEBUG set_ploptions START: Entering method.")
+        start_dt_array = getattr(self, 'datetime_array', 'ATTRIBUTE_MISSING')
+        start_n_tot_raw = self.raw_data.get('n_tot', 'KEY_MISSING')
+        print(f"DEBUG set_ploptions START: self.datetime_array type={type(start_dt_array)}")
+        if start_dt_array is not None and start_dt_array != 'ATTRIBUTE_MISSING': print(f"DEBUG set_ploptions START: datetime_array len={len(start_dt_array)}")
+        else: print(f"DEBUG set_ploptions START: datetime_array is None or missing")
+        print(f"DEBUG set_ploptions START: self.raw_data['n_tot'] type={type(start_n_tot_raw)}")
+        if start_n_tot_raw is not None and start_n_tot_raw != 'KEY_MISSING': print(f"DEBUG set_ploptions START: n_tot_raw shape={start_n_tot_raw.shape if hasattr(start_n_tot_raw, 'shape') else 'N/A'}")
+        else: print(f"DEBUG set_ploptions START: n_tot_raw is None or missing")
+
         # Initialize plot managers in the order specified by user (1-34)
 
         # 1. qz_p (Scatter, Size 20)
         self.qz_p = plot_manager( # Heat flux of the proton beam
             self.raw_data.get('qz_p'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='qz_p',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='qz_p', # User list #1
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'$q_{z,p}$ (W/m$^2$)',
                 legend_label=r'$q_{z,p}$',
                 color='blueviolet',
                 y_scale='linear',
-                marker_style='*', 
+                marker_style='*',
                 marker_size=20,
                 alpha=0.7,
                 y_limit=None
             )
         )
 
-        # 2. vsw_mach_pfits (Scatter, Size 20) - Removed direct initialization
-        # self.vsw_mach_pfits = plot_manager( ... ) 
+        # 2. vsw_mach_pfits (Scatter, Size 20)
+        self.vsw_mach_pfits = plot_manager( # Solar wind Mach number - ATTRIBUTE NAME CHANGED
+            self.raw_data.get('vsw_mach'), # Still gets raw 'vsw_mach' data
+            plot_options=ploptions(
+                var_name='vsw_mach',
+                data_type='proton_fits',
+                class_name='proton_fits',
+                subclass_name='vsw_mach_pfits', # User list #2
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
+                y_label=r'$V_{sw}/V_A$',
+                legend_label=r'$V_{sw}/V_A$',
+                color='gold',
+                y_scale='linear',
+                y_limit=None,
+                marker_style='*',
+                marker_size=20,
+                alpha=0.7
+            )
+        )
 
         # 3. beta_ppar_pfits (Scatter, Size 20)
         self.beta_ppar_pfits = plot_manager( # Total Proton parallel beta - ATTRIBUTE NAME CHANGED
             self.raw_data.get('beta_ppar'), # Still gets raw 'beta_ppar' data
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='beta_ppar',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='beta_ppar_pfits', # User list #3 (Updated)
-                y_label=r'$\beta_{\parallel,p}$', 
-                legend_label=r'$\beta_{\parallel,p}$', 
-                color='hotpink', 
-                y_scale='linear', 
-                marker_style='*', 
-                marker_size=20,   
-                alpha=0.7,      
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
+                y_label=r'$\beta_{\parallel,p}$',
+                legend_label=r'$\beta_{\parallel,p}$',
+                color='hotpink',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=20,
+                alpha=0.7,
                 y_limit=None
             )
         )
@@ -853,9 +646,13 @@ class proton_fits_class:
         # 4. beta_pperp_pfits (Scatter, Size 20)
         self.beta_pperp_pfits = plot_manager( # Total Proton perpendicular beta - ATTRIBUTE NAME CHANGED
             self.raw_data.get('beta_pperp'), # Still gets raw 'beta_pperp' data
-            plot_options=self._create_fits_scatter_ploptions(
-                var_name='beta_pperp', 
+            plot_options=ploptions(
+                var_name='beta_pperp',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='beta_pperp_pfits', # User list #4 (Updated)
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'$\beta_{\perp,p}$',
                 legend_label=r'$\beta_{\perp,p}$',
                 color='lightskyblue',
@@ -870,11 +667,15 @@ class proton_fits_class:
         # 5. ham_param (Scatter, Size 20)
         self.ham_param = plot_manager( # Hammerhead parameter
             self.raw_data.get('ham_param'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='ham_param',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='ham_param', # User list #5
-                y_label='Hamplitude', 
-                legend_label='Hamplitude', 
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
+                y_label='Hamplitude',
+                legend_label='Hamplitude',
                 color='palevioletred',
                 y_scale='linear',
                 marker_style='*',
@@ -887,399 +688,636 @@ class proton_fits_class:
         # 6. np1 (Scatter, Size 5)
         self.np1 = plot_manager( # Core density
             self.raw_data.get('np1'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='np1',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='np1', # User list #6
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'Density (cm$^{-3}$)',
                 legend_label=r'$n_{p1}$',
-                color='hotpink'
+                color='hotpink',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 7. np2 (Scatter, Size 5)
         self.np2 = plot_manager( # Beam density
             self.raw_data.get('np2'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='np2',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='np2', # User list #7
-                y_label=r'Density (cm$^{-3}$)', 
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
+                y_label=r'Density (cm$^{-3}$)',
                 legend_label=r'$n_{p2}$',
-                color='deepskyblue'
+                color='deepskyblue',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 8. n_tot (Scatter, Size 5)
-        self.n_tot = plot_manager( # Total beam+core density
-            self.raw_data.get('n_tot'),
-            plot_options=self._create_fits_scatter_ploptions(
-                var_name='n_tot',
-                subclass_name='n_tot', # User list #8
-                y_label=r'Density (cm$^{-3}$)',
-                legend_label=r'$n_{ptot}$', 
-                color='deepskyblue' 
-            )
+        # <<< ADDED >>> Debugging before n_tot plot_manager creation
+        print(f"DEBUG set_ploptions n_tot: Preparing to create plot_manager.")
+        dt_array_for_pm = getattr(self, 'datetime_array', None)
+        n_tot_data_for_pm = self.raw_data.get('n_tot')
+        # <<< ADDED >>> Detailed check of data/time before ploptions call
+        print(f"DEBUG set_ploptions n_tot: --> BEFORE ploptions: datetime_array type={type(dt_array_for_pm)}, len={len(dt_array_for_pm) if dt_array_for_pm is not None else 'None'}")
+        print(f"DEBUG set_ploptions n_tot: --> BEFORE ploptions: n_tot data type={type(n_tot_data_for_pm)}, dtype={n_tot_data_for_pm.dtype if hasattr(n_tot_data_for_pm, 'dtype') else 'N/A'}, shape={n_tot_data_for_pm.shape if hasattr(n_tot_data_for_pm, 'shape') else 'N/A'}")
+        if n_tot_data_for_pm is not None and hasattr(n_tot_data_for_pm, '__len__') and len(n_tot_data_for_pm) > 0: print(f"DEBUG set_ploptions n_tot: --> BEFORE ploptions: n_tot data first 5: {n_tot_data_for_pm[:5]}")
+        
+        # Create ploptions instance first
+        n_tot_ploptions = ploptions(
+            var_name='n_tot',
+            data_type='proton_fits',
+            class_name='proton_fits',
+            subclass_name='n_tot', # User list #8
+            plot_type='scatter',
+            datetime_array=dt_array_for_pm, # Use the variable we checked
+            y_label=r'Density (cm$^{-3}$)',
+            legend_label=r'$n_{ptot}$',
+            color='deepskyblue',
+            y_scale='linear',
+            marker_style='o',
+            marker_size=25,
+            alpha=1.0,
+            y_limit=[0, None]
         )
+        
+        # <<< ADDED >>> Detailed check before plot_manager call
+        ploptions_dt_array = getattr(n_tot_ploptions, 'datetime_array', None)
+        print(f"DEBUG set_ploptions n_tot: --> BEFORE plot_manager: n_tot_data type={type(n_tot_data_for_pm)}, dtype={n_tot_data_for_pm.dtype if hasattr(n_tot_data_for_pm, 'dtype') else 'N/A'}, shape={n_tot_data_for_pm.shape if hasattr(n_tot_data_for_pm, 'shape') else 'N/A'}")
+        print(f"DEBUG set_ploptions n_tot: --> BEFORE plot_manager: n_tot_ploptions.datetime_array type={type(ploptions_dt_array)}, len={len(ploptions_dt_array) if ploptions_dt_array is not None else 'None'}")
+        
+        self.n_tot = plot_manager( # Total beam+core density
+            n_tot_data_for_pm, # Use the variable we checked
+            plot_options=n_tot_ploptions # Pass the created instance
+        )
+        
+        # <<< ADDED >>> Debugging after n_tot plot_manager creation
+        print(f"DEBUG set_ploptions n_tot: plot_manager created.")
+        pm_instance = getattr(self, 'n_tot', None)
+        if pm_instance:
+            pm_dt_array = getattr(pm_instance.plot_options, 'datetime_array', 'ATTRIBUTE_MISSING')
+            pm_data = getattr(pm_instance, 'data', 'ATTRIBUTE_MISSING')
+            print(f"DEBUG set_ploptions n_tot: Instance datetime_array is None: {pm_dt_array is None or pm_dt_array == 'ATTRIBUTE_MISSING'}")
+            if pm_dt_array is not None and pm_dt_array != 'ATTRIBUTE_MISSING': print(f"DEBUG set_ploptions n_tot: Instance datetime_array len: {len(pm_dt_array)}")
+            print(f"DEBUG set_ploptions n_tot: Instance data is None: {pm_data is None or pm_data == 'ATTRIBUTE_MISSING'}")
+            if pm_data is not None and pm_data != 'ATTRIBUTE_MISSING': print(f"DEBUG set_ploptions n_tot: Instance data shape: {pm_data.shape if hasattr(pm_data, 'shape') else 'N/A'}")
+        else:
+            print("DEBUG set_ploptions n_tot: Could not retrieve created plot_manager instance.")
 
         # 9. np2/np1 (Scatter, Size 5)
         self.np2_np1_ratio = plot_manager( # Beam to core density ratio
             self.raw_data.get('np2_np1_ratio'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='np2_np1_ratio',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='np2_np1_ratio', # MATCH ATTRIBUTE NAME (User list #9)
-                y_label=r'$\frac{n_{p2}}{n_{p1}}$', 
-                legend_label=r'$\frac{n_{p2}}{n_{p1}}$', 
-                color='deepskyblue' 
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
+                y_label=r'$\frac{n_{p2}}{n_{p1}}$',
+                legend_label=r'$\frac{n_{p2}}{n_{p1}}$',
+                color='deepskyblue',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 10. vp1_x (Scatter, Size 5)
         self.vp1_x = plot_manager( # Core velocity x
             self.raw_data.get('vp1_x'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='vp1_x',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='vp1_x', # User list #10
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'Velocity (km/s)',
                 legend_label=r'$vx_{p1}$',
-                color='forestgreen'
+                color='forestgreen',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 11. vp1_y (Scatter, Size 5)
         self.vp1_y = plot_manager( # Core velocity y
             self.raw_data.get('vp1_y'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='vp1_y',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='vp1_y', # User list #11
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'Velocity (km/s)',
                 legend_label=r'$vy_{p1}$',
-                color='orange'
+                color='orange',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 12. vp1_z (Scatter, Size 5)
         self.vp1_z = plot_manager( # Core velocity z
             self.raw_data.get('vp1_z'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='vp1_z',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='vp1_z', # User list #12
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'Velocity (km/s)',
                 legend_label=r'$vz_{p1}$',
-                color='dodgerblue'
+                color='dodgerblue',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 13. vp1_mag (Scatter, Size 5)
         self.vp1_mag = plot_manager( # Core velocity magnitude
             self.raw_data.get('vp1_mag'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='vp1_mag',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='vp1_mag', # User list #13
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'Velocity (km/s)',
                 legend_label=r'$vmag_{p1}$',
-                color='dodgerblue' 
+                color='dodgerblue',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 14. vcm_x (Scatter, Size 5)
         self.vcm_x = plot_manager( # Center of mass velocity x
             self.raw_data.get('vcm_x'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='vcm_x',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='vcm_x', # User list #14
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'Velocity (km/s)',
                 legend_label=r'$vx_{cm}$',
-                color='forestgreen' 
+                color='forestgreen',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 15. vcm_y (Scatter, Size 5)
         self.vcm_y = plot_manager( # Center of mass velocity y
             self.raw_data.get('vcm_y'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='vcm_y',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='vcm_y', # User list #15
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'Velocity (km/s)',
                 legend_label=r'$vy_{cm}$',
-                color='orange' 
+                color='orange',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 16. vcm_z (Scatter, Size 5)
         self.vcm_z = plot_manager( # Center of mass velocity z
             self.raw_data.get('vcm_z'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='vcm_z',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='vcm_z', # User list #16
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'Velocity (km/s)',
                 legend_label=r'$vz_{cm}$',
-                color='dodgerblue' 
+                color='dodgerblue',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 17. vcm_mag (Scatter, Size 5)
         self.vcm_mag = plot_manager( # Center of mass velocity magnitude
             self.raw_data.get('vcm_mag'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='vcm_mag',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='vcm_mag', # User list #17
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'Velocity (km/s)',
                 legend_label=r'$vmag_{cm}$',
-                color='dodgerblue' 
+                color='dodgerblue',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
         
         # 18. vdrift (Scatter, Size 5)
         self.vdrift = plot_manager( # Drift speed
             self.raw_data.get('vdrift'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='vdrift',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='vdrift', # User list #18
-                y_label=r'$V_{drift}$', 
-                legend_label=r'$vdrift_{p2}$', 
-                color='navy' 
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
+                y_label=r'$V_{drift}$',
+                legend_label=r'$vdrift_{p2}$',
+                color='navy',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 19. |vdrift| (Scatter, Size 5)
         self.vdrift_abs = plot_manager( # Absolute drift speed
             self.raw_data.get('vdrift_abs'),
-            plot_options=self._create_fits_scatter_ploptions(
-                var_name='vdrift_abs', 
+            plot_options=ploptions(
+                var_name='vdrift_abs',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='vdrift_abs', # MATCH ATTRIBUTE NAME (User list #19)
-                y_label=r'$|V_{drift}|$', 
-                legend_label=r'$|vdrift_{p2}|$ ', 
-                color='navy' 
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
+                y_label=r'$|V_{drift}|$',
+                legend_label=r'$|vdrift_{p2}|$ ',
+                color='navy',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 20. vdrift_va_pfits (Scatter, Size 5)
         self.vdrift_va_pfits = plot_manager( # Normalized drift speed - ATTRIBUTE NAME CHANGED
             self.raw_data.get('vdrift_va'), # Still gets raw 'vdrift_va' data
-            plot_options=self._create_fits_scatter_ploptions(
-                var_name='vdrift_va', 
+            plot_options=ploptions(
+                var_name='vdrift_va',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='vdrift_va_pfits', # User list #20
-                y_label=r'$V_{drift}/V_A$', 
-                legend_label=r'$vdrift_{p2}/vA$', 
-                color='navy' 
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
+                y_label=r'$V_{drift}/V_A$',
+                legend_label=r'$vdrift_{p2}/vA$',
+                color='navy',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 21. Trat1 (Scatter, Size 5)
         self.Trat1 = plot_manager( # Temperature anisotropy of the core
             self.raw_data.get('Trat1'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='Trat1',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='Trat1', # User list #21
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'$T_{\perp}/T_{\parallel}$',
                 legend_label=r'$T_{\perp}/T_{\parallel,p1}$',
-                color='hotpink' 
+                color='hotpink',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 22. Trat2 (Scatter, Size 5)
         self.Trat2 = plot_manager( # Temperature anisotropy of the beam
             self.raw_data.get('Trat2'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='Trat2',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='Trat2', # User list #22
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'$T_{\perp}/T_{\parallel}$',
                 legend_label=r'$T_{\perp}/T_{\parallel,p2}$',
-                color='deepskyblue' 
+                color='deepskyblue',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 23. Trat_tot (Scatter, Size 5)
         self.Trat_tot = plot_manager( # Total temperature anisotropy
             self.raw_data.get('Trat_tot'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='Trat_tot',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='Trat_tot', # User list #23
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'$T_\perp/T_\parallel$',
                 legend_label=r'$T_\perp/T_\parallel$',
-                color='mediumspringgreen' 
+                color='mediumspringgreen',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 24. Tpar1 (Scatter, Size 5)
         self.Tpar1 = plot_manager( # Temperature parallel of the core
             self.raw_data.get('Tpar1'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='Tpar1',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='Tpar1', # User list #24
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'$T_{\parallel}$',
                 legend_label=r'$T_{\parallel,p1}$',
-                color='hotpink' 
+                color='hotpink',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 25. Tpar2 (Scatter, Size 5)
         self.Tpar2 = plot_manager( # Temperature parallel of the beam
             self.raw_data.get('Tpar2'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='Tpar2',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='Tpar2', # User list #25
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'$T_{\parallel}$',
                 legend_label=r'$T_{\parallel,p2}$',
-                color='deepskyblue' 
+                color='deepskyblue',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 26. Tpar_tot (Scatter, Size 5)
         self.Tpar_tot = plot_manager( # Total temperature parallel
             self.raw_data.get('Tpar_tot'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='Tpar_tot',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='Tpar_tot', # User list #26
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'$T_\parallel$',
-                legend_label=r'$T_\parallel$', 
-                color='mediumspringgreen' 
+                legend_label=r'$T_\parallel$',
+                color='mediumspringgreen',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 27. Tperp1 (Scatter, Size 5)
         self.Tperp1 = plot_manager( # Temperature perpendicular of the core
             self.raw_data.get('Tperp1'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='Tperp1',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='Tperp1', # User list #27
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'$T_{\perp}$',
                 legend_label=r'$T_{\perp,p1}$',
-                color='hotpink' 
+                color='hotpink',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 28. Tperp2 (Scatter, Size 5)
         self.Tperp2 = plot_manager( # Temperature perpendicular of the beam
             self.raw_data.get('Tperp2'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='Tperp2',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='Tperp2', # User list #28
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'$T_{\perp}$',
                 legend_label=r'$T_{\perp,p2}$',
-                color='deepskyblue' 
+                color='deepskyblue',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 29. Tperp_tot (Scatter, Size 5)
         self.Tperp_tot = plot_manager( # Total temperature perpendicular
             self.raw_data.get('Tperp_tot'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='Tperp_tot',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='Tperp_tot', # User list #29
-                y_label=r'$T_{\perp}$', 
-                legend_label=r'$T_{\perp}$', 
-                color='mediumspringgreen' 
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
+                y_label=r'$T_{\perp}$',
+                legend_label=r'$T_{\perp}$',
+                color='mediumspringgreen',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 30. Temp_tot (Scatter, Size 5)
         self.Temp_tot = plot_manager( # Total temperature
             self.raw_data.get('Temp_tot'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='Temp_tot',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='Temp_tot', # User list #30
-                y_label=r'$Temp_{tot}$', 
-                legend_label=r'$T_{tot}$', 
-                color='mediumspringgreen' 
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
+                y_label=r'$Temp_{tot}$',
+                legend_label=r'$T_{tot}$',
+                color='mediumspringgreen',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 31. |qz_p| (Scatter, Size 5)
         self.abs_qz_p = plot_manager( # Absolute heat flux - ATTRIBUTE RENAMED to abs_qz_p
             self.raw_data.get('abs_qz_p'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='abs_qz_p',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='abs_qz_p', # MATCH ATTRIBUTE NAME (User list #31) - UPDATED
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
                 y_label=r'$|Q_p| W/m^2$',
                 legend_label=r'$|Q_p|$',
-                color='mediumspringgreen'
+                color='mediumspringgreen',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 32. chi_p (Scatter, Size 5)
         self.chi_p = plot_manager( # Chi of whole proton fit
             self.raw_data.get('chi_p'),
-            plot_options=self._create_fits_scatter_ploptions(
-                var_name='chi_p',            
+            plot_options=ploptions(
+                var_name='chi_p',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='chi_p',       # User list #32
-                y_label=r'$\chi_p$',        
-                legend_label=r'$\chi_p$',    
-                color='rebeccapurple'       
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
+                y_label=r'$\chi_p$',
+                legend_label=r'$\chi_p$',
+                color='rebeccapurple',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 33. chi_p_norm (Scatter, Size 5)
         self.chi_p_norm = plot_manager( # Normalized chi of whole proton fit
             self.raw_data.get('chi_p_norm'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='chi_p_norm',
+                data_type='proton_fits',
+                class_name='proton_fits',
                 subclass_name='chi_p_norm', # User list #33
-                y_label=r'$\chi_p norm$', 
-                legend_label=r'$\chi_p norm$', 
-                color='rebeccapurple' 
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
+                y_label=r'$\chi_p norm$',
+                legend_label=r'$\chi_p norm$',
+                color='rebeccapurple',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=5, # Default from helper
+                alpha=0.7, # Default from helper
+                y_limit=None
             )
         )
 
         # 34. valfven_pfits (Time Series)
         self.valfven_pfits = plot_manager( # Alfven speed (from FITS params) - ATTRIBUTE NAME CHANGED
             self.raw_data.get('valfven'), # Still gets raw 'valfven' data
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_options=ploptions(
                 var_name='valfven',
                 data_type='proton_fits',
                 class_name='proton_fits',
                 subclass_name='valfven_pfits', # User list #34 (Updated name)
-                plot_type='time_series', 
-                y_label=r'V$_{A}$ (km/s)', 
-                legend_label=r'V$_{A}$',   
-                color='deepskyblue' # Added back the missing color argument
+                plot_type='time_series',
+                datetime_array=self.datetime_array,
+                y_label=r'V$_{A}$ (km/s)',
+                legend_label=r'V$_{A}$'
             )
         )
 
-        # --- NEW CWYN Variables --- 
-        # For CWYN variables, just store their plot options for later use 
-        # (don't create plot_managers yet)
-        self._cwyn_ploptions = {
-            'vsw_mach_pfits': self._create_fits_scatter_ploptions(
-                var_name='vsw_mach', 
-                subclass_name='vsw_mach_pfits',
-                y_label=r'$V_{sw}/V_A$', 
-                legend_label=r'$V_{sw}/V_A$', # Corrected label to match y_label
-                color='gold', 
-                y_scale='linear',
-                y_limit=None,
-                marker_style='*',
-                marker_size=20, 
-                alpha=0.7
-            ),
-            
-            'vdrift_va_p2p1_apfits': self._create_fits_scatter_ploptions(
-                var_name='vdrift_va_p2p1_apfits',
-                subclass_name='vdrift_va_p2p1_apfits',
-                y_label=r'$V_{drift}/V_A$',
-                legend_label=r'$Vd_{p2-p1}/V_{A,ap}$',
-                color='navy',
-                marker_style='*',
-                marker_size=5,
-                alpha=0.7,
-                y_limit=None
-            ),
-            
-            'abs_vdrift_va_p2p1_apfits': self._create_fits_scatter_ploptions(
-                var_name='abs_vdrift_va_p2p1_apfits',
-                subclass_name='abs_vdrift_va_p2p1_apfits',
-                y_label=r'$|V_{drift}|/V_A$',
-                legend_label=r'$|Vd_{p2-p1}|/V_{A,ap}$', # Corrected label formatting
-                color='darkred',
-                marker_style='*',
-                marker_size=5,
-                alpha=0.7,
-                y_limit=None
-            )
-        }
-
-        # The previous direct plot_manager initializations for CWYN vars 
-        # (vsw_mach_pfits, vdrift_va_p2p1_apfits, abs_vdrift_va_p2p1_apfits) 
-        # should be fully removed above or commented out.
 
 # Initialize with no data - this creates the global singleton instance
 proton_fits = proton_fits_class(None)

@@ -1,3 +1,18 @@
+#plotbot/multiplot.py
+
+"""
+Multiplot Function
+==================
+
+This module provides the multiplot function, which creates multiple time-series plots
+centered around specific times. It handles standard psp variables and custom variables, 
+read in from .cdf and .csv files.
+
+The multiplot function is designed to be used in conjunction with the Plotbot library,
+which provides a comprehensive set of tools for downloading, processing, and visualizing
+space physics data.
+"""
+
 # Import plotbot components with relative imports
 from .data_cubby import data_cubby
 from .data_tracker import global_tracker  

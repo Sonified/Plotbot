@@ -1,5 +1,6 @@
+#plotbot/plot_manager.py
+
 # 🎉 Extend numpy.ndarray with plotting functionality and friendly error handling 🎉
-#SAFE! 
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -30,6 +31,30 @@ class plot_manager(np.ndarray):
     interp_method = 'nearest'  # Default interpolation method ('nearest' or 'linear')
 
     def __new__(cls, input_array, plot_options=None):
+        # <<< ADD DEBUG START >>>
+        from .print_manager import print_manager
+        pm_name = getattr(plot_options, 'subclass_name', 'unknown')
+        print(f"DEBUG plot_manager __new__ START (for {pm_name}): Entering method.") # Changed to simple print
+        print(f"DEBUG plot_manager __new__ (for {pm_name}): Input array type: {type(input_array)}")
+        try:
+            array_for_shape = np.asarray(input_array)
+            print(f"DEBUG plot_manager __new__ (for {pm_name}): Input array shape: {array_for_shape.shape}")
+            if array_for_shape.size > 0:
+                 print(f"DEBUG plot_manager __new__ (for {pm_name}): Input array first 3: {array_for_shape[:3]}")
+        except Exception as e:
+            print(f"DEBUG plot_manager __new__ (for {pm_name}): Could not get input array shape/data: {e}")
+        print(f"DEBUG plot_manager __new__ (for {pm_name}): Received plot_options type: {type(plot_options)}")
+        if plot_options is not None:
+            dt_array = getattr(plot_options, 'datetime_array', 'ATTRIBUTE_MISSING')
+            print(f"DEBUG plot_manager __new__ (for {pm_name}): Received plot_options.datetime_array is None: {dt_array is None or (isinstance(dt_array, str) and dt_array == 'ATTRIBUTE_MISSING')}")
+            is_valid_dt_array = dt_array is not None and not (isinstance(dt_array, str) and dt_array == 'ATTRIBUTE_MISSING')
+            if is_valid_dt_array: 
+                try:
+                    print(f"DEBUG plot_manager __new__ (for {pm_name}): Received plot_options.datetime_array length: {len(dt_array)}") 
+                except TypeError:
+                    print(f"DEBUG plot_manager __new__ (for {pm_name}): Received plot_options.datetime_array has no length (type: {type(dt_array)})")
+        # <<< ADD DEBUG END >>>
+            
         obj = np.asarray(input_array).view(cls)
         # Add this new section for plot state
         if hasattr(input_array, '_plot_state'):
@@ -67,6 +92,23 @@ class plot_manager(np.ndarray):
                 obj._original_options = ploptions()
         
         obj.plot_options = plot_options
+        
+        # <<< ADDED >>> Debug state just before returning from __new__
+        print(f"DEBUG plot_manager __new__ END (for {pm_name}): Exiting method.")
+        final_data = getattr(obj, 'data', 'ATTRIBUTE_MISSING')
+        final_ploptions = getattr(obj, 'plot_options', None)
+        final_dt_array = getattr(final_ploptions, 'datetime_array', 'ATTRIBUTE_MISSING') if final_ploptions else 'NoPlotOptions'
+        print(f"DEBUG plot_manager __new__ END (for {pm_name}): obj.data shape: {final_data.shape if hasattr(final_data, 'shape') else 'N/A'}")
+        # <<< FIXED VALUEERROR CHECK IN DEBUG PRINT >>>
+        is_final_dt_none_or_missing = final_dt_array is None or (isinstance(final_dt_array, str) and final_dt_array in ['ATTRIBUTE_MISSING', 'NoPlotOptions'])
+        print(f"DEBUG plot_manager __new__ END (for {pm_name}): obj.plot_options.datetime_array is None or missing: {is_final_dt_none_or_missing}")
+        # Check length only if it's a valid array
+        if not is_final_dt_none_or_missing and hasattr(final_dt_array, '__len__'):
+            try:
+                 print(f"DEBUG plot_manager __new__ END (for {pm_name}): obj.plot_options.datetime_array len: {len(final_dt_array)}")
+            except TypeError: # Should be rare now, but just in case
+                 print(f"DEBUG plot_manager __new__ END (for {pm_name}): obj.plot_options.datetime_array len: ERROR (TypeError on len)")
+        
         return obj
 
     def __array__(self, dtype=None):
@@ -91,6 +133,26 @@ class plot_manager(np.ndarray):
     def __array_finalize__(self, obj):
         if obj is None:
             return
+        # <<< ADD DEBUG START >>>
+        from .print_manager import print_manager
+        # Simplify debug print to avoid potential early access issues
+        print_manager.debug(f"--- plot_manager __array_finalize__ (obj type: {type(obj)}) ---")
+        plot_options_on_obj = getattr(obj, 'plot_options', None)
+        print_manager.debug(f"  Obj has plot_options: {plot_options_on_obj is not None}")
+        if plot_options_on_obj is not None:
+            dt_array_on_obj = getattr(plot_options_on_obj, 'datetime_array', 'AttributeMissing')
+            print_manager.debug(f"  [BEFORE ASSIGN] Obj plot_options.datetime_array is None: {dt_array_on_obj is None}")
+            if dt_array_on_obj is not None:
+                 try:
+                     if hasattr(dt_array_on_obj, '__len__'):
+                          print_manager.debug(f"  [BEFORE ASSIGN] Obj plot_options.datetime_array length: {len(dt_array_on_obj)}")
+                     else:
+                          print_manager.debug(f"  [BEFORE ASSIGN] Obj plot_options.datetime_array has no length (type: {type(dt_array_on_obj)})")
+                 except TypeError: # Catch potential errors during len()
+                     print_manager.debug(f"  [BEFORE ASSIGN] Obj plot_options.datetime_array has no length (type: {type(dt_array_on_obj)})")
+        # <<< ADD DEBUG END >>>
+
+        # Original debug prints moved down slightly
         print_manager.debug("\n=== Array Finalize Status ===")
         print_manager.debug(f"Finalizing array, obj type: {type(obj)}")
         
@@ -101,8 +163,14 @@ class plot_manager(np.ndarray):
         # Keep existing lines
         if not hasattr(self, '_original_options'):
             self._original_options = getattr(obj, '_original_options', None)
-        self.plot_options = getattr(obj, 'plot_options', None)
-        print_manager.debug("=== End Array Finalize Status ===\n")
+            
+        # Restore the crucial plot_options assignment
+        if not hasattr(self, 'plot_options') or self.plot_options is None: 
+            self.plot_options = getattr(obj, 'plot_options', None)
+        
+        # Original assignment commented out previously:
+        # self.plot_options = getattr(obj, 'plot_options', None) 
+        print_manager.debug("=== End Array Finalize Status ===\\n")
 
     @property
     def data(self):
@@ -427,9 +495,11 @@ class plot_manager(np.ndarray):
 
     # Attribute access handler for dynamic attributes
     def __getattr__(self, name):
-        # Add this section at the start
-        if hasattr(self, '_plot_state') and name in self._plot_state:
-            return self._plot_state[name]
+        # Check the instance dictionary directly to avoid recursion with hasattr
+        plot_state = self.__dict__.get('_plot_state') 
+        if plot_state is not None and name in plot_state:
+             print_manager.debug(f"__getattr__: Found '{name}' in _plot_state")
+             return plot_state[name]
         
         # This is only called if an attribute is not found 
         # in the normal places (i.e., not found in __dict__ and not a dynamic attribute).

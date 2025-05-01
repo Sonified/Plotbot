@@ -9,6 +9,8 @@ class data_cubby:
     @classmethod
     def stash(cls, obj, class_name=None, subclass_name=None):
         """Store object with class and subclass tracking."""
+        print(f"DEBUG data_cubby STASH: Storing object id={id(obj)} with class_name='{class_name}', subclass_name='{subclass_name}'")
+        
         print_manager.datacubby("\n=== Stashing Debug (INSIDE DATA CUBBY)===")
         identifier = f"{class_name}.{subclass_name}" if class_name and subclass_name else class_name
         print_manager.datacubby(f"Stashing with identifier: {identifier}")
@@ -19,6 +21,11 @@ class data_cubby:
         for attr in dir(obj):
             if not attr.startswith('__'):
                 value = getattr(obj, attr, 'not set')
+                if attr == 'datetime_array':
+                    is_none = value is None
+                    length = len(value) if hasattr(value, '__len__') else 'N/A'
+                    print_manager.datacubby(f"- {attr}: Is None={is_none}, Length={length}")
+                    continue
                 # ALWAYS truncate arrays/lists to 10 items
                 if isinstance(value, (list, np.ndarray)):
                     if isinstance(value, np.ndarray):
@@ -44,6 +51,8 @@ class data_cubby:
     @classmethod
     def grab(cls, identifier):
         """Retrieve object by its identifier."""
+        print(f"DEBUG data_cubby GRAB: Attempting to grab identifier='{identifier}'")
+        
         print_manager.datacubby(f"\n=== Retrieving {identifier} from data_cubby ===")
         
         # Special handling for derived variables
@@ -72,6 +81,9 @@ class data_cubby:
         result = (cls.cubby.get(identifier) or 
                  cls.class_registry.get(identifier) or 
                  cls.subclass_registry.get(identifier))
+        
+        retrieved_id = id(result) if result is not None else 'None'
+        print(f"DEBUG data_cubby GRAB: Retrieved object id={retrieved_id} for identifier='{identifier}'")
         
         if result is not None:
             print_manager.datacubby(f"✅ Successfully retrieved {identifier}")

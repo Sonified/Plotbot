@@ -244,6 +244,39 @@ def plotbot(trange, *args):
         print_manager.variable_testing(f"Retrieved class instance: {class_instance.__class__.__name__}")
         
         var = class_instance.get_subclass(request['subclass_name']) # Get specific component to plot
+        
+        # <<< ADD DEBUG PRINT HERE >>>
+        print_manager.debug(f"--- Plotbot Prep Check for: {request['class_name']}.{request['subclass_name']} ---")
+        print_manager.debug(f"  Retrieved var type: {type(var)}")
+        if var is not None:
+            print_manager.debug(f"  Has datetime_array: {hasattr(var, 'datetime_array')}")
+            dt_array = getattr(var, 'datetime_array', None)
+            print_manager.debug(f"  datetime_array is None: {dt_array is None}")
+            if dt_array is not None:
+                try:
+                    print_manager.debug(f"  datetime_array length: {len(dt_array)}")
+                except TypeError:
+                    print_manager.debug(f"  datetime_array has no length (type: {type(dt_array)})")
+            
+            print_manager.debug(f"  Has data attribute: {hasattr(var, 'data')}")
+            data_arr = getattr(var, 'data', None)
+            print_manager.debug(f"  data is None: {data_arr is None}")
+            if data_arr is not None:
+                print_manager.debug(f"  data type: {type(data_arr)}")
+                # Use self.view(np.ndarray) to get the underlying array for shape check
+                try: 
+                    underlying_array = var.view(np.ndarray)
+                    print_manager.debug(f"  data shape: {underlying_array.shape}")
+                    if underlying_array.size > 0:
+                        print_manager.debug(f"  First few data points: {underlying_array[:3]}")
+                except Exception as e:
+                    print_manager.debug(f"  Could not get data shape/points: {e}")
+            print_manager.debug(f"----------------------------------------------------")
+        else:
+            print_manager.error(f"  Variable retrieval FAILED for {request['class_name']}.{request['subclass_name']}")
+            print_manager.debug(f"----------------------------------------------------")
+        # <<< END DEBUG PRINT >>>
+            
         print_manager.variable_testing(f"Retrieved variable: {request['class_name']}.{request['subclass_name']}, data_type: {getattr(var, 'data_type', 'unknown')}")
         
         # This is where we'd need to handle custom variables (ensure they have the right attributes)
@@ -406,16 +439,55 @@ def plotbot(trange, *args):
                         datetime_clipped = var.datetime_array[time_indices]
 
                         # Handle scalar quantities
-                        if data.ndim == 1:
-                            data_clipped = data[time_indices]
-                            if np.all(np.isnan(data_clipped)):
+                        if data.ndim == 1: # n_tot should be 1D
+                            # --->>> CRITICAL SLICING <<<---
+                            data_clipped = data[time_indices] 
+                            
+                            # --->>> ADDED DEBUGGING <<<---
+                            print_manager.debug(f"    [Scatter Plot Debug] data_clipped shape: {data_clipped.shape}")
+                            print_manager.debug(f"    [Scatter Plot Debug] data_clipped size: {data_clipped.size}")
+                            if data_clipped.size > 0:
+                                print_manager.debug(f"    [Scatter Plot Debug] First 5 data_clipped values: {data_clipped[:5]}")
+                                is_all_nan = np.all(np.isnan(data_clipped))
+                                print_manager.debug(f"    [Scatter Plot Debug] Is data_clipped all NaN? {is_all_nan}")
+                                min_val = np.nanmin(data_clipped)
+                                max_val = np.nanmax(data_clipped)
+                                print_manager.debug(f"    [Scatter Plot Debug] data_clipped min/max (ignoring NaN): {min_val} / {max_val}")
+                            else:
+                                is_all_nan = True # Treat empty as all NaN for condition check
+                            # --->>> END ADDED DEBUGGING <<<---
+                            
+                            # Check if all are NaN (using the calculated is_all_nan)
+                            if is_all_nan: 
                                 empty_plot = True
-                                print_manager.debug("DBG-CRITICAL: empty_plot = True - All data points are NaN (scatter)")
-                                continue
+                                print_manager.debug("DBG-CRITICAL: empty_plot = True - All data points are NaN or empty (scatter)")
+                                continue # Skip plotting if all NaN
 
-                            # Use scatter plot specific attributes
-                            scatter_plot = plot_ax.scatter(
-                                datetime_clipped,
+                            # --->>> DOES THIS LINE EXECUTE? <<<---
+                            print_manager.debug("    [Scatter Plot Debug] Executing plot_ax.scatter(...)") # ADDED
+                            # <<< ADDED DEBUG: Check final inputs to scatter >>>
+                            print_manager.debug(f"      Scatter Input datetime_clipped type: {type(datetime_clipped)}, shape: {datetime_clipped.shape if hasattr(datetime_clipped, 'shape') else 'N/A'}, dtype: {datetime_clipped.dtype if hasattr(datetime_clipped, 'dtype') else 'N/A'}")
+                            print_manager.debug(f"      Scatter Input data_clipped type: {type(data_clipped)}, shape: {data_clipped.shape if hasattr(data_clipped, 'shape') else 'N/A'}, dtype: {data_clipped.dtype if hasattr(data_clipped, 'dtype') else 'N/A'}")
+                            # <<< ENHANCED DEBUG: Deeper dive >>>
+                            if datetime_clipped.size > 0:
+                                print_manager.debug(f"        datetime_clipped[0] value (raw): {datetime_clipped[0]}")
+                                print_manager.debug(f"        datetime_clipped[0] as timestamp: {pd.Timestamp(datetime_clipped[0])}")
+                                print_manager.debug(f"        datetime_clipped[-1] value (raw): {datetime_clipped[-1]}")
+                                print_manager.debug(f"        datetime_clipped[-1] as timestamp: {pd.Timestamp(datetime_clipped[-1])}")
+                            if data_clipped.size > 0:
+                                print_manager.debug(f"        data_clipped[0:5] values: {data_clipped[:5]}")
+                                print_manager.debug(f"        data_clipped[-5:] values: {data_clipped[-5:]}")
+                                print_manager.debug(f"        data_clipped finite mean: {np.nanmean(data_clipped[np.isfinite(data_clipped)]) if np.any(np.isfinite(data_clipped)) else 'No finite data'}")
+                            # <<< END ENHANCED DEBUG >>>
+                            # <<< END ADDED DEBUG >>>
+
+                            # <<< FIX: Convert datetime64 to numerical format for scatter >>>
+                            datetime_nums = mdates.date2num(datetime_clipped)
+                            print_manager.debug(f"        Converted datetime_clipped to nums for scatter (dtype: {datetime_nums.dtype})")
+                            # <<< END FIX >>>
+                            
+                            scatter_plot = plot_ax.scatter( 
+                                datetime_nums, # Use numerical dates
                                 data_clipped,
                                 label=getattr(var, 'legend_label', None),
                                 color=getattr(var, 'color', 'black'), # Default to black if not set
@@ -428,6 +500,21 @@ def plotbot(trange, *args):
                             legend_handles.append(scatter_plot)
                             if hasattr(var, 'legend_label'):
                                 legend_labels.append(var.legend_label)
+                                
+                            # <<< ADDED: Explicitly set limits >>>
+                            try: # Add try/except for safety
+                                xmin, xmax = np.min(datetime_nums), np.max(datetime_nums)
+                                ymin, ymax = np.nanmin(data_clipped), np.nanmax(data_clipped)
+                                # Add a small padding
+                                xpad = (xmax - xmin) * 0.05 if (xmax - xmin) > 0 else 1
+                                ypad = (ymax - ymin) * 0.05 if (ymax - ymin) > 0 else 1
+                                plot_ax.set_xlim(xmin - xpad, xmax + xpad)
+                                plot_ax.set_ylim(ymin - ypad, ymax + ypad)
+                                print_manager.debug(f"        Explicitly set xlim: ({xmin - xpad}, {xmax + xpad})")
+                                print_manager.debug(f"        Explicitly set ylim: ({ymin - ypad}, {ymax + ypad})")
+                            except Exception as e_lim:
+                                print_manager.warning(f"        Could not set explicit limits: {e_lim}")
+                            # <<< END ADDED >>>
 
                         # Common y-axis settings for scatter plots
                         plot_ax.set_ylabel(getattr(var, 'y_label', ''))
@@ -558,9 +645,9 @@ def plotbot(trange, *args):
         # ============================================================================
         # Final Axis Adjustments
         # ============================================================================
-        ax.margins(x=0)                                           # Remove padding on x-axis
-        if ax_right:
-            ax_right.margins(x=0)                                 # Remove padding on secondary y-axis
+        # ax.margins(x=0)                                           # <<< COMMENTED OUT >>>
+        # if ax_right:
+        #     ax_right.margins(x=0)                                 # <<< COMMENTED OUT >>>
     
         # ============================================================================
         # Configure X-Axis

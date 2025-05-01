@@ -8,8 +8,8 @@ import time # For version string
 current_time = time.strftime("%Y-%m-%d %H:%M:%S")
 
 # Version format: YYYY-MM-DD_vX.YY
-__version__ = "2025-05-01_v1.00"
-__commit_message__ = "fix: Correct FITS CDF downloader regex and importer scope, simplify local path, fix stardust fixture."
+__version__ = "2025-05-01_v1.01"
+__commit_message__ = "fix: Pass HAM tests after fixing plot_manager, update logs with y_limit discovery"
 
 def get_version_string():
     # Colors for printing

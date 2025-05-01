@@ -109,14 +109,161 @@ class TestFitsCdfIntegration:
         print("\n--- Testing plotbot with sf00_fits CDF variable (proton_fits.n_tot) ---")
         
         # Need plotbot and the specific object instance
-        from plotbot import plotbot, proton_fits, plt
+        from plotbot import plotbot as pb, proton_fits, plt
         from plotbot.test_pilot import phase, system_check
         from plotbot.config import config # Import config
         from plotbot.print_manager import print_manager # Import print_manager
         import numpy as np
+        import cdflib # For examining CDF directly
+        from plotbot.data_cubby import data_cubby
 
         print_manager.enable_debug() # <--- Enable debug logging
 
+        # Add monkey patching to trace data flow
+        original_grab = data_cubby.grab
+        def traced_grab(identifier):
+            result = original_grab(identifier)
+            print(f"\n*** TRACE: data_cubby.grab('{identifier}') called ***")
+            if result is not None:
+                print(f"Result type: {type(result)}")
+                if hasattr(result, 'datetime_array'):
+                    print(f"datetime_array present: {result.datetime_array is not None}")
+                    if result.datetime_array is not None:
+                        print(f"datetime_array length: {len(result.datetime_array)}")
+                        print(f"datetime_array type: {type(result.datetime_array)}")
+                        print(f"First few values: {result.datetime_array[:3] if len(result.datetime_array) >= 3 else result.datetime_array}")
+            else:
+                print(f"Result is None")
+            return result
+        
+        # Patch data_cubby.grab
+        data_cubby.grab = traced_grab
+        
+        # Add direct examination of CDF file
+        print("\n*** DIRECT EXAMINATION OF TEST CDF FILE ***")
+        try:
+            cdf = cdflib.CDF(CDF_SF00_FILE)
+            epoch_data = cdf.varget('Epoch')
+            print(f"CDF Epoch data type: {type(epoch_data)}")
+            print(f"CDF Epoch data shape: {epoch_data.shape}")
+            
+            # Convert to datetime for comparison
+            epoch_datetime = cdflib.cdfepoch.to_datetime(epoch_data)
+            print(f"CDF datetime type: {type(epoch_datetime)}")
+            print(f"CDF datetime first few: {epoch_datetime[:3]}")
+            
+            # Check n_tot
+            n_tot = cdf.varget('n_tot')
+            print(f"CDF n_tot shape: {n_tot.shape}")
+            print(f"CDF n_tot first few: {n_tot[:3]}")
+        except Exception as e:
+            print(f"Error examining CDF directly: {e}")
+            
+        # Trace import_data_function
+        from plotbot.data_import import import_data_function
+        original_import_data = import_data_function
+        def traced_import_data(*args, **kwargs):
+            print(f"\n*** TRACE: import_data_function called with args={args}, kwargs={kwargs} ***")
+            result = original_import_data(*args, **kwargs)
+            print(f"import_data_function result type: {type(result)}")
+            if hasattr(result, 'times'):
+                print(f"Result has times attribute: {result.times is not None}")
+                if result.times is not None:
+                    print(f"times length: {len(result.times)}")
+                    print(f"times type: {type(result.times)}")
+                    print(f"times first few: {result.times[:3] if len(result.times) >= 3 else result.times}")
+                    
+            if hasattr(result, 'data'):
+                print(f"Result has data attribute: {result.data is not None}")
+                if isinstance(result.data, dict):
+                    print(f"data keys: {list(result.data.keys())}")
+                    if 'n_tot' in result.data:
+                        print(f"n_tot in data: {result.data['n_tot'] is not None}")
+                        if result.data['n_tot'] is not None:
+                            print(f"n_tot length: {len(result.data['n_tot'])}")
+                            print(f"n_tot first few: {result.data['n_tot'][:3] if len(result.data['n_tot']) >= 3 else result.data['n_tot']}")
+            return result
+            
+        # Apply the patch
+        import plotbot.data_import
+        plotbot.data_import.import_data_function = traced_import_data
+        
+        # Trace proton_fits.update
+        from plotbot.data_classes.psp_proton_fits_classes import proton_fits_class
+        original_update = proton_fits_class.update
+        def traced_update(self, imported_data):
+            print(f"\n*** TRACE: proton_fits_class.update called ***")
+            print(f"imported_data type: {type(imported_data)}")
+            if hasattr(imported_data, 'times'):
+                print(f"imported_data has times: {imported_data.times is not None}")
+                print(f"times type: {type(imported_data.times)}")
+                if imported_data.times is not None:
+                    print(f"times length: {len(imported_data.times)}")
+                    print(f"First few times: {imported_data.times[:3] if len(imported_data.times) >= 3 else imported_data.times}")
+            
+            if hasattr(imported_data, 'data'):
+                print(f"imported_data has data: {imported_data.data is not None}")
+                if isinstance(imported_data.data, dict):
+                    print(f"data keys: {list(imported_data.data.keys())}")
+                    if 'n_tot' in imported_data.data:
+                        print(f"n_tot present: {imported_data.data['n_tot'] is not None}")
+                        if imported_data.data['n_tot'] is not None:
+                            print(f"n_tot length: {len(imported_data.data['n_tot'])}")
+            
+            # Call original method
+            result = original_update(self, imported_data)
+            
+            # Check state after update
+            print(f"After update, datetime_array is None: {self.datetime_array is None}")
+            if self.datetime_array is not None:
+                print(f"datetime_array length: {len(self.datetime_array)}")
+                print(f"First few datetime values: {self.datetime_array[:3] if len(self.datetime_array) >= 3 else self.datetime_array}")
+            
+            return result
+            
+        # Apply the patch
+        proton_fits_class.update = traced_update
+        
+        # Trace proton_fits_class.calculate_variables
+        original_calculate = proton_fits_class.calculate_variables
+        def traced_calculate(self, imported_data):
+            print(f"\n*** TRACE: proton_fits_class.calculate_variables called ***")
+            print(f"imported_data type: {type(imported_data)}")
+            
+            # Check imported_data before calling original
+            if hasattr(imported_data, 'times'):
+                print(f"BEFORE: imported_data has times: {imported_data.times is not None}")
+                if imported_data.times is not None:
+                    print(f"BEFORE: times length: {len(imported_data.times)}")
+            
+            if hasattr(imported_data, 'data'):
+                print(f"BEFORE: imported_data has data: {imported_data.data is not None}")
+                if isinstance(imported_data.data, dict):
+                    print(f"BEFORE: data keys: {list(imported_data.data.keys())}")
+            
+            # Call original method
+            result = original_calculate(self, imported_data)
+            
+            # Check state after calculate_variables
+            print(f"AFTER: self.time is None: {self.time is None}")
+            if self.time is not None:
+                print(f"AFTER: self.time length: {len(self.time)}")
+                
+            print(f"AFTER: self.datetime_array is None: {self.datetime_array is None}")
+            if self.datetime_array is not None:
+                print(f"AFTER: datetime_array length: {len(self.datetime_array)}")
+                
+            if hasattr(self, 'raw_data'):
+                if 'n_tot' in self.raw_data:
+                    print(f"AFTER: self.raw_data['n_tot'] is None: {self.raw_data['n_tot'] is None}")
+                    if self.raw_data['n_tot'] is not None:
+                        print(f"AFTER: n_tot length: {len(self.raw_data['n_tot'])}")
+            
+            return result
+            
+        # Apply the patch
+        proton_fits_class.calculate_variables = traced_calculate
+ 
         original_server = config.data_server # Store original server setting
         trange = ['2024-04-01/00:00:00', '2024-04-01/23:59:59']
         variable_to_test = proton_fits.n_tot # Example: Total proton density from CDF
@@ -132,9 +279,24 @@ class TestFitsCdfIntegration:
             plt.options.use_single_title = True
             plt.options.single_title_text = "TEST: Plotting proton_fits.n_tot from CDF"
             
-            plotbot(trange, variable_to_test, 1)
+            # Before plotbot call, check proton_fits state
+            print(f"\nBEFORE plotbot: proton_fits has datetime_array: {hasattr(proton_fits, 'datetime_array')}")
+            if hasattr(proton_fits, 'datetime_array'):
+                print(f"BEFORE plotbot: datetime_array is None: {proton_fits.datetime_array is None}")
+                if proton_fits.datetime_array is not None:
+                    print(f"BEFORE plotbot: datetime_array length: {len(proton_fits.datetime_array)}")
+            
+            # Make the plotbot call
+            pb(trange, variable_to_test, 1)
             
             phase(2, "Verifying data loaded for proton_fits.n_tot")
+            
+            # After plotbot call, check proton_fits state again
+            print(f"\nAFTER plotbot: proton_fits has datetime_array: {hasattr(proton_fits, 'datetime_array')}")
+            if hasattr(proton_fits, 'datetime_array'):
+                print(f"AFTER plotbot: datetime_array is None: {proton_fits.datetime_array is None}")
+                if proton_fits.datetime_array is not None:
+                    print(f"AFTER plotbot: datetime_array length: {len(proton_fits.datetime_array)}")
             
             # Re-fetch the instance to ensure we have the updated state
             # Note: Depending on how plotbot updates instances, simply using
@@ -143,12 +305,34 @@ class TestFitsCdfIntegration:
             # Access the plot_manager instance via the subclass_name
             var_pm = getattr(updated_instance, variable_to_test.subclass_name, None)
             
+            print(f"\nplot_manager for {variable_to_test.subclass_name} exists: {var_pm is not None}")
+            if var_pm is not None:
+                print(f"var_pm type: {type(var_pm)}")
+                print(f"var_pm has datetime_array: {hasattr(var_pm, 'datetime_array')}")
+                if hasattr(var_pm, 'datetime_array'):
+                    print(f"var_pm.datetime_array is None: {var_pm.datetime_array is None}")
+                    if var_pm.datetime_array is not None:
+                        print(f"var_pm.datetime_array length: {len(var_pm.datetime_array)}")
+                
+                print(f"var_pm has data: {hasattr(var_pm, 'data')}")
+                if hasattr(var_pm, 'data'):
+                    print(f"var_pm.data is None: {var_pm.data is None}")
+                    if var_pm.data is not None:
+                        try:
+                            data_len = len(var_pm.data)
+                            print(f"var_pm.data length: {data_len}")
+                        except TypeError:
+                            print(f"var_pm.data is unsized (TypeError on len()). Type: {type(var_pm.data)}")
+                            # Optionally, print the value itself if it's small/printable
+                            # print(f"var_pm.data value: {var_pm.data}")
+            
             system_check("Variable plot_manager exists", var_pm is not None,
                            f"Could not find attribute {variable_to_test.subclass_name} on proton_fits instance after plotbot call.")
             if var_pm is None: pytest.fail("Test failed: variable plot_manager attribute not found.")
             
             # Check attributes on the plot_manager instance
             has_time = hasattr(var_pm, 'datetime_array') and var_pm.datetime_array is not None and len(var_pm.datetime_array) > 0
+            
             has_data = hasattr(var_pm, 'data') and var_pm.data is not None
             
             system_check("Has populated datetime_array", has_time,
@@ -183,7 +367,12 @@ class TestFitsCdfIntegration:
             # --- Restore original server setting --- 
             config.data_server = original_server
             print(f"Restored data_server to: {config.data_server}")
-            # ---------------------------------------
+            
+            # Restore original methods to avoid affecting other tests
+            data_cubby.grab = original_grab
+            plotbot.data_import.import_data_function = original_import_data
+            proton_fits_class.update = original_update
+            proton_fits_class.calculate_variables = original_calculate
 
     @pytest.mark.skipif(not CDF_SF01_FILE.exists(), reason=f"Test CDF file not found: {CDF_SF01_FILE}")
     def test_plotbot_with_sf01_cdf_variable(self):
@@ -191,7 +380,7 @@ class TestFitsCdfIntegration:
         print("\n--- Testing plotbot with sf01_fits CDF variable (proton_fits.n_tot) ---")
         
         # Need plotbot and the specific object instance
-        from plotbot import plotbot, proton_fits, plt
+        from plotbot import plotbot as pb, proton_fits, plt
         from plotbot.test_pilot import phase, system_check
         import numpy as np
 
@@ -202,7 +391,7 @@ class TestFitsCdfIntegration:
         plt.options.use_single_title = True
         plt.options.single_title_text = "TEST: Plotting proton_fits.n_tot from CDF"
         try:
-            plotbot(trange, variable_to_test, 1)
+            pb(trange, variable_to_test, 1)
         except Exception as e:
             pytest.fail(f"plotbot call failed: {e}")
 
@@ -245,3 +434,63 @@ class TestFitsCdfIntegration:
 
         # Test passes if plotbot runs and data seems loaded
         assert True 
+
+    # --- NEW SIMPLIFIED TEST --- 
+    @pytest.mark.skipif(not CDF_SF00_FILE.exists(), reason=f"Test CDF file not found: {CDF_SF00_FILE}")
+    def test_plotbot_basic_fits_call(self):
+        """Simplified test calling plotbot with a single FITS variable."""
+        print("\n--- Simplified plotbot test with sf00_fits (proton_fits.n_tot) ---")
+        
+        # Import the actual plotbot function and necessary components
+        from plotbot.plotbot_main import plotbot as plotbot_func
+        from plotbot import proton_fits, plt as plotbot_plt
+        from plotbot.config import config # Import config
+        from plotbot.print_manager import print_manager
+        import matplotlib.pyplot as actual_plt # To check figure existence
+        
+        print_manager.enable_debug() 
+        
+        trange = ['2024-04-01/00:00:00', '2024-04-01/23:59:59']
+        variable = proton_fits.n_tot
+        original_server = config.data_server
+        fig = None
+        
+        try:
+            # Temporarily set server to Berkeley 
+            config.data_server = 'berkeley'
+            print(f"Set server to: {config.data_server}")
+            
+            print(f"Calling plotbot_func with trange={trange}, variable={variable}")
+            
+            # Call the plotbot function directly with 3 variables
+            plotbot_func(trange, 
+                         proton_fits.n_tot, 1,
+                         proton_fits.np1, 2,
+                         proton_fits.beta_ppar_pfits, 3
+                         )
+            
+            print("plotbot_func call completed.")
+            
+            # Check if a figure was created
+            fig_num = actual_plt.gcf().number
+            fig = actual_plt.figure(fig_num)
+            
+            assert fig is not None, "Plotbot function should have created a figure."
+            print(f"Figure {fig_num} created successfully.")
+            
+            # Save the figure for visual inspection
+            save_path = Path(__file__).parent / "test_plot_basic_fits_call.png"
+            actual_plt.savefig(save_path)
+            print(f"Plot saved to: {save_path}")
+            
+        except Exception as e:
+            pytest.fail(f"Simplified plotbot test failed: {e}")
+        finally:
+            # Restore server setting
+            config.data_server = original_server
+            print(f"Restored server to: {config.data_server}")
+            # Close the plot
+            if fig is not None:
+                plotbot_plt.close(fig)
+            else:
+                plotbot_plt.close('all') # Fallback

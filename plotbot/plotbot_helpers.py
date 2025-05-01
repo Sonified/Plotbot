@@ -90,10 +90,25 @@ def time_clip(datetime_array, start_time, end_time):
     print_manager.custom_debug(f"🔍 Time clipping: {start_time} to {end_time}")
     print_manager.custom_debug(f"🔍 Data time range: {datetime_array_np[0]} to {datetime_array_np[-1]}")
     
+    # <<< ADDED DEBUG: Check dtypes and values before comparison >>>
+    print_manager.debug(f"  [time_clip DEBUG] datetime_array_np dtype: {datetime_array_np.dtype}")
+    print_manager.debug(f"  [time_clip DEBUG] start_dt_np dtype: {start_dt_np.dtype}, value: {start_dt_np}")
+    print_manager.debug(f"  [time_clip DEBUG] end_dt_np dtype: {end_dt_np.dtype}, value: {end_dt_np}")
+    if datetime_array_np.size > 0:
+        print_manager.debug(f"  [time_clip DEBUG] datetime_array_np first: {datetime_array_np[0]}")
+        print_manager.debug(f"  [time_clip DEBUG] datetime_array_np last: {datetime_array_np[-1]}")
+    # <<< END ADDED DEBUG >>>
+    
     # Perform comparison using numpy datetime64
     try:
-        indices = np.where((datetime_array_np >= start_dt_np) & 
-                           (datetime_array_np <= end_dt_np))[0]
+        # <<< FIX: Ensure consistent dtype (e.g., nanoseconds) before comparison >>>
+        datetime_array_ns = datetime_array_np.astype('datetime64[ns]')
+        start_dt_ns = start_dt_np.astype('datetime64[ns]')
+        end_dt_ns = end_dt_np.astype('datetime64[ns]')
+        print_manager.debug(f"  [time_clip DEBUG] Comparing arrays cast to datetime64[ns]")
+        
+        indices = np.where((datetime_array_ns >= start_dt_ns) & 
+                           (datetime_array_ns <= end_dt_ns))[0]
         print_manager.custom_debug(f"Successfully compared numpy datetime64 times, found {len(indices)} indices.")
     except TypeError as e:
         # This might happen if datetime_array_np contains incompatible types despite best efforts
