@@ -292,14 +292,14 @@ class proton_fits_class:
             # Calculate B_mag (if not directly present)
             B_mag = extracted_data.get('B_mag')
             if B_mag is None:
-                 B_inst = extracted_data.get('B_inst')
-                 if B_inst is not None and B_inst.ndim == 2 and B_inst.shape[1] == 3:
-                      with np.errstate(invalid='ignore'):
-                           B_mag = np.sqrt(B_inst[:, 0]**2 + B_inst[:, 1]**2 + B_inst[:, 2]**2)
-                      extracted_data['B_mag'] = B_mag
-                      print_manager.debug("  Calculated B_mag from B_inst vector.")
-                 else:
-                      print_manager.warning("Could not find/calculate B_mag (B_mag not in CDF, B_inst missing or wrong shape).")
+                B_inst = extracted_data.get('B_inst')
+                if B_inst is not None and B_inst.ndim == 2 and B_inst.shape[1] == 3:
+                    with np.errstate(invalid='ignore'):
+                        B_mag = np.sqrt(B_inst[:, 0]**2 + B_inst[:, 1]**2 + B_inst[:, 2]**2)
+                    extracted_data['B_mag'] = B_mag
+                    print_manager.debug("  Calculated B_mag from B_inst vector.")
+                else:
+                    print_manager.warning("Could not find/calculate B_mag (B_mag not in CDF, B_inst missing or wrong shape).")
             else:
                 print_manager.debug("Using B_mag directly provided by CDF.")
 
@@ -307,12 +307,12 @@ class proton_fits_class:
             np1 = extracted_data.get('np1')
             np2 = extracted_data.get('np2')
             if np1 is not None and np2 is not None:
-                 with np.errstate(divide='ignore', invalid='ignore'):
-                      np1_safe = np.where(np1 != 0, np1, np.nan)
-                      extracted_data['np2_np1_ratio'] = np2 / np1_safe
-                      print_manager.debug("  Calculated np2_np1_ratio.")
+                with np.errstate(divide='ignore', invalid='ignore'):
+                    np1_safe = np.where(np1 != 0, np1, np.nan)
+                    extracted_data['np2_np1_ratio'] = np2 / np1_safe
+                    print_manager.debug("  Calculated np2_np1_ratio.")
             else:
-                 extracted_data['np2_np1_ratio'] = None
+                extracted_data['np2_np1_ratio'] = None
 
             # Calculate valfven 
             n_tot = extracted_data.get('n_tot')
