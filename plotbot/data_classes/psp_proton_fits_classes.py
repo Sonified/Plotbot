@@ -269,8 +269,9 @@ class proton_fits_class:
             potential_missing_keys = []
             vars_to_calculate = [ # Define variables we INTEND to calculate here
                 'B_mag', 'valfven', 'beta_ppar', 'beta_pperp', 'beta_p_tot', 
-                'vsw_mach', 'ham_param', 'np2_np1_ratio', 'vdrift_abs', 
+                'ham_param', 'np2_np1_ratio', 'vdrift_abs', 
                 'vdrift_va', 'chi_p_norm', 'Vcm_mach', 'Vp1_mach'
+                # vdrift_va_p2p1_apfits and abs_vdrift_va_p2p1_apfits are handled by properties
             ]
             
             for key in self.raw_data.keys():
@@ -395,11 +396,6 @@ class proton_fits_class:
                  extracted_data['Vp1_mach'] = None
                  # print_manager.warning("Could not calculate Mach numbers (missing valfven).")
             
-            # --- Placeholder for vsw_mach (Requires external dependency) --- 
-            # TODO: Implement fetching spi_sf00_l3_mom and aligning if vsw_mach is needed
-            print_manager.debug("Skipping vsw_mach calculation (requires external dependency).")
-            extracted_data['vsw_mach'] = None 
-
             # --- 4. Store Final Data --- 
             for key, value in extracted_data.items():
                  if key in self.raw_data:
@@ -794,12 +790,12 @@ class proton_fits_class:
 
         # 2. vsw_mach_pfits (Scatter, Size 20)
         self.vsw_mach_pfits = plot_manager( # Solar wind Mach number - ATTRIBUTE NAME CHANGED
-            self.raw_data.get('vsw_mach'), # Still gets raw 'vsw_mach' data
+            data_source=lambda: self.vsw_mach, # NEW: Link to @property
             plot_options=self._create_fits_scatter_ploptions(
                 var_name='vsw_mach', 
                 subclass_name='vsw_mach_pfits', # User list #2
                 y_label=r'$V_{sw}/V_A$', 
-                legend_label=r'$V_{sw}/V_A$', 
+                legend_label=r'V$_{A}$', 
                 color='gold', 
                 y_scale='linear',
                 y_limit=None,
@@ -1208,6 +1204,50 @@ class proton_fits_class:
                 datetime_array=self.datetime_array,
                 y_label=r'V$_{A}$ (km/s)', 
                 legend_label=r'V$_{A}$'   
+            )
+        )
+
+        # --- NEW CWYN Variables --- 
+
+        # 35. vdrift_va_p2p1_apfits (Normalized drift using Va including alphas)
+        self.vdrift_va_p2p1_apfits = plot_manager(
+            data_source=lambda: self.vdrift_va_p2p1_apfits, # Link to @property
+            plot_options=ploptions(
+                var_name='vdrift_va_p2p1_apfits', # Internal property name
+                data_type='proton_fits',
+                class_name='proton_fits',
+                subclass_name='vdrift_va_p2p1_apfits', # PlotBot attribute name
+                plot_type='scatter',
+                datetime_array=self.datetime_array, # Use current datetime array
+                y_label=r'$V_{drift}/V_A$',
+                legend_label=r'$Vd_{p2-p1}/V_{A,ap}$', # Adapted label
+                color='navy',                  # Adapted style
+                y_scale='linear',
+                marker_style='*',              # Adapted style
+                marker_size=5,                 # Adapted style
+                alpha=0.7,                     # Adapted style
+                y_limit=None
+            )
+        )
+
+        # 36. abs_vdrift_va_p2p1_apfits (Absolute normalized drift using Va including alphas)
+        self.abs_vdrift_va_p2p1_apfits = plot_manager(
+            data_source=lambda: self.abs_vdrift_va_p2p1_apfits, # Link to @property
+            plot_options=ploptions(
+                var_name='abs_vdrift_va_p2p1_apfits', # Internal property name
+                data_type='proton_fits',
+                class_name='proton_fits',
+                subclass_name='abs_vdrift_va_p2p1_apfits', # PlotBot attribute name
+                plot_type='scatter',
+                datetime_array=self.datetime_array, # Use current datetime array
+                y_label=r'$|V_{drift}|/V_A$',
+                legend_label=r'$|Vd_{p2-p1}|/V_{A,ap}|$', # Adapted label (Corrected closing $$)
+                color='darkred',                 # Adapted style (Changed color slightly for distinction)
+                y_scale='linear',
+                marker_style='*',               # Adapted style
+                marker_size=5,                  # Adapted style
+                alpha=0.7,                      # Adapted style
+                y_limit=None
             )
         )
 
