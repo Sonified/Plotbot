@@ -422,6 +422,175 @@ class proton_fits_class:
         # Stash the instance in data_cubby for later retrieval / to avoid circular references
         # data_cubby.stash(self, class_name='proton_fits') # Stashing happens in __init__ / update
 
+    # --- Calculate What You Need (CWYN) Properties ---
+    @property
+    def vsw_mach(self):
+        """Calculates Solar Wind Mach number (Vsw / Va_proton) on demand.
+
+        Fetches spi_sf00_l3_mom data, aligns Vsw to the FITS time base,
+        and divides by the Alfven speed calculated using only proton density.
+        Results are cached.
+        """
+        # 1. Check cache
+        if 'vsw_mach' in self._cwyn_cache:
+            print_manager.debug(f"{self.__class__.__name__}: Returning cached vsw_mach.")
+            return self._cwyn_cache['vsw_mach']
+
+        print_manager.debug(f"{self.__class__.__name__}: Calculating vsw_mach (not cached)...")
+
+        # 2. Check dependencies
+        if self.plotbot is None or self.plotbot.data_cubby is None:
+            logging.error(f"{self.__class__.__name__}: PlotBot/DataCubby reference not available for fetching dependencies.")
+            return np.full(self.time.shape, np.nan) if self.time is not None else None
+
+        # Check if proton Alfven speed is available (calculated eagerly)
+        valfven_p = self.raw_data.get('valfven')
+        if valfven_p is None or np.all(np.isnan(valfven_p)):
+            logging.warning(f"{self.__class__.__name__}: Proton Alfven speed (valfven) not available or all NaN. Cannot calculate vsw_mach.")
+            return np.full(self.time.shape, np.nan) if self.time is not None else None
+        if self.time is None:
+            logging.error(f"{self.__class__.__name__}: Self time array is None. Cannot calculate vsw_mach.")
+            return None
+
+        # 3. Fetch spi_sf00_l3_mom data
+        try:
+            print_manager.debug(f"{self.__class__.__name__}: Fetching spi_sf00_l3_mom dependency...")
+            mom_data_instance = self.plotbot.data_cubby.grab('spi_sf00_l3_mom')
+            if mom_data_instance is None:
+                logging.error(f"{self.__class__.__name__}: Failed to retrieve 'spi_sf00_l3_mom' from DataCubby.")
+                self._cwyn_cache['vsw_mach'] = np.full(self.time.shape, np.nan) # Cache NaN result
+                return self._cwyn_cache['vsw_mach']
+
+            # Access raw data dictionary if it exists
+            mom_data = getattr(mom_data_instance, 'raw_data', None)
+            if mom_data is None:
+                 # Fallback: check attributes directly if no raw_data dict (less ideal)
+                 mom_time = getattr(mom_data_instance, 'time', None) # Assumes 'time' holds Epoch
+                 mom_v_rtn = getattr(mom_data_instance, 'V_rtn', None)
+                 mom_vp = getattr(mom_data_instance, 'vp', None)
+                 if mom_time is None or (mom_v_rtn is None and mom_vp is None):
+                     logging.error(f"{self.__class__.__name__}: spi_sf00_l3_mom instance lacks necessary attributes (time/Epoch, V_rtn, vp).")
+                     self._cwyn_cache['vsw_mach'] = np.full(self.time.shape, np.nan)
+                     return self._cwyn_cache['vsw_mach']
+            else:
+                 # Preferentially use raw_data dictionary
+                 mom_time = mom_data.get('Epoch')
+                 mom_v_rtn = mom_data.get('V_rtn')
+                 mom_vp = mom_data.get('vp')
+
+            if mom_time is None or len(mom_time) == 0:
+                logging.error(f"{self.__class__.__name__}: spi_sf00_l3_mom has no time data.")
+                self._cwyn_cache['vsw_mach'] = np.full(self.time.shape, np.nan)
+                return self._cwyn_cache['vsw_mach']
+
+            # 4. Get Vsw (Solar Wind Speed magnitude)
+            if mom_vp is not None:
+                vsw = mom_vp
+                print_manager.debug(f"{self.__class__.__name__}: Using 'vp' magnitude from spi_sf00_l3_mom.")
+            elif mom_v_rtn is not None and mom_v_rtn.ndim == 2 and mom_v_rtn.shape[1] >= 3:
+                print_manager.debug(f"{self.__class__.__name__}: Calculating Vsw magnitude from 'V_rtn' vector.")
+                with np.errstate(invalid='ignore'): # Ignore sqrt of NaN
+                    vsw = np.sqrt(mom_v_rtn[:, 0]**2 + mom_v_rtn[:, 1]**2 + mom_v_rtn[:, 2]**2)
+            else:
+                logging.error(f"{self.__class__.__name__}: Could not find/calculate Vsw (vp or V_rtn) in spi_sf00_l3_mom data.")
+                self._cwyn_cache['vsw_mach'] = np.full(self.time.shape, np.nan)
+                return self._cwyn_cache['vsw_mach']
+
+            # 5. Align Vsw to self.time
+            print_manager.debug(f"{self.__class__.__name__}: Aligning Vsw to FITS time base...")
+            vsw_aligned = self._interpolate_to_self_time(mom_time, vsw)
+
+            if vsw_aligned is None:
+                logging.error(f"{self.__class__.__name__}: Alignment of Vsw failed.")
+                self._cwyn_cache['vsw_mach'] = np.full(self.time.shape, np.nan)
+                return self._cwyn_cache['vsw_mach']
+
+            # 6. Calculate Mach number
+            print_manager.debug(f"{self.__class__.__name__}: Calculating Mach number (Vsw_aligned / valfven_p)...")
+            with np.errstate(divide='ignore', invalid='ignore'):
+                valfven_p_safe = np.where(valfven_p != 0, valfven_p, np.nan)
+                mach_number = vsw_aligned / valfven_p_safe
+
+            # 7. Cache and return result
+            self._cwyn_cache['vsw_mach'] = mach_number
+            print_manager.debug(f"{self.__class__.__name__}: Successfully calculated and cached vsw_mach.")
+            return self._cwyn_cache['vsw_mach']
+
+        except Exception as e:
+            logging.error(f"!!! UNEXPECTED ERROR calculating vsw_mach in {self.__class__.__name__}: {e}")
+            import traceback
+            logging.error(traceback.format_exc())
+            # Cache NaN result on unexpected error
+            result_shape = self.time.shape if self.time is not None else (0,)
+            self._cwyn_cache['vsw_mach'] = np.full(result_shape, np.nan)
+            return self._cwyn_cache['vsw_mach']
+
+    def _interpolate_to_self_time(self, source_time, source_data):
+        """Interpolates external data onto this instance's time base. Used for 
+
+        Args:
+            source_time (np.ndarray): Datetime array of the source data.
+            source_data (np.ndarray): Data values corresponding to source_time.
+
+        Returns:
+            np.ndarray or None: Interpolated data array matching self.time, or None if interpolation fails.
+        """
+        if self.time is None or len(self.time) == 0:
+            logging.error(f"{self.__class__.__name__}: Cannot interpolate, self.time is not set.")
+            return None
+        if source_time is None or len(source_time) < 2 or source_data is None or len(source_data) < 2:
+            logging.warning(f"{self.__class__.__name__}: Insufficient source data points for interpolation.")
+            # Return array of NaNs with the shape of the target time
+            return np.full(self.time.shape, np.nan)
+        if len(source_time) != len(source_data):
+             logging.error(f"{self.__class__.__name__}: Source time and data lengths mismatch for interpolation ({len(source_time)} vs {len(source_data)}).")
+             return np.full(self.time.shape, np.nan)
+
+        try:
+            # Convert times to numeric representation (TT2000/CDF Epoch should already be numeric)
+            # If target time is datetime, convert it
+            target_time_numeric = self.time
+            if isinstance(target_time_numeric[0], datetime):
+                target_time_numeric = mdates.date2num(target_time_numeric)
+
+            # Convert source time to numeric if it's datetime
+            source_time_numeric = source_time
+            if isinstance(source_time_numeric[0], datetime):
+                source_time_numeric = mdates.date2num(source_time_numeric)
+
+            # Handle NaNs in source data
+            valid_mask = ~np.isnan(source_data)
+            if not np.all(valid_mask):
+                if np.sum(valid_mask) < 2:
+                    logging.warning(f"{self.__class__.__name__}: Not enough valid source data points after NaN removal for interpolation.")
+                    return np.full(self.time.shape, np.nan)
+                source_time_numeric = source_time_numeric[valid_mask]
+                source_data_valid = source_data[valid_mask]
+            else:
+                source_data_valid = source_data
+
+            # Create interpolation function
+            # Use bounds_error=False and fill_value=np.nan to handle extrapolation
+            interp_func = interp1d(
+                source_time_numeric,
+                source_data_valid,
+                kind='linear',
+                bounds_error=False,
+                fill_value=np.nan
+            )
+
+            # Perform interpolation
+            interpolated_data = interp_func(target_time_numeric)
+            print_manager.debug(f"{self.__class__.__name__}: Successfully interpolated data onto self.time.")
+            return interpolated_data
+
+        except Exception as e:
+            logging.error(f"!!! UNEXPECTED ERROR during interpolation in {self.__class__.__name__}: {e}")
+            import traceback
+            logging.error(traceback.format_exc())
+            # Return NaNs in case of any unexpected error
+            return np.full(self.time.shape, np.nan)
+
     def _create_fits_scatter_ploptions(self, var_name, subclass_name, y_label, legend_label, color):
         """Helper method to create ploptions for standard FITS scatter plots."""
         return ploptions(
