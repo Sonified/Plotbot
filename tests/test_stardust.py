@@ -7,7 +7,7 @@ Aggregates key tests from various modules for a quick system health check.
 """
 
 import matplotlib
-matplotlib.use('Agg') # Use non-interactive backend BEFORE importing pyplot
+# matplotlib.use('Agg') # COMMENTED OUT TO SHOW THE PLOT
 
 # import matplotlib
 # matplotlib.use('Agg') # Use non-interactive backend BEFORE importing pyplot - REMOVED
@@ -216,6 +216,9 @@ def test_stardust_multiplot_basic():
                  axes_valid = False 
 
         system_check("Stardust Multiplot Axes Returned", axes_valid, f"multiplot should return valid Axes object(s). Got type: {type(axs)}")
+        
+        # Show the plot
+        # plt.show()
 
     except Exception as e:
         pytest.fail(f"Stardust Multiplot test failed: {e}")

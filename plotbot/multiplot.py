@@ -13,6 +13,8 @@ from .multiplot_options import plt, MultiplotOptions
 from .get_data import get_data
 # Import the XAxisPositionalDataMapper helper
 from .x_axis_positional_data_helpers import XAxisPositionalDataMapper
+# Import str_to_datetime from time_utils
+from .time_utils import str_to_datetime
 
 # Import standard libraries
 import matplotlib.colors as colors
@@ -133,13 +135,13 @@ def multiplot(plot_list, **kwargs):
             if values_array is not None:
                 print_manager.status(f"✓ Successfully initialized {data_type} mapping with {len(positional_mapper.times_numeric)} data points")
                 print_manager.debug(f"{data_type.capitalize()} data range: {np.min(values_array):.2f}{units} to {np.max(values_array):.2f}{units}")
-                
-                # Add explicit check to verify relative time is disabled
-                if options.use_relative_time:
+            
+            # Add explicit check to verify relative time is disabled
+            if options.use_relative_time:
                     print_manager.warning("⚠️ Both positional axis and relative time are enabled. This may cause unexpected behavior.")
                     print_manager.status("Automatically disabling use_relative_time since positional mapping is active")
                     options.use_relative_time = False
-            else:
+        else:
                 print_manager.status(f"❌ Failed to find {data_type} data in the positional data file.")
                 print_manager.debug(f"Mapper attributes: {dir(positional_mapper)}")
                 # If no positional data found, disable it to prevent issues
@@ -150,14 +152,14 @@ def multiplot(plot_list, **kwargs):
                 elif data_type == 'carrington_lat':
                     options.x_axis_carrington_lat = False
                 using_positional_axis = False
-        else:
-            print_manager.status("❌ Failed to initialize positional mapping, falling back to time axis.")
-            print_manager.debug(f"Mapper attributes: {dir(positional_mapper)}")
-            # If positional mapping failed, disable it to prevent issues
-            options.x_axis_carrington_lon = False
-            options.x_axis_r_sun = False
-            options.x_axis_carrington_lat = False
-            using_positional_axis = False
+    else:
+        print_manager.status("❌ Failed to initialize positional mapping, falling back to time axis.")
+        print_manager.debug(f"Mapper attributes: {dir(positional_mapper)}")
+        # If positional mapping failed, disable it to prevent issues
+        options.x_axis_carrington_lon = False
+        options.x_axis_r_sun = False
+        options.x_axis_carrington_lat = False
+        using_positional_axis = False
 
     # Store original rcParams to restore later
     original_rcparams = {}
@@ -1057,7 +1059,7 @@ def multiplot(plot_list, **kwargs):
                             return f"{int(x)}°"
                         else:
                             return f"{x:.1f}°"
-                    ax.xaxis.set_major_formatter(FuncFormatter(angle_formatter))
+                        ax.xaxis.set_major_formatter(FuncFormatter(angle_formatter))
                 else:  # radial
                     def radial_formatter(x, pos):
                         if x == int(x):
@@ -1105,7 +1107,7 @@ def multiplot(plot_list, **kwargs):
                             ax.set_xlim(-10, 10)  # Default latitude range
                         else:  # radial
                             ax.set_xlim(0, 50)  # Default radial range
-                    
+
             ax.tick_params(axis='x', labelsize=options.x_tick_label_size)
             ax.tick_params(axis='y', labelsize=options.y_tick_label_size)
     
@@ -1148,8 +1150,7 @@ def multiplot(plot_list, **kwargs):
             enc_nums = []
             for center_time, _ in plot_list:
                 time_dt = str_to_datetime(center_time) if isinstance(center_time, str) else center_time
-                encounter_data = fetch_encounter_number_from_time(time_dt)
-                enc_num = encounter_data['encounter']
+                enc_num = get_encounter_number(time_dt)
                 if enc_num not in enc_nums:
                     enc_nums.append(enc_num)
                     

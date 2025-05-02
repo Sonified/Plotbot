@@ -1,6 +1,23 @@
 from datetime import datetime
 from datetime import timedelta, time
 from .print_manager import print_manager
+from dateutil.parser import parse
+
+def str_to_datetime(date_str):
+    """
+    Convert a string date/time to a datetime object using dateutil.parser.
+    
+    Parameters:
+    date_str (str): Date/time string in any standard format
+    
+    Returns:
+    datetime: A datetime object
+    """
+    try:
+        return parse(date_str)
+    except (ValueError, TypeError):
+        print_manager.warning(f"Could not parse date string: {date_str}")
+        return None
 
 #====================================================================
 # FUNCTION: daterange, Generates sequence of dates between two endpoints
