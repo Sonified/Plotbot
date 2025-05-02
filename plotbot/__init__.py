@@ -142,8 +142,8 @@ __all__ = [
 BLUE = '\033[94m'
 RESET = '\033[0m'
 
-COMMIT_MSG = "fix: Simplify SPDF download logic and make server config case-insensitive (2025-05-01_v1.16)"
-print(f'{BLUE}   Version: 2025_05_01_v1.16{RESET}')
+COMMIT_MSG = "feat: Add positional x-axis support for multiplot (2025-05-02_v1.17)"
+print(f'{BLUE}   Version: 2025_05_02_v1.17{RESET}')
 print(f'{BLUE}   Commit: {COMMIT_MSG}{RESET}')
 
 # --- Final Print Message ---

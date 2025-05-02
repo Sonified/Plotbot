@@ -416,6 +416,39 @@ There are two other primary plotting methods in `Plotbot`:
 *    `multiplot()`: Designed for comparing a *single* variable across multiple consecutive time intervals. It automatically generates subplots for each interval, making it easy to analyze changes over extended periods or around events like perihelion. See the 'Multiplotting Magic' section of the notebook for usage details.
 *   `showdahodo()`:  Creates a hodogram (scatter) plot comparing two variables against each other (instead of against time). This is useful for visualizing the relationship between, for example, two components of the magnetic field. Examples are provided in the notebook.
 
+### Positional X-Axis in Multiplot
+
+Plotbot supports plotting data against positional information on the x-axis (instead of time) in multi-panel plots:
+
+```python
+# 1. Setting positional data type (pick one to set to true)
+plt.options.x_axis_r_sun = True           # Use radial distance (R_sun)
+plt.options.x_axis_carrington_lon = True  # Use longitude (degrees)
+plt.options.x_axis_carrington_lat = True  # Use latitude (degrees)
+
+# 2. X-axis range control:
+# Fixed range (min, max) - units depend on data type (degrees or R_sun)
+plt.options.x_axis_positional_range = (0, 360)  # For longitude
+plt.options.x_axis_positional_range = (11, 14)  # For radial
+
+# Auto-scaling
+plt.options.x_axis_positional_range = None
+
+# 3. Common vs. separate axes:
+plt.options.use_single_x_axis = True   # Common x-axis (shared across panels)
+plt.options.use_single_x_axis = False  # Separate x-axis for each panel
+
+# 4. Tick density control:
+plt.options.positional_tick_density = 1  # Normal tick density
+plt.options.positional_tick_density = 2  # Twice as many ticks
+plt.options.positional_tick_density = 3  # Three times as many ticks
+
+# Resetting options to ensure a clean slate
+plt.options.reset() 
+```
+
+These options are mutually exclusive - setting one positional data type automatically disables the others. When using a positional x-axis, each panel's data is plotted against the corresponding positional values instead of time, making it easy to visualize how measurements change with distance from the Sun or across different Carrington longitudes/latitudes.
+
 **6. Data Audification:**
 
 Plotbot also includes an `audifier` object, which allows you to create audio files (WAV format) from any of the data components.  Furthermore, you can generate a text file containing time markers.  This marker file can be directly imported into audio processing software like iZotope RX, allowing you to visually navigate the audio based on specific time points within the data. See the included Jupyter Notebook for examples.

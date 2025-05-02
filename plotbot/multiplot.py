@@ -11,6 +11,8 @@ from .multiplot_helpers import get_plot_colors, apply_panel_color, apply_bottom_
 from .multiplot_options import plt, MultiplotOptions
 # Import get_data for custom variables
 from .get_data import get_data
+# Import the XAxisPositionalDataMapper helper
+from .x_axis_positional_data_helpers import XAxisPositionalDataMapper
 
 # Import standard libraries
 import matplotlib.colors as colors
@@ -20,6 +22,8 @@ from datetime import datetime, timedelta
 import os
 from PIL import Image
 import matplotlib.pyplot as mpl_plt
+import matplotlib.dates as mdates
+from matplotlib.ticker import FuncFormatter
 
 def debug_variable_time_ranges(var, trange, label=""):
     """Helper function to debug time range issues with variables."""
@@ -93,9 +97,70 @@ def multiplot(plot_list, **kwargs):
     #==========================================================================
     # Get options instance
     options = plt.options
-    
+
+    # Initialize positional mapper if needed
+    positional_mapper = None
+    using_positional_axis = False  # Flag to track if positional data is available
+    if options.using_positional_x_axis:
+        print_manager.status(f"Positional X-axis requested. Initializing mapper with path: {options.positional_data_path}")
+        positional_mapper = XAxisPositionalDataMapper(options.positional_data_path)
+        # Check if mapper initialized successfully (data loaded)
+        using_positional_axis = hasattr(positional_mapper, 'data_loaded') and positional_mapper.data_loaded
+        # Adding clearer diagnostic information about positional mapping status
+        print_manager.status(f"Positional mapping status: data_loaded={getattr(positional_mapper, 'data_loaded', False)}")
+        print_manager.status(f"using_positional_axis flag set to: {using_positional_axis}")
+        if using_positional_axis:
+            data_type = options.active_positional_data_type
+            # Check which type of data we're using for the x-axis
+            if data_type == 'carrington_lon':
+                values_array = positional_mapper.longitude_values
+                axis_label = "Carrington Longitude (deg)"
+                units = "°"
+            elif data_type == 'r_sun':
+                values_array = positional_mapper.radial_values
+                axis_label = "Radial Distance (R_sun)"
+                units = "R_sun"
+            elif data_type == 'carrington_lat':
+                values_array = positional_mapper.latitude_values
+                axis_label = "Carrington Latitude (deg)"
+                units = "°"
+            else:
+                print_manager.warning(f"Unknown positional data type: {data_type}")
+                values_array = None
+                axis_label = "Unknown"
+                units = ""
+                
+            if values_array is not None:
+                print_manager.status(f"✓ Successfully initialized {data_type} mapping with {len(positional_mapper.times_numeric)} data points")
+                print_manager.debug(f"{data_type.capitalize()} data range: {np.min(values_array):.2f}{units} to {np.max(values_array):.2f}{units}")
+                
+                # Add explicit check to verify relative time is disabled
+                if options.use_relative_time:
+                    print_manager.warning("⚠️ Both positional axis and relative time are enabled. This may cause unexpected behavior.")
+                    print_manager.status("Automatically disabling use_relative_time since positional mapping is active")
+                    options.use_relative_time = False
+            else:
+                print_manager.status(f"❌ Failed to find {data_type} data in the positional data file.")
+                print_manager.debug(f"Mapper attributes: {dir(positional_mapper)}")
+                # If no positional data found, disable it to prevent issues
+                if data_type == 'carrington_lon':
+                    options.x_axis_carrington_lon = False
+                elif data_type == 'r_sun':
+                    options.x_axis_r_sun = False
+                elif data_type == 'carrington_lat':
+                    options.x_axis_carrington_lat = False
+                using_positional_axis = False
+        else:
+            print_manager.status("❌ Failed to initialize positional mapping, falling back to time axis.")
+            print_manager.debug(f"Mapper attributes: {dir(positional_mapper)}")
+            # If positional mapping failed, disable it to prevent issues
+            options.x_axis_carrington_lon = False
+            options.x_axis_r_sun = False
+            options.x_axis_carrington_lat = False
+            using_positional_axis = False
+
     # Store original rcParams to restore later
-    original_rcparams = {} 
+    original_rcparams = {}
     
     # Override any options with provided kwargs
     for key, value in kwargs.items():
@@ -326,11 +391,23 @@ def multiplot(plot_list, **kwargs):
             initial_figsize = (options.width, options.height_per_panel * n_panels)
             print_manager.debug(f"Using panel-based figsize: {initial_figsize}")
         # --- END ASPECT RATIO FIX --- 
+        
+        # Dynamic top margin adjustment based on panel count - fluid scaling
+        # Decrease margin_top as panel count increases (create more space at top)
+        # 0.88 (base) - 0.01 per panel, but ensure it doesn't go below 0.75
+        margin_top = max(0.75, options.margin_top - (0.01 * n_panels))
+        print_manager.debug(f"Adjusted margin_top to {margin_top} for {n_panels} panels (fluid scaling)")
             
         fig, axs = plt.subplots(n_panels, 1, 
                                figsize=initial_figsize, # Use calculated figsize 
                                sharex=False)
-        plt.subplots_adjust(right=0.85, hspace=options.hspace)
+        plt.subplots_adjust(
+            top=margin_top,  # Use dynamically adjusted top margin
+            bottom=options.margin_bottom,
+            left=options.margin_left,
+            right=options.margin_right,
+            hspace=options.hspace
+        )  # Use user-configurable margins
     
     if n_panels == 1:
         axs = [axs]
@@ -415,7 +492,19 @@ def multiplot(plot_list, **kwargs):
                         else:
                             plot_color = single_var.color
     
-                        ax2.plot(single_var.datetime_array[indices], 
+                        # Get x-axis data - use longitude if available
+                        x_data = single_var.datetime_array[indices]
+                        if using_positional_axis and positional_mapper is not None:
+                            print_manager.debug(f"Panel {i+1} (Right Axis): Attempting longitude mapping for {len(x_data)} points")
+                            lon_vals = positional_mapper.map_to_position(x_data, data_type)
+                            if lon_vals is not None:
+                                x_data = lon_vals
+                                print_manager.debug(f"Panel {i+1} (Right Axis): Longitude mapping successful, using {len(lon_vals)} longitude values")
+                            else:
+                                print_manager.status(f"Panel {i+1} (Right Axis): Longitude mapping failed. Using time.")
+
+                        # Use x_data in plot
+                        ax2.plot(x_data, 
                                 single_var.data[indices],
                                 linewidth=options.magnetic_field_line_width if options.save_preset else single_var.line_width,
                                 linestyle=single_var.line_style,
@@ -463,7 +552,19 @@ def multiplot(plot_list, **kwargs):
                         else:
                             plot_color = None
     
-                        axs[i].plot(single_var.datetime_array[indices], 
+                        # Get x-axis data - use longitude if available
+                        x_data = single_var.datetime_array[indices]
+                        if using_positional_axis and positional_mapper is not None:
+                            print_manager.debug(f"Panel {i+1} (List Var): Attempting longitude mapping for {len(x_data)} points")
+                            lon_vals = positional_mapper.map_to_position(x_data, data_type)
+                            if lon_vals is not None:
+                                x_data = lon_vals
+                                print_manager.debug(f"Panel {i+1} (List Var): Longitude mapping successful, using {len(lon_vals)} longitude values")
+                            else:
+                                print_manager.status(f"Panel {i+1} (List Var): Longitude mapping failed. Using time.")
+
+                        # Use x_data in plot
+                        axs[i].plot(x_data, 
                                    single_var.data[indices],
                                    linewidth=options.magnetic_field_line_width if options.save_preset else single_var.line_width,
                                    linestyle=single_var.line_style,
@@ -533,7 +634,19 @@ def multiplot(plot_list, **kwargs):
                         
                         # CRITICAL FIX: Check if indices is empty before trying to plot
                         if len(indices) > 0:
-                            axs[i].plot(var.datetime_array[indices], 
+                            # Get x-axis data - use longitude if available
+                            x_data = var.datetime_array[indices]
+                            if using_positional_axis and positional_mapper is not None:
+                                print_manager.debug(f"Panel {i+1} (Time Series): Attempting longitude mapping for {len(x_data)} points")
+                                lon_vals = positional_mapper.map_to_position(x_data, data_type)
+                                if lon_vals is not None:
+                                    x_data = lon_vals
+                                    print_manager.debug(f"Panel {i+1} (Time Series): Longitude mapping successful, using {len(lon_vals)} longitude values")
+                                else:
+                                    print_manager.status(f"Panel {i+1} (Time Series): Longitude mapping failed. Using time.")
+                                    
+                            # Use x_data in plot
+                            axs[i].plot(x_data, 
                                         var.data[indices],
                                         linewidth=options.magnetic_field_line_width if options.save_preset else var.line_width,
                                         linestyle=var.line_style,
@@ -561,7 +674,19 @@ def multiplot(plot_list, **kwargs):
                             alpha = getattr(var, 'alpha', 1.0)               # Default alpha
                             legend_label = getattr(var, 'legend_label', None) # Get legend label if it exists
 
-                            axs[i].scatter(var.datetime_array[indices],
+                            # Get x-axis data - use longitude if available
+                            x_data = var.datetime_array[indices]
+                            if using_positional_axis and positional_mapper is not None:
+                                print_manager.debug(f"Panel {i+1} (Scatter): Attempting longitude mapping for {len(x_data)} points")
+                                lon_vals = positional_mapper.map_to_position(x_data, data_type)
+                                if lon_vals is not None:
+                                    x_data = lon_vals
+                                    print_manager.debug(f"Panel {i+1} (Scatter): Longitude mapping successful, using {len(lon_vals)} longitude values")
+                                else:
+                                    print_manager.status(f"Panel {i+1} (Scatter): Longitude mapping failed. Using time.")
+
+                            # Use x_data in plot
+                            axs[i].scatter(x_data,
                                           var.data[indices],
                                           color=plot_color,
                                           marker=marker_style,
@@ -596,7 +721,19 @@ def multiplot(plot_list, **kwargs):
                             elif var.colorbar_scale == 'linear':
                                 norm = colors.Normalize(vmin=colorbar_limits[0], vmax=colorbar_limits[1]) if colorbar_limits else None
         
-                            im = axs[i].pcolormesh(datetime_clipped, additional_data_clipped, data_clipped,
+                            # Get x-axis data - use longitude if available
+                            x_data = datetime_clipped
+                            if using_positional_axis and positional_mapper is not None:
+                                print_manager.debug(f"Panel {i+1} (Spectral): Attempting longitude mapping for {len(x_data)} points")
+                                lon_vals = positional_mapper.map_to_position(x_data, data_type)
+                                if lon_vals is not None:
+                                    x_data = lon_vals
+                                    print_manager.debug(f"Panel {i+1} (Spectral): Longitude mapping successful, using {len(lon_vals)} longitude values")
+                                else:
+                                    print_manager.status(f"Panel {i+1} (Spectral): Longitude mapping failed. Using time.")
+                                    
+                            # Use x_data in plot
+                            im = axs[i].pcolormesh(x_data, additional_data_clipped, data_clipped.T, # Often need to transpose Z data
                                                    norm=norm, cmap=var.colormap, shading='auto')
                             
                             pos = axs[i].get_position()
@@ -618,7 +755,19 @@ def multiplot(plot_list, **kwargs):
                     
                     # CRITICAL FIX: Check if indices is empty before trying to plot
                     if len(indices) > 0:
-                        axs[i].plot(var.datetime_array[indices], 
+                        # Get x-axis data - use longitude if available
+                        x_data = var.datetime_array[indices]
+                        if using_positional_axis and positional_mapper is not None:
+                            print_manager.debug(f"Panel {i+1} (Default Plot): Attempting longitude mapping for {len(x_data)} points")
+                            lon_vals = positional_mapper.map_to_position(x_data, data_type)
+                            if lon_vals is not None:
+                                x_data = lon_vals
+                                print_manager.debug(f"Panel {i+1} (Default Plot): Longitude mapping successful, using {len(lon_vals)} longitude values")
+                            else:
+                                print_manager.status(f"Panel {i+1} (Default Plot): Longitude mapping failed. Using time.")
+                        
+                        # Use x_data in plot
+                        axs[i].plot(x_data, 
                                     var.data[indices],
                                     linewidth=options.magnetic_field_line_width if options.save_preset else var.line_width,
                                     linestyle=var.line_style,
@@ -708,15 +857,15 @@ def multiplot(plot_list, **kwargs):
             if options.y_label_includes_time:
                 y_label = f"{enc_num} Around\n{pd.Timestamp(center_time).strftime('%Y-%m-%d')}\n{pd.Timestamp(center_time).strftime('%H:%M')}"
                 axs[i].set_ylabel(y_label, fontsize=options.y_label_size, 
-                                  labelpad=options.y_label_pad)
+                                  labelpad=options.y_label_pad, fontweight='bold')
             else:
                 y_label = f"$\\mathbf{{{enc_num}}}$"
                 axs[i].set_ylabel(y_label, fontsize=options.y_label_size,
                                   rotation=0, ha='right', va='center',
-                                  labelpad=options.y_label_pad)
+                                  labelpad=options.y_label_pad, fontweight='bold')
         else:
             axs[i].set_ylabel(y_label, fontsize=options.y_label_size,
-                              labelpad=options.y_label_pad)
+                              labelpad=options.y_label_pad, fontweight='bold')
     
         if isinstance(var, list):
             if hasattr(var[0], 'y_scale') and var[0].y_scale:
@@ -749,7 +898,7 @@ def multiplot(plot_list, **kwargs):
                 # For non-log scales, just set directly
                 axs[i].set_yscale(var.y_scale)
     
-        if options.use_relative_time:
+        if options.use_relative_time and not using_positional_axis: # Only use relative time if NOT using longitude
             step_td = pd.Timedelta(value=options.relative_time_step, unit=options.relative_time_step_units)
             current = start_time
             ticks = []
@@ -791,19 +940,10 @@ def multiplot(plot_list, **kwargs):
                         axs[i].set_xlabel(f"Relative Time ({options.relative_time_step_units} from Perihelion)", 
                                         fontweight='bold', fontsize=options.x_label_size,
                                         labelpad=options.x_label_pad)
-                   
             else:
                 axs[i].set_xticklabels(tick_labels)
                 if i < n_panels - 1:
                     axs[i].set_xlabel('')
-                else:
-                    if options.use_custom_x_axis_label:
-                        axs[i].set_xlabel(options.custom_x_axis_label, fontweight='bold', fontsize=options.x_label_size,
-                                          labelpad=options.x_label_pad)
-                    else:
-                        axs[i].set_xlabel(f"Relative Time ({options.relative_time_step_units} from Perihelion)", 
-                                        fontweight='bold', fontsize=options.x_label_size,
-                                        labelpad=options.x_label_pad)
     
             # Add these two lines to set tick label sizes when using relative time
             axs[i].tick_params(axis='x', labelsize=options.x_tick_label_size)
@@ -821,8 +961,8 @@ def multiplot(plot_list, **kwargs):
                            linestyle=options.vertical_line_style,
                            linewidth=options.vertical_line_width)
     
-        # --- Individual Title Setting (only if not using single title with preset) ---
-        if not (options.use_single_title and options.save_preset):
+        # --- Individual Title Setting (only if not using single title) ---
+        if not options.use_single_title:
             title = f"{enc_num} - {pos_desc[options.position]} - {pd.Timestamp(center_time).strftime('%Y-%m-%d %H:%M')}"
             if options.color_mode in ['rainbow', 'single'] and panel_color:
                 axs[i].set_title(title, fontsize=options.title_fontsize, color=panel_color,
@@ -854,52 +994,182 @@ def multiplot(plot_list, **kwargs):
         for spine_name, spine in axs[i].spines.items():
             spine.set_linewidth(plt.options.border_line_width)
     
-    if not options.use_relative_time:
+    if not options.use_relative_time or using_positional_axis: # If NOT relative time, OR if using longitude (which disables relative)
         for i, ax in enumerate(axs):
             if options.use_single_x_axis:
                 if i < n_panels - 1:
                     ax.set_xticklabels([])
                     ax.set_xlabel('')
                 else:
-                    if options.use_custom_x_axis_label:
+                    # --- APPLY X LABEL LOGIC HERE ---
+                    if using_positional_axis:
+                        # When positional mapping is enabled, use the appropriate axis label
+                        ax.set_xlabel(axis_label, fontweight='bold', fontsize=options.x_label_size,
+                                      labelpad=options.x_label_pad)
+                    elif options.use_custom_x_axis_label:
+                        # Only use custom label if not using positional mapping
                         ax.set_xlabel(options.custom_x_axis_label, fontweight='bold', fontsize=options.x_label_size,
                                       labelpad=options.x_label_pad)
                     else:
+                        # Default time label
                         ax.set_xlabel("Time", fontweight='bold', fontsize=options.x_label_size,
                                       labelpad=options.x_label_pad)
-            else:
-                if i == len(axs) - 1:
-                    if options.use_custom_x_axis_label:
+            else: # Not using single x axis
+                # --- APPLY X LABEL LOGIC HERE TOO ---
+                if i == len(axs) - 1: # Apply label only to bottom-most axis if not single
+                    if using_positional_axis:
+                        # When positional mapping is enabled, use the appropriate axis label
+                        ax.set_xlabel(axis_label, fontweight='bold', fontsize=options.x_label_size,
+                                      labelpad=options.x_label_pad)
+                    elif options.use_custom_x_axis_label:
+                        # Only use custom label if not using positional mapping
                         ax.set_xlabel(options.custom_x_axis_label, fontweight='bold', fontsize=options.x_label_size,
                                       labelpad=options.x_label_pad)
                     else:
+                        # Default time label
                         ax.set_xlabel("Time", fontweight='bold', fontsize=options.x_label_size,
                                       labelpad=options.x_label_pad)
-                else:
+                else: # Hide labels for upper panels if not single axis mode
                     ax.set_xlabel('')
     
+            # Apply tick size formatting for Time or Longitude axis
+            if not using_positional_axis: # Standard Time Formatting
+                locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
+                formatter = mdates.ConciseDateFormatter(locator)
+                ax.xaxis.set_major_locator(locator)
+                ax.xaxis.set_major_formatter(formatter)
+            else: # Configure axis for positional data display with appropriate limits
+                # This is critical - set up proper formatting for positional axis
+                print_manager.debug(f"Setting up axis {i} for {data_type} display")
+                
+                # Calculate number of ticks based on density multiplier
+                # Base number of ticks is 5, multiplied by the density factor
+                num_ticks = 5 * options.positional_tick_density
+                print_manager.debug(f"Using {num_ticks} ticks for {data_type} axis (density={options.positional_tick_density}x)")
+                
+                # Set ticks for positional data
+                ax.xaxis.set_major_locator(mpl_plt.MaxNLocator(num_ticks))
+                
+                # Use a simple numeric formatter with appropriate units
+                if data_type == 'carrington_lon' or data_type == 'carrington_lat':
+                    def angle_formatter(x, pos):
+                        if x == int(x):
+                            return f"{int(x)}°"
+                        else:
+                            return f"{x:.1f}°"
+                    ax.xaxis.set_major_formatter(FuncFormatter(angle_formatter))
+                else:  # radial
+                    def radial_formatter(x, pos):
+                        if x == int(x):
+                            return f"{int(x)}"
+                        else:
+                            return f"{x:.1f}"
+                    ax.xaxis.set_major_formatter(FuncFormatter(radial_formatter))
+                
+                # IMPORTANT FIX: Hide tick labels for all but bottom plot when using single x-axis
+                if options.use_single_x_axis and i < len(axs) - 1:
+                    ax.set_xticklabels([])
+                    print_manager.debug(f"Hiding x tick labels for panel {i} (not bottom panel)")
+                
+                # Set axis limits based on user preference or data
+                if options.x_axis_positional_range is not None:
+                    # User specified a fixed range for positional axis
+                    min_val, max_val = options.x_axis_positional_range
+                    ax.set_xlim(min_val, max_val)
+                    print_manager.debug(f"Using user-specified positional range for axis {i}: {min_val} to {max_val}")
+                else:
+                    # Calculate range from data
+                    lines = ax.get_lines()
+                    if lines and len(lines) > 0 and len(lines[0].get_xdata()) > 0:
+                        x_data = lines[0].get_xdata()
+                        min_val = np.min(x_data)
+                        max_val = np.max(x_data)
+                        
+                        # Store the data ranges for each panel (needed for common x-axis logic)
+                        if not hasattr(ax, '_positional_data_range'):
+                            ax._positional_data_range = (min_val, max_val)
+                            
+                        # Apply panel-specific range immediately if not using common x-axis
+                        if not options.use_single_x_axis:
+                            # Add reasonable padding
+                            data_range = max_val - min_val
+                            padding = data_range * 0.05  # 5% padding
+                            ax.set_xlim(min_val - padding, max_val + padding)
+                            print_manager.debug(f"Set individual range for axis {i}: {min_val-padding:.2f} to {max_val+padding:.2f}")
+                    else:
+                        print_manager.warning(f"No {data_type} data found for axis {i}, using default limits")
+                        # Default range depends on data type
+                        if data_type == 'carrington_lon':
+                            ax.set_xlim(0, 90)  # Default longitude range
+                        elif data_type == 'carrington_lat':
+                            ax.set_xlim(-10, 10)  # Default latitude range
+                        else:  # radial
+                            ax.set_xlim(0, 50)  # Default radial range
+                    
             ax.tick_params(axis='x', labelsize=options.x_tick_label_size)
             ax.tick_params(axis='y', labelsize=options.y_tick_label_size)
+    
+    # Apply common x-axis range if needed
+    if using_positional_axis and options.use_single_x_axis and options.x_axis_positional_range is None:
+        # Find the global min and max across all axes
+        all_mins = []
+        all_maxs = []
+        for ax in axs:
+            if hasattr(ax, '_positional_data_range'):
+                min_val, max_val = ax._positional_data_range
+                all_mins.append(min_val)
+                all_maxs.append(max_val)
+        
+        if all_mins and all_maxs:
+            global_min = min(all_mins)
+            global_max = max(all_maxs)
+            data_range = global_max - global_min
+            padding = data_range * 0.05  # 5% padding
+            global_min -= padding
+            global_max += padding
+            
+            # Apply the global range to all axes
+            for ax in axs:
+                ax.set_xlim(global_min, global_max)
+            
+            print_manager.debug(f"Applied common x-axis range to all panels: {global_min:.2f} to {global_max:.2f}")
     
     # NEW: Apply dynamic x-axis tick coloring for all panels (changed from only bottom panel)
     if color_scheme:
         for i, ax in enumerate(axs):
             apply_bottom_axis_color(ax, color_scheme['panel_colors'][i])
     
-    # --- Figure-Level Title Setting (if using single title and preset) --- 
-    if options.use_single_title and options.save_preset:
-        config = options.PRESET_CONFIGS[options.save_preset]
-        title = options.single_title_text or f"PSP Data Around Perihelia"
-        # --- APPLY TITLE COLOR --- 
-        title_color = None
+    # --- Figure-Level Title Setting (when using single title) --- 
+    if options.use_single_title:
+        if options.single_title_text:
+            title_text = options.single_title_text
+        else:
+            # Construct default title
+            enc_nums = []
+            for center_time, _ in plot_list:
+                time_dt = str_to_datetime(center_time) if isinstance(center_time, str) else center_time
+                encounter_data = fetch_encounter_number_from_time(time_dt)
+                enc_num = encounter_data['encounter']
+                if enc_num not in enc_nums:
+                    enc_nums.append(enc_num)
+                    
+            enc_nums_str = ", ".join(enc_nums)
+            title_text = f"{enc_nums_str} - {pos_desc[options.position]}"
+
+        # Add title color if using rainbow color mode
+        title_kwargs = {
+            'fontsize': options.title_fontsize, 
+            'pad': options.title_pad,
+            'fontweight': 'bold'
+        }
+        
         if options.color_mode == 'rainbow' and color_scheme and color_scheme['panel_colors']:
-            title_color = color_scheme['panel_colors'][0] # Use color of first panel
-        # --- END APPLY TITLE COLOR ---
-        fig.suptitle(title, 
-                     y=config['title_y_position'], 
-                     fontsize=config['title_size'], 
-                     fontweight='bold',
-                     color=title_color) # Pass color if available
+            title_kwargs['color'] = color_scheme['panel_colors'][0]  # Use color of first panel
+            
+        # Place title on the top axis instead of using suptitle
+        # This keeps it properly aligned with the plots regardless of panel count
+        axs[0].set_title(title_text, **title_kwargs)
+        print_manager.debug(f"Added title to top axis with pad={options.title_pad}")
     
     print_manager.status("Generating multiplot...\n")
     
@@ -946,7 +1216,7 @@ def multiplot(plot_list, **kwargs):
             fig.savefig(
                 filename,
                 dpi=initial_dpi,
-                bbox_inches='tight',
+                bbox_inches=options.save_bbox_inches,
                 pad_inches=0.1,
                 facecolor='white'
             )
@@ -972,7 +1242,7 @@ def multiplot(plot_list, **kwargs):
             fig.savefig(
                 filename,
                 dpi=options.save_dpi if options.save_dpi else 300, # Use save_dpi if set, else default
-                bbox_inches='tight',
+                bbox_inches=options.save_bbox_inches,
                 pad_inches=0.1
             )
             print_manager.status(f'Plot saved to: {os.path.abspath(filename)}')
@@ -990,6 +1260,32 @@ def multiplot(plot_list, **kwargs):
                 print_manager.debug(f"Restored rcParam: {key} = {value}")
         # --- END RESTORE ORIGINAL RCPARAMS --- 
             
+    # FINAL FIX: Ensure tick labels are hidden for non-bottom plots when using positional data and single x-axis
+    if options.use_single_x_axis and using_positional_axis:
+        print_manager.debug("Performing final check to ensure tick labels are hidden on non-bottom panels")
+        for i, ax in enumerate(axs):
+            if i < len(axs) - 1:  # All but the last (bottom) plot
+                ax.set_xticklabels([])  # Force hide tick labels
+                print_manager.debug(f"Final fix: Hiding tick labels for panel {i}")
+    
+    # NEW: Apply x_label_pad directly using matplotlib's labelpad parameter
+    for i, ax in enumerate(axs):
+        # Only modify the bottom plot or plots with visible x-labels
+        if (options.use_single_x_axis and i == len(axs) - 1) or not options.use_single_x_axis:
+            # Update the x-label pad directly - this controls spacing better than position
+            ax.xaxis.labelpad = options.x_label_pad
+            print_manager.debug(f"Applied x_label_pad={options.x_label_pad} to axis {i}")
+    
+    # ALWAYS enforce hiding tick labels for single-x-axis mode, regardless of axis type
+    if options.use_single_x_axis:
+        print_manager.debug("Performing final enforced check to hide tick labels on non-bottom panels for single-x-axis mode")
+        for i, ax in enumerate(axs):
+            if i < len(axs) - 1:  # All but the last (bottom) plot
+                ax.set_xticklabels([])  # Force hide tick labels
+                # Also set tick visibility to False for extra assurance
+                for tick in ax.get_xticklabels():
+                    tick.set_visible(False)
+                print_manager.debug(f"Forcibly hid all tick labels for panel {i}")
     
     print_manager.debug("=== Multiplot Complete ===\n")
     
