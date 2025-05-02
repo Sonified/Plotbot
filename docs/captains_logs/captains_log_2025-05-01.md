@@ -34,24 +34,8 @@
       * `demo_x_axis_positional_options.py`: Demonstrates how to use the new options
     * Created comprehensive test suite to verify positional x-axis functionality
 
-*   **Bug Fix & Enhancement: Multiplot Layout and Positioning:** Fixed several issues related to multiplot layout and positioning:
-    * Fixed bug where `use_single_x_axis = True` wasn't properly hiding tick labels on non-bottom plots
-    * Resolved significant spacing issues between the title and plots by:
-      * Updating `subplots_adjust()` settings for better default layout
-      * Adding configurable margin options: `margin_top`, `margin_bottom`, `margin_left`, `margin_right`
-      * Adding `save_bbox_inches` option to control tight bounding when saving
-    * Improved label positioning:
-      * Replaced `x_label_y_position` with `x_label_pad` for more reliable x-axis label control
-      * Added direct control of axis label padding through matplotlib's `labelpad` parameter
-    * Updated default layout values for better appearance:
-      * Increased title/label font sizes for better readability
-      * Adjusted vertical positioning of elements for better spacing
-      * Optimized padding values for both single and multiple panels
-    * Fixed title positioning in multi-panel plots with a more reliable approach
-    * Implemented a robust mechanism to ensure tick labels are hidden on non-bottom panels when using `use_single_x_axis=True`
-    * Created test scripts to verify layout improvements with different numbers of plots
-    * Ensured all changes work properly with both time axes and relative time enabled
+*   **Enhancement: Added default settings to the plot to optimize display (multiplot)**
 
 ---
 
-*   **Version Update:** Updated version number from `2025_05_01_v1.16` to `2025_05_01_v1.17` to reflect the new positional x-axis functionality and multiplot layout improvements. Updated documentation in README.md with examples of how to use the new positional x-axis options.
+*   **Version Update:** Updated version number from `2025_05_01_v1.16` to `2025_05_02_v1.17` to reflect the new positional x-axis functionality. Updated documentation in README.md with examples of how to use the new positional x-axis options.

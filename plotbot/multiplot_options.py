@@ -327,7 +327,7 @@ class MultiplotOptions:
         self.magnetic_field_line_width = 1.0
         self.tick_length = 6.0
         self.tick_width = 1.0
-        
+
         # Reset positional x-axis properties
         self.__dict__['_x_axis_r_sun'] = False
         self.__dict__['_x_axis_carrington_lon'] = False
@@ -573,7 +573,7 @@ class MultiplotOptions:
     def x_axis_carrington_lon(self) -> bool:
         """Whether to use Carrington longitude (degrees) for the x-axis instead of time."""
         return self.__dict__.get('_x_axis_carrington_lon', False)
-        
+
     @x_axis_carrington_lon.setter
     def x_axis_carrington_lon(self, value: bool):
         """Set whether to use Carrington longitude for the x-axis."""
@@ -653,7 +653,7 @@ class MultiplotOptions:
             return 'carrington_lat'
         else:
             return None
-            
+
     @property
     def positional_data_path(self) -> str:
         """Path to the NPZ file containing Parker Solar Probe positional data."""
