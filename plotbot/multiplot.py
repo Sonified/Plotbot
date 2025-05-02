@@ -153,12 +153,8 @@ def multiplot(plot_list, **kwargs):
                     options.x_axis_carrington_lat = False
                 using_positional_axis = False
     else:
-        print_manager.status("❌ Failed to initialize positional mapping, falling back to time axis.")
-        print_manager.debug(f"Mapper attributes: {dir(positional_mapper)}")
-        # If positional mapping failed, disable it to prevent issues
-        options.x_axis_carrington_lon = False
-        options.x_axis_r_sun = False
-        options.x_axis_carrington_lat = False
+        # Don't show failure message if positional mapping wasn't requested
+        print_manager.debug("Using time axis (positional mapping not requested)")
         using_positional_axis = False
 
     # Store original rcParams to restore later
@@ -399,6 +395,13 @@ def multiplot(plot_list, **kwargs):
         # 0.88 (base) - 0.01 per panel, but ensure it doesn't go below 0.75
         margin_top = max(0.75, options.margin_top - (0.01 * n_panels))
         print_manager.debug(f"Adjusted margin_top to {margin_top} for {n_panels} panels (fluid scaling)")
+        
+        # Add more vertical spacing between plots when using individual titles
+        # This only applies if the user hasn't explicitly set hspace
+        hspace_value = options.hspace
+        if not options.use_single_title and not options.__dict__.get('_user_set_hspace', False):
+            hspace_value = 0.65  # Add more padding when each panel has its own title
+            print_manager.debug(f"Increasing hspace to {hspace_value} for individual titles (automatic adjustment)")
             
         fig, axs = plt.subplots(n_panels, 1, 
                                figsize=initial_figsize, # Use calculated figsize 
@@ -408,7 +411,7 @@ def multiplot(plot_list, **kwargs):
             bottom=options.margin_bottom,
             left=options.margin_left,
             right=options.margin_right,
-            hspace=options.hspace
+            hspace=hspace_value  # Use adjusted hspace value
         )  # Use user-configurable margins
     
     if n_panels == 1:
@@ -734,16 +737,32 @@ def multiplot(plot_list, **kwargs):
                                 else:
                                     print_manager.status(f"Panel {i+1} (Spectral): Longitude mapping failed. Using time.")
                                     
-                            # Use x_data in plot
-                            im = axs[i].pcolormesh(x_data, additional_data_clipped, data_clipped.T, # Often need to transpose Z data
-                                                   norm=norm, cmap=var.colormap, shading='auto')
-                            
-                            pos = axs[i].get_position()
-                            cax = fig.add_axes([pos.x1 + 0.01, pos.y0, 0.02, pos.height])
-                            cbar = fig.colorbar(im, cax=cax)
-        
-                            if hasattr(var, 'colorbar_label'):
-                                cbar.set_label(var.colorbar_label)
+                            # FIXED: Create properly shaped mesh grid for pcolormesh to avoid dimension mismatch
+                            try:
+                                # Remove the transpose - data should not be transposed
+                                # Debug the shapes for troubleshooting
+                                x_shape = len(x_data)
+                                y_shape = len(additional_data_clipped)
+                                z_shape = data_clipped.shape
+                                print_manager.debug(f"Spectral data shapes: X:{x_shape}, Y:{y_shape}, Z:{z_shape}")
+                                
+                                # Always use 'auto' shading which handles the dimension requirements correctly
+                                # and don't transpose the data
+                                im = axs[i].pcolormesh(x_data, additional_data_clipped, data_clipped,
+                                                      norm=norm, cmap=var.colormap, shading='auto')
+                                
+                                pos = axs[i].get_position()
+                                cax = fig.add_axes([pos.x1 + 0.01, pos.y0, 0.02, pos.height])
+                                cbar = fig.colorbar(im, cax=cax)
+            
+                                if hasattr(var, 'colorbar_label'):
+                                    cbar.set_label(var.colorbar_label)
+                            except Exception as e:
+                                print_manager.warning(f"Error plotting spectral data: {str(e)}")
+                                print_manager.warning(f"Data shapes: X:{len(x_data)}, Y:{len(additional_data_clipped)}, Z:{data_clipped.shape}")
+                                axs[i].text(0.5, 0.5, f'Error plotting spectral data:\n{str(e)}', 
+                                           ha='center', va='center', transform=axs[i].transAxes,
+                                           fontsize=10, color='red', style='italic')
                         else:
                             # Handle empty data case for spectral data
                             print_manager.warning(f"No spectral data to plot for panel {i+1} - skipping plot")
@@ -968,10 +987,10 @@ def multiplot(plot_list, **kwargs):
             title = f"{enc_num} - {pos_desc[options.position]} - {pd.Timestamp(center_time).strftime('%Y-%m-%d %H:%M')}"
             if options.color_mode in ['rainbow', 'single'] and panel_color:
                 axs[i].set_title(title, fontsize=options.title_fontsize, color=panel_color,
-                                 pad=options.title_pad)
+                               pad=options.title_pad, fontweight='bold')
             else:
                 axs[i].set_title(title, fontsize=options.title_fontsize,
-                                 pad=options.title_pad)
+                               pad=options.title_pad, fontweight='bold')
     
         # Check for global horizontal line
         if plt.options.draw_horizontal_line:

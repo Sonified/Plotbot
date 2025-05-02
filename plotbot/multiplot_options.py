@@ -268,6 +268,7 @@ class MultiplotOptions:
         self.width = 22
         self.height_per_panel = 3
         self.hspace = 0.35  # Reduced from 0.5 for better spacing between plots
+        self._user_set_hspace = False  # Track if user explicitly set hspace
         self.title_fontsize = 14
         self.use_single_title = True
         self.single_title_text = None
@@ -644,7 +645,7 @@ class MultiplotOptions:
         
     @property
     def active_positional_data_type(self) -> str:
-        """Returns the currently active positional data type, or None if none are active."""
+        """Return the active positional data type being used for the x-axis, if any."""
         if self.x_axis_r_sun:
             return 'r_sun'
         elif self.x_axis_carrington_lon:
@@ -745,6 +746,28 @@ class MultiplotOptions:
         if value and self.__dict__.get('use_positional_x_axis', False):
             print_manager.status("Disabling positional mapping since relative time is now enabled")
             self.__dict__['use_positional_x_axis'] = False
+
+    # New property getter/setter for hspace
+    @property
+    def hspace(self) -> float:
+        """Get the vertical spacing between subplots."""
+        return self.__dict__['hspace']
+    
+    @hspace.setter
+    def hspace(self, value: float):
+        """
+        Set the vertical spacing between subplots.
+        When called directly by user code, marks hspace as explicitly set.
+        """
+        self.__dict__['hspace'] = value
+        
+        # Only mark as user-set if this isn't being called during initialization/reset
+        import inspect
+        caller_name = inspect.currentframe().f_back.f_code.co_name
+        if caller_name != 'reset' and caller_name != '__init__':
+            self.__dict__['_user_set_hspace'] = True
+            from .print_manager import print_manager
+            print_manager.debug(f"User explicitly set hspace to {value}")
 
 # Create a custom plt object that extends matplotlib.pyplot
 class EnhancedPlotting:

@@ -11,7 +11,7 @@ class TestXAxisPositionalData(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
         # Use the actual data file path
-        project_root = pathlib.Path(__file__).parent.parent
+        project_root = pathlib.Path(__file__).parent.parent.parent
         data_path = project_root / "support_data" / "trajectories" / "Parker_positional_data.npz"
         self.assertTrue(data_path.exists(), f"Data file not found at {data_path}")
         self.mapper = XAxisPositionalDataMapper(str(data_path))

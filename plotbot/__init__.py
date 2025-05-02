@@ -142,8 +142,8 @@ __all__ = [
 BLUE = '\033[94m'
 RESET = '\033[0m'
 
-COMMIT_MSG = "feat: Add positional x-axis support for multiplot (2025-05-02_v1.17)"
-print(f'{BLUE}   Version: 2025_05_02_v1.17{RESET}')
+COMMIT_MSG = "feat: Improve multiplot spacing and organize tests (2025-05-02_v1.18)"
+print(f'{BLUE}   Version: 2025_05_02_v1.18{RESET}')
 print(f'{BLUE}   Commit: {COMMIT_MSG}{RESET}')
 
 # --- Final Print Message ---

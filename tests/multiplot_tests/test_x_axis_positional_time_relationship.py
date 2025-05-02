@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 
 # Add parent directory to path to import plotbot modules
-sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent.parent))
 
 from plotbot.x_axis_positional_data_helpers import XAxisPositionalDataMapper
 
@@ -15,7 +15,7 @@ def plot_time_vs_longitude():
     """Create a plot showing the relationship between time and Carrington longitude"""
     
     # Get the path to the longitude data file
-    project_root = pathlib.Path(__file__).parent.parent
+    project_root = pathlib.Path(__file__).parent.parent.parent
     data_path = project_root / "support_data" / "trajectories" / "Parker_positional_data.npz"
     
     if not data_path.exists():

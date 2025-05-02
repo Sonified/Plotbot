@@ -7,7 +7,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 # Add the parent directory to the path so we can import plotbot
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 import plotbot as pb 
 from plotbot.time_utils import str_to_datetime

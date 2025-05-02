@@ -185,11 +185,11 @@ def test_stardust_multiplot_basic():
     fig_num = None # Initialize fig_num
     try:
         phase(1, "Setting up multiplot options (stardust)")
-        # Use config directly
-        config.multiplot_window = '1:00:00.000' # Match STARDUST_TRANGE duration
-        config.multiplot_position = 'around'
-        config.multiplot_use_single_title = True
-        config.multiplot_single_title_text = "Multiplot Stardust Test"
+        # Use plt.options directly instead of config
+        plt.options.window = '1:00:00.000' # Match STARDUST_TRANGE duration
+        plt.options.position = 'around'
+        plt.options.use_single_title = True
+        plt.options.single_title_text = "Multiplot Stardust Test"
 
         phase(2, "Defining plot data and calling multiplot (stardust)")
         plot_data = [

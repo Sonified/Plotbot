@@ -7,7 +7,7 @@ import os
 import pathlib
 
 # Add parent directory to path to import plotbot modules
-sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent.parent))
 
 from plotbot.x_axis_positional_data_helpers import XAxisPositionalDataMapper
 import plotbot as pb
@@ -18,7 +18,7 @@ class TestXAxisPositionalStandalone(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
         # Use the actual data file path
-        project_root = pathlib.Path(__file__).parent.parent
+        project_root = pathlib.Path(__file__).parent.parent.parent
         self.data_path = project_root / "support_data" / "trajectories" / "Parker_positional_data.npz"
         self.assertTrue(self.data_path.exists(), f"Data file not found at {self.data_path}")
 

@@ -7,7 +7,7 @@ import sys
 import matplotlib.pyplot as plt
 
 # Add the parent directory to the path to import plotbot
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import plotbot as pb
 from plotbot.multiplot import multiplot
