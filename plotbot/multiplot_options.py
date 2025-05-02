@@ -3,6 +3,7 @@
 import matplotlib.pyplot as mpl_plt
 from .print_manager import print_manager
 from typing import Optional, Tuple, Any, Union
+import pathlib
 
 class RightAxisOptions:
     """Stores right-axis specific options."""
@@ -237,6 +238,24 @@ class MultiplotOptions:
         self.tick_length = 6.0
         self.tick_width = 1.0
 
+        # --- POSITIONAL X-AXIS PROPERTIES ---
+        self.x_axis_r_sun = False
+        self.x_axis_carrington_lon = False 
+        self.x_axis_carrington_lat = False
+        
+        try:
+            # Use try-except for __file__ which might not exist in all contexts
+            _current_dir = pathlib.Path(__file__).parent.resolve()
+            self.positional_data_path = str(_current_dir / "../support_data/trajectories/Parker_positional_data.npz")
+        except NameError:
+            # Fallback if __file__ is not defined (e.g., interactive session)
+            self.positional_data_path = "../support_data/trajectories/Parker_positional_data.npz"
+            print_manager.warning("__file__ not defined, using basic relative path for positional_data_path")
+        
+        # Tick density for x-axis when using positional data
+        self.positional_tick_density = 1  # Default is normal density
+        # --------------------------------
+
     def reset(self):
         """Reset all options to their default values."""
         # Clear existing axes
@@ -248,8 +267,8 @@ class MultiplotOptions:
         self.position = 'around'
         self.width = 22
         self.height_per_panel = 3
-        self.hspace = 0.5
-        self.title_fontsize = 12
+        self.hspace = 0.35  # Reduced from 0.5 for better spacing between plots
+        self.title_fontsize = 14
         self.use_single_title = True
         self.single_title_text = None
         
@@ -269,7 +288,7 @@ class MultiplotOptions:
         self.horizontal_line_color = 'black'
         self.horizontal_line_style = '-'
         
-        self.use_relative_time = False
+        self._use_relative_time = False  # Now use internal variable
         self.relative_time_step_units = 'hours'
         self.relative_time_step = 2
         self.use_single_x_axis = True
@@ -277,12 +296,12 @@ class MultiplotOptions:
         self.custom_x_axis_label = None
         self.y_label_uses_encounter = True
         self.y_label_includes_time = True
-        self.y_label_size = 11
-        self.x_label_size = 11
-        self.y_label_pad = 20
-        self.x_label_pad = 20
-        self.x_tick_label_size = 10
-        self.y_tick_label_size = 10
+        self.y_label_size = 13  # Increased for better visibility
+        self.x_label_size = 14  # Increased to make x-axis label more prominent
+        self.y_label_pad = 12
+        self.x_label_pad = 8
+        self.x_tick_label_size = 11  # Increased from 10 for better visibility 
+        self.y_tick_label_size = 11  # Increased from 10 for better visibility
         self.second_variable_on_right_axis = False
         
         # New color mode options
@@ -294,13 +313,28 @@ class MultiplotOptions:
         self.save_preset = None
         self.save_dpi = None  # Will be set by preset if used
         self.output_dimensions = None # Tuple (width_px, height_px) or None
+        self.save_bbox_inches = 'tight'  # Options: 'tight', None
         
-        self.title_pad = 6.0 # Add title_pad default
-        self.title_y_position = 0.98
+        # Layout margins - control space around plots
+        self.margin_top = 0.88  # Reduced from 0.92 - creates more space between title and top plot
+        self.margin_bottom = 0.15  # Increased from 0.12 - brings the bottom label closer to the plot
+        self.margin_left = 0.10  # Plot area starts at 10% of figure width
+        self.margin_right = 0.85  # Plot area extends to 85% of figure width
+        
+        self.title_pad = 18.0  # Decreased from 25.0 to bring title closer to the plot
+        self.title_y_position = 0.97  # Positioned at the top
+        self.x_label_pad = 8  # Reduced from 12 to bring labels closer to the plot
         self.magnetic_field_line_width = 1.0
         self.tick_length = 6.0
         self.tick_width = 1.0
-    
+        
+        # Reset positional x-axis properties
+        self.__dict__['_x_axis_r_sun'] = False
+        self.__dict__['_x_axis_carrington_lon'] = False
+        self.__dict__['_x_axis_carrington_lat'] = False
+        self.__dict__['_x_axis_positional_range'] = None
+        self.__dict__['_positional_tick_density'] = 1
+
     def _get_axis_options(self, axis_number: int) -> AxisOptions:
         """Helper method to get or create axis options"""
         print_manager.debug(f"Accessing axis ax{axis_number}")
@@ -514,6 +548,203 @@ class MultiplotOptions:
             delattr(self, '_orig_width')
             delattr(self, '_orig_height_per_panel')
             
+    # --- POSITIONAL X-AXIS PROPERTIES ---
+    @property
+    def x_axis_r_sun(self) -> bool:
+        """Whether to use radial distance (R_sun) for the x-axis instead of time."""
+        return self.__dict__.get('_x_axis_r_sun', False)
+        
+    @x_axis_r_sun.setter
+    def x_axis_r_sun(self, value: bool):
+        """Set whether to use radial distance for the x-axis."""
+        # Only proceed if value is different from current state
+        if value != self.__dict__.get('_x_axis_r_sun', False):
+            # If enabling this option, disable the others
+            if value:
+                self.__dict__['_x_axis_carrington_lon'] = False
+                self.__dict__['_x_axis_carrington_lat'] = False
+                # Disable relative time as it conflicts with positional mapping
+                if self.__dict__.get('_use_relative_time', False):
+                    print_manager.status("Disabling relative time since radial distance mapping is now enabled")
+                    self.__dict__['_use_relative_time'] = False
+            self.__dict__['_x_axis_r_sun'] = value
+            
+    @property
+    def x_axis_carrington_lon(self) -> bool:
+        """Whether to use Carrington longitude (degrees) for the x-axis instead of time."""
+        return self.__dict__.get('_x_axis_carrington_lon', False)
+        
+    @x_axis_carrington_lon.setter
+    def x_axis_carrington_lon(self, value: bool):
+        """Set whether to use Carrington longitude for the x-axis."""
+        # Only proceed if value is different from current state
+        if value != self.__dict__.get('_x_axis_carrington_lon', False):
+            # If enabling this option, disable the others
+            if value:
+                self.__dict__['_x_axis_r_sun'] = False
+                self.__dict__['_x_axis_carrington_lat'] = False
+                # Disable relative time as it conflicts with positional mapping
+                if self.__dict__.get('_use_relative_time', False):
+                    print_manager.status("Disabling relative time since Carrington longitude mapping is now enabled")
+                    self.__dict__['_use_relative_time'] = False
+            self.__dict__['_x_axis_carrington_lon'] = value
+            
+    @property
+    def x_axis_carrington_lat(self) -> bool:
+        """Whether to use Carrington latitude (degrees) for the x-axis instead of time."""
+        return self.__dict__.get('_x_axis_carrington_lat', False)
+        
+    @x_axis_carrington_lat.setter
+    def x_axis_carrington_lat(self, value: bool):
+        """Set whether to use Carrington latitude for the x-axis."""
+        # Only proceed if value is different from current state
+        if value != self.__dict__.get('_x_axis_carrington_lat', False):
+            # If enabling this option, disable the others
+            if value:
+                self.__dict__['_x_axis_r_sun'] = False
+                self.__dict__['_x_axis_carrington_lon'] = False
+                # Disable relative time as it conflicts with positional mapping
+                if self.__dict__.get('_use_relative_time', False):
+                    print_manager.status("Disabling relative time since Carrington latitude mapping is now enabled")
+                    self.__dict__['_use_relative_time'] = False
+            self.__dict__['_x_axis_carrington_lat'] = value
+            
+    @property
+    def using_positional_x_axis(self) -> bool:
+        """Helper property to check if any positional data option is enabled."""
+        return self.x_axis_r_sun or self.x_axis_carrington_lon or self.x_axis_carrington_lat
+            
+    @property
+    def x_axis_positional_range(self) -> Optional[Tuple[float, float]]:
+        """Get the fixed range for the positional x-axis (min, max).
+        
+        This range will be used for all plots when using a positional x-axis.
+        For Carrington longitude/latitude, the values are in degrees.
+        For radial distance, the values are in solar radii (R_sun).
+        
+        Returns:
+            A tuple (min, max) if a range has been set, or None for auto-scaling.
+        """
+        return self.__dict__.get('_x_axis_positional_range', None)
+        
+    @x_axis_positional_range.setter
+    def x_axis_positional_range(self, value: Optional[Tuple[float, float]]):
+        """Set the fixed range for the positional x-axis.
+        
+        Args:
+            value: A tuple (min, max) to set a fixed range, or None to use auto-scaling.
+                  For Carrington longitude/latitude, the values should be in degrees.
+                  For radial distance, the values should be in solar radii (R_sun).
+        """
+        if value is not None and not (isinstance(value, (tuple, list)) and len(value) == 2):
+            print_manager.warning(f"Invalid x_axis_positional_range format: {value}. Expected (min, max) tuple or None.")
+            return
+            
+        self.__dict__['_x_axis_positional_range'] = value
+        
+    @property
+    def active_positional_data_type(self) -> str:
+        """Returns the currently active positional data type, or None if none are active."""
+        if self.x_axis_r_sun:
+            return 'r_sun'
+        elif self.x_axis_carrington_lon:
+            return 'carrington_lon'
+        elif self.x_axis_carrington_lat:
+            return 'carrington_lat'
+        else:
+            return None
+            
+    @property
+    def positional_data_path(self) -> str:
+        """Path to the NPZ file containing Parker Solar Probe positional data."""
+        _default_path = "../support_data/trajectories/Parker_positional_data.npz" # Basic default
+        try:
+            _current_dir = pathlib.Path(__file__).parent.resolve()
+            _default_path = str(_current_dir / "../support_data/trajectories/Parker_positional_data.npz")
+        except NameError:
+            pass
+        return self.__dict__.get('_positional_data_path', _default_path)
+
+    @positional_data_path.setter
+    def positional_data_path(self, value: str):
+        """Set the path to the NPZ file containing positional data."""
+        self.__dict__['_positional_data_path'] = value
+        
+    @property
+    def positional_tick_density(self) -> int:
+        """Density multiplier for positional axis ticks. 1 = normal, 2 = twice as many, etc."""
+        return self.__dict__.get('_positional_tick_density', 1)  # Default is normal density
+        
+    @positional_tick_density.setter
+    def positional_tick_density(self, value: int):
+        """Set the density multiplier for positional axis ticks."""
+        if not isinstance(value, int) or value < 1:
+            print_manager.warning(f"Invalid positional_tick_density value: {value}. Must be a positive integer.")
+            return
+        self.__dict__['_positional_tick_density'] = value
+    # --- END POSITIONAL X-AXIS PROPERTIES ---
+
+    # Keep these for backward compatibility (but they're deprecated now)
+    @property
+    def use_longitude_x_axis(self) -> bool:
+        """Whether to use Carrington Longitude for the x-axis instead of time.
+        DEPRECATED: Use use_positional_x_axis with x_axis_positional_data='carrington_lon' instead."""
+        print_manager.debug("Warning: use_longitude_x_axis is deprecated. Use use_positional_x_axis with x_axis_positional_data='carrington_lon' instead.")
+        return self.use_positional_x_axis and self.x_axis_positional_data == 'carrington_lon'
+
+    @use_longitude_x_axis.setter
+    def use_longitude_x_axis(self, value: bool):
+        """DEPRECATED: Use use_positional_x_axis with x_axis_positional_data='carrington_lon' instead."""
+        print_manager.debug("Warning: use_longitude_x_axis is deprecated. Use use_positional_x_axis with x_axis_positional_data='carrington_lon' instead.")
+        self.use_positional_x_axis = value
+        if value:
+            self.x_axis_positional_data = 'carrington_lon'
+
+    @property
+    def longitude_data_path(self) -> str:
+        """Path to the NPZ file containing longitude data.
+        DEPRECATED: Use positional_data_path instead."""
+        print_manager.debug("Warning: longitude_data_path is deprecated. Use positional_data_path instead.")
+        return self.positional_data_path
+
+    @longitude_data_path.setter
+    def longitude_data_path(self, value: str):
+        """DEPRECATED: Use positional_data_path instead."""
+        print_manager.debug("Warning: longitude_data_path is deprecated. Use positional_data_path instead.")
+        self.positional_data_path = value
+        
+    @property
+    def longitude_tick_density(self) -> int:
+        """Density multiplier for longitude axis ticks.
+        DEPRECATED: Use positional_tick_density instead."""
+        print_manager.debug("Warning: longitude_tick_density is deprecated. Use positional_tick_density instead.")
+        return self.positional_tick_density
+        
+    @longitude_tick_density.setter
+    def longitude_tick_density(self, value: int):
+        """DEPRECATED: Use positional_tick_density instead."""
+        print_manager.debug("Warning: longitude_tick_density is deprecated. Use positional_tick_density instead.")
+        self.positional_tick_density = value
+
+    # Add use_relative_time property with special behavior
+    @property
+    def use_relative_time(self) -> bool:
+        """Whether to show relative time on the x-axis."""
+        # If positional mapping is enabled, relative time is always disabled
+        if self.__dict__.get('use_positional_x_axis', False):
+            return False
+        return self.__dict__.get('_use_relative_time', False)
+
+    @use_relative_time.setter
+    def use_relative_time(self, value: bool):
+        """Set whether to use relative time on the x-axis."""
+        # Store in a private variable so we can manage conflicts
+        self.__dict__['_use_relative_time'] = value
+        
+        # If enabling relative time, disable conflicting positional mapping
+        if value and self.__dict__.get('use_positional_x_axis', False):
+            print_manager.status("Disabling positional mapping since relative time is now enabled")
+            self.__dict__['use_positional_x_axis'] = False
 
 # Create a custom plt object that extends matplotlib.pyplot
 class EnhancedPlotting:

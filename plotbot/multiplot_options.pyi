@@ -83,11 +83,23 @@ class MultiplotOptions:
     save_preset: Optional[str]
     save_dpi: Optional[int]
     output_dimensions: Optional[Tuple[int, int]]
+    save_bbox_inches: Optional[str]
+    margin_top: float
+    margin_bottom: float
+    margin_left: float
+    margin_right: float
     title_pad: float
     title_y_position: float
     magnetic_field_line_width: float
     tick_length: float
     tick_width: float
+    # Positional X-Axis Properties
+    x_axis_r_sun: bool
+    x_axis_carrington_lon: bool
+    x_axis_carrington_lat: bool
+    _x_axis_positional_range: Optional[Tuple[float, float]]
+    positional_tick_density: int
+    positional_data_path: str
     # Internal attributes for presets (usually omitted from stubs)
     # _orig_width: Union[int, float]
     # _orig_height_per_panel: Union[int, float]
@@ -100,6 +112,16 @@ class MultiplotOptions:
     def __getattr__(self, name: str) -> AxisOptions: ... # Dynamic axis access
     def print_state(self) -> None: ...
     # Internal preset helpers omitted: _apply_preset_config, _restore_original_values
+
+    # --- Properties for Positional X-Axis ---
+    @property
+    def using_positional_x_axis(self) -> bool: ...
+    @property
+    def active_positional_data_type(self) -> Optional[str]: ...
+    @property
+    def x_axis_positional_range(self) -> Optional[Tuple[float, float]]: ...
+    @x_axis_positional_range.setter
+    def x_axis_positional_range(self, value: Optional[Tuple[float, float]]) -> None: ...
 
     # --- Properties for Axes (Explicitly defined up to ax25) ---
     @property
