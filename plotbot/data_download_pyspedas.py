@@ -191,37 +191,38 @@ def download_spdf_data(trange, plotbot_key):
     returned_data = None
     
     try:
-        # 1. Check locally ONLY (reliable offline)
+        # 1. Check locally ONLY (reliable offline) - REMOVED
         # print_manager.debug(f"Checking SPDF locally (no_update=True) for {pyspedas_datatype}...") # Old debug message
+        # returned_data = pyspedas_func(
+        #     trange=trange,
+        #     datatype=pyspedas_datatype,
+        #     no_update=True,
+        #     downloadonly=True,
+        #     notplot=True,
+        #     time_clip=True, # Consistent with tests
+        #     **kwargs
+        # )
+        # if returned_data and isinstance(returned_data, list) and len(returned_data) > 0:
+        #     file_path = returned_data[0]
+
+        # 2. If not found locally, attempt download (only if online) - NOW THE ONLY STEP
+        # if not file_path: # Condition removed as this is the only step now
+        print_manager.debug(f"Attempting SPDF check/download (no_update=False) for {pyspedas_datatype}...")
         returned_data = pyspedas_func(
             trange=trange,
             datatype=pyspedas_datatype,
-            no_update=True,
+            no_update=False, # Always check online / download if needed
             downloadonly=True,
             notplot=True,
-            time_clip=True, # Consistent with tests
+            time_clip=True,
             **kwargs
         )
-        if returned_data and isinstance(returned_data, list) and len(returned_data) > 0:
-            file_path = returned_data[0]
-
-        # 2. If not found locally, attempt download (only if online)
-        if not file_path:
-            # print_manager.debug(f"Attempting SPDF download (no_update=False) for {pyspedas_datatype}...") # Old debug message
-            returned_data = pyspedas_func(
-                trange=trange,
-                datatype=pyspedas_datatype,
-                no_update=False,
-                downloadonly=True,
-                notplot=True,
-                time_clip=True,
-                **kwargs
-            )
-            if returned_data and isinstance(returned_data, list) and len(returned_data) > 0:
-                file_path = returned_data[0]
-                # TODO: Add this file path to a cleanup list?
-            else:
-                print_manager.warning(f"SPDF download attempt for {plotbot_key} did not return a file path.")
+        # Removed redundant assignment to file_path
+        # if returned_data and isinstance(returned_data, list) and len(returned_data) > 0:
+        #     file_path = returned_data[0]
+        #     # TODO: Add this file path to a cleanup list?
+        # else:
+        #     print_manager.warning(f"SPDF download attempt for {plotbot_key} did not return a file path.")
 
     except Exception as e:
         print_manager.error(f"Error during pyspedas check/download for {plotbot_key}: {e}")

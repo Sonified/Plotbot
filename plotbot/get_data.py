@@ -251,7 +251,7 @@ def get_data(trange: List[str], *variables):
             continue
             
         # Conditional data download based on configuration
-        server_mode = plotbot.config.data_server # <-- With this line
+        server_mode = plotbot.config.data_server.lower() # <-- Get value and convert to lowercase
         print_manager.debug(f"Server mode for {data_type}: {server_mode}")
         
         download_successful = False # Assume files might exist locally
