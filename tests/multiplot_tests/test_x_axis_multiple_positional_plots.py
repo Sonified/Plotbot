@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates  # For date formatting
 
 # Add parent directory to path to import plotbot modules
-sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent.parent.parent))
 
 import plotbot as pb
 from plotbot.multiplot_options import plt as pbplt
@@ -20,7 +20,7 @@ from plotbot.multiplot import multiplot
 from plotbot.x_axis_positional_data_helpers import XAxisPositionalDataMapper
 
 # Import the encounter ranges from the analysis script output
-sys.path.append(str(pathlib.Path(__file__).parent.parent / "local_tests_and_utils"))
+sys.path.append(str(pathlib.Path(__file__).parent.parent.parent.parent / "local_tests_and_utils"))
 try:
     from encounter_positional_ranges import ENCOUNTERS, ENCOUNTER_RANGES
 except ImportError:
@@ -57,7 +57,7 @@ class TestMultiplePositionalPlots(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
         # Use the actual data file path
-        project_root = pathlib.Path(__file__).parent.parent
+        project_root = pathlib.Path(__file__).parent.parent.parent.parent
         self.data_path = project_root / "support_data" / "trajectories" / "Parker_positional_data.npz"
         self.assertTrue(self.data_path.exists(), f"Data file not found at {self.data_path}")
         

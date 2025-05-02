@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates  # Add missing import for date formatting
 
 # Add parent directory to path to import plotbot modules
-sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent.parent))
 
 import plotbot as pb
 from plotbot.multiplot_options import plt as pbplt
@@ -25,7 +25,7 @@ class TestPositionalXAxisTypes(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
         # Use the actual data file path
-        project_root = pathlib.Path(__file__).parent.parent
+        project_root = pathlib.Path(__file__).parent.parent.parent
         self.data_path = project_root / "support_data" / "trajectories" / "Parker_positional_data.npz"
         self.assertTrue(self.data_path.exists(), f"Data file not found at {self.data_path}")
         
@@ -448,7 +448,7 @@ class TestPositionalXAxisTypes(unittest.TestCase):
         
         # Save the result
         self.save_figure(fig, "test_common_x_axis_fixed_range.png")
-            plt.close(fig)
+        plt.close(fig)
     
 if __name__ == '__main__':
     unittest.main() 

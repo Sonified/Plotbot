@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 
 # Add parent directory to path to import plotbot modules
-sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent.parent))
 
 import plotbot as pb
 from plotbot.multiplot_options import plt as pbplt
@@ -93,7 +93,7 @@ def diagnose_longitude_ticks():
         mpl_dates = np.array([pd.Timestamp(dt).to_pydatetime() for dt in datetime_array])
         
         # Use the LongitudeMapper directly to see what's happening
-        project_root = pathlib.Path(__file__).parent.parent
+        project_root = pathlib.Path(__file__).parent.parent.parent
         data_path = project_root / "support_data" / "trajectories" / "Parker_positional_data.npz"
         
         mapper = XAxisPositionalDataMapper(str(data_path))
