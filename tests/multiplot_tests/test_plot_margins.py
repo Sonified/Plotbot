@@ -47,44 +47,33 @@ test_variables = [
 ]
 
 def run_test_with_panels(num_panels):
-    """Run a test with the specified number of panels."""
-    # Reset options to defaults
+    """Run a test with the specified number of panels at width=22 and height=3, rainbow mode, each panel gets its own title."""
     pbplt.options.reset()
-    
-    # Use the default settings (to test these)
     pbplt.options.window = '12:00:00.000'
-    pbplt.options.use_single_title = True
-    pbplt.options.single_title_text = f"Test Plot with {num_panels} Panel{'s' if num_panels > 1 else ''}"
-    
-    # Explicitly set the use_single_x_axis option
-    pbplt.options.use_single_x_axis = True
-    
-    # Explicitly set font sizes to test the updated defaults
+    pbplt.options.use_single_title = False  # Each panel gets its own title
+    pbplt.options.width = 22
+    pbplt.options.height_per_panel = 3
+    pbplt.options.color_mode = 'rainbow'
     pbplt.options.title_fontsize = 14
     pbplt.options.x_label_size = 14
     pbplt.options.y_label_size = 13
     pbplt.options.y_label_pad = 12
-    pbplt.options.x_tick_label_size = 11
-    pbplt.options.y_tick_label_size = 11
-    
-    # Create plot data list (use only as many times/variables as panels requested)
+    pbplt.options.x_label_pad = 8
+    pbplt.options.bold_title = True
+    pbplt.options.bold_x_axis_label = False
+    pbplt.options.bold_y_axis_label = False
+    pbplt.options.use_default_plot_settings = False
+    pbplt.options.use_single_x_axis = True
+    pbplt.options.title_pad = 2  # Negative padding to bring titles closer to the plot when using per-panel titles
     plot_data = [(test_times[i], test_variables[i]) for i in range(min(num_panels, len(test_times), len(test_variables)))]
-    
-    # Create and save the plot
     fig, axs = multiplot(plot_data)
-    
-    # Save figure to output directory
-    output_file = os.path.join(output_dir, f'margin_test_{num_panels}_panels.png')
+    output_file = os.path.join(output_dir, f"margin_test_{num_panels}_panels_width22_height3_rainbow_panel_titles.png")
     fig.savefig(output_file, dpi=150)
-    print(f"Saved plot with {num_panels} panel{'s' if num_panels > 1 else ''} to {output_file}")
-    
-    # Close the figure to avoid memory issues
+    print(f"Saved plot with {num_panels} panel{'s' if num_panels > 1 else ''} (width=22, height=3, rainbow, panel titles) to {output_file}")
     plt.close(fig)
 
 # Run tests with different numbers of panels
-print("Starting margin tests with different panel counts...")
-run_test_with_panels(1)
-run_test_with_panels(3)
-run_test_with_panels(5)
-run_test_with_panels(7)  # Added test for 7 panels
+print("Starting margin tests for width=22, height=3, rainbow mode, panels 1, 3, 5, 7...")
+for n in [1, 3, 5, 7]:
+    run_test_with_panels(n)
 print("Tests completed. Check the output directory for the generated images.") 

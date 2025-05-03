@@ -96,10 +96,11 @@ def apply_panel_color(ax, color, options=None):
     # Store original y-limits before any modifications
     original_ylim = ax.get_ylim()
     
-    # Color the y-axis label and make bold
+    # Color the y-axis label and set fontweight according to options
     if ax.yaxis.label:
         ax.yaxis.label.set_color(color)
-        ax.yaxis.label.set_weight('bold')
+        if options and hasattr(options, 'bold_y_axis_label'):
+            ax.yaxis.label.set_weight('bold' if options.bold_y_axis_label else 'normal')
     
     # Color the title if it exists and not using single title
     if options and not options.use_single_title:
@@ -137,14 +138,11 @@ def apply_bottom_axis_color(ax, color):
     # Color x-axis label
     if ax.xaxis.label:
         ax.xaxis.label.set_color(color)
-        ax.xaxis.label.set_weight('bold')
-    
     # Color x-axis ticks
     ax.tick_params(axis='x', colors=color, which='both')
-    
     # Color bottom spine only
     ax.spines['bottom'].set_color(color)
-    
+
 def validate_log_scale_limits(y_limit, y_scale, axis_name):
     """
     Validates that y-limits are appropriate for the chosen scale.

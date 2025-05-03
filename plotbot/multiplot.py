@@ -87,6 +87,9 @@ def multiplot(plot_list, **kwargs):
         plot_list: List of tuples (time, variable)
         **kwargs: Optional overrides for any MultiplotOptions attributes
     """
+    # Set global font size for tiny date and other default text
+    mpl_plt.rcParams['font.size'] = plt.options.size_of_tiny_date_in_the_corner
+    
     # Position descriptions for titles
     pos_desc = {
         'around': 'Around',
@@ -346,76 +349,57 @@ def multiplot(plot_list, **kwargs):
     # Get color scheme BEFORE creating figure (needed for title color)
     color_scheme = get_plot_colors(n_panels, options.color_mode, options.single_color)
     
-    if options.save_preset:
-        config = options.PRESET_CONFIGS[options.save_preset]
-        # Create figure with preset dimensions
-        fig = plt.figure(figsize=config['figsize'], dpi=config.get('dpi', 300)) # Use preset figsize and dpi
-        
-        # --- APPLY PRESET MARGINS --- 
-        gs = plt.GridSpec(n_panels, 1)
-        try: # Add try-except for safety
-            gs.update(
-                left=config['margins']['left'],
-                right=config['margins']['right'],
-                bottom=config['margins']['bottom'],
-                top=config['margins']['top'],
-                hspace=config['vertical_space']
-            )
-        except KeyError as e:
-            print_manager.warning(f"Preset missing required margin key: {e}. Using default layout.")
-            gs.update(hspace=config['vertical_space']) # Apply hspace at least
-        # --- END APPLY PRESET MARGINS --- 
-        
-        axs = [fig.add_subplot(gs[i]) for i in range(n_panels)]
-    else:
-        # Original panel-based approach
-        
-        # --- ASPECT RATIO FIX for output_dimensions --- 
-        if options.output_dimensions:
+    # NEW: Always use constrained_layout=True and do not set manual margins
+    if getattr(options, 'use_default_plot_settings', False) or options.save_preset or options.output_dimensions:
+        # Determine figure size and dpi from preset or options
+        if options.save_preset:
+            config = options.PRESET_CONFIGS[options.save_preset]
+            figsize = config['figsize']
+            dpi = config.get('dpi', 300)
+        elif options.output_dimensions:
             target_width_px, target_height_px = options.output_dimensions
-            # Calculate target aspect ratio
-            if target_height_px > 0: # Avoid division by zero
-                target_aspect = float(target_width_px) / target_height_px
-                # Calculate initial figure height based on user's width and target aspect ratio
-                initial_fig_height = options.width / target_aspect
-                initial_figsize = (options.width, initial_fig_height)
-                print_manager.debug(f"Using output_dimensions. Target aspect: {target_aspect:.2f}, Initial figsize: {initial_figsize}")
-            else:
-                # Fallback if height is zero
-                initial_figsize = (options.width, options.height_per_panel * n_panels)
-                print_manager.warning("Target height is zero, falling back to panel-based figsize")
+            # Convert pixels to inches for figsize
+            dpi = 300
+            figsize = (target_width_px / dpi, target_height_px / dpi)
         else:
-            # Default panel-based calculation
-            initial_figsize = (options.width, options.height_per_panel * n_panels)
-            print_manager.debug(f"Using panel-based figsize: {initial_figsize}")
-        # --- END ASPECT RATIO FIX --- 
-        
-        # Dynamic top margin adjustment based on panel count - fluid scaling
-        # Decrease margin_top as panel count increases (create more space at top)
-        # 0.88 (base) - 0.01 per panel, but ensure it doesn't go below 0.75
-        margin_top = max(0.75, options.margin_top - (0.01 * n_panels))
-        print_manager.debug(f"Adjusted margin_top to {margin_top} for {n_panels} panels (fluid scaling)")
-        
-        # Add more vertical spacing between plots when using individual titles
-        # This only applies if the user hasn't explicitly set hspace
-        hspace_value = options.hspace
-        if not options.use_single_title and not options.__dict__.get('_user_set_hspace', False):
-            hspace_value = 0.65  # Add more padding when each panel has its own title
-            print_manager.debug(f"Increasing hspace to {hspace_value} for individual titles (automatic adjustment)")
-            
-        fig, axs = plt.subplots(n_panels, 1, 
-                               figsize=initial_figsize, # Use calculated figsize 
-                               sharex=False)
-        plt.subplots_adjust(
-            top=margin_top,  # Use dynamically adjusted top margin
-            bottom=options.margin_bottom,
-            left=options.margin_left,
-            right=options.margin_right,
-            hspace=hspace_value  # Use adjusted hspace value
-        )  # Use user-configurable margins
-    
-    if n_panels == 1:
+            figsize = (options.width, options.height_per_panel * n_panels)
+            dpi = 300
+        fig, axs = plt.subplots(n_panels, 1, figsize=figsize, dpi=dpi, constrained_layout=options.constrained_layout)
+        print_manager.status(f"Using constrained_layout={options.constrained_layout} and letting matplotlib handle all margins and spacing.")
+        # If constrained_layout is False, set all margins and hspace using the options
+        if not options.constrained_layout:
+            fig.subplots_adjust(
+                top=options.margin_top,
+                bottom=options.margin_bottom,
+                left=options.margin_left,
+                right=options.margin_right,
+                hspace=options.hspace_vertical_space_between_plots
+            )
+            print_manager.status(f"Set margins (top={options.margin_top}, bottom={options.margin_bottom}, left={options.margin_left}, right={options.margin_right}) and hspace={options.hspace_vertical_space_between_plots}")
+        else:
+            if hasattr(options, 'hspace_vertical_space_between_plots') and options.hspace_vertical_space_between_plots != 0.2:
+                print_manager.warning("hspace_vertical_space_between_plots is set but constrained_layout=True, so it will be ignored.")
+    else:
+        fig, axs = plt.subplots(n_panels, 1, figsize=(options.width, options.height_per_panel * n_panels), constrained_layout=options.constrained_layout)
+        print_manager.status(f"Using constrained_layout={options.constrained_layout} and letting matplotlib handle all margins and spacing.")
+        if not options.constrained_layout:
+            fig.subplots_adjust(
+                top=options.margin_top,
+                bottom=options.margin_bottom,
+                left=options.margin_left,
+                right=options.margin_right,
+                hspace=options.hspace_vertical_space_between_plots
+            )
+            print_manager.status(f"Set margins (top={options.margin_top}, bottom={options.margin_bottom}, left={options.margin_left}, right={options.margin_right}) and hspace={options.hspace_vertical_space_between_plots}")
+        else:
+            if hasattr(options, 'hspace_vertical_space_between_plots') and options.hspace_vertical_space_between_plots != 0.2:
+                print_manager.warning("hspace_vertical_space_between_plots is set but constrained_layout=True, so it will be ignored.")
+    # Ensure axs is always a flat list of Axes
+    import numpy as _np
+    if not isinstance(axs, (list, _np.ndarray)):
         axs = [axs]
+    elif isinstance(axs, _np.ndarray):
+        axs = axs.flatten().tolist()
     
     #==========================================================================
     # STEP 4: POPULATE PLOTS WITH DATA
@@ -546,8 +530,36 @@ def multiplot(plot_list, **kwargs):
                             )
                             ax2.set_ylim(single_var.y_limit)
                         
-                        if panel_color:
-                            apply_panel_color(ax2, panel_color, options)
+                        # --- NEW: Apply rainbow color to all right axis elements ---
+                        if panel_color is not None:
+                            # Set y-axis label color and font weight
+                            ax2.yaxis.label.set_color(panel_color)
+                            if hasattr(options, 'bold_y_axis_label') and options.bold_y_axis_label:
+                                ax2.yaxis.label.set_weight('bold')
+                            else:
+                                ax2.yaxis.label.set_weight('normal')
+                            # Set tick color and label size
+                            ax2.tick_params(axis='y', colors=panel_color, which='both', labelsize=options.y_tick_label_font_size)
+                            # Set all spines to panel color
+                            for spine in ax2.spines.values():
+                                spine.set_color(panel_color)
+                        # --- END NEW ---
+                        
+                        # Set the right y-axis label to match the panel color and style
+                        ham_ylabel = getattr(ham_var, 'y_label', 'HAM')
+                        ax2.set_ylabel(ham_ylabel,
+                                      fontsize=options.y_axis_label_font_size,
+                                      labelpad=options.y_label_pad,
+                                      fontweight='bold' if options.bold_y_axis_label else 'normal',
+                                      ha=options.y_label_alignment)
+                        # Force all right axis elements to rainbow color
+                        apply_right_axis_color(ax2, panel_color, options)
+                        print(f"DEBUG: Panel {i+1} right axis label is: '{ax2.get_ylabel()}'")
+                        # Set right y-axis tick params and spine colors to match panel color
+                        ax2.tick_params(axis='y', colors=panel_color, which='both')
+                        for spine in ax2.spines.values():
+                            spine.set_color(panel_color)
+                        # Now apply the panel color to ax2 (for y-label, etc.)
                     
                     else:
                         if options.color_mode in ['rainbow', 'single'] and panel_color:
@@ -589,6 +601,13 @@ def multiplot(plot_list, **kwargs):
                                   labels_left + labels_right,
                                   bbox_to_anchor=(1.025, 1),
                                   loc='upper left')
+                    # Set legend label color to rainbow if in rainbow mode
+                    if options.color_mode == 'rainbow' and panel_color is not None:
+                        leg = axs[i].get_legend()
+                        for text in leg.get_texts():
+                            text.set_color(panel_color)
+                        # Set the legend border (frame) color to match the panel color
+                        leg.get_frame().set_edgecolor(panel_color)
                 else:
                     axs[i].legend(bbox_to_anchor=(1.025, 1),
                                   loc='upper left')
@@ -808,17 +827,28 @@ def multiplot(plot_list, **kwargs):
         # Add HAM data plotting on right axis (if enabled)
         print_manager.status(f"Panel {i+1}: Checking HAM plotting conditions: hamify={options.hamify}, ham_var={options.ham_var is not None}, second_variable_on_right_axis={options.second_variable_on_right_axis}")
         if options.hamify and options.ham_var is not None and not options.second_variable_on_right_axis:
-            # Use ham_var directly - it's already the plot_manager object
+            # For each panel, load the correct HAM data for the time range
             ham_var = options.ham_var
-            
+            # Call get_data for this panel's time range
+            print_manager.status(f"Panel {i+1}: Calling get_data for HAM variable for trange {trange}")
+            get_data(trange, ham_var)
+            # Refresh the reference from data_cubby
+            ham_class_instance = data_cubby.grab('ham')
+            if ham_class_instance:
+                ham_var = ham_class_instance.get_subclass(getattr(options.ham_var, 'subclass_name', 'hamogram_30s'))
+                print_manager.status(f"Panel {i+1}: Refreshed HAM variable reference from data_cubby")
+            else:
+                print_manager.error(f"Panel {i+1}: Failed to get ham class from data_cubby")
+            # Use ham_var for plotting below
             print_manager.status(f"Panel {i+1}: HAM feature enabled, plotting {ham_var.subclass_name if hasattr(ham_var, 'subclass_name') else 'HAM variable'} on right axis")
-            
             if ham_var is not None and hasattr(ham_var, 'datetime_array') and ham_var.datetime_array is not None:
                 # Create a twin axis for the HAM data
                 ax2 = axs[i].twinx()
                 
-                # Get color - use right axis color if specified, otherwise use ham_var's color
-                if hasattr(axis_options, 'r') and axis_options.r.color is not None:
+                # Get color - use panel color if available, otherwise right axis color or ham_var's color
+                if panel_color is not None:
+                    plot_color = panel_color
+                elif hasattr(axis_options, 'r') and axis_options.r.color is not None:
                     plot_color = axis_options.r.color
                 else:
                     plot_color = ham_var.color
@@ -846,7 +876,8 @@ def multiplot(plot_list, **kwargs):
                             linewidth=ham_var.line_width,
                             linestyle=ham_var.line_style,
                             label=ham_var.legend_label,
-                            color=plot_color)
+                            color=plot_color,
+                            alpha=options.ham_opacity)
                     print_manager.status(f"Panel {i+1}: Successfully plotted HAM data on right axis")
                     
                     # Apply y-limits if specified
@@ -857,6 +888,21 @@ def multiplot(plot_list, **kwargs):
                         ax2.set_ylim(ham_var.y_limit)
                         print_manager.status(f"Panel {i+1}: Applied right axis y-limits from ham_var: {ham_var.y_limit}")
                     
+                    # --- NEW: Apply rainbow color to all right axis elements ---
+                    if panel_color is not None:
+                        # Set y-axis label color and font weight
+                        ax2.yaxis.label.set_color(panel_color)
+                        if hasattr(options, 'bold_y_axis_label') and options.bold_y_axis_label:
+                            ax2.yaxis.label.set_weight('bold')
+                        else:
+                            ax2.yaxis.label.set_weight('normal')
+                        # Set tick color and label size
+                        ax2.tick_params(axis='y', colors=panel_color, which='both', labelsize=options.y_tick_label_font_size)
+                        # Set all spines to panel color
+                        for spine in ax2.spines.values():
+                            spine.set_color(panel_color)
+                    # --- END NEW ---
+                    
                     # Include HAM in legend
                     lines_left, labels_left = axs[i].get_legend_handles_labels()
                     lines_right, labels_right = ax2.get_legend_handles_labels()
@@ -864,6 +910,13 @@ def multiplot(plot_list, **kwargs):
                                 labels_left + labels_right,
                                 bbox_to_anchor=(1.025, 1),
                                 loc='upper left')
+                    # Set legend label color to rainbow if in rainbow mode
+                    if options.color_mode == 'rainbow' and panel_color is not None:
+                        leg = axs[i].get_legend()
+                        for text in leg.get_texts():
+                            text.set_color(panel_color)
+                        # Set the legend border (frame) color to match the panel color
+                        leg.get_frame().set_edgecolor(panel_color)
                 else:
                     print_manager.status(f"Panel {i+1}: No HAM data points found in time range {trange[0]} to {trange[1]}")
             else:
@@ -951,16 +1004,21 @@ def multiplot(plot_list, **kwargs):
         if options.y_label_uses_encounter:
             if options.y_label_includes_time:
                 y_label = f"{enc_num} Around\n{pd.Timestamp(center_time).strftime('%Y-%m-%d')}\n{pd.Timestamp(center_time).strftime('%H:%M')}"
-                axs[i].set_ylabel(y_label, fontsize=options.y_label_size, 
-                                  labelpad=options.y_label_pad, fontweight='bold')
+                axs[i].set_ylabel(y_label, fontsize=options.y_axis_label_font_size, 
+                                  labelpad=options.y_label_pad, fontweight='bold' if options.bold_y_axis_label else 'normal',
+                                  ha=options.y_label_alignment)
             else:
-                y_label = f"$\\mathbf{{{enc_num}}}$"
-                axs[i].set_ylabel(y_label, fontsize=options.y_label_size,
-                                  rotation=0, ha='right', va='center',
-                                  labelpad=options.y_label_pad, fontweight='bold')
+                if options.bold_y_axis_label:
+                    y_label = f"$\\mathbf{{{enc_num}}}$"
+                else:
+                    y_label = f"$\\mathrm{{{enc_num}}}$"
+                axs[i].set_ylabel(y_label, fontsize=options.y_axis_label_font_size,
+                                  rotation=0, ha=options.y_label_alignment, va='center',
+                                  labelpad=options.y_label_pad)
         else:
-            axs[i].set_ylabel(y_label, fontsize=options.y_label_size,
-                              labelpad=options.y_label_pad, fontweight='bold')
+            axs[i].set_ylabel(y_label, fontsize=options.y_axis_label_font_size,
+                              labelpad=options.y_label_pad, fontweight='bold' if options.bold_y_axis_label else 'normal',
+                              ha=options.y_label_alignment)
     
         if isinstance(var, list):
             if hasattr(var[0], 'y_scale') and var[0].y_scale:
@@ -1029,11 +1087,11 @@ def multiplot(plot_list, **kwargs):
                 else:
                     axs[i].set_xticklabels(tick_labels)
                     if options.use_custom_x_axis_label:
-                         axs[i].set_xlabel(options.custom_x_axis_label, fontweight='bold', fontsize=options.x_label_size,
+                         axs[i].set_xlabel(options.custom_x_axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
                                            labelpad=options.x_label_pad)
                     else:
                         axs[i].set_xlabel(f"Relative Time ({options.relative_time_step_units} from Perihelion)", 
-                                        fontweight='bold', fontsize=options.x_label_size,
+                                        fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
                                         labelpad=options.x_label_pad)
             else:
                 axs[i].set_xticklabels(tick_labels)
@@ -1041,8 +1099,8 @@ def multiplot(plot_list, **kwargs):
                     axs[i].set_xlabel('')
     
             # Add these two lines to set tick label sizes when using relative time
-            axs[i].tick_params(axis='x', labelsize=options.x_tick_label_size)
-            axs[i].tick_params(axis='y', labelsize=options.y_tick_label_size)
+            axs[i].tick_params(axis='x', labelsize=options.x_tick_label_font_size)
+            axs[i].tick_params(axis='y', labelsize=options.y_tick_label_font_size)
     
             # After setting tick sizes 
             # Apply border line width to all spines (top, bottom, left, right)
@@ -1060,11 +1118,13 @@ def multiplot(plot_list, **kwargs):
         if not options.use_single_title:
             title = f"{enc_num} - {pos_desc[options.position]} - {pd.Timestamp(center_time).strftime('%Y-%m-%d %H:%M')}"
             if options.color_mode in ['rainbow', 'single'] and panel_color:
-                axs[i].set_title(title, fontsize=options.title_fontsize, color=panel_color,
-                               pad=options.title_pad, fontweight='bold')
+                axs[i].set_title(title, fontsize=options.title_font_size, color=panel_color,
+                               pad=options.title_pad, fontweight='bold' if options.bold_title else 'normal',
+                               y=options.title_y_position)
             else:
-                axs[i].set_title(title, fontsize=options.title_fontsize,
-                               pad=options.title_pad, fontweight='bold')
+                axs[i].set_title(title, fontsize=options.title_font_size,
+                               pad=options.title_pad, fontweight='bold' if options.bold_title else 'normal',
+                               y=options.title_y_position)
     
         # Check for global horizontal line
         if plt.options.draw_horizontal_line:
@@ -1099,30 +1159,30 @@ def multiplot(plot_list, **kwargs):
                     # --- APPLY X LABEL LOGIC HERE ---
                     if using_positional_axis:
                         # When positional mapping is enabled, use the appropriate axis label
-                        ax.set_xlabel(axis_label, fontweight='bold', fontsize=options.x_label_size,
+                        ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
                                       labelpad=options.x_label_pad)
                     elif options.use_custom_x_axis_label:
                         # Only use custom label if not using positional mapping
-                        ax.set_xlabel(options.custom_x_axis_label, fontweight='bold', fontsize=options.x_label_size,
+                        ax.set_xlabel(options.custom_x_axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
                                       labelpad=options.x_label_pad)
                     else:
                         # Default time label
-                        ax.set_xlabel("Time", fontweight='bold', fontsize=options.x_label_size,
+                        ax.set_xlabel("Time", fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
                                       labelpad=options.x_label_pad)
             else: # Not using single x axis
                 # --- APPLY X LABEL LOGIC HERE TOO ---
                 if i == len(axs) - 1: # Apply label only to bottom-most axis if not single
                     if using_positional_axis:
                         # When positional mapping is enabled, use the appropriate axis label
-                        ax.set_xlabel(axis_label, fontweight='bold', fontsize=options.x_label_size,
+                        ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
                                       labelpad=options.x_label_pad)
                     elif options.use_custom_x_axis_label:
                         # Only use custom label if not using positional mapping
-                        ax.set_xlabel(options.custom_x_axis_label, fontweight='bold', fontsize=options.x_label_size,
+                        ax.set_xlabel(options.custom_x_axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
                                       labelpad=options.x_label_pad)
                     else:
                         # Default time label
-                        ax.set_xlabel("Time", fontweight='bold', fontsize=options.x_label_size,
+                        ax.set_xlabel("Time", fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
                                       labelpad=options.x_label_pad)
                 else: # Hide labels for upper panels if not single axis mode
                     ax.set_xlabel('')
@@ -1201,8 +1261,8 @@ def multiplot(plot_list, **kwargs):
                         else:  # radial
                             ax.set_xlim(0, 50)  # Default radial range
 
-            ax.tick_params(axis='x', labelsize=options.x_tick_label_size)
-            ax.tick_params(axis='y', labelsize=options.y_tick_label_size)
+            ax.tick_params(axis='x', labelsize=options.x_tick_label_font_size)
+            ax.tick_params(axis='y', labelsize=options.y_tick_label_font_size)
     
     # Apply common x-axis range if needed
     if using_positional_axis and options.use_single_x_axis and options.x_axis_positional_range is None:
@@ -1252,9 +1312,9 @@ def multiplot(plot_list, **kwargs):
 
         # Add title color if using rainbow color mode
         title_kwargs = {
-            'fontsize': options.title_fontsize, 
+            'fontsize': options.title_font_size,
             'pad': options.title_pad,
-            'fontweight': 'bold'
+            'fontweight': 'bold' if options.bold_title else 'normal'
         }
         
         if options.color_mode == 'rainbow' and color_scheme and color_scheme['panel_colors']:
@@ -1262,7 +1322,7 @@ def multiplot(plot_list, **kwargs):
             
         # Place title on the top axis instead of using suptitle
         # This keeps it properly aligned with the plots regardless of panel count
-        axs[0].set_title(title_text, **title_kwargs)
+        axs[0].set_title(title_text, y=options.title_y_position, **title_kwargs)
         print_manager.debug(f"Added title to top axis with pad={options.title_pad}")
     
     print_manager.status("Generating multiplot...\n")
@@ -1310,7 +1370,7 @@ def multiplot(plot_list, **kwargs):
             fig.savefig(
                 filename,
                 dpi=initial_dpi,
-                bbox_inches=options.save_bbox_inches,
+                bbox_inches=options.bbox_inches_save_crop_mode,
                 pad_inches=0.1,
                 facecolor='white'
             )
@@ -1336,13 +1396,15 @@ def multiplot(plot_list, **kwargs):
             fig.savefig(
                 filename,
                 dpi=options.save_dpi if options.save_dpi else 300, # Use save_dpi if set, else default
-                bbox_inches=options.save_bbox_inches,
+                bbox_inches=options.bbox_inches_save_crop_mode,
                 pad_inches=0.1
             )
             print_manager.status(f'Plot saved to: {os.path.abspath(filename)}')
     
     # Show the plot
     plt.show()
+    # Reset font size to matplotlib default after plotting
+    mpl_plt.rcParams['font.size'] = 10
     
     # Restore original values if using preset
     if options.save_preset:

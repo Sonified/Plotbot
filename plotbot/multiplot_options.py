@@ -129,7 +129,9 @@ class AxisOptions:
         self.__dict__['r'] = value
 
 class MultiplotOptions:
-    """Configuration options for the multiplot function, including per-axis customization."""
+    """Configuration options for the multiplot function, including per-axis customization.
+    y_label_alignment: 'left', 'center', or 'right' (default: 'right') controls y-axis label alignment.
+    """
     
     # Add preset configurations
     PRESET_CONFIGS = {
@@ -149,8 +151,8 @@ class MultiplotOptions:
             'title_y_position': 0.975,
             'title_pad': 10.0,
             'axis_label_size': 20,
-            'x_tick_label_size': 16,
-            'y_tick_label_size': 16,
+            'x_tick_label_size': 17,
+            'y_tick_label_size': 17,
             'magnetic_field_line_width': 0.5,
             'line_widths': {
                 'vertical': 2.0,
@@ -181,8 +183,8 @@ class MultiplotOptions:
             'axis_label_size': 30,
             'x_axis_label_size': 36,
             'y_axis_label_size': 30,
-            'x_tick_label_size': 25,
-            'y_tick_label_size': 25,
+            'x_tick_label_size': 26,
+            'y_tick_label_size': 26,
             'magnetic_field_line_width': 0.5,
             'line_widths': {
                 'vertical': 2.0,
@@ -212,8 +214,8 @@ class MultiplotOptions:
             'title_y_position': 0.975,
             'title_pad': 10.0,
             'axis_label_size': 20,
-            'x_tick_label_size': 16,
-            'y_tick_label_size': 16,
+            'x_tick_label_size': 17,
+            'y_tick_label_size': 17,
             'magnetic_field_line_width': 0.5,
             'line_widths': {
                 'vertical': 2.0,
@@ -235,7 +237,7 @@ class MultiplotOptions:
         # No need to initialize axes here since it's a class attribute
         self.reset()
         
-        self.tick_length = 6.0
+        self.tick_length = 10.0
         self.tick_width = 1.0
 
         # --- POSITIONAL X-AXIS PROPERTIES ---
@@ -256,6 +258,8 @@ class MultiplotOptions:
         self.positional_tick_density = 1  # Default is normal density
         # --------------------------------
 
+        self.size_of_tiny_date_in_the_corner = 13  # Default font size for tiny date in the corner
+
     def reset(self):
         """Reset all options to their default values."""
         # Clear existing axes
@@ -265,11 +269,12 @@ class MultiplotOptions:
         # General plotting options
         self.window = '00:12:00.000'
         self.position = 'around'
-        self.width = 22
-        self.height_per_panel = 3
-        self.hspace = 0.35  # Reduced from 0.5 for better spacing between plots
+        self.width = 15  # Changed from 22 to 15 for notebook default
+        self.height_per_panel = 1.8  # Changed from 2 to 1.8 for more compact multiplots (notebook default)
+        self.hspace = 0.2  # Reduced from 0.35 to 0.2 for tighter vertical spacing between panels
+        self.hspace_vertical_space_between_plots = 0.25  # Changed from 0.2 to 0.25 for notebook default
         self._user_set_hspace = False  # Track if user explicitly set hspace
-        self.title_fontsize = 14
+        self.title_font_size = 16
         self.use_single_title = True
         self.single_title_text = None
         
@@ -297,17 +302,18 @@ class MultiplotOptions:
         self.custom_x_axis_label = None
         self.y_label_uses_encounter = True
         self.y_label_includes_time = True
-        self.y_label_size = 13  # Increased for better visibility
-        self.x_label_size = 14  # Increased to make x-axis label more prominent
+        self.y_axis_label_font_size = 16
+        self.x_axis_label_font_size = 16
         self.y_label_pad = 12
         self.x_label_pad = 8
-        self.x_tick_label_size = 11  # Increased from 10 for better visibility 
-        self.y_tick_label_size = 11  # Increased from 10 for better visibility
+        self.x_tick_label_font_size = 14
+        self.y_tick_label_font_size = 14
         self.second_variable_on_right_axis = False
         
         # HAM-specific options
         self.hamify = False
         self.ham_var = None  # Will hold the actual plot_manager object
+        self.ham_opacity = 1.0  # New: Opacity for HAM data (default 1.0)
         
         # New color mode options
         self.color_mode = 'default'  # Options: 'default', 'rainbow', 'single'
@@ -318,20 +324,29 @@ class MultiplotOptions:
         self.save_preset = None
         self.save_dpi = None  # Will be set by preset if used
         self.output_dimensions = None # Tuple (width_px, height_px) or None
-        self.save_bbox_inches = 'tight'  # Options: 'tight', None
+        self.bbox_inches_save_crop_mode = 'tight'  # Options: 'tight', None
         
         # Layout margins - control space around plots
-        self.margin_top = 0.88  # Reduced from 0.92 - creates more space between title and top plot
-        self.margin_bottom = 0.15  # Increased from 0.12 - brings the bottom label closer to the plot
-        self.margin_left = 0.10  # Plot area starts at 10% of figure width
-        self.margin_right = 0.85  # Plot area extends to 85% of figure width
+        self.margin_top = 0.98  # Default: minimal top margin for tight layout
+        self.margin_bottom = 0.05  # Default: minimal bottom margin for tight layout
+        self.margin_left = 0.10  # Symmetric left margin for labels
+        self.margin_right = 0.90  # Symmetric right margin for labels/legends
         
-        self.title_pad = 18.0  # Decreased from 25.0 to bring title closer to the plot
-        self.title_y_position = 0.97  # Positioned at the top
+        self.title_pad = 21.0  # Increased from 18.0 to 21.0 for more space between titles and plots
+        self.title_y_position = 0.9  # Changed from 0.97 to 0.9 for notebook default
         self.x_label_pad = 8  # Reduced from 12 to bring labels closer to the plot
         self.magnetic_field_line_width = 1.0
-        self.tick_length = 6.0
+        self.tick_length = 10.0
         self.tick_width = 1.0
+
+        # User-facing options for controlling boldness of plot text
+        # House style: bold title for clarity, regular axis labels for tradition
+        self.bold_title = True   # If True, plot titles are bold (default: True)
+        self.bold_x_axis_label = False # If True, x-axis labels are bold (default: False)
+        self.bold_y_axis_label = True  # Changed from False to True for notebook default
+
+        # User-facing option: control whether to use matplotlib's constrained_layout
+        self.constrained_layout = True  # If True, use constrained_layout for multiplot spacing
 
         # Reset positional x-axis properties
         self.__dict__['_x_axis_r_sun'] = False
@@ -339,6 +354,11 @@ class MultiplotOptions:
         self.__dict__['_x_axis_carrington_lat'] = False
         self.__dict__['_x_axis_positional_range'] = None
         self.__dict__['_positional_tick_density'] = 1
+
+        # User-facing option: bypass all Plotbot presets and use matplotlib's default plot settings (constrained_layout, etc.)
+        self.use_default_plot_settings = False  # If True, disables all Plotbot layout/preset logic
+
+        self.y_label_alignment = 'center'  # 'left', 'center', or 'right' alignment for y-axis labels
 
     def _get_axis_options(self, axis_number: int) -> AxisOptions:
         """Helper method to get or create axis options"""
@@ -472,6 +492,7 @@ class MultiplotOptions:
         for key, value in self.__dict__.items():
             if key != 'axes':
                 print(f"{key}: {value}")
+        print(f"hspace_vertical_space_between_plots: {self.hspace_vertical_space_between_plots}")
         print("\nAxis-specific options (Instance):")
         for axis_num, axis_opts in self.axes.items():
             print(f"ax{axis_num}:")
@@ -503,17 +524,17 @@ class MultiplotOptions:
         self.height_per_panel = config['figsize'][1]  # Will be adjusted per panel in multiplot
         self.save_dpi = config['dpi']
         self.hspace = config['vertical_space']
-        self.title_fontsize = config['title_size']
+        self.title_font_size = config['title_size']
         self.title_y_position = config.get('title_y_position', self.title_y_position)
         self.title_pad = config.get('title_pad', self.title_pad)
         
         # Apply axis label sizes (prioritize specific, fallback to general)
         base_axis_size = config.get('axis_label_size', None) # Get the general one if it exists
-        self.x_label_size = config.get('x_axis_label_size', base_axis_size if base_axis_size is not None else self.x_label_size)
-        self.y_label_size = config.get('y_axis_label_size', base_axis_size if base_axis_size is not None else self.y_label_size)
+        self.x_axis_label_font_size = config.get('x_axis_label_size', base_axis_size if base_axis_size is not None else self.x_axis_label_font_size)
+        self.y_axis_label_font_size = config.get('y_axis_label_size', base_axis_size if base_axis_size is not None else self.y_axis_label_font_size)
         
-        self.x_tick_label_size = config['x_tick_label_size']
-        self.y_tick_label_size = config['y_tick_label_size']
+        self.x_tick_label_font_size = config['x_tick_label_size']
+        self.y_tick_label_font_size = config['y_tick_label_size']
         self.border_line_width = config['line_widths']['spine']
         self.vertical_line_width = config['line_widths']['vertical']
         self.magnetic_field_line_width = config.get('magnetic_field_line_width', self.magnetic_field_line_width)
@@ -709,6 +730,15 @@ class MultiplotOptions:
     def ham_var(self, value):
         """Set the HAM variable to display on right axis."""
         self.__dict__['ham_var'] = value
+
+    @property
+    def ham_opacity(self) -> float:
+        """Opacity for HAM data plotted on the right axis (0.0=transparent, 1.0=opaque)."""
+        return self.__dict__.get('ham_opacity', 1.0)
+
+    @ham_opacity.setter
+    def ham_opacity(self, value: float):
+        self.__dict__['ham_opacity'] = value
     # --- END HAM DATA PROPERTIES ---
 
     # Keep these for backward compatibility (but they're deprecated now)
@@ -794,6 +824,111 @@ class MultiplotOptions:
             self.__dict__['_user_set_hspace'] = True
             from .print_manager import print_manager
             print_manager.debug(f"User explicitly set hspace to {value}")
+
+    @property
+    def hspace_vertical_space_between_plots(self) -> float:
+        """
+        User-facing property for vertical space between plot panels (in figure-relative units).
+        This is an alias for hspace, but is the preferred way to set vertical spacing.
+        """
+        return self.hspace
+
+    @hspace_vertical_space_between_plots.setter
+    def hspace_vertical_space_between_plots(self, value: float):
+        self.hspace = value
+        # If both are set to different values, print a warning
+        if hasattr(self, 'hspace') and self.hspace != value:
+            from .print_manager import print_manager
+            print_manager.warning("hspace and hspace_vertical_space_between_plots are set to different values! Using hspace_vertical_space_between_plots.")
+        self.hspace = value
+
+    # Deprecated alias for backward compatibility
+    @property
+    def h_space_vertical_between_plots(self) -> float:
+        from .print_manager import print_manager
+        print_manager.warning("h_space_vertical_between_plots is deprecated. Use hspace_vertical_space_between_plots instead.")
+        return self.hspace_vertical_space_between_plots
+
+    @h_space_vertical_between_plots.setter
+    def h_space_vertical_between_plots(self, value: float):
+        from .print_manager import print_manager
+        print_manager.warning("h_space_vertical_between_plots is deprecated. Use hspace_vertical_space_between_plots instead.")
+        self.hspace_vertical_space_between_plots = value
+
+    @property
+    def y_label_alignment(self) -> str:
+        return self.__dict__.get('y_label_alignment', 'right')
+
+    @y_label_alignment.setter
+    def y_label_alignment(self, value: str):
+        value = value.lower()
+        if value not in ['left', 'center', 'right']:
+            raise ValueError("y_label_alignment must be 'left', 'center', or 'right'")
+        self.__dict__['y_label_alignment'] = value
+
+    @property
+    def y_axis_label_font_size(self) -> int:
+        return self.__dict__.get('y_axis_label_font_size', 16)
+
+    @y_axis_label_font_size.setter
+    def y_axis_label_font_size(self, value: int):
+        self.__dict__['y_axis_label_font_size'] = value
+
+    @property
+    def x_axis_label_font_size(self) -> int:
+        return self.__dict__.get('x_axis_label_font_size', 16)
+
+    @x_axis_label_font_size.setter
+    def x_axis_label_font_size(self, value: int):
+        self.__dict__['x_axis_label_font_size'] = value
+
+    @property
+    def x_tick_label_font_size(self) -> int:
+        return self.__dict__.get('x_tick_label_font_size', 14)
+
+    @x_tick_label_font_size.setter
+    def x_tick_label_font_size(self, value: int):
+        self.__dict__['x_tick_label_font_size'] = value
+
+    @property
+    def y_tick_label_font_size(self) -> int:
+        return self.__dict__.get('y_tick_label_font_size', 14)
+
+    @y_tick_label_font_size.setter
+    def y_tick_label_font_size(self, value: int):
+        self.__dict__['y_tick_label_font_size'] = value
+
+    @property
+    def bbox_inches_save_crop_mode(self) -> str:
+        """
+        Controls how much whitespace is cropped when saving the figure. 'tight' removes extra whitespace, None preserves it.
+        """
+        return self.__dict__.get('bbox_inches_save_crop_mode', 'tight')
+
+    @bbox_inches_save_crop_mode.setter
+    def bbox_inches_save_crop_mode(self, value: str):
+        self.__dict__['bbox_inches_save_crop_mode'] = value
+
+    # Deprecated alias for backward compatibility
+    @property
+    def save_bbox_inches(self) -> str:
+        from .print_manager import print_manager
+        print_manager.warning("save_bbox_inches is deprecated. Use bbox_inches_save_crop_mode instead.")
+        return self.bbox_inches_save_crop_mode
+
+    @save_bbox_inches.setter
+    def save_bbox_inches(self, value: str):
+        from .print_manager import print_manager
+        print_manager.warning("save_bbox_inches is deprecated. Use bbox_inches_save_crop_mode instead.")
+        self.bbox_inches_save_crop_mode = value
+
+    @property
+    def title_font_size(self) -> int:
+        return self.__dict__.get('title_font_size', 16)
+
+    @title_font_size.setter
+    def title_font_size(self, value: int):
+        self.__dict__['title_font_size'] = value
 
 # Create a custom plt object that extends matplotlib.pyplot
 class EnhancedPlotting:
