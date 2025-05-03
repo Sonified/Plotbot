@@ -20,25 +20,22 @@
 - Ran the full stardust test suite (`tests/test_stardust.py`).
 - All tests passed, confirming that multiplot, HAM integration, and all new styling features are stable.
 
----
-
-## Version & Commit Info
-- Version: 2025_05_03_v1.00
-- Commit Message: "feat: Integrate HAM right axis in multiplot, rainbow legend color, beautify presets, expand examples (2025_05_03_v1.00)"
-
----
-
 ## Next Steps
 - Push these changes to the repository.
 - Copy the git hash to clipboard after push.
 - Review README for any major learnings or changes to document.
 
-+ Version: 2025_05_03_v1.9
-+ Commit Message: "feat: v1.9: Merge dev into main, establish new mainline, update versioning and captain's log (2025_05_03_v1.9)"
+---
+
+## Version Control Update (2025_05_03_v1.9)
+- **Pushed to main branch.**
+- **Commit Message:** feat: v1.9: Integrate HAM into multiplot, beautify default values, merge dev into main (2025_05_03_v1.9)
+- **Version Tag:** 2025_05_03_v1.9
+- **Git hash copied to clipboard.**
+- This is now the latest version and the new mainline.
 
 ---
 
-## Next Steps
-- Push these changes to the repository.
-- Copy the git hash to clipboard after push.
-- Review README for any major learnings or changes to document. 
+## Captain's Log Closed
+- Log closed as of 2025-05-03.
+- v1.9 (HAM multiplot integration, beautified defaults) is now the mainline. 
