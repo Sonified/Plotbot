@@ -35,16 +35,6 @@ plotbot(trange,
 ```
 This simple call automatically downloads the required data for the specified time range and generates a two-panel plot.
 
-**Data Source Configuration (`config.data_server`):**
-
-By default, Plotbot now prioritizes downloading data from NASA's public CDAWeb/SPDF archive using the `pyspedas` library. This behavior can be controlled via the `config.data_server` setting found in `plotbot/config.py`. The available modes are:
-
-*   **`'dynamic'` (Default):** Plotbot first attempts to download data from the SPDF server using `pyspedas`. If the data is not found on SPDF (e.g., it's too recent or not available), it will automatically fall back to attempting a download from the original Berkeley server. **Note:** Data unavailable on SPDF is often not yet public on the Berkeley server either and may require password authentication.
-*   **`'spdf'`:** Plotbot will *only* attempt to download data from the SPDF server via `pyspedas`. If the data isn't found there, it will not attempt to download from Berkeley.
-*   **`'berkeley'`:** Plotbot will *only* use the original method to download data directly from the Berkeley server, bypassing `pyspedas` and SPDF entirely.
-
-This setting allows users to choose their preferred data source or rely on the dynamic fallback for maximum data availability.
-
 ## Installation (macOS Instructions Only, other OS instructions coming soon)
 
 ### Prerequisites
@@ -169,6 +159,16 @@ These versions are defined in the `environment.yml` file located in the project 
 *   pytest: 7.4.4
 *   termcolor: 2.4.0
 
+**Data Source Configuration (`config.data_server`):**
+
+By default, Plotbot now prioritizes downloading data from NASA's public CDAWeb/SPDF archive using the `pyspedas` library. This behavior can be controlled via the `config.data_server` setting found in `plotbot/config.py`. The available modes are:
+
+*   **`'dynamic'` (Default):** Plotbot first attempts to download data from the SPDF server using `pyspedas`. If the data is not found on SPDF (e.g., it's too recent or not available), it will automatically fall back to attempting a download from the original Berkeley server. **Note:** Data unavailable on SPDF is often not yet public on the Berkeley server either and may require password authentication.
+*   **`'spdf'`:** Plotbot will *only* attempt to download data from the SPDF server via `pyspedas`. If the data isn't found there, it will not attempt to download from Berkeley.
+*   **`'berkeley'`:** Plotbot will *only* use the original method to download data directly from the Berkeley server, bypassing `pyspedas` and SPDF entirely.
+
+This setting allows users to choose their preferred data source or rely on the dynamic fallback for maximum data availability.
+
 ### Enhanced IDE Support with Stub Files (`.pyi`)
 
 To significantly improve the development experience within IDEs like VS Code, Plotbot now includes `.pyi` stub files for many core modules (e.g., `plot_manager.pyi` corresponds to `plot_manager.py`).
@@ -180,106 +180,6 @@ These stub files define the type signatures for functions, methods, classes, and
 *   **Clarify Expectations:** Make it clearer what kinds of data functions expect and return, directly within the development environment.
 
 While these stubs *can* also be used by external type-checking tools, their main purpose within Plotbot is to make interacting with the code faster, easier, and less error-prone directly within your editor by boosting its built-in intelligence features.
-
-### Print Manager
-
-Plotbot includes a comprehensive print manager system that controls all console output. This system allows you to filter the types of messages displayed, making it easier to debug or focus on specific aspects of the application.
-
-### Basic Usage
-
-The print manager is accessible through the `print_manager` singleton:
-
-```python
-from plotbot.print_manager import print_manager
-```
-
-### Debug Modes
-
-There are several specialized debug modes you can enable:
-
-```python
-# Enable full debugging output (all message types)
-print_manager.enable_debug()
-
-# Enable only test output (useful for running tests)
-print_manager.enable_test()
-
-# Enable data cubby debugging (for tracking data storage)
-print_manager.enable_datacubby()
-```
-
-### Fine-Grained Control
-
-You can also control specific output types individually:
-
-```python
-# Control debug messages
-print_manager.show_debug = True  # Show detailed technical diagnostic information
-
-# Control variable and operation messages
-print_manager.show_custom_debug = True  # Show custom variable operations debugging
-print_manager.show_variable_testing = True  # Show variable testing specific debugging
-print_manager.show_variable_basic = True  # Show basic user-facing variable info
-
-# Control time tracking messages
-print_manager.show_time_tracking = True  # Show time range tracking information
-
-# Control test output messages
-print_manager.show_test = True  # Show test-specific output
-```
-
-### For Legacy Code
-
-For backward compatibility, the following aliases are also supported:
-
-```python
-# Legacy alias (same as show_variable_basic)
-print_manager.show_status = True  
-
-# Legacy alias (same as show_custom_debug)
-print_manager.show_derived = True
-```
-
-### Sending Messages
-
-To output messages through the print manager, use the appropriate method:
-
-```python
-# Regular debug messages
-print_manager.debug("This is a detailed debug message")
-
-# Critical debug messages (shown even when debug is disabled)
-print_manager.debug("DBG-CRITICAL: This critical message is always shown")
-
-# Test-specific messages
-print_manager.test("This is a test-related message")
-
-# Error messages
-print_manager.error("This is an error message")
-
-# Time tracking
-print_manager.time_tracking("Time-related diagnostic information")
-
-# Status messages
-print_manager.status("User-friendly status update")
-```
-
-### Example: Testing with Isolated Output
-
-When running tests, you often want to see only the test-related output:
-
-```python
-# In your test script
-from plotbot.print_manager import print_manager
-
-# Turn on only test output
-print_manager.enable_test()
-
-# Now run your tests
-# Only messages sent via print_manager.test() will be displayed
-```
-
-This is particularly useful when debugging test failures, as it reduces noise from other parts of the system.
 
 ## Data Structure
 
@@ -482,6 +382,106 @@ Plotbot's `plotbot.data_classes.custom_variables.py` module manages these operat
 Plotbot includes capabilities for analyzing proton velocity distribution functions (VDFs) measured by SPAN-i. The `plotbot.data_classes.psp_proton_fits_classes.py` module defines classes to handle fitting parameters (like core/beam densities, temperatures, drifts) derived from these VDFs. The calculations themselves are performed by functions within `plotbot.calculations.calculate_proton_fits.py`.
 
 While the fitting process itself is complex and currently requires manual setup or integration within specific analysis workflows, the resulting fit parameters can potentially be loaded and plotted using Plotbot's standard mechanisms once calculated. This feature is under active development. See `tests/test_fits_integration.py` for related tests.
+
+### Print Manager
+
+Plotbot includes a comprehensive print manager system that controls all console output. This system allows you to filter the types of messages displayed, making it easier to debug or focus on specific aspects of the application.
+
+### Basic Usage
+
+The print manager is accessible through the `print_manager` singleton:
+
+```python
+from plotbot.print_manager import print_manager
+```
+
+### Debug Modes
+
+There are several specialized debug modes you can enable:
+
+```python
+# Enable full debugging output (all message types)
+print_manager.enable_debug()
+
+# Enable only test output (useful for running tests)
+print_manager.enable_test()
+
+# Enable data cubby debugging (for tracking data storage)
+print_manager.enable_datacubby()
+```
+
+### Fine-Grained Control
+
+You can also control specific output types individually:
+
+```python
+# Control debug messages
+print_manager.show_debug = True  # Show detailed technical diagnostic information
+
+# Control variable and operation messages
+print_manager.show_custom_debug = True  # Show custom variable operations debugging
+print_manager.show_variable_testing = True  # Show variable testing specific debugging
+print_manager.show_variable_basic = True  # Show basic user-facing variable info
+
+# Control time tracking messages
+print_manager.show_time_tracking = True  # Show time range tracking information
+
+# Control test output messages
+print_manager.show_test = True  # Show test-specific output
+```
+
+### For Legacy Code
+
+For backward compatibility, the following aliases are also supported:
+
+```python
+# Legacy alias (same as show_variable_basic)
+print_manager.show_status = True  
+
+# Legacy alias (same as show_custom_debug)
+print_manager.show_derived = True
+```
+
+### Sending Messages
+
+To output messages through the print manager, use the appropriate method:
+
+```python
+# Regular debug messages
+print_manager.debug("This is a detailed debug message")
+
+# Critical debug messages (shown even when debug is disabled)
+print_manager.debug("DBG-CRITICAL: This critical message is always shown")
+
+# Test-specific messages
+print_manager.test("This is a test-related message")
+
+# Error messages
+print_manager.error("This is an error message")
+
+# Time tracking
+print_manager.time_tracking("Time-related diagnostic information")
+
+# Status messages
+print_manager.status("User-friendly status update")
+```
+
+### Example: Testing with Isolated Output
+
+When running tests, you often want to see only the test-related output:
+
+```python
+# In your test script
+from plotbot.print_manager import print_manager
+
+# Turn on only test output
+print_manager.enable_test()
+
+# Now run your tests
+# Only messages sent via print_manager.test() will be displayed
+```
+
+This is particularly useful when debugging test failures, as it reduces noise from other parts of the system.
 
 ## Code Structure Overview
 

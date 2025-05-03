@@ -305,6 +305,10 @@ class MultiplotOptions:
         self.y_tick_label_size = 11  # Increased from 10 for better visibility
         self.second_variable_on_right_axis = False
         
+        # HAM-specific options
+        self.hamify = False
+        self.ham_var = None  # Will hold the actual plot_manager object
+        
         # New color mode options
         self.color_mode = 'default'  # Options: 'default', 'rainbow', 'single'
         self.single_color = None     # Used when color_mode = 'single'
@@ -684,6 +688,28 @@ class MultiplotOptions:
             return
         self.__dict__['_positional_tick_density'] = value
     # --- END POSITIONAL X-AXIS PROPERTIES ---
+
+    # --- HAM DATA PROPERTIES ---
+    @property
+    def hamify(self) -> bool:
+        """Whether to display HAM data on right axis when available."""
+        return self.__dict__.get('hamify', False)
+        
+    @hamify.setter
+    def hamify(self, value: bool):
+        """Set whether to display HAM data on right axis."""
+        self.__dict__['hamify'] = value
+        
+    @property
+    def ham_var(self):
+        """HAM variable to display on right axis (actual plot_manager object)."""
+        return self.__dict__.get('ham_var', None)
+        
+    @ham_var.setter
+    def ham_var(self, value):
+        """Set the HAM variable to display on right axis."""
+        self.__dict__['ham_var'] = value
+    # --- END HAM DATA PROPERTIES ---
 
     # Keep these for backward compatibility (but they're deprecated now)
     @property

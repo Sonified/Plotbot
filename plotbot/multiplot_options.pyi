@@ -77,6 +77,9 @@ class MultiplotOptions:
     x_tick_label_size: Union[int, float]
     y_tick_label_size: Union[int, float]
     second_variable_on_right_axis: bool
+    # HAM-specific options
+    hamify: bool
+    ham_var: Any  # Will be a plot_manager object
     color_mode: str
     single_color: Optional[str]
     save_output: bool
