@@ -34,6 +34,27 @@ Today we focused on improving the organization of our multiplot tests and fixing
 
 This refactoring improves both code organization and visual appearance of plots, particularly when using individual titles for each panel.
 
+---
+
+## Major Learning: Multiplot, HAM Data, and Per-Panel Variable Updates
+
+While testing multiplot's new HAM data integration, we discovered a subtle but important architectural detail:
+
+- **Multiplot updates variables in the plot_list for each panel's time range by calling get_data and refreshing the reference from data_cubby.**
+- **However, plt.options.ham_var is a global option, not part of the plot_list.**
+- As a result, multiplot does NOT automatically update ham_var for each panel's time range. It only uses whatever is in ham_var at the time multiplot is called.
+- This means: if you load HAM data for multiple time ranges before calling multiplot, only the most recently loaded data will be available, and only the last panel will show HAM data.
+
+### Implications
+- This is different from how main variables are handled, and can be surprising for users.
+- For robust multiplot+HAM support, multiplot should be refactored to call get_data for ham_var for each panel's time range, just like it does for the main variable.
+- For now, tests should be written with this limitation in mind, and users should be aware that only the last panel will show HAM data unless multiplot is refactored.
+
+**Next Steps:**
+- Consider refactoring multiplot to handle ham_var per panel, or document this limitation for users and test writers.
+
 ## Version Information
-- Version: 2025_05_02_v1.18
-- Commit Message: "feat: Improve multiplot spacing and organize tests (2025-05-02_v1.18)" 
+- Version: 2025_05_02_v1.181
+- Commit Message: "feat: Document multiplot HAM integration learnings and clarify per-panel data handling (2025_05_02_v1.181)"
+
+*Note: This is a partial increment (.001) as this update documents learnings and limitations, not a full feature or bugfix.* 

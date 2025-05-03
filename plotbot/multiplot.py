@@ -422,6 +422,8 @@ def multiplot(plot_list, **kwargs):
     #==========================================================================
     for i, (center_time, var) in enumerate(plot_list):
         print_manager.custom_debug(f'Adding data to plot panel {i+1}/{n_panels}... \n')
+        # Add diagnostic for HAM feature status
+        print_manager.status(f"Panel {i+1} - HAM feature status: hamify={options.hamify}, ham_var={options.ham_var is not None}")
         center_dt = pd.Timestamp(center_time)
         
         # Get encounter number automatically
@@ -802,6 +804,78 @@ def multiplot(plot_list, **kwargs):
                     
                     if panel_color:
                         apply_panel_color(axs[i], panel_color, options)
+        
+        # Add HAM data plotting on right axis (if enabled)
+        print_manager.status(f"Panel {i+1}: Checking HAM plotting conditions: hamify={options.hamify}, ham_var={options.ham_var is not None}, second_variable_on_right_axis={options.second_variable_on_right_axis}")
+        if options.hamify and options.ham_var is not None and not options.second_variable_on_right_axis:
+            # Use ham_var directly - it's already the plot_manager object
+            ham_var = options.ham_var
+            
+            print_manager.status(f"Panel {i+1}: HAM feature enabled, plotting {ham_var.subclass_name if hasattr(ham_var, 'subclass_name') else 'HAM variable'} on right axis")
+            
+            if ham_var is not None and hasattr(ham_var, 'datetime_array') and ham_var.datetime_array is not None:
+                # Create a twin axis for the HAM data
+                ax2 = axs[i].twinx()
+                
+                # Get color - use right axis color if specified, otherwise use ham_var's color
+                if hasattr(axis_options, 'r') and axis_options.r.color is not None:
+                    plot_color = axis_options.r.color
+                else:
+                    plot_color = ham_var.color
+                    
+                # Get time-clipped indices
+                print_manager.status(f"Panel {i+1}: Attempting to time_clip HAM data with range: {trange[0]} to {trange[1]}")
+                print_manager.status(f"Panel {i+1}: HAM data range is {ham_var.datetime_array[0]} to {ham_var.datetime_array[-1]}")
+                
+                ham_indices = time_clip(ham_var.datetime_array, trange[0], trange[1])
+                print_manager.status(f"Panel {i+1}: Found {len(ham_indices)} HAM data points in time range")
+                
+                if len(ham_indices) > 0:
+                    # Get x-axis data and handle positional mapping
+                    x_data = ham_var.datetime_array[ham_indices]
+                    if using_positional_axis and positional_mapper is not None:
+                        lon_vals = positional_mapper.map_to_position(x_data, data_type)
+                        if lon_vals is not None:
+                            x_data = lon_vals
+                            print_manager.status(f"Panel {i+1}: Successfully mapped HAM data to {data_type} coordinates")
+                    
+                    # Plot the HAM data
+                    print_manager.status(f"Panel {i+1}: Plotting HAM data on right axis")
+                    ax2.plot(x_data, 
+                            ham_var.data[ham_indices],
+                            linewidth=ham_var.line_width,
+                            linestyle=ham_var.line_style,
+                            label=ham_var.legend_label,
+                            color=plot_color)
+                    print_manager.status(f"Panel {i+1}: Successfully plotted HAM data on right axis")
+                    
+                    # Apply y-limits if specified
+                    if hasattr(axis_options, 'r') and axis_options.r.y_limit is not None:
+                        ax2.set_ylim(axis_options.r.y_limit)
+                        print_manager.status(f"Panel {i+1}: Applied right axis y-limits from axis_options: {axis_options.r.y_limit}")
+                    elif hasattr(ham_var, 'y_limit') and ham_var.y_limit:
+                        ax2.set_ylim(ham_var.y_limit)
+                        print_manager.status(f"Panel {i+1}: Applied right axis y-limits from ham_var: {ham_var.y_limit}")
+                    
+                    # Include HAM in legend
+                    lines_left, labels_left = axs[i].get_legend_handles_labels()
+                    lines_right, labels_right = ax2.get_legend_handles_labels()
+                    axs[i].legend(lines_left + lines_right, 
+                                labels_left + labels_right,
+                                bbox_to_anchor=(1.025, 1),
+                                loc='upper left')
+                else:
+                    print_manager.status(f"Panel {i+1}: No HAM data points found in time range {trange[0]} to {trange[1]}")
+            else:
+                print_manager.status(f"Panel {i+1}: HAM variable {getattr(ham_var, 'subclass_name', 'unknown')} has no datetime_array or is None")
+                if ham_var is None:
+                    print_manager.status(f"Panel {i+1}: ham_var is None")
+                elif not hasattr(ham_var, 'datetime_array'):
+                    print_manager.status(f"Panel {i+1}: ham_var has no datetime_array attribute")
+                elif ham_var.datetime_array is None:
+                    print_manager.status(f"Panel {i+1}: ham_var.datetime_array is None")
+        else:
+            print_manager.status(f"Panel {i+1}: Not plotting HAM data - conditions not met: hamify={options.hamify}, ham_var={options.ham_var is not None}, second_variable_on_right_axis={options.second_variable_on_right_axis}")
         
         if axis_options.y_limit:
             # Determine the y_scale
