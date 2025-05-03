@@ -1215,3 +1215,47 @@ def test_multiplot_with_fits_variables():
 
     except Exception as e:
         pytest.fail(f"Multiplot call with FITS variables failed: {e}") 
+
+def test_multiplot_bold_vs_not_bold(tmp_path):
+    """Test multiplot with bold and non-bold title/x/y labels, 3 panels, for visual comparison."""
+    from plotbot import plt, mag_rtn_4sa, proton
+    from plotbot.multiplot import multiplot
+    import os
+    import matplotlib.pyplot as plt_mod
+
+    # Use a known time for data availability
+    center_time = '2024-03-30 12:00:00.000'
+    plot_data = [
+        (center_time, mag_rtn_4sa.bmag),
+        (center_time, mag_rtn_4sa.br),
+        (center_time, proton.anisotropy)
+    ]
+    output_dir = tmp_path if tmp_path else os.getcwd()
+
+    # --- Bold version ---
+    plt.options.reset()
+    plt.options.width = 10
+    plt.options.height_per_panel = 2
+    plt.options.use_single_title = True
+    plt.options.single_title_text = "Bold Labels (title/x/y)"
+    plt.options.bold_title = True
+    plt.options.bold_x_axis = True
+    plt.options.bold_y_axis = True
+    fig_bold, axs_bold = multiplot(plot_data)
+    fig_bold.savefig(os.path.join(output_dir, "multiplot_bold_labels.png"), dpi=120)
+    plt_mod.close(fig_bold)
+
+    # --- Not bold version ---
+    plt.options.reset()
+    plt.options.width = 10
+    plt.options.height_per_panel = 2
+    plt.options.use_single_title = True
+    plt.options.single_title_text = "Not Bold Labels (title/x/y)"
+    plt.options.bold_title = False
+    plt.options.bold_x_axis = False
+    plt.options.bold_y_axis = False
+    fig_not_bold, axs_not_bold = multiplot(plot_data)
+    fig_not_bold.savefig(os.path.join(output_dir, "multiplot_not_bold_labels.png"), dpi=120)
+    plt_mod.close(fig_not_bold)
+
+    print(f"Saved multiplot_bold_labels.png and multiplot_not_bold_labels.png to {output_dir}") 

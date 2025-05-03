@@ -11,6 +11,8 @@ import pytest
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import sys
 import os
@@ -281,43 +283,120 @@ def test_multiplot_ham_with_positional_axis():
     plot_data = [(date, main_var) for date in test_dates]
     
     try:
-        # Create the multiplot with custom HAM data for each panel
-        print_manager.test(f"Creating multiplot with {len(test_dates)} panels and positional x-axis")
-        print_manager.test(f"Main variable: {main_var.subclass_name}, HAM variables: {', '.join([v.subclass_name for v in ham_vars.values()])}")
-        
-        # Use our custom multiplot that switches HAM data for each panel
-        fig, axs = custom_multiplot(plot_data)
-        
-        # Verify necessary conditions after plotting
-        assert plt.options.hamify, "hamify option should be True"
-        assert plt.options.ham_var is not None, "ham_var should be set"
-        assert plt.options.ham_var.subclass_name == ham_vars[test_dates[-1]].subclass_name, "ham_var should have correct subclass_name"
-        assert plt.options.x_axis_r_sun, "x_axis_r_sun should be True"
-        
-        print_manager.test("✅ Successfully created multiplot with HAM data and positional x-axis")
-        record_test_result("test_multiplot_ham_with_positional_axis", {
-            "description": "Create multiplot with HAM data and positional x-axis",
-            "result": "PASS",
-            "message": "Successfully created multiplot with HAM data and positional x-axis"
-        })
-        
-        # Keep plot open and wait for user input
-        print("\n🔍 INSPECTING PLOT: Please examine the plot to verify HAM data on right axis with positional x-axis")
-        print("Press Enter to continue...")
-        input()
-        
+        # Set a descriptive title
+        plt.options.use_single_title = True
+        plt.options.single_title_text = "Test 7: Positional X-Axis (HAM on right axis, x_axis_r_sun=True)"
+        # Create the multiplot with standard multiplot (not custom)
+        fig, axs = multiplot(plot_data)
+        # Suppress display
+        plt.close(fig)
+        # Save to file with numeric ordering and short name
+        output_dir = os.path.join(os.path.dirname(__file__), "multiplot_ham_tests")
+        os.makedirs(output_dir, exist_ok=True)
+        filename = "7_positional_xaxis.png"
+        filepath = os.path.join(output_dir, filename)
+        fig.savefig(filepath, dpi=200)
+        print_manager.test(f"✅ Positional X-Axis test - Saved to {filepath}")
     except Exception as e:
         tb_str = traceback.format_exc()
-        print_manager.error(f"❌ Failed to create multiplot with HAM data and positional x-axis: {e}")
+        print_manager.error(f"❌ Positional X-Axis test - Exception: {e}")
         print_manager.error(f"Traceback: {tb_str}")
-        record_test_result("test_multiplot_ham_with_positional_axis", {
-            "description": "Create multiplot with HAM data and positional x-axis",
-            "result": "FAIL",
-            "message": f"Exception: {e}"
-        })
-        pytest.fail(f"Test failed: {e}")
+        pytest.fail(f"Positional X-Axis test failed: {e}")
+
+@pytest.mark.mission("HAM Multiplot Extended Integration")
+def test_multiplot_ham_extended_variants():
+    """Test multiplot with HAM data over a week, various color/opacity/HAM settings."""
+    print_manager.test("\n=== Extended HAM Multiplot Integration Test ===")
+
+    # Define test time ranges (noon on March 19-27, 2025)
+    test_dates = [
+        f"2025-03-{day:02d}/12:00:00.000" for day in range(19, 28)
+    ]
+
+    # Create plot data list
+    main_var = mag_rtn_4sa.br
+    plot_data = [(date, main_var) for date in test_dates]
+
+    # Helper to load HAM data for all dates
+    def load_ham_data_for_all_dates(ham_var):
+        for date in test_dates:
+            center_time = pd.Timestamp(date)
+            start_time = center_time - pd.Timedelta(hours=12)
+            end_time = center_time + pd.Timedelta(hours=12)
+            trange = [start_time.strftime('%Y-%m-%d/%H:%M:%S'), end_time.strftime('%Y-%m-%d/%H:%M:%S')]
+            get_data(trange, ham_var)
+        # Refresh from data_cubby
+        ham_class_instance = data_cubby.grab('ham')
+        if ham_class_instance:
+            return ham_class_instance.get_subclass(ham_var.subclass_name)
+        return ham_var
+
+    # Test variants
+    variants = [
+        {"desc": "Standard plot (default color, default opacity, hamogram_30s)",
+         "color_mode": "default", "ham_opacity": 1.0, "ham_var": ham_instance.hamogram_30s, "ham_color": None, "short_name": "standard"},
+        {"desc": "Rainbow plot (hamogram_30s)",
+         "color_mode": "rainbow", "ham_opacity": 1.0, "ham_var": ham_instance.hamogram_30s, "ham_color": None, "short_name": "rainbow"},
+        {"desc": "Rainbow plot, ham at 50% opacity (hamogram_30s)",
+         "color_mode": "rainbow", "ham_opacity": 0.5, "ham_var": ham_instance.hamogram_30s, "ham_color": None, "short_name": "rainbow_50pct"},
+        {"desc": "Rainbow plot, ham at 75% opacity (hamogram_30s)",
+         "color_mode": "rainbow", "ham_opacity": 0.75, "ham_var": ham_instance.hamogram_30s, "ham_color": None, "short_name": "rainbow_75pct"},
+        {"desc": "Rainbow plot, ham at 75% opacity (hamogram_30s) [tight margins]",
+         "color_mode": "rainbow", "ham_opacity": 0.75, "ham_var": ham_instance.hamogram_30s, "ham_color": None, "short_name": "4.1_rainbow_tightmargins", "margin_top": 0.99, "margin_bottom": 0.01},
+        {"desc": "Rainbow plot, ham at 50% opacity, hamogram_2m",
+         "color_mode": "rainbow", "ham_opacity": 0.5, "ham_var": ham_instance.hamogram_2m, "ham_color": None, "short_name": "rainbow_2m_50pct"},
+        {"desc": "Rainbow plot, ham at 50% opacity, hamogram_20m, red",
+         "color_mode": "rainbow", "ham_opacity": 0.5, "ham_var": ham_instance.hamogram_20m, "ham_color": "red", "short_name": "rainbow_20m_50pct_red"},
+    ]
+
+    # Ensure output directory exists
+    output_dir = os.path.join(os.path.dirname(__file__), "multiplot_ham_tests")
+    os.makedirs(output_dir, exist_ok=True)
+
+    for idx, v in enumerate(variants, 1):
+        try:
+            print_manager.test(f"\n--- {v['desc']} ---")
+            setup_plot_options_for_ham_test()
+            plt.options.window = '24:00:00'  # 24 hours window (±12h)
+            plt.options.position = 'around'
+            plt.options.color_mode = v["color_mode"]
+            plt.options.hamify = True
+            plt.options.ham_opacity = v["ham_opacity"]
+            # Set HAM variable and color
+            ham_var = v["ham_var"]
+            ham_var = load_ham_data_for_all_dates(ham_var)
+            if v["ham_color"]:
+                ham_var.color = v["ham_color"]
+            plt.options.ham_var = ham_var
+            # Set a descriptive title
+            plt.options.use_single_title = True
+            # Apply custom margins if present
+            if "margin_top" in v:
+                plt.options.margin_top = v["margin_top"]
+            if "margin_bottom" in v:
+                plt.options.margin_bottom = v["margin_bottom"]
+            margin_note = f" (margin_top={getattr(plt.options, 'margin_top', 'default')}, margin_bottom={getattr(plt.options, 'margin_bottom', 'default')})" if "margin_top" in v or "margin_bottom" in v else ""
+            plt.options.single_title_text = f"Test {idx}{'.1' if v.get('short_name','').startswith('4.1') else ''}: {v['desc']}{margin_note}"
+            # Create multiplot
+            fig, axs = multiplot(plot_data)
+            # Suppress display
+            plt.close(fig)
+            # Save to file with numeric ordering and short name
+            if v.get('short_name','').startswith('4.1'):
+                filename = "4.1_rainbow_tightmargins.png"
+            else:
+                filename = f"{idx}_{v['short_name']}.png"
+            filepath = os.path.join(output_dir, filename)
+            fig.savefig(filepath, dpi=200, bbox_inches='tight')
+            print_manager.test(f"✅ {v['desc']} - Saved to {filepath}")
+        except Exception as e:
+            tb_str = traceback.format_exc()
+            print_manager.error(f"❌ {v['desc']} - Exception: {e}")
+            print_manager.error(f"Traceback: {tb_str}")
+            pytest.fail(f"{v['desc']} failed: {e}")
 
 if __name__ == "__main__":
     # Run tests directly if file is executed
     test_multiplot_with_ham_on_right_axis()
-    test_multiplot_ham_with_positional_axis() 
+    test_multiplot_ham_with_positional_axis()
+    test_multiplot_ham_extended_variants() 

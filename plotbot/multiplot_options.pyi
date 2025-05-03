@@ -49,7 +49,8 @@ class MultiplotOptions:
     width: Union[int, float] # Can be overridden by presets
     height_per_panel: Union[int, float] # Can be overridden by presets
     hspace: float
-    title_fontsize: int
+    hspace_vertical_space_between_plots: float
+    title_font_size: int
     use_single_title: bool
     single_title_text: Optional[str]
     border_line_width: float
@@ -70,12 +71,12 @@ class MultiplotOptions:
     custom_x_axis_label: Optional[str]
     y_label_uses_encounter: bool
     y_label_includes_time: bool
-    y_label_size: Union[int, float]
-    x_label_size: Union[int, float]
+    y_axis_label_font_size: int
+    x_axis_label_font_size: int
     y_label_pad: Union[int, float]
     x_label_pad: Union[int, float]
-    x_tick_label_size: Union[int, float]
-    y_tick_label_size: Union[int, float]
+    x_tick_label_font_size: int
+    y_tick_label_font_size: int
     second_variable_on_right_axis: bool
     # HAM-specific options
     hamify: bool
@@ -86,7 +87,7 @@ class MultiplotOptions:
     save_preset: Optional[str]
     save_dpi: Optional[int]
     output_dimensions: Optional[Tuple[int, int]]
-    save_bbox_inches: Optional[str]
+    bbox_inches_save_crop_mode: str
     margin_top: float
     margin_bottom: float
     margin_left: float
@@ -106,6 +107,15 @@ class MultiplotOptions:
     # Internal attributes for presets (usually omitted from stubs)
     # _orig_width: Union[int, float]
     # _orig_height_per_panel: Union[int, float]
+    bold_title: bool
+    bold_x_axis_label: bool
+    bold_y_axis_label: bool
+    use_default_plot_settings: bool
+    constrained_layout: bool
+    y_label_left_align: bool
+    y_label_alignment: str
+    size_of_tiny_date_in_the_corner: int
+    ham_opacity: float
 
     # --- Methods ---
     def __init__(self) -> None: ...
@@ -125,6 +135,15 @@ class MultiplotOptions:
     def x_axis_positional_range(self) -> Optional[Tuple[float, float]]: ...
     @x_axis_positional_range.setter
     def x_axis_positional_range(self, value: Optional[Tuple[float, float]]) -> None: ...
+    @property
+    def hspace_vertical_space_between_plots(self) -> float: ...
+    @hspace_vertical_space_between_plots.setter
+    def hspace_vertical_space_between_plots(self, value: float) -> None: ...
+    # Deprecated alias for backward compatibility
+    @property
+    def h_space_vertical_between_plots(self) -> float: ...
+    @h_space_vertical_between_plots.setter
+    def h_space_vertical_between_plots(self, value: float) -> None: ...
 
     # --- Properties for Axes (Explicitly defined for all 30) ---
     @property
@@ -187,6 +206,51 @@ class MultiplotOptions:
     def ax29(self) -> AxisOptions: ...
     @property
     def ax30(self) -> AxisOptions: ...
+
+    @property
+    def y_label_left_align(self) -> bool: ...
+    @y_label_left_align.setter
+    def y_label_left_align(self, value: bool) -> None: ...
+
+    @property
+    def y_label_alignment(self) -> str: ...
+    @y_label_alignment.setter
+    def y_label_alignment(self, value: str) -> None: ...
+
+    @property
+    def y_axis_label_font_size(self) -> int: ...
+    @y_axis_label_font_size.setter
+    def y_axis_label_font_size(self, value: int) -> None: ...
+
+    @property
+    def x_axis_label_font_size(self) -> int: ...
+    @x_axis_label_font_size.setter
+    def x_axis_label_font_size(self, value: int) -> None: ...
+
+    @property
+    def y_tick_label_font_size(self) -> int: ...
+    @y_tick_label_font_size.setter
+    def y_tick_label_font_size(self, value: int) -> None: ...
+
+    @property
+    def x_tick_label_font_size(self) -> int: ...
+    @x_tick_label_font_size.setter
+    def x_tick_label_font_size(self, value: int) -> None: ...
+
+    @property
+    def title_font_size(self) -> int: ...
+    @title_font_size.setter
+    def title_font_size(self, value: int) -> None: ...
+
+    @property
+    def bbox_inches_save_crop_mode(self) -> str: ...
+    @bbox_inches_save_crop_mode.setter
+    def bbox_inches_save_crop_mode(self, value: str) -> None: ...
+    # Deprecated alias for backward compatibility
+    @property
+    def save_bbox_inches(self) -> str: ...
+    @save_bbox_inches.setter
+    def save_bbox_inches(self, value: str) -> None: ...
 
 # --- EnhancedPlotting Class ---
 class EnhancedPlotting:

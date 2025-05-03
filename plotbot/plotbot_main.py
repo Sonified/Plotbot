@@ -67,6 +67,8 @@ from .plotbot_helpers import time_clip, parse_axis_spec, resample, debug_plot_va
 def plotbot(trange, *args):
     """Plot multiple time series with shared x-axis and optional right y-axes."""
     from collections import defaultdict
+    import matplotlib.pyplot as mpl_plt
+    # mpl_plt.rcParams['font.size'] = 8
     
     print_manager.status("🤖 Plotbot starting...")
     
@@ -255,7 +257,6 @@ def plotbot(trange, *args):
         debug_plot_variable(var, request, print_manager)
 
     # Group variables by axis
-    from collections import defaultdict
     axis_groups = defaultdict(list)
     for var, axis_spec in plot_vars:
         axis_num, is_right = parse_axis_spec(axis_spec)
@@ -590,7 +591,7 @@ def plotbot(trange, *args):
             parsed_date = dateutil_parse(trange[0])
             plot_date = parsed_date.strftime('%Y-%m-%d')
             axs[-1].annotate(plot_date, xy=(1, -0.21), xycoords='axes fraction',  # Add date in lower right
-                             ha='right', va='top')
+                             ha='right', va='top', fontsize=12)
         except Exception as e:
             print_manager.warning(f"Could not parse date from trange[0] ('{trange[0]}') for annotation: {e}")
 

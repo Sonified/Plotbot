@@ -142,8 +142,8 @@ __all__ = [
 BLUE = '\033[94m'
 RESET = '\033[0m'
 
-COMMIT_MSG = "feat: Document multiplot HAM integration learnings and clarify per-panel data handling (2025_05_02_v1.181)"
-print(f'{BLUE}   Version: 2025_05_02_v1.181{RESET}')
+COMMIT_MSG = "feat: v1.9: Integrate HAM into multiplot, beautify default values, merge dev into main (2025_05_03_v1.9)"
+print(f'{BLUE}   Version: 2025_05_03_v1.9{RESET}')
 print(f'{BLUE}   Commit: {COMMIT_MSG}{RESET}')
 
 # --- Final Print Message ---
