@@ -203,7 +203,8 @@ class epad_strahl_class:
             'strahl': strahl,
             'centroids': centroids,
             'pitch_angle': self.pitch_angle,
-            'pitch_mesh': pitch_mesh
+            'pitch_mesh': pitch_mesh,
+            'times_mesh': time_mesh
         }
 
     def set_ploptions(self):
@@ -412,7 +413,8 @@ class epad_strahl_high_res_class:
             'strahl': strahl,
             'centroids': centroids,
             'pitch_angle': self.pitch_angle,
-            'pitch_mesh': pitch_mesh
+            'pitch_mesh': pitch_mesh,
+            'times_mesh': time_mesh
         }
     
     def set_ploptions(self):

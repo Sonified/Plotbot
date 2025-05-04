@@ -295,3 +295,13 @@ Start with these for reference when building or mapping metadata.
     - Zarr storage and reload is robust for all data types, but performance is slow for large 2D EPAD arrays (Zarr is not faster than CDF on first load).
     - This version is stable and ready for further optimization or profiling of Zarr performance for spectral data.
 - **Git hash will be copied to clipboard after push.**
+
+## Version Control Update (2025_05_03_v1.99)
+- **Pushed to main branch.**
+- **Commit Message:** v1.99: Mesh saving version—direct meshgrid storage for fast Zarr loading (2025_05_03_v1.99)
+- **Version Tag:** 2025_05_03_v1.99
+- **Details:**
+    - Both times_mesh and pitch_mesh are now always stored in Zarr and loaded directly if present, eliminating meshgrid reconstruction overhead.
+    - Zarr loading for spectral data is now robust and nearly as fast as CDF import.
+    - All tests pass, and meshgrid serialization is stable.
+- **Git hash will be copied to clipboard after push.**

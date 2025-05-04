@@ -79,22 +79,30 @@ class ZarrStorage:
             if 'pitch_angle' in class_instance.raw_data and class_instance.raw_data['pitch_angle'] is not None:
                 coords['pitch_angle'] = class_instance.raw_data['pitch_angle']
             for var_name, data in class_instance.raw_data.items():
-                if data is None or var_name == 'all':
+                if data is None:
                     continue
-                # Do not add pitch_angle as a data_var if it's already a coordinate
+                # Skip duplicate coordinate storage
                 if var_name == 'pitch_angle' and 'pitch_angle' in coords:
                     continue
-                # Assign dims based on variable name and shape
-                if var_name == 'strahl' and data.ndim == 2:
+                # Store meshgrids directly with appropriate dimension names
+                if var_name in ['times_mesh', 'pitch_mesh']:
+                    dims = ('time', 'pitch_angle')
+                elif var_name == 'strahl' and data.ndim == 2:
                     dims = ('time', 'pitch_angle')
                 elif var_name == 'centroids' and data.ndim == 1:
                     dims = ('time',)
                 elif var_name == 'pitch_angle' and data.ndim == 1:
                     dims = ('pitch_angle',)
                 else:
-                    # Fallback: auto dims
                     dims = tuple([f"dim_{i}" for i in range(data.ndim)])
                 data_vars[var_name] = (dims, data)
+            # Also store the meshgrids as separate variables if not already in raw_data
+            if hasattr(class_instance, 'times_mesh') and class_instance.times_mesh is not None:
+                if 'times_mesh' not in data_vars:
+                    data_vars['times_mesh'] = (('time', 'pitch_angle'), class_instance.times_mesh)
+            if hasattr(class_instance, 'pitch_mesh') and class_instance.pitch_mesh is not None:
+                if 'pitch_mesh' not in data_vars:
+                    data_vars['pitch_mesh'] = (('time', 'pitch_angle'), class_instance.pitch_mesh)
             print(f"[STORE] datetime_array: {class_instance.datetime_array[:5]} ... total: {len(class_instance.datetime_array)}")
             # Merge axis array coords and time coord
             coords['time'] = class_instance.datetime_array
@@ -190,18 +198,29 @@ class ZarrStorage:
                     self.times = cdflib.cdfepoch.compute_tt2000(dt_components)
                     self.raw_data = {}
                     for var_name in ds.data_vars:
-                        arr = ds[var_name].values
-                        # Load arrays as-is, no shape enforcement
-                        self.raw_data[var_name] = arr
-                        if data_type == 'spe_sf0_pad':
-                            print(f"[DEBUG][ZARR][LOAD] Loaded var '{var_name}': type={type(self.raw_data[var_name])}, shape={getattr(self.raw_data[var_name], 'shape', None)}")
+                        self.raw_data[var_name] = ds[var_name].values
                     # Also check ds.coords for axis arrays saved as coordinates
                     for coord_name in ['pitch_angle', 'energy_vals', 'theta_vals', 'phi_vals']:
                         if coord_name in ds.coords and coord_name not in self.raw_data:
-                            arr = ds.coords[coord_name].values
-                            self.raw_data[coord_name] = arr
-                            if data_type == 'spe_sf0_pad':
-                                print(f"[DEBUG][ZARR][LOAD] Loaded coord '{coord_name}': type={type(arr)}, shape: {getattr(arr, 'shape', None)}")
+                            self.raw_data[coord_name] = ds.coords[coord_name].values
+                    # Directly assign meshgrids as attributes for immediate use in plotting
+                    if 'times_mesh' in self.raw_data:
+                        self.times_mesh = self.raw_data['times_mesh']
+                    if 'pitch_mesh' in self.raw_data:
+                        self.pitch_mesh = self.raw_data['pitch_mesh']
+                    # Patch: If meshgrids aren't stored (for older Zarr files), create them
+                    if 'pitch_angle' in self.raw_data and 'strahl' in self.raw_data:
+                        if not hasattr(self, 'times_mesh') or not hasattr(self, 'pitch_mesh'):
+                            print("[DEBUG][ZARR] Reconstructing meshgrids - consider re-saving this data")
+                            time_mesh, pitch_mesh = np.meshgrid(
+                                self.datetime_array, 
+                                self.raw_data['pitch_angle'],
+                                indexing='ij'
+                            )
+                            self.times_mesh = time_mesh
+                            self.pitch_mesh = pitch_mesh
+                            self.raw_data['times_mesh'] = time_mesh
+                            self.raw_data['pitch_mesh'] = pitch_mesh
                     self.data = self.raw_data  # Patch: add data attribute for compatibility
                     # Patch: stack br, bt, bn for mag_rtn
                     if data_type == 'mag_RTN' and all(k in self.data for k in ['br', 'bt', 'bn']):
