@@ -394,6 +394,8 @@ The print manager is accessible through the `print_manager` singleton:
 ```python
 from plotbot.print_manager import print_manager
 ```
+This is your best friend:
+print_manager.show_status = True  
 
 ### Debug Modes
 
@@ -428,18 +430,6 @@ print_manager.show_time_tracking = True  # Show time range tracking information
 
 # Control test output messages
 print_manager.show_test = True  # Show test-specific output
-```
-
-### For Legacy Code
-
-For backward compatibility, the following aliases are also supported:
-
-```python
-# Legacy alias (same as show_variable_basic)
-print_manager.show_status = True  
-
-# Legacy alias (same as show_custom_debug)
-print_manager.show_derived = True
 ```
 
 ### Sending Messages

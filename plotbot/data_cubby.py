@@ -48,29 +48,8 @@ class data_cubby:
         """Retrieve object by its identifier."""
         print_manager.datacubby(f"\n=== Retrieving {identifier} from data_cubby ===")
         
-        # Special handling for derived variables
-        if identifier == 'derived':
-            print_manager.custom_debug(f"Looking for derived variables container")
-            if identifier in cls.cubby:
-                derived_obj = cls.cubby[identifier]
-                
-                # Collect all attributes into a single list for a consolidated print
-                attrs_info = []
-                for attr in dir(derived_obj):
-                    if not attr.startswith('__'):
-                        attr_value = getattr(derived_obj, attr)
-                        attr_info = f"{attr}: {type(attr_value).__name__}"
-                        
-                        if hasattr(attr_value, 'shape'):
-                            attr_info += f" (shape: {attr_value.shape}"
-                            if len(attr_value) > 0:
-                                attr_info += f", first: {attr_value[0]}"
-                            attr_info += ")"
-                        attrs_info.append(attr_info)
-                
-                # Print all attributes in a single line
-                print_manager.custom_debug(f"Found derived object with attributes: {', '.join(attrs_info)}")
-        
+        # Remove special handling for 'derived' variables (legacy)
+        # Only use the standard registries
         result = (cls.cubby.get(identifier) or 
                  cls.class_registry.get(identifier) or 
                  cls.subclass_registry.get(identifier))
@@ -81,24 +60,17 @@ class data_cubby:
             print_manager.datacubby(f"❌ Failed to retrieve {identifier}")
         
         if result is not None:
-            # Print plot options for any component that has them
+            # Print plot options for any component that has them, condensed to one line and colored blue
+            BLUE = '\033[94m'
             print_manager.datacubby(f"\nPlot Options for {identifier}:")
             for attr_name in dir(result):
-                if not attr_name.startswith('__'):  # Skip private attributes
+                if not attr_name.startswith('__'):
                     var = getattr(result, attr_name)
-                    if hasattr(var, 'plot_options'):  # Only print if it has plot options
-                        print_manager.datacubby(f"\n{attr_name} plot options:")
-                        for opt_name, value in vars(var.plot_options).items():
-                            if not opt_name.startswith('_'):
-                                # ALWAYS truncate arrays/lists to 10 items
-                                if isinstance(value, (list, np.ndarray)):
-                                    if isinstance(value, np.ndarray):
-                                        preview = str(value.flatten()[:10]) + "..."
-                                    else:
-                                        preview = str(value[:10]) + "..."
-                                    print_manager.datacubby(f"  {opt_name}: {preview}")
-                                else:
-                                    print_manager.datacubby(f"  {opt_name}: {value}")
+                    if hasattr(var, 'plot_options'):
+                        opts = vars(var.plot_options)
+                        # Build a single-line summary
+                        summary = ', '.join(f"{k}={repr(v)[:40]}" for k, v in opts.items() if not k.startswith('_'))
+                        print_manager.datacubby(f"{attr_name} plot options: {summary}", color=BLUE)
         
         print_manager.datacubby("=== End Retrieval Debug (LEAVING DATA CUBBY)===\n")
         return result
@@ -148,27 +120,7 @@ class data_cubby:
             print_manager.custom_debug(f"Could not find subclass: {subclass_name} in class {class_name}")
             return None
         
-        # CRITICAL FIX: Check datetime_array of derived variables for debugging purposes
-        if class_name == 'derived' and subclass is not None:
-            if hasattr(subclass, 'datetime_array') and subclass.datetime_array is not None:
-                if len(subclass.datetime_array) > 0:
-                    dt_start = subclass.datetime_array[0]
-                    dt_end = subclass.datetime_array[-1]
-                    print_manager.custom_debug(f"Retrieved derived variable {subclass_name} with time range: {dt_start} to {dt_end}")
-                    
-                    # If this is a known problematic variable (TAoverB, NewVar), add more debug info
-                    if subclass_name in ['TAoverB', 'NewVar']:
-                        import numpy as np
-                        current_year = np.datetime64('now').astype('datetime64[Y]').astype(int) + 1970
-                        dt_year = np.datetime64(dt_start).astype('datetime64[Y]').astype(int) + 1970
-                        
-                        if dt_year != current_year:
-                            print_manager.custom_debug(f"⚠️ WARNING: Derived variable {subclass_name} has datetime from year {dt_year}")
-                            print_manager.custom_debug(f"This may be a cached variable with outdated time range")
-                            
-                            # Flag it as potentially needing recalculation
-                            subclass._needs_time_validation = True
-            
+        # Remove legacy derived variable time validation/debug
         print_manager.custom_debug(f"Found component: {class_name}.{subclass_name}")
         return subclass
 
