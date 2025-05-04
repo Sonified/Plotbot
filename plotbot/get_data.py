@@ -13,7 +13,10 @@ from .data_tracker import global_tracker
 from .data_cubby import data_cubby
 from .data_download_berkeley import download_berkeley_data
 from .data_download_pyspedas import download_spdf_data
-import plotbot
+# Import plotbot with a clear module name to avoid name conflicts
+import plotbot as pb
+# The import below doesn't work, so we'll use plotbot.config directly
+# from . import config  # Add explicit import for config
 from .data_import import import_data_function
 from .data_classes.psp_data_types import data_types
 from .data_classes.psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
@@ -21,6 +24,14 @@ from .data_classes.psp_electron_classes import epad, epad_hr
 from .data_classes.psp_proton_classes import proton, proton_hr
 from .data_classes.psp_proton_fits_classes import proton_fits_class, proton_fits
 from .data_classes.psp_ham_classes import ham_class, ham
+
+from .zarr_storage import ZarrStorage
+# ✨Initialize ZarrStorage for persistent caching✨
+zarr_storage = ZarrStorage()
+
+def normalize_case(s):
+    """Helper to normalize case for consistent comparisons"""
+    return s.lower() if isinstance(s, str) else s
 
 def debug_object(obj, prefix=""):
     """Helper function to debug object attributes"""
@@ -71,6 +82,12 @@ def get_data(trange: List[str], *variables):
     # Get all variables for specific data types
     get_data(trange, mag_rtn_4sa, proton)
     """
+    print_manager.zarr_integration("TRACE: get_data function entry point")
+    print_manager.zarr_integration(f"INPUT: trange={trange}, variables={variables}")
+    # Debug the required_data_types issue
+    if variables:
+        print(f"Variable type: {type(variables[0])}, name: {getattr(variables[0], '__name__', 'unknown')}")
+    
     # Validate time range and ensure UTC timezone
     try:
         # Use dateutil.parser.parse instead of strptime - much more flexible!
@@ -138,6 +155,7 @@ def get_data(trange: List[str], *variables):
             print_manager.variable_testing(f"  Warning: Could not determine processable data type for variable: {var}")
 
     print_manager.variable_testing(f"Data types to process: {required_data_types}")
+    print_manager.zarr_integration(f"[get_data] required_data_types: {required_data_types}")
     
     # Print status summary
     for dt in required_data_types:
@@ -154,7 +172,7 @@ def get_data(trange: List[str], *variables):
     #====================================================================
     
     for data_type in required_data_types:
-        print_manager.debug(f"\nProcessing Data Type: {data_type}...")
+        print_manager.zarr_integration(f"\nProcessing Data Type: {data_type}...")
         
         # --- Handle FITS Calculation Type --- 
         if data_type == 'proton_fits':
@@ -239,88 +257,153 @@ def get_data(trange: List[str], *variables):
 
         # --- Handle Standard CDF Types --- 
         config = data_types.get(data_type)
-        if not config: 
+        if not config:
+            # Try case-insensitive lookup
+            data_type_lower = normalize_case(data_type)
+            for dt in data_types:
+                if normalize_case(dt) == data_type_lower:
+                    config = data_types[dt]
+                    break
+        if not config:
             print_manager.warning(f"Config not found for standard type {data_type} during processing loop.")
-            continue 
+            continue
         # Ensure this is not a local_csv source being processed here
         if config.get('file_source') == 'local_csv':
             print_manager.warning(f"Skipping standard processing for local_csv type {data_type}. Should be handled by proton_fits.")
             continue
             
-        # Conditional data download based on configuration
-        server_mode = plotbot.config.data_server.lower() # <-- Get value and convert to lowercase
-        print_manager.debug(f"Server mode for {data_type}: {server_mode}")
-        
-        download_successful = False # Assume files might exist locally
-
-        if server_mode == 'spdf':
-            print_manager.debug(f"Attempting SPDF download for {data_type}...")
-            download_successful = download_spdf_data(trange, data_type)
-        elif server_mode == 'berkeley':
-            print_manager.debug(f"Attempting Berkeley download for {data_type}...")
-            download_successful = download_berkeley_data(trange, data_type)
-        elif server_mode == 'dynamic':
-            print_manager.debug(f"Attempting SPDF download (dynamic mode) for {data_type}...")
-            download_successful = download_spdf_data(trange, data_type)
-            if not download_successful:
-                print_manager.debug(f"SPDF download failed/incomplete for {data_type}, falling back to Berkeley...")
-                download_successful = download_berkeley_data(trange, data_type)
-        else:
-            print_manager.warning(f"Invalid config.data_server mode: '{server_mode}'. Defaulting to Berkeley.")
-            download_successful = download_berkeley_data(trange, data_type)
+        # Get class instance from data_cubby
+        class_name = config.get('class_instance_name')
+        if class_name is None:
+            print_manager.warning(f"No class_instance_name defined for {data_type}")
+            continue
             
-        # The import logic below relies on files being present locally if needed.
-        # The download functions are responsible for ensuring this.
-        # We proceed to check if the *in-memory* cache needs updating.
-        
-        class_name = data_type  # Assume class_name matches data_type for standard types
         class_instance = data_cubby.grab(class_name)
-        
+            
+        # Check if import/refresh needed
         needs_import = global_tracker.is_import_needed(trange, data_type)
         needs_refresh = False
-        
+
         # Check refresh based on instance data range
         if class_instance is not None and hasattr(class_instance, 'datetime_array') and class_instance.datetime_array is not None and len(class_instance.datetime_array) > 0:
             try:
-                 cached_start = np.datetime64(class_instance.datetime_array[0])
-                 cached_end = np.datetime64(class_instance.datetime_array[-1])
-                 buffer = np.timedelta64(10, 's')
-                 # Use pre-converted numpy values for comparison
-                 if (cached_start - buffer) > requested_start_np or (cached_end + buffer) < requested_end_np:
-                     needs_refresh = True
+                cached_start = np.datetime64(class_instance.datetime_array[0])
+                cached_end = np.datetime64(class_instance.datetime_array[-1])
+                buffer = np.timedelta64(10, 's')
+                # Use pre-converted numpy values for comparison
+                if (cached_start - buffer) > requested_start_np or (cached_end + buffer) < requested_end_np:
+                    needs_refresh = True
             except (IndexError, TypeError, ValueError) as e:
-                 print_manager.warning(f"Could not compare time ranges for {data_type}: {e}. Assuming refresh needed.")
-                 needs_refresh = True
+                print_manager.warning(f"Could not compare time ranges for {data_type}: {e}. Assuming refresh needed.")
+                needs_refresh = True
         else:
             needs_refresh = True # Treat no data as needing refresh
-        
+
         # Import/update CDF data if needed
+        print_manager.zarr_integration(f"[get_data] {data_type}: needs_import={needs_import}, needs_refresh={needs_refresh}")
         if needs_import or needs_refresh:
-            print_manager.debug(f"{data_type} - Import/Refresh required")
+            print_manager.zarr_integration(f"[get_data] Import/Refresh logic triggered for {data_type}")
+            # First try loading from Zarr storage
+            zarr_data = zarr_storage.load_data(data_type, trange)
+            
+            if zarr_data is not None:
+                print_manager.status(f"📥 Loading {data_type} from Zarr storage...")
+                
+                # Make sure we have a class instance
+                if class_instance is None:
+                    print_manager.zarr_integration(f"Attempting to locate global {class_name} instance...")
+                    
+                    # Try to find instance in the global namespace via plotbot
+                    if hasattr(pb, class_name):
+                        class_instance = getattr(pb, class_name)
+                        print_manager.status(f"Found {class_name} in global namespace")
+                    else:
+                        print_manager.warning(f"Could not find {class_name} in global namespace")
+                        continue
+                
+                # Update instance with Zarr data
+                if hasattr(class_instance, 'update'):
+                    print_manager.zarr_integration(f"[get_data] Calling update on {class_name} with data_obj for {data_type}")
+                    class_instance.update(zarr_data)
+                    print_manager.zarr_integration(f"[get_data] Update completed for {class_name}")
+                    # Store to Zarr for future use
+                    print_manager.zarr_integration(f"[get_data] Calling store_data for {data_type}")
+                    zarr_result = zarr_storage.store_data(class_instance, data_type, trange)
+                    print_manager.zarr_integration(f"[get_data] store_data result for {data_type}: {'Success' if zarr_result else 'Failed'}")
+                    if zarr_result:
+                        print_manager.status(f"✅ {data_type} data saved to Zarr storage")
+                else:
+                    print_manager.warning(f"{class_name} instance has no update method")
+            else:
+                print_manager.zarr_integration(f"Zarr data not available for {data_type}, proceeding with normal download...")
+            
+            # Conditional data download based on configuration
+            server_mode = pb.config.data_server.lower() 
+            print_manager.zarr_integration(f"Server mode for {data_type}: {server_mode}")
+            
+            download_successful = False # Assume files might exist locally
+
+            if server_mode == 'spdf':
+                print_manager.zarr_integration(f"Attempting SPDF download for {data_type}...")
+                download_successful = download_spdf_data(trange, data_type)
+                print_manager.zarr_integration(f"SPDF download result for {data_type}: {'Success' if download_successful else 'Failed'}")
+            elif server_mode == 'berkeley':
+                print_manager.zarr_integration(f"Attempting Berkeley download for {data_type}...")
+                print_manager.zarr_integration(f"Berkeley download parameters - trange: {trange}, data_type: {data_type}")
+                download_successful = download_berkeley_data(trange, data_type)
+                print_manager.zarr_integration(f"Berkeley download result for {data_type}: {'Success' if download_successful else 'Failed'}")
+            elif server_mode == 'dynamic':
+                print_manager.zarr_integration(f"Attempting SPDF download (dynamic mode) for {data_type}...")
+                download_successful = download_spdf_data(trange, data_type)
+                print_manager.zarr_integration(f"SPDF download result (dynamic mode) for {data_type}: {'Success' if download_successful else 'Failed'}")
+                if not download_successful:
+                    print_manager.zarr_integration(f"SPDF download failed/incomplete for {data_type}, falling back to Berkeley...")
+                    download_successful = download_berkeley_data(trange, data_type)
+                    print_manager.zarr_integration(f"Berkeley fallback download result for {data_type}: {'Success' if download_successful else 'Failed'}")
+            else:
+                print_manager.warning(f"Invalid config.data_server mode: '{server_mode}'. Defaulting to Berkeley.")
+                download_successful = download_berkeley_data(trange, data_type)
+                print_manager.zarr_integration(f"Default Berkeley download result for {data_type}: {'Success' if download_successful else 'Failed'}")
+            
+            # Import the downloaded data
+            print_manager.zarr_integration(f"[get_data] Calling import_data_function for {data_type}")
             data_obj = import_data_function(trange, data_type)
-            if data_obj is None: continue
-            if needs_import: global_tracker.update_imported_range(trange, data_type)
+            print_manager.zarr_integration(f"[get_data] import_data_function returned: {'Success' if data_obj is not None else 'None'}")
+            
+            if data_obj is None: 
+                print_manager.warning(f"No data returned from import_data_function for {data_type}")
+                continue
+                
+            if needs_import: 
+                print_manager.zarr_integration(f"Updating tracker for {data_type}")
+                global_tracker.update_imported_range(trange, data_type)
             
             print_manager.status(f"📥 Updating {data_type}...")
+            
+            # Retry getting class instance if not found earlier
             if class_instance is None:
-                 # Get global instance (using updated paths implicitly via __init__)
-                 if data_type.lower() == 'mag_rtn_4sa': class_instance = mag_rtn_4sa
-                 elif data_type.lower() == 'mag_rtn': class_instance = mag_rtn
-                 elif data_type.lower() == 'mag_sc_4sa': class_instance = mag_sc_4sa
-                 elif data_type.lower() == 'mag_sc': class_instance = mag_sc
-                 elif data_type.lower() == 'spi_sf00_l3_mom': class_instance = proton
-                 elif data_type.lower() == 'spi_af00_l3_mom': class_instance = proton_hr
-                 elif data_type.lower() == 'spe_sf0_pad': class_instance = epad
-                 elif data_type.lower() == 'spe_af0_pad': class_instance = epad_hr
-                 # No need to explicitly handle proton_fits here as it's done earlier
-                 else:
-                      print_manager.warning(f"Could not find global class instance for {data_type}")
-                      continue
+                print_manager.zarr_integration(f"Retrying to get class instance for {class_name}")
+                if hasattr(pb, class_name):
+                    class_instance = getattr(pb, class_name)
+                    print_manager.status(f"Found {class_name} in global namespace")
+                else:
+                    print_manager.warning(f"Could not find {class_name} in global namespace")
+                    continue
 
+            # Update the instance with downloaded data
             if hasattr(class_instance, 'update'):
+                print_manager.zarr_integration(f"[get_data] Calling update on {class_name} with data_obj for {data_type}")
                 class_instance.update(data_obj)
+                print_manager.zarr_integration(f"[get_data] Update completed for {class_name}")
+                
+                # Store to Zarr for future use
+                print_manager.zarr_integration(f"[get_data] Calling store_data for {data_type}")
+                zarr_result = zarr_storage.store_data(class_instance, data_type, trange)
+                print_manager.zarr_integration(f"[get_data] store_data result for {data_type}: {'Success' if zarr_result else 'Failed'}")
+                if zarr_result:
+                    print_manager.status(f"✅ {data_type} data saved to Zarr storage")
             else:
-                print_manager.warning(f"{data_type} class instance has no update method")
+                print_manager.warning(f"{class_name} instance has no update method")
         else:
             print_manager.status(f"📤 Using existing {data_type} data, update not needed.")
     

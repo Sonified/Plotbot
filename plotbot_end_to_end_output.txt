@@ -1,0 +1,351 @@
+initialized server_access
+initialized global_tracker
+initialized ploptions
+initialized data_cubby
+initialized plot_manager
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=all[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=br[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=bt[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=bn[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=bmag[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=pmag[0m
+initialized mag_rtn_4sa class
+[35m[ZARR] Using plot_options: data_type=mag_RTN, class=mag_rtn, subclass=all[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN, class=mag_rtn, subclass=br[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN, class=mag_rtn, subclass=bt[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN, class=mag_rtn, subclass=bn[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN, class=mag_rtn, subclass=bmag[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN, class=mag_rtn, subclass=pmag[0m
+initialized mag_rtn class
+[35m[ZARR] Using plot_options: data_type=mag_SC_4sa, class=mag_sc_4sa, subclass=all[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC_4sa, class=mag_sc_4sa, subclass=bx[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC_4sa, class=mag_sc_4sa, subclass=by[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC_4sa, class=mag_sc_4sa, subclass=bz[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC_4sa, class=mag_sc_4sa, subclass=bmag[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC_4sa, class=mag_sc_4sa, subclass=pmag[0m
+initialized mag_sc_4sa class
+[35m[ZARR] Using plot_options: data_type=mag_SC, class=mag_sc, subclass=all[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC, class=mag_sc, subclass=bx[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC, class=mag_sc, subclass=by[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC, class=mag_sc, subclass=bz[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC, class=mag_sc, subclass=bmag[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC, class=mag_sc, subclass=pmag[0m
+initialized mag_sc class
+[35m[ZARR] Using plot_options: data_type=spe_sf0_pad, class=epad, subclass=strahl[0m
+[35m[ZARR] Using plot_options: data_type=spe_sf0_pad, class=epad, subclass=centroids[0m
+initialized epad class
+[35m[ZARR] Using plot_options: data_type=spe_af0_pad, class=epad_hr, subclass=strahl[0m
+[35m[ZARR] Using plot_options: data_type=spe_af0_pad, class=epad_hr, subclass=centroids[0m
+initialized epad_hr class
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=t_par[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=t_perp[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=anisotropy[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=v_alfven[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=v_sw[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=m_alfven[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=beta_ppar[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=beta_pperp[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=pressure_ppar[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=pressure_pperp[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=pressure[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=density[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=temperature[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=bmag[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=vr[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=vt[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=vn[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=energy_flux[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=theta_flux[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=phi_flux[0m
+initialized proton class
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=t_par[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=t_perp[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=anisotropy[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=v_alfven[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=v_sw[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=m_alfven[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=beta_ppar[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=beta_pperp[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=pressure_ppar[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=pressure_pperp[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=pressure[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=density[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=temperature[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=bmag[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=vr[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=vt[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=vn[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=energy_flux[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=theta_flux[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=phi_flux[0m
+initialized proton_hr class
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=qz_p[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vsw_mach_pfits[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=beta_ppar_pfits[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=beta_pperp_pfits[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=ham_param[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=np1[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=np2[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=n_tot[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=np2_np1_ratio[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vp1_x[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vp1_y[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vp1_z[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vp1_mag[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vcm_x[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vcm_y[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vcm_z[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vcm_mag[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vdrift[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vdrift_abs[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vdrift_va_pfits[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Trat1[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Trat2[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Trat_tot[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Tpar1[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Tpar2[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Tpar_tot[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Tperp1[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Tperp2[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Tperp_tot[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Temp_tot[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=abs_qz_p[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=chi_p[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=chi_p_norm[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=valfven_pfits[0m
+initialized proton_fits class
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamstring[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamogram_30s[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamogram_og_30s[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamogram_2m[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamogram_og_2m[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamogram_20m[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamogram_90m[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamogram_4h[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamogram_og_4h[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=trat_ham[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=trat_ham_og[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=ham_core_drift[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=ham_core_drift_va[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=Nham_div_Ncore[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=Nham_div_Ncore_og[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=Nham_div_Ntot[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=Nham_div_Ntot_og[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=Tperp_ham_div_core[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=Tperp_ham_div_core_og[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=Tperprat_driftva_hc[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=Tperprat_driftva_hc_og[0m
+initialized ham_class
+🔉 initialized audifier
+
+Importing libraries, this may take a moment. Hold tight... 
+
+✅ Imported standard libraries and utilities.
+✅ Imported numpy, pandas, and scipy libraries.
+✅ Imported matplotlib libraries.
+✅ Imported cdflib, BeautifulSoup, requests, dateutil, and datetime libraries.
+[35m[ZARR] [ZarrStorage.__init__] Initializing with base_dir=./data_cubby[0m
+[35m[ZARR] [ZarrStorage.__init__] Directory created: ./data_cubby[0m
+
+🤖 Plotbot Initialized
+✨ Showdahodo initialized
+Positional Data Helper Initialized
+📈📉 Multiplot Initialized
+[94m   Version: 2025_05_03_v1.96[0m
+[94m   Commit: test: v1.96: Zarr integration tests 1-5 passing, end-to-end test import/circular issues remain, finally block fixed (2025_05_03_v1.96)[0m
+
+[94m🤖 Plotbot Initialized[0m
+Test-only mode enabled
+============================= test session starts ==============================
+platform darwin -- Python 3.12.4, pytest-7.4.4, pluggy-1.5.0 -- /opt/anaconda3/envs/plotbot_env/bin/python3.12
+cachedir: .pytest_cache
+rootdir: /Users/robertalexander/GitHub/Plotbot
+configfile: pytest.ini
+collecting ... collected 1 item
+
+tests/test_zarr_basic.py::test_plotbot_end_to_end_mag_and_epad [TEST] Calling pb.plotbot with mag_rtn_4sa.br and epad.strahl...
+[35m[ZARR] TRACE: get_data function entry point[0m
+[35m[ZARR] INPUT: trange=['2022/04/14 00:00:00.000', '2022/04/14 06:00:00.000'], variables=(plot_manager(None, dtype=object), plot_manager(None, dtype=object))[0m
+Variable type: <class 'plotbot.plot_manager.plot_manager'>, name: None
+[35m[ZARR] [get_data] required_data_types: {'mag_RTN_4sa', 'spe_sf0_pad'}[0m
+[35m[ZARR] 
+Processing Data Type: mag_RTN_4sa...[0m
+[35m[ZARR] [get_data] mag_RTN_4sa: needs_import=True, needs_refresh=True[0m
+[35m[ZARR] [get_data] Import/Refresh logic triggered for mag_RTN_4sa[0m
+[35m[ZARR] [load_data] Called for data_type=mag_RTN_4sa, trange=['2022/04/14 00:00:00.000', '2022/04/14 06:00:00.000'][0m
+[35m[ZARR] [load_data] file_time_format=daily[0m
+[35m[ZARR] [_find_zarr_paths] Called for data_type=mag_RTN_4sa, start_time=2022-04-14 00:00:00+00:00, end_time=2022-04-14 06:00:00+00:00, file_time_format=daily[0m
+[35m[ZARR] [_get_zarr_path] Called for data_type=mag_RTN_4sa, timestamp=2022-04-14 00:00:00+00:00, file_time_format=daily[0m
+[35m[ZARR] [_get_zarr_path] Returning path[0m
+[35m[ZARR] [_find_zarr_paths] Returning paths: ['./data_cubby/mag_rtn_4sa/2022/04/14.zarr'][0m
+[35m[ZARR] [load_data] zarr_paths: ['./data_cubby/mag_rtn_4sa/2022/04/14.zarr'][0m
+[35m[ZARR] [load_data] Loading 1 Zarr stores[0m
+[35m[ZARR] [load_data] Looping through zarr_paths[0m
+[LOAD] Loaded dataset variables: ['bt', 'pmag', 'bn', 'br', 'bmag']
+[LOAD] Loaded time: ['2022-04-14T00:00:00.114809984' '2022-04-14T00:00:00.333263360'
+ '2022-04-14T00:00:00.551716608' '2022-04-14T00:00:00.770169984'
+ '2022-04-14T00:00:00.988623488'] ... total: 95305
+[LOAD] LoadedData.raw_data keys: ['bt', 'pmag', 'bn', 'br', 'bmag', 'psp_fld_l2_mag_RTN_4_Sa_per_Cyc']
+[LOAD] LoadedData.datetime_array: ['2022-04-14T00:00:00.114809984' '2022-04-14T00:00:00.333263360'
+ '2022-04-14T00:00:00.551716608' '2022-04-14T00:00:00.770169984'
+ '2022-04-14T00:00:00.988623488'] ... total: 95305
+[35m[ZARR] [get_data] Calling update on mag_rtn_4sa with data_obj for mag_RTN_4sa[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=all[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=br[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=bt[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=bn[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=bmag[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=pmag[0m
+[35m[ZARR] [get_data] Update completed for mag_rtn_4sa[0m
+[35m[ZARR] [get_data] Calling store_data for mag_RTN_4sa[0m
+[35m[ZARR] [store_data] Called for data_type=mag_RTN_4sa, trange=['2022/04/14 00:00:00.000', '2022/04/14 06:00:00.000'][0m
+[35m[ZARR] Storing data for mag_RTN_4sa[0m
+[35m[ZARR] datetime_array length: 95305[0m
+[35m[ZARR] raw_data keys: ['all', 'br', 'bt', 'bn', 'bmag', 'pmag'][0m
+[35m[ZARR] [store_data] file_time_format=daily[0m
+[35m[ZARR] [store_data] Creating data_vars from class_instance.raw_data[0m
+[STORE] var_name: br, data shape: (95305,), dims: ['time']
+[STORE] var_name: bt, data shape: (95305,), dims: ['time']
+[STORE] var_name: bn, data shape: (95305,), dims: ['time']
+[STORE] var_name: bmag, data shape: (95305,), dims: ['time']
+[STORE] var_name: pmag, data shape: (95305,), dims: ['time']
+[STORE] datetime_array: ['2022-04-14T00:00:00.114000000' '2022-04-14T00:00:00.333000000'
+ '2022-04-14T00:00:00.551000000' '2022-04-14T00:00:00.770000000'
+ '2022-04-14T00:00:00.988000000'] ... total: 95305
+[STORE] Dataset variables: ['br', 'bt', 'bn', 'bmag', 'pmag']
+[35m[ZARR] [_get_zarr_path] Called for data_type=mag_RTN_4sa, timestamp=2022-04-14T00:00:00.114000000, file_time_format=daily[0m
+[35m[ZARR] [_get_zarr_path] Returning path[0m
+[35m[ZARR] Checking if Zarr file exists: True[0m
+[35m[ZARR] Zarr directory contents: ['time', 'pmag', 'zarr.json', 'bt', 'bn', 'br', 'bmag'][0m
+[35m[ZARR] [store_data] Data saved to Zarr store[0m
+[35m[ZARR] [get_data] store_data result for mag_RTN_4sa: Success[0m
+[35m[ZARR] Server mode for mag_RTN_4sa: dynamic[0m
+[35m[ZARR] Attempting SPDF download (dynamic mode) for mag_RTN_4sa...[0m
+[35m[ZARR] SPDF download result (dynamic mode) for mag_RTN_4sa: Success[0m
+[35m[ZARR] [get_data] Calling import_data_function for mag_RTN_4sa[0m
+[35m[ZARR] [get_data] import_data_function returned: Success[0m
+[35m[ZARR] Updating tracker for mag_RTN_4sa[0m
+[35m[ZARR] [get_data] Calling update on mag_rtn_4sa with data_obj for mag_RTN_4sa[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=all[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=br[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=bt[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=bn[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=bmag[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=pmag[0m
+[35m[ZARR] [get_data] Update completed for mag_rtn_4sa[0m
+[35m[ZARR] [get_data] Calling store_data for mag_RTN_4sa[0m
+[35m[ZARR] [store_data] Called for data_type=mag_RTN_4sa, trange=['2022/04/14 00:00:00.000', '2022/04/14 06:00:00.000'][0m
+[35m[ZARR] Storing data for mag_RTN_4sa[0m
+[35m[ZARR] datetime_array length: 95305[0m
+[35m[ZARR] raw_data keys: ['all', 'br', 'bt', 'bn', 'bmag', 'pmag'][0m
+[35m[ZARR] [store_data] file_time_format=daily[0m
+[35m[ZARR] [store_data] Creating data_vars from class_instance.raw_data[0m
+[STORE] var_name: br, data shape: (95305,), dims: ['time']
+[STORE] var_name: bt, data shape: (95305,), dims: ['time']
+[STORE] var_name: bn, data shape: (95305,), dims: ['time']
+[STORE] var_name: bmag, data shape: (95305,), dims: ['time']
+[STORE] var_name: pmag, data shape: (95305,), dims: ['time']
+[STORE] datetime_array: ['2022-04-14T00:00:00.114809984' '2022-04-14T00:00:00.333263360'
+ '2022-04-14T00:00:00.551716608' '2022-04-14T00:00:00.770169984'
+ '2022-04-14T00:00:00.988623488'] ... total: 95305
+[STORE] Dataset variables: ['br', 'bt', 'bn', 'bmag', 'pmag']
+[35m[ZARR] [_get_zarr_path] Called for data_type=mag_RTN_4sa, timestamp=2022-04-14T00:00:00.114809984, file_time_format=daily[0m
+[35m[ZARR] [_get_zarr_path] Returning path[0m
+[35m[ZARR] Checking if Zarr file exists: True[0m
+[35m[ZARR] Zarr directory contents: ['time', 'pmag', 'zarr.json', 'bt', 'bn', 'br', 'bmag'][0m
+[35m[ZARR] [store_data] Data saved to Zarr store[0m
+[35m[ZARR] [get_data] store_data result for mag_RTN_4sa: Success[0m
+[35m[ZARR] 
+Processing Data Type: spe_sf0_pad...[0m
+[35m[ZARR] [get_data] spe_sf0_pad: needs_import=True, needs_refresh=True[0m
+[35m[ZARR] [get_data] Import/Refresh logic triggered for spe_sf0_pad[0m
+[35m[ZARR] [load_data] Called for data_type=spe_sf0_pad, trange=['2022/04/14 00:00:00.000', '2022/04/14 06:00:00.000'][0m
+[35m[ZARR] [load_data] file_time_format=daily[0m
+[35m[ZARR] [_find_zarr_paths] Called for data_type=spe_sf0_pad, start_time=2022-04-14 00:00:00+00:00, end_time=2022-04-14 06:00:00+00:00, file_time_format=daily[0m
+[35m[ZARR] [_get_zarr_path] Called for data_type=spe_sf0_pad, timestamp=2022-04-14 00:00:00+00:00, file_time_format=daily[0m
+[35m[ZARR] [_get_zarr_path] Returning path[0m
+[35m[ZARR] [_find_zarr_paths] Returning paths: ['./data_cubby/spe_sf0_pad/2022/04/14.zarr'][0m
+[35m[ZARR] [load_data] zarr_paths: ['./data_cubby/spe_sf0_pad/2022/04/14.zarr'][0m
+[35m[ZARR] [load_data] Loading 1 Zarr stores[0m
+[35m[ZARR] [load_data] Looping through zarr_paths[0m
+[LOAD] Loaded dataset variables: ['centroids', 'strahl']
+[LOAD] Loaded time: ['2022-04-14T00:03:44.139775488' '2022-04-14T00:18:38.925658496'
+ '2022-04-14T00:33:33.711861888' '2022-04-14T00:48:28.498364928'
+ '2022-04-14T01:03:23.285048320'] ... total: 22
+[DEBUG][ZARR][LOAD] Loaded var 'centroids': type=<class 'numpy.ndarray'>, shape=(22,)
+[DEBUG][ZARR][LOAD] Loaded var 'strahl': type=<class 'numpy.ndarray'>, shape=(22, 12)
+[LOAD] LoadedData.raw_data keys: ['centroids', 'strahl', 'EFLUX_VS_PA_E', 'PITCHANGLE']
+[LOAD] LoadedData.datetime_array: ['2022-04-14T00:03:44.139775488' '2022-04-14T00:18:38.925658496'
+ '2022-04-14T00:33:33.711861888' '2022-04-14T00:48:28.498364928'
+ '2022-04-14T01:03:23.285048320'] ... total: 22
+[35m[ZARR] [get_data] Calling update on epad with data_obj for spe_sf0_pad[0m
+FAILED
+
+=================================== FAILURES ===================================
+_____________________ test_plotbot_end_to_end_mag_and_epad _____________________
+
+    def test_plotbot_end_to_end_mag_and_epad():
+        """Test full plotbot workflow: import plotbot as pb, call pb.plotbot with mag_rtn_4sa.br and epad.strahl."""
+        import plotbot as pb
+        test_range = ['2022/04/14 00:00:00.000', '2022/04/14 06:00:00.000']
+        print("[TEST] Calling pb.plotbot with mag_rtn_4sa.br and epad.strahl...")
+>       pb.plotbot(test_range, pb.mag_rtn_4sa.br, 1, pb.epad.strahl, 2)
+
+tests/test_zarr_basic.py:263: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+plotbot/plotbot_main.py:236: in plotbot
+    get_data(trange, *regular_vars)
+plotbot/get_data.py:327: in get_data
+    class_instance.update(zarr_data)
+plotbot/data_classes/psp_electron_classes.py:65: in update
+    self.calculate_variables(imported_data)                                # Update raw data arrays
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <plotbot.data_classes.psp_electron_classes.epad_strahl_class object at 0x16ed7dd00>
+imported_data = <plotbot.zarr_storage.ZarrStorage.load_data.<locals>.LoadedData object at 0x306289100>
+
+    def calculate_variables(self, imported_data):
+        """Calculate and store EPAD strahl variables"""
+        # Store only TT2000 times as numpy array
+        self.time = np.asarray(imported_data.times)
+        self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time))
+    
+        # Extract data
+        eflux = imported_data.data['EFLUX_VS_PA_E']
+        self.pitch_angle = imported_data.data['PITCHANGLE']  # Store pitch angle as class attribute
+    
+        # Debug the time values
+        print_manager.debug(f"Time values type: {type(self.time)}")
+        print_manager.debug(f"Time values range: {self.time[0]} to {self.time[-1]}")
+    
+        # Set energy index based on encounter number
+        # Convert numpy.datetime64 to datetime before using strftime
+        date_str = pd.Timestamp(self.datetime_array[0]).strftime('%Y-%m-%d')
+        encounter_number = get_encounter_number(date_str)
+        if encounter_number in ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9']:
+            self.energy_index = 8
+        else:
+            self.energy_index = 12
+    
+        print_manager.debug(f"Encounter number: {encounter_number}")
+        print_manager.debug(f"Energy index: {self.energy_index}")
+    
+        # Extract strahl flux for specific energy
+>       strahl = eflux[:, :, self.energy_index]
+E       IndexError: too many indices for array: array is 2-dimensional, but 3 were indexed
+
+plotbot/data_classes/psp_electron_classes.py:142: IndexError
+=============================== warnings summary ===============================
+tests/test_zarr_basic.py::test_plotbot_end_to_end_mag_and_epad
+tests/test_zarr_basic.py::test_plotbot_end_to_end_mag_and_epad
+  /opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/zarr/api/asynchronous.py:205: UserWarning: Consolidated metadata is currently not part in the Zarr format 3 specification. It may not be supported by other zarr implementations and may change in the future.
+    warnings.warn(
+
+tests/test_zarr_basic.py::test_plotbot_end_to_end_mag_and_epad
+  /Users/robertalexander/GitHub/Plotbot/plotbot/zarr_storage.py:216: UserWarning: Discarding nonzero nanoseconds in conversion.
+    dt = pd.Timestamp(dt).to_pydatetime()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_zarr_basic.py::test_plotbot_end_to_end_mag_and_epad - Index...
+======================== 1 failed, 3 warnings in 1.69s =========================

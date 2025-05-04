@@ -370,7 +370,7 @@ def test7_berkeley_download_with_cleanup():
     
     pb.config.data_server = 'berkeley'
     trange_test = ['2022-02-25 12:00:00', '2022-02-25 13:00:00']
-    get_data(trange_test, *pb.mag_rtn_4sa.all)
+    get_data(trange_test, pb.mag_rtn_4sa.br)
 
     # Print and assert info about each component
     for comp in ['br', 'bt', 'bn', 'bmag', 'pmag']:

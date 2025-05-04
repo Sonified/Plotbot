@@ -120,27 +120,40 @@ class epad_strahl_class:
         
         # Extract data
         eflux = imported_data.data['EFLUX_VS_PA_E']
+        print(f"[DEBUG][EPAD] eflux type: {type(eflux)}, shape: {getattr(eflux, 'shape', None)}")
         self.pitch_angle = imported_data.data['PITCHANGLE']  # Store pitch angle as class attribute
+
+        # Handle both 2D (processed) and 3D (raw) eflux arrays
+        if eflux.ndim == 2:
+            strahl = eflux  # Already processed: [time, pitch_angle]
+            # Calculate centroids for each time step
+            centroids = np.array([
+                np.ma.average(self.pitch_angle, weights=strahl[i, :], axis=0)
+                for i in range(strahl.shape[0])
+            ])
+        elif eflux.ndim == 3:
+            # Set energy index based on encounter number
+            date_str = pd.Timestamp(self.datetime_array[0]).strftime('%Y-%m-%d')
+            encounter_number = get_encounter_number(date_str)
+            if encounter_number in ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9']:
+                self.energy_index = 8
+            else:
+                self.energy_index = 12
+            strahl = eflux[:, :, self.energy_index]
+            centroids = np.array([
+                np.ma.average(self.pitch_angle, weights=strahl[i, :], axis=0)
+                for i in range(strahl.shape[0])
+            ])
+        else:
+            raise ValueError(f"Unexpected eflux shape: {eflux.shape}")
+
+        print(f"[DEBUG][EPAD] centroids shape: {centroids.shape}")
+        self.strahl = strahl
 
         # Debug the time values
         print_manager.debug(f"Time values type: {type(self.time)}")
         print_manager.debug(f"Time values range: {self.time[0]} to {self.time[-1]}")
 
-        # Set energy index based on encounter number
-        # Convert numpy.datetime64 to datetime before using strftime
-        date_str = pd.Timestamp(self.datetime_array[0]).strftime('%Y-%m-%d')
-        encounter_number = get_encounter_number(date_str)
-        if encounter_number in ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9']:
-            self.energy_index = 8
-        else:
-            self.energy_index = 12
-
-        print_manager.debug(f"Encounter number: {encounter_number}")
-        print_manager.debug(f"Energy index: {self.energy_index}")
-
-        # Extract strahl flux for specific energy
-        strahl = eflux[:, :, self.energy_index]
-        
         # Replace zeros and calculate log version
         strahl = np.where(strahl == 0, 1e-10, strahl)  # Replace zeros
         log_strahl = np.log10(strahl)
@@ -154,10 +167,6 @@ class epad_strahl_class:
         )[0]
 
         # Calculate centroids
-        centroids = np.ma.average(self.pitch_angle, 
-                                weights=strahl, 
-                                axis=1)
-
         strahl_centroids = centroids
         # Store raw data
         self.raw_data = {
@@ -320,6 +329,7 @@ class epad_strahl_high_res_class:
         
         # Extract data
         eflux = imported_data.data['EFLUX_VS_PA_E']
+        print(f"[DEBUG][EPAD] eflux type: {type(eflux)}, shape: {getattr(eflux, 'shape', None)}")
         self.pitch_angle = imported_data.data['PITCHANGLE']  # Store pitch angle as class attribute
 
         # Debug the time values

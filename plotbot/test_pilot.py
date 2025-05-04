@@ -69,7 +69,7 @@ try:
             pytest.register_plugin(TestPilotPlugin())
         else:
             # For newer pytest versions, we'll use this approach
-            pytest_plugins = ["test_pilot"]  # This should work for dynamically loaded plugins
+            pytest_plugins = ["plotbot.test_pilot"]  # Updated for correct plugin path
     except Exception as e:
         print(f"Warning: Could not register TestPilotPlugin: {e}")
 

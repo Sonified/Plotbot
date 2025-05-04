@@ -45,12 +45,36 @@ class data_cubby:
 
     @classmethod
     def grab(cls, identifier):
-        """Retrieve object by its identifier."""
+        """Retrieve object by its identifier, case-insensitive."""
         print_manager.datacubby(f"\n=== Retrieving {identifier} from data_cubby ===")
         
+        # Convert identifier to lowercase for comparison
+        identifier_lower = identifier.lower()
+        
+        # Try exact match first
         result = (cls.cubby.get(identifier) or 
-                 cls.class_registry.get(identifier) or 
-                 cls.subclass_registry.get(identifier))
+                  cls.class_registry.get(identifier) or 
+                  cls.subclass_registry.get(identifier))
+        
+        # If not found, try case-insensitive match
+        if result is None:
+            # Check in cubby
+            for key in cls.cubby:
+                if key.lower() == identifier_lower:
+                    result = cls.cubby[key]
+                    break
+            # Check in class_registry
+            if result is None:
+                for key in cls.class_registry:
+                    if key.lower() == identifier_lower:
+                        result = cls.class_registry[key]
+                        break
+            # Check in subclass_registry
+            if result is None:
+                for key in cls.subclass_registry:
+                    if key.lower() == identifier_lower:
+                        result = cls.subclass_registry[key]
+                        break
         
         if result is not None:
             print_manager.datacubby(f"✅ Successfully retrieved {identifier}")

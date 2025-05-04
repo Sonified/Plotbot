@@ -1,0 +1,190 @@
+initialized server_access
+initialized global_tracker
+initialized ploptions
+initialized data_cubby
+initialized plot_manager
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=all[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=br[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=bt[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=bn[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=bmag[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN_4sa, class=mag_rtn_4sa, subclass=pmag[0m
+initialized mag_rtn_4sa class
+[35m[ZARR] Using plot_options: data_type=mag_RTN, class=mag_rtn, subclass=all[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN, class=mag_rtn, subclass=br[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN, class=mag_rtn, subclass=bt[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN, class=mag_rtn, subclass=bn[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN, class=mag_rtn, subclass=bmag[0m
+[35m[ZARR] Using plot_options: data_type=mag_RTN, class=mag_rtn, subclass=pmag[0m
+initialized mag_rtn class
+[35m[ZARR] Using plot_options: data_type=mag_SC_4sa, class=mag_sc_4sa, subclass=all[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC_4sa, class=mag_sc_4sa, subclass=bx[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC_4sa, class=mag_sc_4sa, subclass=by[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC_4sa, class=mag_sc_4sa, subclass=bz[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC_4sa, class=mag_sc_4sa, subclass=bmag[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC_4sa, class=mag_sc_4sa, subclass=pmag[0m
+initialized mag_sc_4sa class
+[35m[ZARR] Using plot_options: data_type=mag_SC, class=mag_sc, subclass=all[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC, class=mag_sc, subclass=bx[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC, class=mag_sc, subclass=by[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC, class=mag_sc, subclass=bz[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC, class=mag_sc, subclass=bmag[0m
+[35m[ZARR] Using plot_options: data_type=mag_SC, class=mag_sc, subclass=pmag[0m
+initialized mag_sc class
+[35m[ZARR] Using plot_options: data_type=spe_sf0_pad, class=epad, subclass=strahl[0m
+[35m[ZARR] Using plot_options: data_type=spe_sf0_pad, class=epad, subclass=centroids[0m
+initialized epad class
+[35m[ZARR] Using plot_options: data_type=spe_af0_pad, class=epad_hr, subclass=strahl[0m
+[35m[ZARR] Using plot_options: data_type=spe_af0_pad, class=epad_hr, subclass=centroids[0m
+initialized epad_hr class
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=t_par[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=t_perp[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=anisotropy[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=v_alfven[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=v_sw[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=m_alfven[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=beta_ppar[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=beta_pperp[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=pressure_ppar[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=pressure_pperp[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=pressure[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=density[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=temperature[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=bmag[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=vr[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=vt[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=vn[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=energy_flux[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=theta_flux[0m
+[35m[ZARR] Using plot_options: data_type=spi_sf00_l3_mom, class=proton, subclass=phi_flux[0m
+initialized proton class
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=t_par[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=t_perp[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=anisotropy[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=v_alfven[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=v_sw[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=m_alfven[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=beta_ppar[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=beta_pperp[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=pressure_ppar[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=pressure_pperp[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=pressure[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=density[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=temperature[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=bmag[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=vr[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=vt[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=vn[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=energy_flux[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=theta_flux[0m
+[35m[ZARR] Using plot_options: data_type=spi_af00_L3_mom, class=proton_hr, subclass=phi_flux[0m
+initialized proton_hr class
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=qz_p[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vsw_mach_pfits[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=beta_ppar_pfits[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=beta_pperp_pfits[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=ham_param[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=np1[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=np2[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=n_tot[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=np2_np1_ratio[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vp1_x[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vp1_y[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vp1_z[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vp1_mag[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vcm_x[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vcm_y[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vcm_z[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vcm_mag[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vdrift[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vdrift_abs[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=vdrift_va_pfits[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Trat1[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Trat2[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Trat_tot[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Tpar1[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Tpar2[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Tpar_tot[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Tperp1[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Tperp2[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Tperp_tot[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=Temp_tot[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=abs_qz_p[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=chi_p[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=chi_p_norm[0m
+[35m[ZARR] Using plot_options: data_type=proton_fits, class=proton_fits, subclass=valfven_pfits[0m
+initialized proton_fits class
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamstring[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamogram_30s[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamogram_og_30s[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamogram_2m[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamogram_og_2m[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamogram_20m[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamogram_90m[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamogram_4h[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=hamogram_og_4h[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=trat_ham[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=trat_ham_og[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=ham_core_drift[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=ham_core_drift_va[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=Nham_div_Ncore[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=Nham_div_Ncore_og[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=Nham_div_Ntot[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=Nham_div_Ntot_og[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=Tperp_ham_div_core[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=Tperp_ham_div_core_og[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=Tperprat_driftva_hc[0m
+[35m[ZARR] Using plot_options: data_type=ham, class=ham, subclass=Tperprat_driftva_hc_og[0m
+initialized ham_class
+🔉 initialized audifier
+
+Importing libraries, this may take a moment. Hold tight... 
+
+✅ Imported standard libraries and utilities.
+✅ Imported numpy, pandas, and scipy libraries.
+✅ Imported matplotlib libraries.
+✅ Imported cdflib, BeautifulSoup, requests, dateutil, and datetime libraries.
+[35m[ZARR] [ZarrStorage.__init__] Initializing with base_dir=./data_cubby[0m
+[35m[ZARR] [ZarrStorage.__init__] Directory created: ./data_cubby[0m
+
+🤖 Plotbot Initialized
+✨ Showdahodo initialized
+Positional Data Helper Initialized
+📈📉 Multiplot Initialized
+[94m   Version: 2025_05_03_v1.96[0m
+[94m   Commit: test: v1.96: Zarr integration tests 1-5 passing, end-to-end test import/circular issues remain, finally block fixed (2025_05_03_v1.96)[0m
+
+[94m🤖 Plotbot Initialized[0m
+Test-only mode enabled
+============================= test session starts ==============================
+platform darwin -- Python 3.12.4, pytest-7.4.4, pluggy-1.5.0 -- /opt/anaconda3/envs/plotbot_env/bin/python3.12
+cachedir: .pytest_cache
+rootdir: /Users/robertalexander/GitHub/Plotbot
+configfile: pytest.ini
+collecting ... collected 1 item
+
+tests/test_zarr_basic.py::test_plot_manager_structure_from_epad 
+--- centroids ---
+plot_type: time_series
+shape: ()
+dims: None
+y_label: Pitch Angle 
+ (degrees)
+additional_data: None
+legend_label: Strahl Centroids
+colormap: viridis
+colorbar_scale: linear
+
+--- strahl ---
+plot_type: spectral
+shape: ()
+dims: None
+y_label: Pitch Angle
+(degrees)
+additional_data: None
+legend_label: Electron PAD
+colormap: jet
+colorbar_scale: log
+PASSED
+
+============================== 1 passed in 0.00s ===============================

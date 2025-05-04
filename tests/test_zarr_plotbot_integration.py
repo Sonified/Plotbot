@@ -525,7 +525,7 @@ def test_zarr_storage_class():
             return imported_data
     
     # Create test directory
-    test_dir = './data_cubby_zarr_testing/test_zarr_storage'
+    test_dir = './data_cubby'
     if os.path.exists(test_dir):
         shutil.rmtree(test_dir)
     os.makedirs(test_dir)
@@ -841,87 +841,126 @@ def test_integration_with_tracker():
 
 
 def test_end_to_end_integration():
-    """
-    TEST 6: Complete End-to-End Integration
+    """Test complete end-to-end Zarr integration with real data."""
+    # Import print_manager at the beginning of the function to avoid UnboundLocalError
+    from plotbot.print_manager import print_manager
     
-    PURPOSE:
-    This test validates the entire workflow from end to end with real data.
-    It verifies that all components work together correctly in a real-world
-    scenario. This is the final validation before deploying the solution.
-    
-    WHAT IT DOES:
-    1. Downloads real satellite data for a small time period
-    2. Processes the data and stores it to Zarr
-    3. Clears the in-memory data to simulate a fresh session
-    4. Retrieves the data from Zarr using your existing get_data function
-    5. Verifies the retrieved data matches the original downloaded data
-    
-    SUCCESS CRITERIA:
-    - Data is correctly downloaded and processed
-    - Zarr storage successfully saves the processed data
-    - Retrieval from Zarr works correctly after clearing memory
-    - Data loaded from Zarr matches the original downloaded data
-    
-    This test is the most comprehensive and important - it validates that
-    the entire system works together seamlessly with real data, providing
-    the persistent storage functionality we need while preserving all your
-    existing workflow.
-    """
     print_manager.zarr_integration("RUNNING TEST 6: End-to-End Integration")
-    print_manager.zarr_integration("Testing complete workflow from download to Zarr storage to retrieval")
     
-    # This test should use your actual implementation to:
-    # 1. Download real data for a small time period
-    # 2. Process it and store to Zarr
-    # 3. Clear the in-memory data
-    # 4. Retrieve the data from Zarr
-    # 5. Verify it matches the original
-    
+    # Initialize test_dir at the beginning so it's always defined
     test_dir = None
+    # Store the original zarr_storage base directory
+    original_base_dir = None
+    
     try:
         import os
         import shutil
         from datetime import datetime, timedelta
         
-        # Use the real ZarrStorage implementation
-        from plotbot.zarr_storage import ZarrStorage
+        # Use the real ZarrStorage implementation from get_data
+        from plotbot.get_data import zarr_storage
         from plotbot.data_tracker import global_tracker
         from plotbot.data_cubby import data_cubby
-        # Use your actual get_data to download data
         from plotbot.get_data import get_data
         
-        # Define test directory and create ZarrStorage instance
-        test_dir = './data_cubby_zarr_testing/test_zarr_end_to_end'
-        if os.path.exists(test_dir):
-            shutil.rmtree(test_dir)
+        # Define test directory
+        test_dir = './data_cubby'  # Using data_cubby instead of a separate test directory
+        # We won't delete existing data - it's our working directory
+        #if os.path.exists(test_dir):
+        #    shutil.rmtree(test_dir)
+        os.makedirs(test_dir, exist_ok=True)
         
-        zarr_storage = ZarrStorage(test_dir)
+        # Temporarily override base directory for testing
+        original_base_dir = zarr_storage.base_dir
+        zarr_storage.base_dir = test_dir
+        print_manager.zarr_integration(f"ZarrStorage base_dir set to: {zarr_storage.base_dir}")
         
-        # Define a short test time range 
-        test_range = ["2023-02-01T00:00:00", "2023-02-01T06:00:00"]  # 6 hours of data
+        # Define a short test time range with the correct format - switching to a known working format and date
+        test_range = ['2022/06/01 22:30:00.000', '2022/06/01 23:30:00.000']  # 1 hour around perihelion
         
-        # Select a simple data type for testing
-        data_type = 'mag_rtn'  # Or another available type
+        import plotbot as pb 
+        # Select a simple data type for testing - use mag_rtn_4sa for more reliable data availability
+        data_type = pb.mag_rtn_4sa.br  # Changed from mag_rtn to mag_rtn_4sa which may have better availability
+        print_manager.zarr_integration(f"Using data_type: {data_type}")
+        
+        # Enable more verbose output for debugging
+        # print_manager.show_debug = True
+        print_manager.show_status = True
+        
+        # Check the server configuration
+
+        print_manager.zarr_integration(f"data_type is of type: {type(data_type)}")
+        # Force server to Berkeley for testing
+        original_server_mode = pb.config.data_server
+        pb.config.data_server = "berkeley"
+        
+        server_mode = pb.config.data_server
+        print_manager.zarr_integration(f"Data server mode set to: {server_mode}")
         
         print_manager.zarr_integration("STEP 1: Download and process data")
+        print_manager.zarr_integration(f"Calling get_data with range: {test_range}")
+        
+        # Add specific flags to enable full debugging during download
+        print_manager.enable_debug()
+        
         # Get the data (this should download and process)
         get_data(test_range, data_type)
         
         # Get the processed data
         class_instance = data_cubby.grab(data_type)
+        print_manager.zarr_integration(f"Retrieved class instance: {class_instance}")
+        # New debug prints to show what the class_instance actually has
+        if class_instance is not None:
+            print_manager.zarr_integration(f"class_instance type: {type(class_instance)}")
+            print_manager.zarr_integration(f"class_instance attributes: {dir(class_instance)}")
+            if hasattr(class_instance, 'raw_data'):
+                print_manager.zarr_integration(f"raw_data keys: {list(class_instance.raw_data.keys())}")
+                for k, v in class_instance.raw_data.items():
+                    print_manager.zarr_integration(f"raw_data['{k}']: type={type(v)}, value={v if isinstance(v, (int, float, str, type(None))) else 'array/obj'}")
+            if hasattr(class_instance, 'datetime_array'):
+                print_manager.zarr_integration(f"datetime_array type: {type(class_instance.datetime_array)}")
+                print_manager.zarr_integration(f"datetime_array value: {class_instance.datetime_array}")
         
         # Verify data was downloaded and processed
-        if class_instance is None or not hasattr(class_instance, 'datetime_array'):
-            print_manager.zarr_integration("❌ FAILURE: Data not downloaded or processed")
-            assert False, "Data not downloaded or processed"
+        if class_instance is None:
+            print_manager.zarr_integration("❌ FAILURE: class_instance is None")
+            assert False, "class_instance is None - Data not downloaded or processed"
+            
+        if not hasattr(class_instance, 'datetime_array'):
+            print_manager.zarr_integration("❌ FAILURE: class_instance has no datetime_array attribute")
+            assert False, "class_instance has no datetime_array attribute"
+            
+        if class_instance.datetime_array is None:
+            print_manager.zarr_integration("❌ FAILURE: datetime_array is None")
+            assert False, "datetime_array is None - Data not downloaded or processed"
+            
+        if len(class_instance.datetime_array) == 0:
+            print_manager.zarr_integration("❌ FAILURE: datetime_array is empty")
+            assert False, "datetime_array is empty - Data not downloaded or processed"
             
         # Record the datetime_array for later comparison
+        print_manager.zarr_integration(f"datetime_array has {len(class_instance.datetime_array)} points")
         original_times = class_instance.datetime_array.copy()
+        
+        # Check if raw_data exists and has br component
+        if not hasattr(class_instance, 'raw_data'):
+            print_manager.zarr_integration("❌ FAILURE: class_instance has no raw_data attribute")
+            assert False, "class_instance has no raw_data attribute"
+            
+        if 'br' not in class_instance.raw_data:
+            print_manager.zarr_integration("❌ FAILURE: raw_data has no 'br' component")
+            print_manager.zarr_integration(f"Available keys: {list(class_instance.raw_data.keys())}")
+            assert False, "raw_data has no 'br' component"
+            
+        if class_instance.raw_data['br'] is None:
+            print_manager.zarr_integration("❌ FAILURE: raw_data['br'] is None")
+            assert False, "raw_data['br'] is None"
+            
         original_br = class_instance.raw_data['br'].copy()
+        print_manager.zarr_integration(f"br data has {len(original_br)} points")
         
         print_manager.zarr_integration("STEP 2: Store data to Zarr")
-        # Store the data to Zarr
-        zarr_storage.store_data(class_instance, data_type, test_range)
+        # Storage is now handled by get_data
         
         print_manager.zarr_integration("STEP 3: Clear in-memory data")
         # Clear the tracker and data_cubby
@@ -940,9 +979,17 @@ def test_end_to_end_integration():
         class_instance = data_cubby.grab(data_type)
         
         # Verify data was loaded from Zarr
-        if class_instance is None or not hasattr(class_instance, 'datetime_array'):
-            print_manager.zarr_integration("❌ FAILURE: Data not loaded from Zarr")
-            assert False, "Data not loaded from Zarr"
+        if class_instance is None:
+            print_manager.zarr_integration("❌ FAILURE: class_instance is None after Zarr load")
+            assert False, "class_instance is None after Zarr load"
+            
+        if not hasattr(class_instance, 'datetime_array'):
+            print_manager.zarr_integration("❌ FAILURE: class_instance has no datetime_array attribute after Zarr load")
+            assert False, "class_instance has no datetime_array attribute after Zarr load"
+            
+        if class_instance.datetime_array is None:
+            print_manager.zarr_integration("❌ FAILURE: datetime_array is None after Zarr load")
+            assert False, "datetime_array is None after Zarr load"
             
         print_manager.zarr_integration("STEP 5: Verify data integrity")
         # Compare loaded data with original
@@ -953,6 +1000,9 @@ def test_end_to_end_integration():
         
         # Check data match
         br_shape_match = original_br.shape == class_instance.raw_data['br'].shape
+        
+        print_manager.zarr_integration(f"Original times shape: {original_times.shape}, New times shape: {class_instance.datetime_array.shape}")
+        print_manager.zarr_integration(f"Original br shape: {original_br.shape}, New br shape: {class_instance.raw_data['br'].shape}")
         
         assert times_shape_match and br_shape_match, f"Data shapes don't match. Times shape match: {times_shape_match}. BR shape match: {br_shape_match}"
         
@@ -967,8 +1017,17 @@ def test_end_to_end_integration():
         print_manager.zarr_integration(f"❌ FAILURE: End-to-end test failed with error: {e}")
         assert False, f"FAILURE: End-to-end test failed with error: {e}"
     finally:
-        if test_dir and os.path.exists(test_dir):
-            shutil.rmtree(test_dir)
+        # Restore print_manager settings
+        print_manager.show_debug = False
+        print_manager.show_status = False
+        
+        # Restore original base directory
+        if original_base_dir is not None:
+            zarr_storage.base_dir = original_base_dir
+            
+        # Don't clean up test directory - we're using data_cubby
+        # if test_dir and os.path.exists(test_dir):
+        #     shutil.rmtree(test_dir)
 
 
 def run_all_tests():

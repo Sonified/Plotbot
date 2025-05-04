@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 # Import Plotbot modules
 from plotbot.print_manager import print_manager
-from plotbot.custom_variables import custom_variable
+from plotbot.data_classes.custom_variables import custom_variable
 from plotbot import mag_rtn_4sa, proton
 
 # Setup printing configuration
