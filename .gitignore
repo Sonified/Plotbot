@@ -20,3 +20,5 @@ Jaye_Fits_Code/
 /tests/multiplot_ham_tests/
 # Ignore Zarr testing data
 /data_cubby_zarr_testing/
+
+tests/multiplot_tests/output/
