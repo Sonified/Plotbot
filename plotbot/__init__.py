@@ -142,8 +142,8 @@ __all__ = [
 BLUE = '\033[94m'
 RESET = '\033[0m'
 
-COMMIT_MSG = "fix: v1.94: Make installer script universally robust to conda location, fix README folder casing"
-print(f'{BLUE}   Version: 2025_05_03_v1.94{RESET}')
+COMMIT_MSG = "test: v1.95: Document CDF-to-Zarr mirroring test success, dask env update, Zarr pipeline validated (2025_05_03_v1.95)"
+print(f'{BLUE}   Version: 2025_05_03_v1.95{RESET}')
 print(f'{BLUE}   Commit: {COMMIT_MSG}{RESET}')
 
 # --- Final Print Message ---

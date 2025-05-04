@@ -1,5 +1,40 @@
 #!/bin/bash
 
+# Try to source conda.sh from common install locations if conda is not already available
+if ! command -v conda &> /dev/null; then
+    for CONDA_SH in \
+        "$HOME/miniconda3/etc/profile.d/conda.sh" \
+        "$HOME/anaconda3/etc/profile.d/conda.sh" \
+        "/opt/anaconda3/etc/profile.d/conda.sh" \
+        "/opt/miniconda3/etc/profile.d/conda.sh"
+    do
+        if [ -f "$CONDA_SH" ]; then
+            source "$CONDA_SH"
+            break
+        fi
+    done
+fi
+
+# If conda is still not available, try to dynamically find and source conda.sh
+if ! command -v conda &> /dev/null; then
+    CONDA_EXE_PATH=$(command -v conda)
+    if [ -z "$CONDA_EXE_PATH" ]; then
+        echo "❌ Conda not found in PATH. Please install Miniconda or Anaconda."
+        exit 1
+    fi
+
+    # Get the base directory (strip /bin/conda)
+    CONDA_BASE=$(dirname $(dirname "$CONDA_EXE_PATH"))
+    CONDA_SH="$CONDA_BASE/etc/profile.d/conda.sh"
+
+    if [ -f "$CONDA_SH" ]; then
+        source "$CONDA_SH"
+    else
+        echo "❌ Could not find conda.sh at $CONDA_SH"
+        exit 1
+    fi
+fi
+
 # Check if conda is properly in PATH
 CONDA_PATH=$(which conda)
 if [[ "$CONDA_PATH" != *"conda"* ]]; then

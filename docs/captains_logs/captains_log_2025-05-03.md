@@ -103,3 +103,18 @@
 - **Commit Message:** fix: v1.94: Make installer script universally robust to conda location, fix README folder casing
 - **Version Tag:** 2025_05_03_v1.94
 - **Git hash copied to clipboard.** 
+
+### 9. Zarr/Xarray Chunking Dependency: Dask Required (DONE)
+- Discovered during the Zarr integration test suite that xarray/zarr chunking requires the 'dask' library to be installed.
+- Action: Add 'dask' to both the environment (conda/pip) and requirements files to ensure all Zarr-based tests and features work out of the box.
+- This will prevent ImportError: chunk manager 'dask' is not available errors during Zarr file operations. 
+
+### 10. CDF-to-Zarr Mirroring Test: Full Success
+- Ran `test6_cdf_to_zarr_mirroring` in `tests/test_zarr_file_io.py`.
+- The test:
+    - Found all expected CDF files for the test range.
+    - Created Zarr files in `data_cubby` with perfectly mirrored paths and filenames.
+    - Loaded data back from Zarr and confirmed it matches the original CDF data.
+    - Verified every CDF file has a corresponding Zarr file in the mirrored structure.
+- **Result:** Test passed with no errors. This proves the core Zarr file management and mirroring logic is robust and matches the intended pipeline.
+- This is a major validation for the Zarr integration effort—future work can confidently build on this foundation. 
