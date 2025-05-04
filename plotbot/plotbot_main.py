@@ -466,7 +466,8 @@ def plotbot(trange, *args):
                     #====================================================================
                     if not empty_plot:  # Create spectral plot only if we have valid data
                         datetime_clipped = var.datetime_array[time_indices]
-                        additional_data_clipped = var.additional_data[time_indices]
+                        # For spectral plots, additional_data (e.g., pitch_angle) is a bin array, not time-dependent
+                        additional_data_clipped = var.additional_data
 
                         ax.set_ylabel(var.y_label)  # Set y-axis properties
                         ax.set_yscale(var.y_scale)
@@ -482,14 +483,27 @@ def plotbot(trange, *args):
                             norm = None
 
                         # Create spectral plot
-                        im = ax.pcolormesh(  # Create 2D color plot
-                            datetime_clipped,
-                            additional_data_clipped,
-                            data_clipped,
-                            norm=norm,
-                            cmap=var.colormap if hasattr(var, 'colormap') else None,
-                            shading='auto'
-                        )
+                        # Use additional_mesh if present (pitch_mesh)
+                        x_mesh = getattr(var, 'datetime_array', None)
+                        y_mesh = getattr(var, 'additional_mesh', None)
+                        if y_mesh is not None and x_mesh is not None and x_mesh.shape == y_mesh.shape == data_clipped.shape:
+                            im = ax.pcolormesh(
+                                x_mesh[time_indices],
+                                y_mesh[time_indices],
+                                data_clipped,
+                                norm=norm,
+                                cmap=var.colormap if hasattr(var, 'colormap') else None,
+                                shading='auto'
+                            )
+                        else:
+                            im = ax.pcolormesh(
+                                datetime_clipped,
+                                additional_data_clipped,
+                                data_clipped,
+                                norm=norm,
+                                cmap=var.colormap if hasattr(var, 'colormap') else None,
+                                shading='auto'
+                            )
                         
                         # Add and configure colorbar
                         pos = ax.get_position()  # Get plot position

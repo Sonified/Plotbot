@@ -142,8 +142,8 @@ __all__ = [
 BLUE = '\033[94m'
 RESET = '\033[0m'
 
-COMMIT_MSG = "test: v1.96: Zarr integration tests 1-5 passing, end-to-end test import/circular issues remain, finally block fixed (2025_05_03_v1.96)"
-print(f'{BLUE}   Version: 2025_05_03_v1.97{RESET}')
+COMMIT_MSG = "v1.98: Working version, all tests pass, but Zarr is slow for EPAD data (2025_05_03_v1.98)"
+print(f'{BLUE}   Version: 2025_05_03_v1.98{RESET}')
 print(f'{BLUE}   Commit: start ZARR_integration branch: v1.97: begin metadata-driven Zarr refactor [2025_05_03_v1.97]{RESET}')
 
 # --- Final Print Message ---

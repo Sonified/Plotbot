@@ -303,6 +303,15 @@ class plot_manager(np.ndarray):
         self._source_subclass_names = value
         setattr(self.plot_options, 'source_subclass_names', value)
 
+    @property
+    def additional_mesh(self):
+        return getattr(self.plot_options, 'additional_mesh', None)
+
+    @additional_mesh.setter
+    def additional_mesh(self, value):
+        self._plot_state['additional_mesh'] = value
+        self.plot_options.additional_mesh = value
+
     #Inline friendly error handling in __setattr__, consistent with your style
     def __setattr__(self, name, value):
         try:

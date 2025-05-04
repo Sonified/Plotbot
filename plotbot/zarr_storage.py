@@ -13,6 +13,28 @@ from .print_manager import print_manager
 from .data_tracker import global_tracker
 from .data_classes.psp_data_types import data_types
 
+def extract_bin_array_for_optimized_storage(arr, n_times, var_name, context):
+    """Reduce axis arrays to 1D bin arrays for Zarr storage/loading. Raises if not valid."""
+    if isinstance(arr, np.ndarray):
+        if arr.ndim == 2:
+            if np.allclose(arr, arr[0]):  # Check if every row is the same
+                print(f"[DEBUG][ZARR][{context}] Reducing {var_name} from 2D meshgrid to 1D bin array")
+                return arr[0]  # Take the first row (the bin array)
+            else:
+                raise ValueError(f"[ZARR][{context}] {var_name} is 2D but not all rows are identical. Refusing to use as axis array.")
+        elif arr.ndim == 1:
+            if arr.shape[0] == n_times:  # If the array is 1D and its length matches n_times (number of time steps)
+                if np.allclose(arr, arr[0]):  # If all values are the same
+                    print(f"[DEBUG][ZARR][{context}] Reducing {var_name} from 1D time series to single bin value array")
+                    return np.array([arr[0]])  # Save just the unique value
+                else:
+                    raise ValueError(f"[ZARR][{context}] {var_name} is 1D and matches time length but values are not identical. Refusing to use as axis array.")
+            # else: it's a valid 1D bin array (length = n_bins)
+            return arr
+        else:
+            raise ValueError(f"[ZARR][{context}] {var_name} has unexpected ndim={arr.ndim}. Refusing to use as axis array.")
+    return arr
+
 class ZarrStorage:
     """Zarr-based persistent storage that follows the natural cadence of PSP data"""
     
@@ -28,6 +50,11 @@ class ZarrStorage:
         print_manager.zarr_integration(f"Storing data for {data_type}")
         print_manager.zarr_integration(f"datetime_array length: {len(class_instance.datetime_array)}")
         print_manager.zarr_integration(f"raw_data keys: {list(class_instance.raw_data.keys())}")
+        # Debug print for pitch_angle before saving
+        if hasattr(class_instance, 'pitch_angle'):
+            print(f"[STORE] class_instance.pitch_angle: type={type(class_instance.pitch_angle)}, shape={getattr(class_instance.pitch_angle, 'shape', None)}, value={class_instance.pitch_angle}")
+        for k, v in class_instance.raw_data.items():
+            print(f"[STORE] raw_data[{k}]: type={type(v)}, shape={getattr(v, 'shape', None)}")
         if not hasattr(class_instance, 'raw_data') or not hasattr(class_instance, 'datetime_array'):
             print_manager.warning(f"Cannot store {data_type}: missing required attributes")
             return False
@@ -45,42 +72,38 @@ class ZarrStorage:
         try:
             print_manager.zarr_integration(f"[store_data] Creating data_vars from class_instance.raw_data")
             data_vars = {}
+            coords = {}
+            # Always add time coordinate
+            coords['time'] = class_instance.datetime_array
+            # Add pitch_angle coordinate if present
+            if 'pitch_angle' in class_instance.raw_data and class_instance.raw_data['pitch_angle'] is not None:
+                coords['pitch_angle'] = class_instance.raw_data['pitch_angle']
             for var_name, data in class_instance.raw_data.items():
                 if data is None or var_name == 'all':
                     continue
-                # Debug print for spe_sf0_pad
-                if data_type == 'spe_sf0_pad':
-                    print(f"[DEBUG][ZARR][STORE] Saving var '{var_name}': type={type(data)}, shape={getattr(data, 'shape', None)}")
-                # Try to get plot_manager for this variable
-                pm = getattr(class_instance, var_name, None)
-                dims = ['time']
-                if hasattr(pm, 'plot_options'):
-                    po = pm.plot_options
-                    if getattr(po, 'plot_type', None) == 'spectral':
-                        # Try to infer second axis name
-                        second_axis = None
-                        if hasattr(po, 'additional_data') and po.additional_data is not None:
-                            second_axis = getattr(po, 'y_label', 'axis_1')
-                            # Try to extract a clean name from y_label
-                            if isinstance(second_axis, str):
-                                # Use the first word or a cleaned version
-                                second_axis = second_axis.split('\n')[0].strip().lower().replace(' ', '_')
-                            else:
-                                second_axis = 'axis_1'
-                        else:
-                            second_axis = 'axis_1'
-                        dims = ['time', second_axis]
-                # Fallback for 2D arrays if no plot_manager
-                elif isinstance(data, np.ndarray) and data.ndim == 2:
-                    dims = ['time', 'axis_1']
-                print(f"[STORE] var_name: {var_name}, data shape: {np.shape(data)}, dims: {dims}")
+                # Do not add pitch_angle as a data_var if it's already a coordinate
+                if var_name == 'pitch_angle' and 'pitch_angle' in coords:
+                    continue
+                # Assign dims based on variable name and shape
+                if var_name == 'strahl' and data.ndim == 2:
+                    dims = ('time', 'pitch_angle')
+                elif var_name == 'centroids' and data.ndim == 1:
+                    dims = ('time',)
+                elif var_name == 'pitch_angle' and data.ndim == 1:
+                    dims = ('pitch_angle',)
+                else:
+                    # Fallback: auto dims
+                    dims = tuple([f"dim_{i}" for i in range(data.ndim)])
                 data_vars[var_name] = (dims, data)
             print(f"[STORE] datetime_array: {class_instance.datetime_array[:5]} ... total: {len(class_instance.datetime_array)}")
+            # Merge axis array coords and time coord
+            coords['time'] = class_instance.datetime_array
             ds = xr.Dataset(
                 data_vars=data_vars,
-                coords={'time': class_instance.datetime_array}
+                coords=coords
             )
             print(f"[STORE] Dataset variables: {list(ds.data_vars)}")
+            print(f"[STORE] Dataset coordinates: {list(ds.coords)}")
             
             # Determine chunking based on data cadence
             if file_time_format == 'daily':
@@ -154,6 +177,7 @@ class ZarrStorage:
             else:
                 combined = xr.concat(datasets, dim='time')
             print(f"[LOAD] Loaded dataset variables: {list(combined.data_vars)}")
+            print(f"[LOAD] Loaded dataset coordinates: {list(combined.coords)}")
             print(f"[LOAD] Loaded time: {combined.time.values[:5]} ... total: {len(combined.time.values)}")
             
             # Create a LoadedData object that mimics the class structure
@@ -166,10 +190,18 @@ class ZarrStorage:
                     self.times = cdflib.cdfepoch.compute_tt2000(dt_components)
                     self.raw_data = {}
                     for var_name in ds.data_vars:
-                        self.raw_data[var_name] = ds[var_name].values
-                        # Debug print for spe_sf0_pad
+                        arr = ds[var_name].values
+                        # Load arrays as-is, no shape enforcement
+                        self.raw_data[var_name] = arr
                         if data_type == 'spe_sf0_pad':
                             print(f"[DEBUG][ZARR][LOAD] Loaded var '{var_name}': type={type(self.raw_data[var_name])}, shape={getattr(self.raw_data[var_name], 'shape', None)}")
+                    # Also check ds.coords for axis arrays saved as coordinates
+                    for coord_name in ['pitch_angle', 'energy_vals', 'theta_vals', 'phi_vals']:
+                        if coord_name in ds.coords and coord_name not in self.raw_data:
+                            arr = ds.coords[coord_name].values
+                            self.raw_data[coord_name] = arr
+                            if data_type == 'spe_sf0_pad':
+                                print(f"[DEBUG][ZARR][LOAD] Loaded coord '{coord_name}': type={type(arr)}, shape: {getattr(arr, 'shape', None)}")
                     self.data = self.raw_data  # Patch: add data attribute for compatibility
                     # Patch: stack br, bt, bn for mag_rtn
                     if data_type == 'mag_RTN' and all(k in self.data for k in ['br', 'bt', 'bn']):
@@ -196,10 +228,35 @@ class ZarrStorage:
                     if data_type == 'spe_sf0_pad':
                         if 'strahl' in self.data:
                             self.data['EFLUX_VS_PA_E'] = self.data['strahl']
-                        if 'centroids' in self.data:
-                            self.data['PITCHANGLE'] = self.data['centroids']
+                        # Do NOT map centroids to PITCHANGLE; only set PITCHANGLE if a static bin array is present
+                        if 'pitch_angle' in self.data:
+                            self.data['PITCHANGLE'] = self.data['pitch_angle']
                     print(f"[LOAD] LoadedData.raw_data keys: {list(self.raw_data.keys())}")
                     print(f"[LOAD] LoadedData.datetime_array: {self.datetime_array[:5]} ... total: {len(self.datetime_array)}")
+                    print(f"[LOAD] All coordinates after loading:")
+                    for coord in ds.coords:
+                        arr = ds.coords[coord].values
+                        print(f"  - {coord}: shape={arr.shape}, first 5 values={arr[:5] if hasattr(arr, '__getitem__') else arr}")
+                    # Reconstruct times_mesh and pitch_mesh for spectral plotting if needed
+                    if data_type in ['spe_sf0_pad', 'spe_af0_pad'] and 'strahl' in self.raw_data:
+                        # Convert datetime values to numeric for plotting compatibility
+                        if np.issubdtype(self.datetime_array.dtype, np.datetime64):
+                            numeric_times = (self.datetime_array - self.datetime_array[0]) / np.timedelta64(1, 's')
+                        else:
+                            numeric_times = (pd.to_datetime(self.datetime_array) - pd.to_datetime(self.datetime_array[0])).total_seconds()
+                        pitch_angle = self.raw_data['pitch_angle']
+                        time_mesh, pitch_mesh = np.meshgrid(
+                            numeric_times,
+                            pitch_angle,
+                            indexing='ij'
+                        )
+                        self.times_mesh = time_mesh
+                        self.pitch_mesh = pitch_mesh
+                        if 'pitch_mesh' not in self.raw_data:
+                            self.raw_data['pitch_mesh'] = pitch_mesh
+                        print(f"[DEBUG][ZARR][LOAD] times_mesh shape: {self.times_mesh.shape}, pitch_mesh shape: {self.pitch_mesh.shape}, dtype: {self.times_mesh.dtype}")
+                        print(f"[DEBUG][ZARR][LOAD] First 5 rows of times_mesh: {self.times_mesh[:5]}")
+                        print(f"[DEBUG][ZARR][LOAD] First 5 rows of pitch_mesh: {self.pitch_mesh[:5]}")
             loaded = LoadedData(combined)
             return loaded
             

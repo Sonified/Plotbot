@@ -32,5 +32,5 @@ __all__ = [
 
 # Display Plotbot banner with version and commit info
 print(colored("🤖 Plotbot Initialized", "blue"))
-print(f"   Version: {colored('2025_04_24_v1.00', 'yellow')}") # Updated version
-print(f"   Commit: {colored('Feat: Add offline pyspedas check test & update plan', 'green')}") # Updated commit message 
+print(f"   Version: {colored('2025_05_03_v1.98', 'yellow')}") # Updated version
+print(f"   Commit: {colored('v1.98: Working version, all tests pass, but Zarr is slow for EPAD data (2025_05_03_v1.98)', 'green')}") # Updated commit message 

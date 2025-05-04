@@ -285,3 +285,13 @@ Start with these for reference when building or mapping metadata.
     - Branch created for major Zarr pipeline refactor.
     - Goal: Make Zarr storage and loading fully metadata-driven (no hardcoded variable/dimension logic).
     - Next: Refactor store_data and loader logic to use class metadata and raw_data keys for all mapping, stacking, and axis labeling.
+
+## Version Control Update (2025_05_03_v1.98)
+- **Pushed to main branch.**
+- **Commit Message:** v1.98: Working version, all tests pass, but Zarr is slow for EPAD data (2025_05_03_v1.98)
+- **Version Tag:** 2025_05_03_v1.98
+- **Details:**
+    - All core and end-to-end tests pass, including Zarr roundtrip and plotting for EPAD.
+    - Zarr storage and reload is robust for all data types, but performance is slow for large 2D EPAD arrays (Zarr is not faster than CDF on first load).
+    - This version is stable and ready for further optimization or profiling of Zarr performance for spectral data.
+- **Git hash will be copied to clipboard after push.**

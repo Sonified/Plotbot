@@ -1,6 +1,8 @@
 import numpy as np
 import os
 import time
+import contextlib
+from datetime import datetime
 
 def test_simple_class_update():
     """Test that directly demonstrates the issue with class update from Zarr"""
@@ -29,23 +31,40 @@ def test_simple_class_update():
 
 
 def test_epad_plot_manager_after_get_data():
-    """Test to inspect epad.strahl after running get_data."""
+    """Test to inspect epad.strahl after running get_data, including full plot_options and data preview."""
     from plotbot.get_data import get_data
     from plotbot.data_classes.psp_electron_classes import epad
-    # Use a short, valid trange for which data should exist
     trange = ['2021/04/26 00:00:00.000', '2021/04/26 06:00:00.000']
     get_data(trange, epad.strahl)
-    # Now inspect the plot_manager object
     strahl_pm = epad.strahl
+    centroids_pm = epad.centroids
     print(f"epad.strahl type: {type(strahl_pm)}")
     if hasattr(strahl_pm, 'shape'):
         print(f"epad.strahl shape: {strahl_pm.shape}")
     if hasattr(strahl_pm, 'plot_options'):
-        print(f"epad.strahl plot_options: {strahl_pm.plot_options}")
-    if hasattr(strahl_pm, 'dims'):
-        print(f"epad.strahl dims: {strahl_pm.dims}")
-    if hasattr(strahl_pm, 'data'):
-        print(f"epad.strahl data shape: {np.shape(strahl_pm.data)}")
+        print(f"epad.strahl plot_options: {vars(strahl_pm.plot_options)}")
+    if hasattr(strahl_pm, 'plot_options') and hasattr(strahl_pm.plot_options, 'axis_metadata'):
+        print(f"epad.strahl axis_metadata: {strahl_pm.plot_options.axis_metadata}")
+    if hasattr(centroids_pm, 'plot_options') and hasattr(centroids_pm.plot_options, 'axis_metadata'):
+        print(f"epad.centroids axis_metadata: {centroids_pm.plot_options.axis_metadata}")
+    if hasattr(strahl_pm, 'dtype'):
+        print(f"epad.strahl dtype: {strahl_pm.dtype}")
+    print("epad.strahl first 5 rows:")
+    print(strahl_pm[:5])
+    if hasattr(strahl_pm, 'plot_options') and hasattr(strahl_pm.plot_options, 'additional_data'):
+        print(f"epad.strahl additional_data: {strahl_pm.plot_options.additional_data}")
+    if hasattr(strahl_pm, 'plot_options') and hasattr(strahl_pm.plot_options, 'datetime_array'):
+        print(f"epad.strahl datetime_array: {strahl_pm.plot_options.datetime_array[:5]}")
+    if hasattr(strahl_pm, 'plot_options') and hasattr(strahl_pm.plot_options, 'operation'):
+        print(f"epad.strahl operation: {strahl_pm.plot_options.operation}")
+    if hasattr(strahl_pm, 'plot_options') and hasattr(strahl_pm.plot_options, 'source_var'):
+        print(f"epad.strahl source_var: {strahl_pm.plot_options.source_var}")
+    if hasattr(strahl_pm, 'plot_options') and hasattr(strahl_pm.plot_options, 'source_class_names'):
+        print(f"epad.strahl source_class_names: {strahl_pm.plot_options.source_class_names}")
+    if hasattr(strahl_pm, 'plot_options') and hasattr(strahl_pm.plot_options, 'source_subclass_names'):
+        print(f"epad.strahl source_subclass_names: {strahl_pm.plot_options.source_subclass_names}")
+    if hasattr(strahl_pm, '_plot_state'):
+        print(f"epad.strahl _plot_state: {strahl_pm._plot_state}")
 
 
 def test_load_pad_cdf():
@@ -180,15 +199,20 @@ def test_get_and_inspect_epad_strahl():
 
 def test_profile_zarr_vs_cdf_load():
     """Profile time to load epad.strahl from CDF (no Zarr) vs. from Zarr, and print speedup factor. Also print data preview after Zarr import."""
+    import time
     from plotbot.get_data import get_data
     from plotbot.data_classes.psp_electron_classes import epad
-    zarr_path = 'data_cubby/spe_sf0_pad/2022/02/25.zarr'
-    # Ensure Zarr file is deleted
-    if os.path.exists(zarr_path):
-        import shutil
-        shutil.rmtree(zarr_path)
-        print(f"Deleted Zarr file: {zarr_path}")
-    trange = ['2022/02/25 12:00:00.000', '2022/02/25 13:00:00.000']
+    import os
+    import shutil
+    # Extended time range to span two daily files
+    trange = ['2022/02/25 00:00:00.000', '2022/02/26 23:59:59.999']
+    zarr_path1 = 'data_cubby/spe_sf0_pad/2022/02/25.zarr'
+    zarr_path2 = 'data_cubby/spe_sf0_pad/2022/02/26.zarr'
+    # Ensure Zarr files are deleted
+    for zarr_path in [zarr_path1, zarr_path2]:
+        if os.path.exists(zarr_path):
+            shutil.rmtree(zarr_path)
+            print(f"Deleted Zarr file: {zarr_path}")
     # Profile CDF import
     t0 = time.time()
     get_data(trange, epad.strahl)
@@ -256,9 +280,90 @@ def test_profile_zarr_vs_cdf_load_mag_rtn():
 
 
 def test_plotbot_end_to_end_mag_and_epad():
-    """Test full plotbot workflow: import plotbot as pb, call pb.plotbot with mag_rtn_4sa.br and epad.strahl."""
+    """Test full plotbot workflow: import plotbot as pb, call pb.plotbot with mag_rtn_4sa.br and epad.strahl. Save output to test_logs."""
+    import plotbot as pb
+    import os
+    import contextlib
+    log_dir = os.path.join(os.path.dirname(__file__), 'test_logs')
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, 'plotbot_end_to_end_centroid_output.txt')
+    with open(log_path, 'w') as f:
+        with contextlib.redirect_stdout(f):
+            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            print(f"[TEST LOG] {now}")
+            print(f"[TEST LOG] test_plotbot_end_to_end_mag_and_epad")
+            test_range = ['2022/04/14 00:00:00.000', '2022/04/14 06:00:00.000']
+            print("[TEST] Calling pb.plotbot with mag_rtn_4sa.br and epad.strahl...")
+            pb.plotbot(test_range, pb.mag_rtn_4sa.br, 1, pb.epad.strahl, 2)
+            print("[TEST] pb.plotbot call complete.")
+
+
+def test_zarr_data_roundtrip_epad_strahl():
+    """Test that data and axis arrays saved to Zarr are exactly the same when loaded back."""
+    from plotbot.get_data import get_data
+    from plotbot.data_classes.psp_electron_classes import epad
+    import numpy as np
+    import shutil
+    zarr_path = 'data_cubby/spe_sf0_pad/2021/04/26.zarr'
+    # Ensure Zarr file is deleted
+    if os.path.exists(zarr_path):
+        shutil.rmtree(zarr_path)
+    trange = ['2021/04/26 00:00:00.000', '2021/04/26 06:00:00.000']
+    # Load from CDF and save to Zarr
+    get_data(trange, epad.strahl)
+    # Save original data and axis arrays
+    original_data = np.array(epad.strahl.data)
+    original_axis = epad.strahl.plot_options.axis_metadata['axes'][1]['values']
+    # Force reload from Zarr
+    get_data(trange, epad.strahl)
+    loaded_data = np.array(epad.strahl.data)
+    loaded_axis = epad.strahl.plot_options.axis_metadata['axes'][1]['values']
+    assert original_data.shape == loaded_data.shape, f"Shape mismatch: {original_data.shape} vs {loaded_data.shape}"
+    assert np.allclose(original_data, loaded_data), "Data values differ after Zarr roundtrip!"
+    assert np.allclose(original_axis, loaded_axis), "Axis values differ after Zarr roundtrip!"
+    print("✅ Zarr roundtrip test passed: data and axis arrays are identical.")
+
+
+def test_zarr_single_file_storage_and_load_epad_strahl():
+    """Test that Zarr storage and retrieval work for epad.strahl when only one file is involved."""
+    from plotbot.get_data import get_data
+    from plotbot.data_classes.psp_electron_classes import epad
+    import numpy as np
+    import shutil
+    import os
+    zarr_path = 'data_cubby/spe_sf0_pad/2021/04/26.zarr'
+    # Ensure Zarr file is deleted
+    if os.path.exists(zarr_path):
+        shutil.rmtree(zarr_path)
+        print(f"Deleted Zarr file: {zarr_path}")
+    trange = ['2021/04/26 00:00:00.000', '2021/04/26 06:00:00.000']
+    # Load from CDF and save to Zarr
+    get_data(trange, epad.strahl)
+    # Force reload from Zarr
+    get_data(trange, epad.strahl)
+    # Confirm data shape and axis shape
+    data = np.array(epad.strahl.data)
+    axis = np.array(epad.strahl.plot_options.axis_metadata['axes'][1]['values'])
+    print(f"Data shape: {data.shape}, Axis shape: {axis.shape}")
+    assert data.shape[0] > 0 and axis.shape[0] > 0, "Data or axis array is empty!"
+    print("✅ Zarr single file storage/load test passed.")
+
+
+def test_plotbot_epad_and_mag_rtn_4sa_keyerror_check():
+    """Mimic the Jupyter notebook call to plotbot.plotbot with mag_rtn_4sa.br and epad.strahl, and check for KeyError or missing axis arrays."""
     import plotbot as pb
     test_range = ['2022/04/14 00:00:00.000', '2022/04/14 06:00:00.000']
-    print("[TEST] Calling pb.plotbot with mag_rtn_4sa.br and epad.strahl...")
-    pb.plotbot(test_range, pb.mag_rtn_4sa.br, 1, pb.epad.strahl, 2)
-    print("[TEST] pb.plotbot call complete.") 
+    try:
+        pb.plotbot(test_range, pb.mag_rtn_4sa.br, 1, pb.epad.strahl, 2)
+        # After plotbot, print keys for epad.strahl
+        from plotbot.data_classes.psp_electron_classes import epad
+        if hasattr(epad, 'strahl') and hasattr(epad.strahl, 'plot_options'):
+            axis_md = getattr(epad.strahl.plot_options, 'axis_metadata', None)
+            if axis_md:
+                print(f"epad.strahl axis_metadata: {axis_md}")
+            else:
+                print("epad.strahl axis_metadata is missing!")
+        print("✅ plotbot call completed without KeyError.")
+    except KeyError as e:
+        print(f"❌ KeyError encountered: {e}")
+        assert False, f"KeyError encountered: {e}" 
