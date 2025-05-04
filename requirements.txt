@@ -59,6 +59,8 @@ numpy==1.26.4
 overrides==7.4.0
 packaging==24.2
 pandas==2.2.2
+zarr
+xarray
 pandocfilters==1.5.0
 parso==0.8.4
 pexpect==4.8.0
@@ -102,3 +104,4 @@ wcwidth==0.2.5
 webencodings==0.5.1
 websocket-client==1.8.0
 wheel==0.45.1
+dask
