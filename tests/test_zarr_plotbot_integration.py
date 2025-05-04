@@ -3,7 +3,7 @@ from plotbot.print_manager import print_manager
 
 def test_basic_zarr_functionality():
     """
-    TEST 1: Basic Zarr Functionality
+    **TEST 1: Basic Zarr Functionality ✅ PASSED**
     
     PURPOSE:
     This test verifies that Zarr is correctly installed and that the basic 
@@ -68,7 +68,7 @@ def test_basic_zarr_functionality():
 
 def test_file_structure_and_chunking():
     """
-    TEST 2: File Structure and Chunking
+    **TEST 2: File Structure and Chunking ✅ PASSED**
     
     PURPOSE:
     Zarr files need to be organized to match your data's natural cadence (daily or 6-hourly).
@@ -301,12 +301,112 @@ def test_data_class_conversion():
             shutil.rmtree(test_dir)
 
 
+def test_3_5_plot_manager_roundtrip():
+    """
+    **TEST 3.5: plot_manager Roundtrip ✅ PASSED**
+    
+    PURPOSE:
+    Ensure that a plot_manager instance (subclass of np.ndarray with metadata) can be roundtripped through xarray/zarr and retain both its data and key metadata.
+    
+    WHAT IT DOES:
+    1. Creates a plot_manager instance with sample data and metadata
+    2. Converts it to xarray.Dataset and saves to zarr
+    3. Reads it back from zarr
+    4. Reconstructs a plot_manager from the xarray data
+    5. Asserts that both the data and key metadata match the original
+    
+    SUCCESS CRITERIA:
+    - Data matches after roundtrip
+    - Metadata (var_name, class_name, subclass_name, etc.) matches after roundtrip
+    """
+    import os
+    import shutil
+    import numpy as np
+    import xarray as xr
+    from datetime import datetime, timedelta
+    from plotbot.plot_manager import plot_manager
+    from plotbot.ploptions import ploptions
+
+    # Create test directory
+    test_dir = './data_cubby_zarr_testing/test_zarr_plot_manager_roundtrip'
+    if os.path.exists(test_dir):
+        shutil.rmtree(test_dir)
+    os.makedirs(test_dir)
+
+    try:
+        print("[TEST 3.5] Creating plot_manager instance...")
+        # Create sample data and metadata
+        times = [datetime(2023, 5, 15) + timedelta(minutes=i*10) for i in range(24)]
+        data = np.arange(24)
+        opts = ploptions(
+            var_name='test_var',
+            class_name='test_class',
+            subclass_name='test_subclass',
+            data_type='test_type',
+            plot_type='time_series',
+            datetime_array=np.array(times)
+        )
+        pm = plot_manager(data, plot_options=opts)
+        print("[TEST 3.5] plot_manager instance created.")
+
+        # Convert to xarray
+        print("[TEST 3.5] Converting to xarray.Dataset and saving to zarr...")
+        ds = xr.Dataset(
+            data_vars={'test_var': ('time', pm.data)},
+            coords={'time': times},
+            attrs={
+                'var_name': pm.var_name,
+                'class_name': pm.class_name,
+                'subclass_name': pm.subclass_name,
+                'data_type': pm.data_type,
+                'plot_type': pm.plot_type
+            }
+        )
+
+        # Save to zarr
+        zarr_path = os.path.join(test_dir, 'test_plot_manager.zarr')
+        ds.to_zarr(zarr_path)
+        print(f"[TEST 3.5] Saved to zarr at {zarr_path}")
+
+        # Read back from zarr
+        print("[TEST 3.5] Reading back from zarr...")
+        ds_read = xr.open_zarr(zarr_path)
+
+        # Reconstruct plot_manager
+        print("[TEST 3.5] Reconstructing plot_manager from xarray data...")
+        opts2 = ploptions(
+            var_name=ds_read.attrs.get('var_name'),
+            class_name=ds_read.attrs.get('class_name'),
+            subclass_name=ds_read.attrs.get('subclass_name'),
+            data_type=ds_read.attrs.get('data_type'),
+            plot_type=ds_read.attrs.get('plot_type'),
+            datetime_array=np.array(ds_read['time'].values)
+        )
+        pm2 = plot_manager(ds_read['test_var'].values, plot_options=opts2)
+        print("[TEST 3.5] plot_manager reconstructed.")
+
+        # Assert data matches
+        assert np.array_equal(pm2.data, pm.data), 'plot_manager data does not match after roundtrip'
+        # Assert metadata matches
+        assert pm2.var_name == pm.var_name, 'var_name does not match after roundtrip'
+        assert pm2.class_name == pm.class_name, 'class_name does not match after roundtrip'
+        assert pm2.subclass_name == pm.subclass_name, 'subclass_name does not match after roundtrip'
+        assert pm2.data_type == pm.data_type, 'data_type does not match after roundtrip'
+        assert pm2.plot_type == pm.plot_type, 'plot_type does not match after roundtrip'
+        print("[TEST 3.5] All assertions passed.")
+    finally:
+        if os.path.exists(test_dir):
+            # shutil.rmtree(test_dir)  # Commented out to preserve test files for inspection
+            pass
+
+
 def test_zarr_storage_class():
     """
-    TEST 4: ZarrStorage Class
+    **TEST 4: ZarrStorage Class ✅ PASSED**
     
     PURPOSE:
     The ZarrStorage class is the core component that manages zarr file storage and retrieval.
+    This test validates daily chunking and multi-day retrieval only (does NOT test 6-hour chunking).
     It handles the creation of proper file structures, chunking, data conversion, and time range
     management. This test validates that the entire class works correctly as a complete system.
     
@@ -505,7 +605,7 @@ def test_zarr_storage_class():
 
 def test_integration_with_tracker():
     """
-    TEST 5: Integration with DataTracker System
+    **TEST 5: Integration with DataTracker ✅ PASSED**
     
     PURPOSE:
     Your system uses a sophisticated DataTracker to keep track of what time ranges
@@ -777,15 +877,18 @@ def test_end_to_end_integration():
     # 4. Retrieve the data from Zarr
     # 5. Verify it matches the original
     
+    test_dir = None
     try:
         import os
         import shutil
         from datetime import datetime, timedelta
         
         # Use the real ZarrStorage implementation
-        from zarr_storage import ZarrStorage
-        from data_tracker import global_tracker
-        from data_cubby import data_cubby
+        from plotbot.zarr_storage import ZarrStorage
+        from plotbot.data_tracker import global_tracker
+        from plotbot.data_cubby import data_cubby
+        # Use your actual get_data to download data
+        from plotbot.get_data import get_data
         
         # Define test directory and create ZarrStorage instance
         test_dir = './data_cubby_zarr_testing/test_zarr_end_to_end'
@@ -801,9 +904,6 @@ def test_end_to_end_integration():
         data_type = 'mag_rtn'  # Or another available type
         
         print_manager.zarr_integration("STEP 1: Download and process data")
-        # Use your actual get_data to download data
-        from get_data import get_data
-        
         # Get the data (this should download and process)
         get_data(test_range, data_type)
         
@@ -867,8 +967,7 @@ def test_end_to_end_integration():
         print_manager.zarr_integration(f"❌ FAILURE: End-to-end test failed with error: {e}")
         assert False, f"FAILURE: End-to-end test failed with error: {e}"
     finally:
-        # Clean up
-        if os.path.exists(test_dir):
+        if test_dir and os.path.exists(test_dir):
             shutil.rmtree(test_dir)
 
 
@@ -885,6 +984,7 @@ def run_all_tests():
         test_basic_zarr_functionality,
         test_file_structure_and_chunking,
         test_data_class_conversion,
+        test_3_5_plot_manager_roundtrip,
         test_zarr_storage_class,
         test_integration_with_tracker,
         test_end_to_end_integration

@@ -142,8 +142,8 @@ __all__ = [
 BLUE = '\033[94m'
 RESET = '\033[0m'
 
-COMMIT_MSG = "test: v1.95: Document CDF-to-Zarr mirroring test success, dask env update, Zarr pipeline validated (2025_05_03_v1.95)"
-print(f'{BLUE}   Version: 2025_05_03_v1.95{RESET}')
+COMMIT_MSG = "test: v1.96: Zarr integration tests 1-5 passing, end-to-end test import/circular issues remain, finally block fixed (2025_05_03_v1.96)"
+print(f'{BLUE}   Version: 2025_05_03_v1.96{RESET}')
 print(f'{BLUE}   Commit: {COMMIT_MSG}{RESET}')
 
 # --- Final Print Message ---

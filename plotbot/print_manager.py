@@ -68,7 +68,7 @@ class print_manager_class:
     MANU_DATA_IN = False
     CUSTOM_DEBUG = False
     PV_TESTING = False
-    ZARR_INTEGRATION = True  # Enabled for debugging
+    ZARR_INTEGRATION = True  # Enabled for Zarr debugging
     
     # Colors for class-level access
     BLACK = '\033[30m'
@@ -588,7 +588,7 @@ class print_manager_class:
             prefix = self.processing_prefix if self.category_prefix_enabled else ""
             print(self._format_message(f"{prefix}{msg}"))
 
-    def zarr_integration(self, msg):
+    def zarr_integration(self, msg, color=None):
         """Print Zarr integration messages (magenta)."""
         if self.__class__.ZARR_INTEGRATION:
             print(f"{print_manager_class.MAGENTA}[ZARR] {msg}{print_manager_class.RESET}")
