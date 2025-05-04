@@ -2,7 +2,7 @@
 Tests for the main plotbot functionality.
 
 This file contains tests for the core plotbot functions, including
-derived variable time updates and custom variable handling.
+custom variable time updates and custom variable handling.
 
 NOTES ON TEST OUTPUT:
 - Use print_manager.test() for any debug information you want to see in test output
@@ -14,7 +14,7 @@ To run all tests in this file:
 cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_plotbot.py -v
 
 To run a specific test:
-cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_plotbot.py::test_derived_variable_time_update -v
+cd ~/GitHub/Plotbot && conda run -n plotbot_env python -m pytest tests/test_plotbot.py::test_custom_variable_time_update -v
 """
 
 import pytest
@@ -32,16 +32,16 @@ from plotbot.plotbot_main import plotbot
 from plotbot.test_pilot import phase, system_check
 from plotbot.print_manager import print_manager
 
-@pytest.mark.mission("Derived Variable Time Range Update")
-def test_derived_variable_time_update():
-    """Test that derived variables update their time range when plotbot is called with a new range"""
+@pytest.mark.mission("Custom Variable Time Range Update")
+def test_custom_variable_time_update():
+    """Test that custom variables update their time range when plotbot is called with a new range"""
     
     print("\n================================================================================")
-    print("TEST #1: Derived Variable Time Range Update")
-    print("Verifies that derived variables update when time range changes")
+    print("TEST #1: Custom Variable Time Range Update")
+    print("Verifies that custom variables update when time range changes")
     print("================================================================================\n")
     
-    phase(1, "Creating derived variable structure")
+    phase(1, "Creating custom variable structure")
     # Create custom variable structure - this relies on the division operator triggering
     # whatever internal mechanism loads data IF NEEDED by the operator itself.
     # The variable itself might be created 'empty' if sources aren't pre-loaded.
@@ -100,7 +100,7 @@ def test_derived_variable_time_update():
            mag_rtn_4sa.bmag, 1,
            ta_over_b, 2)
 
-    phase(5, "Verifying derived variable was updated after second plotbot call")
+    phase(5, "Verifying custom variable was updated after second plotbot call")
     # Re-fetch the variable reference again
     from plotbot import TestTAoverB # Get the potentially updated global reference
     updated_var = TestTAoverB
@@ -108,7 +108,7 @@ def test_derived_variable_time_update():
 
     # Check if the variable's time range has been updated
     if not hasattr(updated_var, 'datetime_array') or updated_var.datetime_array is None or len(updated_var.datetime_array) == 0:
-        system_check("Derived Variable Update (Post-Plotbot)", False, "Derived variable should still have data after time range update")
+        system_check("Custom Variable Update (Post-Plotbot)", False, "Custom variable should still have data after time range update")
         pytest.fail("Test failed: Variable empty after update by plotbot.")
         return
 
@@ -121,8 +121,8 @@ def test_derived_variable_time_update():
     time_update_passed = time_update_diff < np.timedelta64(1, 'm') # Allow 1 min tolerance
 
     print_manager.test(f"Updated variable time range (Post-Plotbot): {updated_start} to {updated_end}")
-    system_check("Derived Variable Time Update (Post-Plotbot)", time_update_passed,
-                   f"Derived variable start time ({updated_start}) should update to new range ({expected_new_start_dt}) - Diff: {time_update_diff}")
+    system_check("Custom Variable Time Update (Post-Plotbot)", time_update_passed,
+                   f"Custom variable start time ({updated_start}) should update to new range ({expected_new_start_dt}) - Diff: {time_update_diff}")
 
 @pytest.mark.mission("Custom Variable Time Range Update - Log Scale")
 def test_custom_variable_time_update_log():

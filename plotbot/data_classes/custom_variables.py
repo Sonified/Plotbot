@@ -387,8 +387,7 @@ def custom_variable(name, expression):
     >>> custom_variable('TAoverB', proton.anisotropy / mag_rtn_4sa.bmag)
     >>> custom_variable('SumField', mag_rtn_4sa.br + mag_rtn_4sa.bt)
     """
-    print_manager.custom_debug(f"Creating custom variable: {name}")
-    
+
     # <<< ADDED DEBUG PRINT >>>
     expr_has_data = hasattr(expression, 'datetime_array') and expression.datetime_array is not None and len(expression.datetime_array) > 0
     expr_data_points = len(expression.datetime_array) if expr_has_data else 0

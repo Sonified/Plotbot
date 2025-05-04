@@ -15,13 +15,7 @@ class plot_manager(np.ndarray):
         'y_label', 'legend_label', 'color', 'y_scale', 'y_limit', 'line_width',
         'line_style', 'colormap', 'colorbar_scale', 'colorbar_limits',
         'additional_data', 'colorbar_label', 'is_derived', 'source_var', 'operation',
-        # RecalculableDerived attributes
-        'source_vars', 'scalar_value', 'operation_str', 'is_recalculable',
-        'recalculate_for_timerange', 'get_base_variables',
-        # New attributes for improved derived variable handling
-        'source_class_names', 'source_subclass_names',
-        # Named variable reference tracking
-        'original_derived_var', 'original_derived_name', 'add',
+
         # Add missing attributes
         'marker', 'marker_size', 'alpha', 'marker_style' #, 'zorder', 'legend_label_override'
     ]
@@ -37,15 +31,12 @@ class plot_manager(np.ndarray):
         else:
             obj._plot_state = {}
         
-        # Safely handle plot_options
+        from .print_manager import print_manager
+        # Require plot_options to be provided
         if plot_options is None:
-            from .ploptions import ploptions
-            plot_options = ploptions(
-                data_type="derived",
-                class_name="derived", 
-                subclass_name="temporary_derived_variable",
-                plot_type="time_series"
-            )
+            raise ValueError("plot_options must be provided when creating a plot_manager instance")
+        
+        print_manager.zarr_integration(f"Using plot_options: data_type={getattr(plot_options, 'data_type', 'None')}, class={getattr(plot_options, 'class_name', 'None')}, subclass={getattr(plot_options, 'subclass_name', 'None')}")
         
         # Keep existing code with better error handling
         if hasattr(input_array, '_original_options'):
@@ -728,8 +719,8 @@ class plot_manager(np.ndarray):
                 
                 # Create result plot_manager
                 result_plot_options = ploptions(
-                    data_type="derived",
-                    class_name="derived", 
+                    data_type="custom_data_type",
+                    class_name="custom_class", 
                     subclass_name=var_name,
                     plot_type="time_series",
                     datetime_array=self.datetime_array if hasattr(self, 'datetime_array') else None
@@ -846,11 +837,10 @@ class plot_manager(np.ndarray):
         # --- Create result plot_manager ---
         # Use placeholder options initially, custom_variable will refine
         result_plot_options = ploptions(
-            data_type="derived", # Let custom_variable set to custom_data_type
-            class_name="derived", # Let custom_variable set to custom_class
+            data_type="custom_data_type", # Let custom_variable set to custom_data_type
+            class_name="custom_class", # Let custom_variable set to custom_class
             subclass_name=var_name, # Temporary, custom_variable uses this
             plot_type="time_series",
-            # We need to ensure dt_array is handled correctly
             datetime_array=(dt_array if dt_array is not None else (self.datetime_array if hasattr(self, 'datetime_array') else None))
         )
         

@@ -156,11 +156,6 @@ def get_data(trange: List[str], *variables):
     for data_type in required_data_types:
         print_manager.debug(f"\nProcessing Data Type: {data_type}...")
         
-        # Handle derived variables separately (if needed, add logic here)
-        if data_type == 'derived':
-            print_manager.variable_testing(f"SKIPPING processing for 'derived' type in main loop.")
-            continue
-            
         # --- Handle FITS Calculation Type --- 
         if data_type == 'proton_fits':
             fits_calc_key = 'proton_fits'

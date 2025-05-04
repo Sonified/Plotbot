@@ -42,7 +42,6 @@ class print_manager_class:
     Properties:
         show_debug: Enable/disable detailed technical diagnostic information
         show_custom_debug: Enable/disable custom variable operations debugging
-        show_derived: Legacy alias for show_custom_debug
         show_variable_testing: Enable/disable variable testing specific debugging
         show_variable_basic: Enable/disable basic user-facing variable info
         show_status: Alias for show_variable_basic
@@ -57,13 +56,45 @@ class print_manager_class:
         pyspedas_verbose: Enable/disable verbose INFO messages from pyspedas library (default: True)
     """
     
+    # Turn on/off by type
+    DEBUG = False
+    WARNING = False
+    ERROR = True     # Keep error enabled for safety
+    VARIABLE_TESTING = False
+    VARIABLE_BASIC = False
+    MULTIPLOT = False
+    MAIN_DEBUG = False
+    DATACUBBY = False
+    MANU_DATA_IN = False
+    CUSTOM_DEBUG = False
+    PV_TESTING = False
+    ZARR_INTEGRATION = True  # Enabled for debugging
+    
+    # Colors for class-level access
+    BLACK = '\033[30m'
+    RED = '\033[31m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    BLUE = '\033[34m'
+    MAGENTA = '\033[35m'
+    CYAN = '\033[36m'
+    WHITE = '\033[37m'
+    DEFAULT = '\033[39m'
+    BRIGHT_RED = '\033[91m'
+    BRIGHT_GREEN = '\033[92m'
+    BRIGHT_YELLOW = '\033[93m'
+    BRIGHT_BLUE = '\033[94m'
+    BRIGHT_MAGENTA = '\033[95m'
+    BRIGHT_CYAN = '\033[96m'
+    BRIGHT_WHITE = '\033[97m'
+    RESET = '\033[0m'
+    
     def __init__(self):
         """Initialize the print manager with default settings."""
         # print("[PM_DEBUG] print_manager.__init__ called") # Remove print
         # Debug flags - enable/disable different categories
         self.debug_mode = False            # Detailed technical diagnostic information
         self.custom_debug_enabled = False  # Custom variable operations debugging
-        self.derived_enabled = False       # Legacy alias for custom_debug_enabled
         self.variable_testing_enabled = False # Variable testing specific debugging
         self.variable_basic_enabled = False   # Basic user-facing variable info 
         self.error_enabled = False            # Error messages (always keep this enabled)
@@ -80,7 +111,6 @@ class print_manager_class:
         # Print formatting prefixes
         self.debug_prefix = "[DEBUG] "
         self.custom_debug_prefix = "[CUSTOM_DEBUG] "
-        self.derived_prefix = "[DERIVED] "   # Legacy alias for custom_debug_prefix
         self.variable_testing_prefix = "[VAR] "
         self.variable_basic_prefix = ""      # No prefix for basic user output
         self.error_prefix = "[ERROR] "
@@ -218,10 +248,6 @@ class print_manager_class:
             prefix = self.level_warning if self.category_prefix_enabled else ""
             print(self._format_message(f"{prefix}{msg}"))
             
-    def derived(self, msg):
-        """Legacy method - print custom variable debugging message if enabled."""
-        self.custom_debug(msg)
-            
     def custom_debug(self, msg):
         """Print custom variable debugging message if enabled."""
         if self.custom_debug_enabled:
@@ -352,12 +378,14 @@ class print_manager_class:
             
         self.custom_debug(f"Array '{name}': {shape_info}, {type_info}, {sample}")
 
-    def datacubby(self, msg):
-        """Print data cubby specific messages for backward compatibility."""
+    def datacubby(self, msg, color=None):
+        """Print data cubby specific messages for backward compatibility, with optional color."""
+        color_code = color if color else ''
+        reset_code = self.RESET if color else ''
         if hasattr(self, 'debug_mode') and self.debug_mode:
-            print(f"[CUBBY] {msg}")
+            print(f"{color_code}[CUBBY] {msg}{reset_code}")
         elif hasattr(self, 'show_datacubby') and self.show_datacubby:
-            print(f"[CUBBY] {msg}")
+            print(f"{color_code}[CUBBY] {msg}{reset_code}")
             
     # Properties for consistent naming convention
     @property
@@ -399,17 +427,6 @@ class print_manager_class:
     def show_variable_basic(self, value):
         """Set whether basic variable output is enabled."""
         self.variable_basic_enabled = value
-        
-    @property
-    def show_derived(self):
-        """Legacy property - get the current state of custom debug output."""
-        return self.custom_debug_enabled
-        
-    @show_derived.setter
-    def show_derived(self, value):
-        """Legacy property - set whether custom debug output is enabled."""
-        self.custom_debug_enabled = value
-        self.derived_enabled = value  # Update both for consistency
         
     @property
     def show_custom_debug(self):
@@ -550,7 +567,6 @@ class print_manager_class:
         """
         self.show_debug = False
         self.show_custom_debug = False
-        self.show_derived = False  # Legacy alias
         self.show_variable_testing = False
         self.show_variable_basic = False
         self.show_time_tracking = False
@@ -571,6 +587,11 @@ class print_manager_class:
         if self.processing_enabled:
             prefix = self.processing_prefix if self.category_prefix_enabled else ""
             print(self._format_message(f"{prefix}{msg}"))
+
+    def zarr_integration(self, msg):
+        """Print Zarr integration messages (magenta)."""
+        if self.__class__.ZARR_INTEGRATION:
+            print(f"{print_manager_class.MAGENTA}[ZARR] {msg}{print_manager_class.RESET}")
 
 # Create a singleton instance
 print_manager = print_manager_class()
