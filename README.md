@@ -99,7 +99,7 @@ This simple call automatically downloads the required data for the specified tim
     *   Clone this repository and change your working directory to the Plotbot directory. After you run this command you can follow the instructions in the terminal to complete the installation 💻:
 
         ```bash
-        git clone https://github.com/Sonified/Plotbot.git && cd Plotbot && echo "✅ Download complete" && echo "" && echo "Copy and paste the following command, including the period, to initialize Conda for your shell: ./Install_Scripts/1_init_conda.sh" && echo ""
+        git clone https://github.com/Sonified/Plotbot.git && cd Plotbot && echo "✅ Download complete" && echo "" && echo "Copy and paste the following command, including the period, to initialize Conda for your shell: ./install_scripts/1_init_conda.sh" && echo ""
         ```
 
 2.  **Now Run the Environment Setup Scripts in the Same Terminal Window** 
@@ -107,19 +107,19 @@ This simple call automatically downloads the required data for the specified tim
     *   First, initialize Conda for your shell:
        
         ```bash
-        ./Install_Scripts/1_init_conda.sh
+        ./install_scripts/1_init_conda.sh
         ```
 
     *   Next, create the Plotbot environment from the YAML file:
         
         ```bash
-        ./Install_Scripts/2_setup_env.sh
+        ./install_scripts/2_setup_env.sh
         ```
 
     *   Finally, register Plotbot as a Jupyter kernel (👉 if VS Code is open, close ❌ and reopen 🟢 it after this):
         
         ```bash
-        ./Install_Scripts/3_register_kernel.sh
+        ./install_scripts/3_register_kernel.sh
         ````
 
 3.  **Open VS Code & Select the Environment**
@@ -492,7 +492,7 @@ For those interested in contributing or understanding the internals:
     *   **`test_pilot.py`**: Custom pytest runner framework.
     *   **`utils.py`, `time_utils.py`, `plotbot_helpers.py`, etc.**: Utility functions.
 *   **`tests/`**: Contains all `pytest` tests.
-*   **`Install_Scripts/`**: Scripts for setting up the Conda environment.
+*   **`install_scripts/`**: Scripts for setting up the Conda environment.
 *   **`psp_data/`**: Default location for downloaded data (can be configured).
 *   **`docs/`**: Additional documentation (if any).
 *   **`environment.yml`**: Defines the Conda environment.

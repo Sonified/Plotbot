@@ -142,8 +142,8 @@ __all__ = [
 BLUE = '\033[94m'
 RESET = '\033[0m'
 
-COMMIT_MSG = "refactor: v1.92: Remove all legacy derived code, update tests and stubs to custom variable system"
-print(f'{BLUE}   Version: 2025_05_03_v1.92{RESET}')
+COMMIT_MSG = "fix: v1.94: Make installer script universally robust to conda location, fix README folder casing"
+print(f'{BLUE}   Version: 2025_05_03_v1.94{RESET}')
 print(f'{BLUE}   Commit: {COMMIT_MSG}{RESET}')
 
 # --- Final Print Message ---
