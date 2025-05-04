@@ -118,3 +118,33 @@
     - Verified every CDF file has a corresponding Zarr file in the mirrored structure.
 - **Result:** Test passed with no errors. This proves the core Zarr file management and mirroring logic is robust and matches the intended pipeline.
 - This is a major validation for the Zarr integration effort—future work can confidently build on this foundation. 
+
+### 11. Zarr Plotbot Integration Tests 1 & 2: Passed
+- **Test 1: Basic Zarr Functionality ✅ PASSED** (xarray-to-zarr roundtrip)
+- **Test 2: File Structure and Chunking ✅ PASSED** (daily/6-hour cadence, directory logic)
+- **Test 3: Data Class Conversion ✅ PASSED** (mock data class to xarray/zarr and back)
+- **Test 3.5: plot_manager Roundtrip ✅ PASSED** (real plot_manager data and metadata survive xarray/zarr roundtrip)
+    - Now includes detailed print statements for each step (creation, saving, reading, reconstruction, assertion)
+    - All [ZARR] integration prints are visible and working as intended
+    - Confirms end-to-end traceability for both data and metadata through the Zarr pipeline
+- **Test 4: ZarrStorage Class ✅ PASSED** (tests daily chunking and multi-day retrieval only; does not test 6-hour chunking)
+    - Validates daily file structure and retrieval across multiple days
+    - 6-hour/sub-daily chunking logic is not covered in this test
+- **Test 5: Integration with DataTracker ✅ PASSED** (Zarr storage and retrieval integrates with tracker, correctly updates and uses in-memory data)
+    - All Zarr integration, tracker updates, and in-memory data logic are validated by this test
+- All tests so far passed with no errors.
+- Confirms Zarr install, xarray/zarr roundtrip, directory/chunking logic, and robust support for real plot_manager objects.
+
+---
+
+#### Push Log (2025_05_03_v1.95)
+- Version tag: 2025_05_03_v1.95
+- Commit: test: v1.95: Document CDF-to-Zarr mirroring test success, dask env update, Zarr pipeline validated (2025_05_03_v1.95)
+- All Zarr/dask integration and stardust tests validated and passing.
+- Closing captain's log for 2025-05-03. 
+
+#### Push Log (2025_05_03_v1.96)
+- Version tag: 2025_05_03_v1.96
+- Commit: test: v1.96: Zarr integration tests 1-5 passing, end-to-end test import/circular issues remain, finally block fixed
+- Tests 1-5 in test_zarr_plotbot_integration.py are passing and fully validated.
+- Test 6 (end-to-end) fails due to import/circular issues with ZarrStorage; finally block now robust to early failures. 
