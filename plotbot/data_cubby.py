@@ -48,8 +48,6 @@ class data_cubby:
         """Retrieve object by its identifier."""
         print_manager.datacubby(f"\n=== Retrieving {identifier} from data_cubby ===")
         
-        # Remove special handling for 'derived' variables (legacy)
-        # Only use the standard registries
         result = (cls.cubby.get(identifier) or 
                  cls.class_registry.get(identifier) or 
                  cls.subclass_registry.get(identifier))
@@ -120,7 +118,6 @@ class data_cubby:
             print_manager.custom_debug(f"Could not find subclass: {subclass_name} in class {class_name}")
             return None
         
-        # Remove legacy derived variable time validation/debug
         print_manager.custom_debug(f"Found component: {class_name}.{subclass_name}")
         return subclass
 
