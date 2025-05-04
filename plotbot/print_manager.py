@@ -68,7 +68,7 @@ class print_manager_class:
     MANU_DATA_IN = False
     CUSTOM_DEBUG = False
     PV_TESTING = False
-    ZARR_INTEGRATION = True  # Enabled for Zarr debugging
+    ZARR_INTEGRATION = False  # Disabled by default; enable for Zarr debugging
     
     # Colors for class-level access
     BLACK = '\033[30m'

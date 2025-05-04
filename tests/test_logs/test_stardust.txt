@@ -1,0 +1,97 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.4, pytest-7.4.4, pluggy-1.5.0 -- /opt/anaconda3/envs/plotbot_env/bin/python3.12
+cachedir: .pytest_cache
+rootdir: /Users/robertalexander/GitHub/Plotbot
+configfile: pytest.ini
+collecting ... collected 157 items / 6 errors
+
+==================================== ERRORS ====================================
+____________________ ERROR collecting plotbot/test_pilot.py ____________________
+/opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/_pytest/config/__init__.py:781: in import_plugin
+    __import__(importspec)
+E   ModuleNotFoundError: No module named 'test_pilot'
+
+The above exception was the direct cause of the following exception:
+/opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/_pytest/runner.py:341: in from_call
+    result: Optional[TResult] = func()
+/opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/_pytest/runner.py:372: in <lambda>
+    call = CallInfo.from_call(lambda: list(collector.collect()), "collect")
+/opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/_pytest/python.py:531: in collect
+    self._inject_setup_module_fixture()
+/opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/_pytest/python.py:545: in _inject_setup_module_fixture
+    self.obj, ("setUpModule", "setup_module")
+/opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/_pytest/python.py:310: in obj
+    self._obj = obj = self._getobj()
+/opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/_pytest/python.py:528: in _getobj
+    return self._importtestmodule()
+/opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/_pytest/python.py:657: in _importtestmodule
+    self.config.pluginmanager.consider_module(mod)
+/opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/_pytest/config/__init__.py:747: in consider_module
+    self._import_plugin_specs(getattr(mod, "pytest_plugins", []))
+/opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/_pytest/config/__init__.py:754: in _import_plugin_specs
+    self.import_plugin(import_spec)
+/opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/_pytest/config/__init__.py:783: in import_plugin
+    raise ImportError(
+/opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/_pytest/config/__init__.py:781: in import_plugin
+    __import__(importspec)
+E   ImportError: Error importing plugin "test_pilot": No module named 'test_pilot'
+__________________ ERROR collecting tests/test_arithmetic.py ___________________
+ImportError while importing test module '/Users/robertalexander/GitHub/Plotbot/tests/test_arithmetic.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/anaconda3/envs/plotbot_env/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_arithmetic.py:23: in <module>
+    from plotbot.custom_variables import custom_variable
+E   ModuleNotFoundError: No module named 'plotbot.custom_variables'
+______________ ERROR collecting tests/test_complex_expressions.py ______________
+ImportError while importing test module '/Users/robertalexander/GitHub/Plotbot/tests/test_complex_expressions.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/anaconda3/envs/plotbot_env/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_complex_expressions.py:17: in <module>
+    from plotbot.custom_variables import custom_variable
+E   ModuleNotFoundError: No module named 'plotbot.custom_variables'
+___________ ERROR collecting tests/test_custom_variable_operators.py ___________
+ImportError while importing test module '/Users/robertalexander/GitHub/Plotbot/tests/test_custom_variable_operators.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/anaconda3/envs/plotbot_env/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_custom_variable_operators.py:16: in <module>
+    from plotbot.custom_variables import custom_variable
+E   ModuleNotFoundError: No module named 'plotbot.custom_variables'
+____________________ ERROR collecting tests/test_prints.py _____________________
+ImportError while importing test module '/Users/robertalexander/GitHub/Plotbot/tests/test_prints.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/anaconda3/envs/plotbot_env/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_prints.py:28: in <module>
+    from plotbot.custom_variables import custom_variable
+E   ModuleNotFoundError: No module named 'plotbot.custom_variables'
+_ ERROR collecting tests/multiplot_tests/test_positional_x_axis_single_mode.py _
+ImportError while importing test module '/Users/robertalexander/GitHub/Plotbot/tests/multiplot_tests/test_positional_x_axis_single_mode.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/anaconda3/envs/plotbot_env/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/multiplot_tests/test_positional_x_axis_single_mode.py:15: in <module>
+    import plotbot.plotting as pbplt
+E   ModuleNotFoundError: No module named 'plotbot.plotting'
+=============================== warnings summary ===============================
+tests/test_data_cubby_daily_pkl.py:138
+  /Users/robertalexander/GitHub/Plotbot/tests/test_data_cubby_daily_pkl.py:138: PytestUnknownMarkWarning: Unknown pytest.mark.daily_pkl - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.daily_pkl # Add a marker for easier selective running
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR plotbot/test_pilot.py - ImportError: Error importing plugin "test_pilot...
+ERROR tests/test_arithmetic.py
+ERROR tests/test_complex_expressions.py
+ERROR tests/test_custom_variable_operators.py
+ERROR tests/test_prints.py
+ERROR tests/multiplot_tests/test_positional_x_axis_single_mode.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 6 errors during collection !!!!!!!!!!!!!!!!!!!!
+=================== 1 warning, 6 errors in 77.35s (0:01:17) ====================

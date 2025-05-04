@@ -27,3 +27,24 @@ Today's session focused heavily on understanding and documenting the data acquis
 ---
 
 **LOG CLOSED**
+
+# Captain's Log - Stardate 2025_04_20 (continued)
+
+**Test Run: Stardust**
+
+- Ran all tests using `pytest`, output saved to `tests/test_logs/test_stardust.txt`.
+- Encountered 6 import errors:
+  - `plotbot.custom_variables` and `plotbot.plotting` modules not found in several test files.
+  - `plotbot/test_pilot.py` failed due to missing `test_pilot` plugin/module.
+- These are not test failures, but Python import errors—likely due to missing files or incorrect import paths.
+- Tests did not complete; no test results available until import issues are resolved.
+
+**Next Steps:**
+- Check if `plotbot/custom_variables.py` and `plotbot/plotting.py` exist in the codebase.
+- Remove or fix the reference to `test_pilot` in `plotbot/test_pilot.py` or pytest config.
+- Ensure tests are run from the project root so imports like `from plotbot import ...` work as intended.
+- After fixing, re-run tests and update the log with results.
+
+- Note: Custom examples are now located in the `custom_examples` folder for easier access and organization.
+
+---

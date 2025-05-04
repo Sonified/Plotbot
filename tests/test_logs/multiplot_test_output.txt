@@ -1,0 +1,15 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.4, pytest-7.4.4, pluggy-1.5.0 -- /opt/anaconda3/envs/plotbot_env/bin/python3.12
+cachedir: .pytest_cache
+rootdir: /Users/robertalexander/GitHub/Plotbot
+configfile: pytest.ini
+collecting ... collected 11 items
+
+tests/test_multiplot.py::test_options_reset PASSED                       [  9%]
+tests/test_multiplot.py::test_multiplot_single_custom_variable PASSED    [ 18%]
+tests/test_multiplot.py::test_multiplot_same_rate_custom PASSED          [ 27%]
+tests/test_multiplot.py::test_multiplot_different_rate_custom PASSED     [ 36%]
+tests/test_multiplot.py::test_multiplot_multiple_variables PASSED        [ 45%]
+tests/test_multiplot.py::test_multiplot_preexisting_variable PASSED      [ 54%]
+tests/test_multiplot.py::test_multiplot_log_scale_custom_variable PASSED [ 63%]
+tests/test_multiplot.py::test_multiplot_custom_variable_time_update 

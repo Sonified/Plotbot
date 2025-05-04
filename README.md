@@ -125,7 +125,7 @@ This simple call automatically downloads the required data for the specified tim
 3.  **Open VS Code & Select the Environment**
 
     *   Open VS Code.
-    *   Open `Plotbot.ipynb`.
+    *   Open ✨`Plotbot.ipynb`✨
     *   Click the kernel selector (top-right).
     *   Select "Python (Plotbot)".
     *   Run the first cell to confirm setup.
@@ -138,6 +138,14 @@ In VS code hit 'Run All' and scroll down to see example plots:
 *   Multi-panel synchronization
 *   Hodogram (scatter) plots
 *   Sonification/audification
+
+## Examples Folder
+
+The `Examples` folder contains additional example scripts and notebooks, including:
+- Multiplot usage
+- Custom variable implementation
+
+Refer to this folder for hands-on demonstrations beyond the main notebook.
 
 ## Required Versions (included in the environment)
 

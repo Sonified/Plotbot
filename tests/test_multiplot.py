@@ -180,8 +180,8 @@ def setup_plot_options():
     plt.options.reset()  # Reset options to ensure a clean slate
     
     # Plot setup
-    plt.options.width = 15
-    plt.options.height_per_panel = 1
+    # plt.options.width = 15  # Commented out to use default plot width
+    # plt.options.height_per_panel = 1  # Commented out to use default panel height
     
     # Title and labels
     plt.options.use_single_title = True
@@ -191,7 +191,7 @@ def setup_plot_options():
     
     # Vertical line
     plt.options.draw_vertical_line = True
-    plt.options.vertical_line_width = 1.5
+    # plt.options.vertical_line_width = 1.5
     
     # Time settings
     plt.options.use_relative_time = True
@@ -982,8 +982,8 @@ def test_multiplot_custom_variable_caching():
     
     # Reset plt options 
     plt.options.reset()
-    plt.options.width = 15
-    plt.options.height_per_panel = 1
+    # plt.options.width = 15  # Commented out to use default plot width
+    # plt.options.height_per_panel = 1  # Commented out to use default panel height
     plt.options.use_single_title = True
     plt.options.window = '6:00:00.000'
     plt.options.position = 'around'
@@ -1234,8 +1234,8 @@ def test_multiplot_bold_vs_not_bold(tmp_path):
 
     # --- Bold version ---
     plt.options.reset()
-    plt.options.width = 10
-    plt.options.height_per_panel = 2
+    # plt.options.width = 10  # Commented out to use default plot width
+    # plt.options.height_per_panel = 2  # Commented out to use default panel height
     plt.options.use_single_title = True
     plt.options.single_title_text = "Bold Labels (title/x/y)"
     plt.options.bold_title = True
@@ -1247,8 +1247,8 @@ def test_multiplot_bold_vs_not_bold(tmp_path):
 
     # --- Not bold version ---
     plt.options.reset()
-    plt.options.width = 10
-    plt.options.height_per_panel = 2
+    # plt.options.width = 10  # Commented out to use default plot width
+    # plt.options.height_per_panel = 2  # Commented out to use default panel height
     plt.options.use_single_title = True
     plt.options.single_title_text = "Not Bold Labels (title/x/y)"
     plt.options.bold_title = False
