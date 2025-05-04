@@ -32,5 +32,3 @@ __all__ = [
 
 # Display Plotbot banner with version and commit info
 print(colored("🤖 Plotbot Initialized", "blue"))
-print(f"   Version: {colored('2025_05_03_v1.99', 'yellow')}") # Updated version
-print(f"   Commit: {colored('v1.99: Mesh saving version—direct meshgrid storage for fast Zarr loading (2025_05_03_v1.99)', 'green')}") # Updated commit message 

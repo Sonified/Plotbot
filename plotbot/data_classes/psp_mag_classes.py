@@ -13,6 +13,7 @@ from plotbot.print_manager import print_manager
 from plotbot.data_cubby import data_cubby
 from plotbot.plot_manager import plot_manager
 from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.generate_axis_metadata import generate_axis_metadata
 
 # 🎉 Define the main class to calculate and store mag_rtn_4sa variables 🎉
 class mag_rtn_4sa_class:
@@ -165,6 +166,14 @@ class mag_rtn_4sa_class:
         """Create plot managers for each component with default options"""
         print_manager.variable_testing(f"Setting up plot options for mag_rtn_4sa variables")
         
+        # Generate metadata only if data exists
+        all_metadata = generate_axis_metadata(self.raw_data['br'], ['time'], self) if self.raw_data['br'] is not None else None
+        br_metadata = generate_axis_metadata(self.raw_data['br'], ['time'], self) if self.raw_data['br'] is not None else None
+        bt_metadata = generate_axis_metadata(self.raw_data['bt'], ['time'], self) if self.raw_data['bt'] is not None else None
+        bn_metadata = generate_axis_metadata(self.raw_data['bn'], ['time'], self) if self.raw_data['bn'] is not None else None
+        bmag_metadata = generate_axis_metadata(self.raw_data['bmag'], ['time'], self) if self.raw_data['bmag'] is not None else None
+        pmag_metadata = generate_axis_metadata(self.raw_data['pmag'], ['time'], self) if self.raw_data['pmag'] is not None else None
+
         self.all = plot_manager(
             [self.raw_data['br'], self.raw_data['bt'], self.raw_data['bn']],
             plot_options=ploptions(
@@ -180,7 +189,8 @@ class mag_rtn_4sa_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=[1, 1, 1],      # Line widths
-                line_style=['-', '-', '-'] # Line styles
+                line_style=['-', '-', '-'], # Line styles
+                axis_metadata=all_metadata # ADD AXIS METADATA
             )
         )
         print_manager.variable_testing(f"FYI: Example mag data: Created mag_rtn_4sa.all variable with {3 if self.raw_data['br'] is not None else 0} components")
@@ -200,7 +210,8 @@ class mag_rtn_4sa_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=1,              # Line width
-                line_style='-'             # Line style
+                line_style='-',             # Line style
+                axis_metadata=br_metadata # ADD AXIS METADATA
             )
         )
 
@@ -219,7 +230,8 @@ class mag_rtn_4sa_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=1,              # Line width
-                line_style='-'             # Line style
+                line_style='-',             # Line style
+                axis_metadata=bt_metadata # ADD AXIS METADATA
             )
         )
 
@@ -238,7 +250,8 @@ class mag_rtn_4sa_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=1,              # Line width
-                line_style='-'             # Line style
+                line_style='-',             # Line style
+                axis_metadata=bn_metadata # ADD AXIS METADATA
             )
         )
 
@@ -257,7 +270,8 @@ class mag_rtn_4sa_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=1,              # Line width
-                line_style='-'             # Line style
+                line_style='-',             # Line style
+                axis_metadata=bmag_metadata # ADD AXIS METADATA
             )
         )
 
@@ -276,7 +290,8 @@ class mag_rtn_4sa_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=1,              # Line width
-                line_style='-'             # Line style
+                line_style='-',             # Line style
+                axis_metadata=pmag_metadata # ADD AXIS METADATA
             )
             
         )
@@ -426,6 +441,14 @@ class mag_rtn_class:
     
     def set_ploptions(self):
         """Set up the plotting options for all magnetic field components"""
+        # Generate metadata only if data exists
+        all_metadata = generate_axis_metadata(self.raw_data['br'], ['time'], self) if self.raw_data['br'] is not None else None
+        br_metadata = generate_axis_metadata(self.raw_data['br'], ['time'], self) if self.raw_data['br'] is not None else None
+        bt_metadata = generate_axis_metadata(self.raw_data['bt'], ['time'], self) if self.raw_data['bt'] is not None else None
+        bn_metadata = generate_axis_metadata(self.raw_data['bn'], ['time'], self) if self.raw_data['bn'] is not None else None
+        bmag_metadata = generate_axis_metadata(self.raw_data['bmag'], ['time'], self) if self.raw_data['bmag'] is not None else None
+        pmag_metadata = generate_axis_metadata(self.raw_data['pmag'], ['time'], self) if self.raw_data['pmag'] is not None else None
+
         # Initialize each component with plot_manager
         self.all = plot_manager(
             [self.raw_data['br'], self.raw_data['bt'], self.raw_data['bn']],
@@ -442,7 +465,8 @@ class mag_rtn_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=[1, 1, 1],      # Line widths
-                line_style=['-', '-', '-'] # Line styles
+                line_style=['-', '-', '-'], # Line styles
+                axis_metadata=all_metadata # ADD AXIS METADATA
             )
         )
 
@@ -461,7 +485,8 @@ class mag_rtn_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=1,              # Line width
-                line_style='-'             # Line style
+                line_style='-',             # Line style
+                axis_metadata=br_metadata # ADD AXIS METADATA
             )
         )
 
@@ -480,7 +505,8 @@ class mag_rtn_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=1,              # Line width
-                line_style='-'             # Line style
+                line_style='-',             # Line style
+                axis_metadata=bt_metadata # ADD AXIS METADATA
             )
         )
 
@@ -499,7 +525,8 @@ class mag_rtn_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=1,              # Line width
-                line_style='-'             # Line style
+                line_style='-',             # Line style
+                axis_metadata=bn_metadata # ADD AXIS METADATA
             )
         )
 
@@ -518,7 +545,8 @@ class mag_rtn_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=1,              # Line width
-                line_style='-'             # Line style
+                line_style='-',             # Line style
+                axis_metadata=bmag_metadata # ADD AXIS METADATA
             )
         )
 
@@ -537,7 +565,8 @@ class mag_rtn_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=1,              # Line width
-                line_style='-'             # Line style
+                line_style='-',             # Line style
+                axis_metadata=pmag_metadata # ADD AXIS METADATA
             )
         )
 
@@ -940,6 +969,14 @@ class mag_sc_class:
     
     def set_ploptions(self):
         """Set up the plotting options for all magnetic field components."""
+        # Generate metadata only if data exists
+        all_metadata = generate_axis_metadata(self.raw_data['bx'], ['time'], self) if self.raw_data['bx'] is not None else None
+        bx_metadata = generate_axis_metadata(self.raw_data['bx'], ['time'], self) if self.raw_data['bx'] is not None else None
+        by_metadata = generate_axis_metadata(self.raw_data['by'], ['time'], self) if self.raw_data['by'] is not None else None
+        bz_metadata = generate_axis_metadata(self.raw_data['bz'], ['time'], self) if self.raw_data['bz'] is not None else None
+        bmag_metadata = generate_axis_metadata(self.raw_data['bmag'], ['time'], self) if self.raw_data['bmag'] is not None else None
+        pmag_metadata = generate_axis_metadata(self.raw_data['pmag'], ['time'], self) if self.raw_data['pmag'] is not None else None
+
         self.all = plot_manager(
             [self.raw_data['bx'], self.raw_data['by'], self.raw_data['bz']],
             plot_options=ploptions(
@@ -955,7 +992,8 @@ class mag_sc_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=[1, 1, 1],      # Line widths
-                line_style=['-', '-', '-'] # Line styles
+                line_style=['-', '-', '-'], # Line styles
+                axis_metadata=all_metadata # ADD AXIS METADATA
             )
         )
 
@@ -974,7 +1012,8 @@ class mag_sc_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=1,              # Line width
-                line_style='-'             # Line style
+                line_style='-',             # Line style
+                axis_metadata=bx_metadata # ADD AXIS METADATA
             )
         )
 
@@ -993,7 +1032,8 @@ class mag_sc_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=1,              # Line width
-                line_style='-'             # Line style
+                line_style='-',             # Line style
+                axis_metadata=by_metadata # ADD AXIS METADATA
             )
         )
 
@@ -1012,7 +1052,8 @@ class mag_sc_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=1,              # Line width
-                line_style='-'             # Line style
+                line_style='-',             # Line style
+                axis_metadata=bz_metadata # ADD AXIS METADATA
             )
         )
 
@@ -1031,7 +1072,8 @@ class mag_sc_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=1,              # Line width
-                line_style='-'             # Line style
+                line_style='-',             # Line style
+                axis_metadata=bmag_metadata # ADD AXIS METADATA
             )
         )
 
@@ -1050,7 +1092,8 @@ class mag_sc_class:
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=1,              # Line width
-                line_style='-'             # Line style
+                line_style='-',             # Line style
+                axis_metadata=pmag_metadata # ADD AXIS METADATA
             )
         )
 

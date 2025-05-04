@@ -280,62 +280,129 @@ def get_data(trange: List[str], *variables):
             
         class_instance = data_cubby.grab(class_name)
             
-        # Check if import/refresh needed
+        # --- Start of User's Proposed Logic Block ---
+        # First check tracker to see if import MIGHT be needed
         needs_import = global_tracker.is_import_needed(trange, data_type)
-        needs_refresh = False
+        needs_refresh = False # Initialize needs_refresh
 
-        # Check refresh based on instance data range
-        if class_instance is not None and hasattr(class_instance, 'datetime_array') and class_instance.datetime_array is not None and len(class_instance.datetime_array) > 0:
-            try:
-                cached_start = np.datetime64(class_instance.datetime_array[0])
-                cached_end = np.datetime64(class_instance.datetime_array[-1])
-                buffer = np.timedelta64(10, 's')
-                # Use pre-converted numpy values for comparison
-                if (cached_start - buffer) > requested_start_np or (cached_end + buffer) < requested_end_np:
-                    needs_refresh = True
-            except (IndexError, TypeError, ValueError) as e:
-                print_manager.warning(f"Could not compare time ranges for {data_type}: {e}. Assuming refresh needed.")
-                needs_refresh = True
-        else:
-            needs_refresh = True # Treat no data as needing refresh
-
-        # Import/update CDF data if needed
-        print_manager.zarr_integration(f"[get_data] {data_type}: needs_import={needs_import}, needs_refresh={needs_refresh}")
-        if needs_import or needs_refresh:
-            print_manager.zarr_integration(f"[get_data] Import/Refresh logic triggered for {data_type}")
-            # First try loading from Zarr storage
+        # Try ZARR load regardless of tracker state (for first run or testing)
+        zarr_data = None
+        # Assume TEST_ONLY_MODE is accessible via pb.config
+        try:
+            test_mode = pb.config.TEST_ONLY_MODE
+        except AttributeError:
+            test_mode = False # Default if not configured
+            
+        if not needs_import or test_mode:  # Only attempt ZARR load if tracker says data exists OR it's first run/test
+            print_manager.zarr_integration(f"[get_data] Attempting Zarr load for {data_type} (needs_import={needs_import}, test_mode={test_mode})")
             zarr_data = zarr_storage.load_data(data_type, trange)
             
-            if zarr_data is not None:
-                print_manager.status(f"📥 Loading {data_type} from Zarr storage...")
-                
-                # Make sure we have a class instance
-                if class_instance is None:
-                    print_manager.zarr_integration(f"Attempting to locate global {class_name} instance...")
-                    
-                    # Try to find instance in the global namespace via plotbot
-                    if hasattr(pb, class_name):
-                        class_instance = getattr(pb, class_name)
-                        print_manager.status(f"Found {class_name} in global namespace")
-                    else:
-                        print_manager.warning(f"Could not find {class_name} in global namespace")
-                        continue
-                
-                # Update instance with Zarr data
-                if hasattr(class_instance, 'update'):
-                    print_manager.zarr_integration(f"[get_data] Calling update on {class_name} with data_obj for {data_type}")
-                    class_instance.update(zarr_data)
-                    print_manager.zarr_integration(f"[get_data] Update completed for {class_name}")
-                    # Store to Zarr for future use
-                    print_manager.zarr_integration(f"[get_data] Calling store_data for {data_type}")
-                    zarr_result = zarr_storage.store_data(class_instance, data_type, trange)
-                    print_manager.zarr_integration(f"[get_data] store_data result for {data_type}: {'Success' if zarr_result else 'Failed'}")
-                    if zarr_result:
-                        print_manager.status(f"✅ {data_type} data saved to Zarr storage")
+            # If ZARR load succeeds but tracker didn't know about it (first run)
+            if zarr_data is not None and needs_import:
+                # Update tracker with the date range we just loaded from ZARR
+                if hasattr(zarr_data, 'datetime_array') and len(zarr_data.datetime_array) > 0:
+                    start_dt = pd.to_datetime(zarr_data.datetime_array[0])
+                    end_dt = pd.to_datetime(zarr_data.datetime_array[-1])
+                    actual_range = [str(start_dt), str(end_dt)]
+                    global_tracker.update_imported_range(actual_range, data_type)
+                    print_manager.debug(f"Updated tracker with ZARR-loaded range: {actual_range}")
+                    needs_import = False  # We got the data, no need to import
                 else:
-                    print_manager.warning(f"{class_name} instance has no update method")
+                    print_manager.warning("Zarr data loaded but had no datetime_array to update tracker range.")
+                    zarr_data = None # Treat as failed load if no time data
+                    needs_import = True # Force import if time data is missing
+                
+            # If ZARR load fails but tracker thought data exists
+            elif zarr_data is None and not needs_import:
+                print_manager.warning(f"ZARR load failed despite tracker indicating data exists for {data_type}")
+                needs_import = True  # Force import
+
+        # Enhanced validation - check if we got data for the FULL requested range 
+        if zarr_data is not None:
+            # Basic check - are there any data points?
+            if not hasattr(zarr_data, 'datetime_array') or len(zarr_data.datetime_array) == 0:
+                print_manager.warning("ZARR cache returned empty or invalid dataset - forcing import")
+                zarr_data = None
+                needs_import = True
             else:
-                print_manager.zarr_integration(f"Zarr data not available for {data_type}, proceeding with normal download...")
+                # Convert to timestamps for comparison (ensure timezone awareness)
+                try:
+                    zarr_start = pd.to_datetime(zarr_data.datetime_array[0]).tz_localize('UTC')
+                    zarr_end = pd.to_datetime(zarr_data.datetime_array[-1]).tz_localize('UTC')
+                    # Use the already parsed and timezone-aware start/end times
+                    # req_start = pd.to_datetime(trange[0]).tz_localize('UTC') 
+                    # req_end = pd.to_datetime(trange[1]).tz_localize('UTC')
+                    req_start = start_time # Already parsed with UTC timezone
+                    req_end = end_time   # Already parsed with UTC timezone
+                    
+                    # CORRECTED CHECK: Does ZARR data ENCOMPASS the requested range?
+                    # Allow for a small buffer (e.g., 1 second) to handle potential floating point/rounding issues
+                    buffer = pd.Timedelta(seconds=1)
+                    if (zarr_start - buffer) <= req_start and (zarr_end + buffer) >= req_end:
+                        print_manager.status(f"ZARR data for {data_type} ({zarr_start} to {zarr_end}) fully encompasses requested range ({req_start} to {req_end}).")
+                        # If Zarr encompasses the range, this specific check should NOT trigger a refresh.
+                        # needs_refresh might still be true from other checks (e.g., forced refresh), so don't set it to False here.
+                        pass # Explicitly do nothing to needs_refresh here
+                    else:
+                        print_manager.warning(f"ZARR data for {data_type} ({zarr_start} to {zarr_end}) does NOT fully encompass requested range ({req_start} to {req_end})")
+                        # Zarr data is incomplete for the request, trigger a refresh.
+                        needs_refresh = True
+                        # Keep zarr_data loaded as it might contain *some* useful info, but flag refresh needed.
+
+                except Exception as e:
+                    print_manager.error(f"Error comparing Zarr/requested time ranges for {data_type}: {e}")
+                    print_manager.warning("Treating Zarr data as incomplete due to comparison error.")
+                    needs_refresh = True # Assume refresh needed if comparison fails
+        # --- End of User's Proposed Logic Block ---
+        
+        # Check if import/refresh needed based on tracker AND validation
+        print_manager.zarr_integration(f"[get_data] After Zarr check & validation: {data_type}: needs_import={needs_import}, needs_refresh={needs_refresh}")
+        
+        # --- This is the point where the original code checked needs_import/needs_refresh ---
+        # --- Now we decide if we need to proceed with download/import OR use Zarr data ---
+
+        if zarr_data is not None and not needs_import and not needs_refresh:
+             # Use Zarr data directly (bypass logic)
+            print_manager.status(f"📥 Loading {data_type} from Zarr storage...")
+            # class_instance is already grabbed
+            # BYPASS normal update, but be mindful of datetime formats
+            for attr in ['raw_data', 'time', 'pitch_angle']:
+                 if hasattr(zarr_data, attr):
+                     setattr(class_instance, attr, getattr(zarr_data, attr))
+            # Special handling for datetime_array
+            if hasattr(zarr_data, 'datetime_array'):
+                class_instance.datetime_array = zarr_data.datetime_array
+                # Create proper meshgrids for spectral data
+                if data_type in ['spe_sf0_pad', 'spe_af0_pad'] and hasattr(class_instance, 'pitch_angle') and class_instance.pitch_angle is not None:
+                    # Check if pitch_angle is suitable for meshgrid
+                    if isinstance(class_instance.pitch_angle, np.ndarray) and class_instance.pitch_angle.ndim == 1:
+                        try:
+                            time_mesh, pitch_mesh = np.meshgrid(
+                                class_instance.datetime_array,
+                                class_instance.raw_data['pitch_angle'], # Use raw_data for consistency
+                                indexing='ij'
+                            )
+                            class_instance.times_mesh = time_mesh
+                            class_instance.pitch_mesh = pitch_mesh
+                        except ValueError as e:
+                            print_manager.warning(f"ValueError during meshgrid creation for {data_type} after Zarr load: {e}")
+                            # Handle error, maybe skip meshgrid creation or log
+                    else:
+                        print_manager.warning(f"Skipping meshgrid creation for {data_type}: pitch_angle is not a 1D array (shape: {getattr(class_instance.pitch_angle, 'shape', 'N/A')})")
+                        
+            # Reset plot options
+            if hasattr(class_instance, 'set_ploptions'):
+                class_instance.set_ploptions()
+            # Update trackers (if not already done)
+            if global_tracker.is_import_needed(trange, data_type):
+                 global_tracker.update_imported_range(trange, data_type)
+            print_manager.status(f"✅ Loaded {data_type} from Zarr without recalculation")
+            continue  # Skip normal update / download
+
+        # --- Proceed with Download/Import only if necessary --- 
+        if needs_import or needs_refresh:
+            print_manager.zarr_integration(f"[get_data] Proceeding to download/import for {data_type} (needs_import={needs_import}, needs_refresh={needs_refresh})")
+            # (The original zarr_data load attempt inside this block is now removed)
             
             # Conditional data download based on configuration
             server_mode = pb.config.data_server.lower() 

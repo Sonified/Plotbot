@@ -258,12 +258,26 @@ def test_profile_zarr_vs_cdf_load_mag_rtn():
     t1 = time.time()
     cdf_duration = t1 - t0
     print(f"CDF import and calculation duration: {cdf_duration:.6f} seconds")
+    # Print shape after CDF load
+    br_after_cdf = mag_rtn.br
+    if hasattr(br_after_cdf, 'data'):
+        print(f"[CHECK] Shape after CDF load: {np.shape(br_after_cdf.data)}")
+    else:
+        print("[CHECK] No .data attribute after CDF load")
+    
     # Profile Zarr import
     t2 = time.time()
     get_data(trange, mag_rtn.br)
     t3 = time.time()
     zarr_duration = t3 - t2
     print(f"Zarr import duration: {zarr_duration:.6f} seconds")
+    # Print shape after Zarr load
+    br_after_zarr = mag_rtn.br
+    if hasattr(br_after_zarr, 'data'):
+        print(f"[CHECK] Shape after Zarr load: {np.shape(br_after_zarr.data)}")
+    else:
+        print("[CHECK] No .data attribute after Zarr load")
+        
     if zarr_duration > 0:
         speedup = cdf_duration / zarr_duration
         print(f"Zarr is {speedup:.2f}x faster than CDF import.")
@@ -277,6 +291,69 @@ def test_profile_zarr_vs_cdf_load_mag_rtn():
     if hasattr(br_pm, 'data'):
         print(f"mag_rtn.br data shape: {np.shape(br_pm.data)}")
         print(f"mag_rtn.br data preview: {br_pm.data[:5]}")
+
+
+def test_profile_zarr_vs_cdf_load_mag_rtn_4sa():
+    """Profile time to load mag_rtn_4sa.br from CDF (no Zarr) vs. from Zarr, and print speedup factor and data preview."""
+    from plotbot.get_data import get_data
+    from plotbot.data_classes.psp_mag_classes import mag_rtn_4sa
+    import numpy as np
+    import shutil
+    import os
+    import time
+
+    # Use a time range and path relevant to mag_rtn_4sa
+    data_type = 'mag_rtn_4sa'
+    trange = ['2018/10/17 00:00:00.000', '2018/10/17 06:00:00.000']
+    # Assuming 6-hour format like mag_rtn, adjust if needed
+    zarr_path = f'data_cubby/{data_type}/2018/10/17_00.zarr'
+
+    # Ensure Zarr file is deleted
+    if os.path.exists(zarr_path):
+        shutil.rmtree(zarr_path)
+        print(f"Deleted Zarr file: {zarr_path}")
+        
+    # --- Profile CDF import ---
+    t0 = time.time()
+    get_data(trange, mag_rtn_4sa.br)
+    t1 = time.time()
+    cdf_duration = t1 - t0
+    print(f"CDF import and calculation duration ({data_type}): {cdf_duration:.6f} seconds")
+    # Print shape after CDF load
+    br_after_cdf = mag_rtn_4sa.br
+    if hasattr(br_after_cdf, 'data'):
+        print(f"[CHECK] Shape after CDF load ({data_type}): {np.shape(br_after_cdf.data)}")
+    else:
+        print(f"[CHECK] No .data attribute after CDF load ({data_type})")
+    
+    # --- Profile Zarr import ---
+    t2 = time.time()
+    get_data(trange, mag_rtn_4sa.br)
+    t3 = time.time()
+    zarr_duration = t3 - t2
+    print(f"Zarr import duration ({data_type}): {zarr_duration:.6f} seconds")
+    # Print shape after Zarr load
+    br_after_zarr = mag_rtn_4sa.br
+    if hasattr(br_after_zarr, 'data'):
+        print(f"[CHECK] Shape after Zarr load ({data_type}): {np.shape(br_after_zarr.data)}")
+    else:
+        print(f"[CHECK] No .data attribute after Zarr load ({data_type})")
+        
+    # --- Calculate and print speedup ---
+    if zarr_duration > 0:
+        speedup = cdf_duration / zarr_duration
+        print(f"Zarr is {speedup:.2f}x faster than CDF import for {data_type}.")
+    else:
+        print(f"Zarr duration was too fast to measure for {data_type}!")
+        
+    # --- Print data preview ---
+    br_pm = mag_rtn_4sa.br
+    print(f"{data_type}.br type: {type(br_pm)}")
+    if hasattr(br_pm, 'shape'):
+        print(f"{data_type}.br shape: {br_pm.shape}")
+    if hasattr(br_pm, 'data'):
+        print(f"{data_type}.br data shape: {np.shape(br_pm.data)}")
+        print(f"{data_type}.br data preview: {br_pm.data[:5]}")
 
 
 def test_plotbot_end_to_end_mag_and_epad():

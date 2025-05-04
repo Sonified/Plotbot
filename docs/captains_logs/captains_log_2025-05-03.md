@@ -305,3 +305,27 @@ Start with these for reference when building or mapping metadata.
     - Zarr loading for spectral data is now robust and nearly as fast as CDF import.
     - All tests pass, and meshgrid serialization is stable.
 - **Git hash will be copied to clipboard after push.**
+
+---
+
+## 2025-05-04 Version Update
+
+- **Version:** 2025_05_04_v2.00
+- **Commit Message:** v2.00: Zarr time coverage logic is still flawed—this version does NOT reliably use Zarr cache if file boundaries don't exactly match request (2025_05_04_v2.00). Needs further work.
+- **Summary:**
+    - Incremented version to v2.00.
+    - Updated commit message and version printouts to reflect that Zarr loading logic is still flawed: this version does NOT reliably use the Zarr cache if the file boundaries do not exactly match the requested time range, even if the data fully encompasses the request.
+    - This version documents the flaw and signals that further work is needed to make Zarr time coverage robust.
+
+---
+
+## Version Control Update (2025_05_04_v2.01)
+- **Pushed to main branch.**
+- **Commit Message:** v2.01: Fix Zarr meshgrid dtype bug for EPAD strahl—now stores meshgrid as numeric seconds for matplotlib compatibility.
+- **Version Tag:** 2025_05_04_v2.01
+- **Details:**
+    - Fixed a persistent bug where meshgrid arrays (times_mesh) loaded from Zarr were not compatible with matplotlib's pcolormesh due to dtype issues (datetime or string instead of numeric seconds).
+    - Now, after loading from Zarr, meshgrids are reconstructed using numeric seconds since start, ensuring compatibility with matplotlib.
+    - This preserves the design philosophy: calculation results are stored and not recalculated at plot time.
+    - Updated version and commit message in both __init__.py and plotbot.py to reflect this fix.
+- **Git hash will be copied to clipboard after push.**

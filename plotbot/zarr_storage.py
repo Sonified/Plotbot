@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from dateutil.parser import parse
 import pandas as pd
 import cdflib
+import time
 
 from .print_manager import print_manager
 from .data_tracker import global_tracker
@@ -47,6 +48,7 @@ class ZarrStorage:
     def store_data(self, class_instance, data_type, trange):
         """Store processed data to Zarr using the natural cadence of the data"""
         print_manager.zarr_integration(f"[store_data] Called for data_type={data_type}, trange={trange}")
+        start_total = time.time()
         print_manager.zarr_integration(f"Storing data for {data_type}")
         print_manager.zarr_integration(f"datetime_array length: {len(class_instance.datetime_array)}")
         print_manager.zarr_integration(f"raw_data keys: {list(class_instance.raw_data.keys())}")
@@ -70,39 +72,32 @@ class ZarrStorage:
             
         # Create dataset from class instance
         try:
+            t0 = time.time()
             print_manager.zarr_integration(f"[store_data] Creating data_vars from class_instance.raw_data")
             data_vars = {}
             coords = {}
-            # Always add time coordinate
             coords['time'] = class_instance.datetime_array
-            # Add pitch_angle coordinate if present
             if 'pitch_angle' in class_instance.raw_data and class_instance.raw_data['pitch_angle'] is not None:
                 coords['pitch_angle'] = class_instance.raw_data['pitch_angle']
             for var_name, data in class_instance.raw_data.items():
-                if data is None:
+                if data is None or var_name == 'all':
                     continue
-                # Skip duplicate coordinate storage
+                # Do not add pitch_angle as a data_var if it's already a coordinate
                 if var_name == 'pitch_angle' and 'pitch_angle' in coords:
                     continue
-                # Store meshgrids directly with appropriate dimension names
-                if var_name in ['times_mesh', 'pitch_mesh']:
-                    dims = ('time', 'pitch_angle')
-                elif var_name == 'strahl' and data.ndim == 2:
+                # Assign dims based on variable name and shape
+                if var_name == 'strahl' and data.ndim == 2:
                     dims = ('time', 'pitch_angle')
                 elif var_name == 'centroids' and data.ndim == 1:
                     dims = ('time',)
                 elif var_name == 'pitch_angle' and data.ndim == 1:
                     dims = ('pitch_angle',)
                 else:
+                    # Fallback: auto dims
                     dims = tuple([f"dim_{i}" for i in range(data.ndim)])
                 data_vars[var_name] = (dims, data)
-            # Also store the meshgrids as separate variables if not already in raw_data
-            if hasattr(class_instance, 'times_mesh') and class_instance.times_mesh is not None:
-                if 'times_mesh' not in data_vars:
-                    data_vars['times_mesh'] = (('time', 'pitch_angle'), class_instance.times_mesh)
-            if hasattr(class_instance, 'pitch_mesh') and class_instance.pitch_mesh is not None:
-                if 'pitch_mesh' not in data_vars:
-                    data_vars['pitch_mesh'] = (('time', 'pitch_angle'), class_instance.pitch_mesh)
+            t1 = time.time()
+            print(f"[TIMER][ZARR] prepare data_vars/coords: {t1 - t0:.3f} s")
             print(f"[STORE] datetime_array: {class_instance.datetime_array[:5]} ... total: {len(class_instance.datetime_array)}")
             # Merge axis array coords and time coord
             coords['time'] = class_instance.datetime_array
@@ -110,6 +105,20 @@ class ZarrStorage:
                 data_vars=data_vars,
                 coords=coords
             )
+
+            # Add tt2000 times directly to the dataset if available
+            if hasattr(class_instance, 'time') and class_instance.time is not None:
+                # Ensure the time coordinate exists for alignment
+                if 'time' in ds.coords:
+                    ds['tt2000'] = xr.DataArray(class_instance.time, dims=['time'], coords={'time': ds.time})
+                    print_manager.zarr_integration("[STORE] Added 'tt2000' variable to Zarr dataset.")
+                else:
+                     print_manager.warning("[STORE] 'time' coordinate missing, cannot align tt2000.")
+            else:
+                print_manager.warning("[STORE] Could not find 'time' attribute in class_instance to store as tt2000.")
+
+            t2 = time.time()
+            print(f"[TIMER][ZARR] create xarray.Dataset: {t2 - t1:.3f} s")
             print(f"[STORE] Dataset variables: {list(ds.data_vars)}")
             print(f"[STORE] Dataset coordinates: {list(ds.coords)}")
             
@@ -123,6 +132,8 @@ class ZarrStorage:
             else:
                 # Default chunking
                 chunks = {'time': -1}
+            t3 = time.time()
+            print(f"[TIMER][ZARR] chunking logic: {t3 - t2:.3f} s")
             
             # Create zarr path based on data_type and file format
             zarr_path = self._get_zarr_path(data_type, class_instance.datetime_array[0], file_time_format)
@@ -133,11 +144,14 @@ class ZarrStorage:
             
             # Save to zarr
             ds.chunk(chunks).to_zarr(zarr_path, mode='w', encoding=encoding)
+            t4 = time.time()
+            print(f"[TIMER][ZARR] save to Zarr: {t4 - t3:.3f} s")
             print_manager.zarr_integration(f"Checking if Zarr file exists: {os.path.exists(zarr_path)}")
             if os.path.exists(zarr_path):
                 print_manager.zarr_integration(f"Zarr directory contents: {os.listdir(zarr_path)}")
             print_manager.zarr_integration(f"[store_data] Data saved to Zarr store")
             print_manager.status(f"✅ Saved {data_type} data to {zarr_path}")
+            print(f"[TIMER][ZARR] TOTAL store_data duration: {t4 - start_total:.3f} s")
             return True
             
         except Exception as e:
@@ -148,80 +162,99 @@ class ZarrStorage:
     def load_data(self, data_type, trange):
         """Load data from Zarr stores for given time range"""
         print_manager.zarr_integration(f"[load_data] Called for data_type={data_type}, trange={trange}")
+        start_total = time.time()
         # Parse time range
         start_time = parse(trange[0]).replace(tzinfo=timezone.utc)
         end_time = parse(trange[1]).replace(tzinfo=timezone.utc)
-        
         # Get configuration for this data type
         config = data_types.get(data_type, {})
         file_time_format = config.get('file_time_format', 'daily')
         print_manager.zarr_integration(f"[load_data] file_time_format={file_time_format}")
-        
-        # Find all zarr stores in the time range
+        t0 = time.time()
         zarr_paths = self._find_zarr_paths(data_type, start_time, end_time, file_time_format)
+        t1 = time.time()
+        print(f"[TIMER][ZARR] find zarr paths: {t1 - t0:.3f} s")
         print_manager.zarr_integration(f"[load_data] zarr_paths: {zarr_paths}")
-        
         if not zarr_paths:
             print_manager.debug(f"No Zarr data found for {data_type} in range {trange}")
             return None
-            
-        # Load and concatenate all relevant zarr stores
         print_manager.zarr_integration(f"[load_data] Loading {len(zarr_paths)} Zarr stores")
-        
         try:
-            print_manager.zarr_integration(f"[load_data] Looping through zarr_paths")
+            t2 = time.time()
             datasets = []
             for path in zarr_paths:
                 if os.path.exists(path):
                     ds = xr.open_zarr(path)
                     datasets.append(ds)
-            
+            t3 = time.time()
+            print(f"[TIMER][ZARR] load datasets: {t3 - t2:.3f} s")
             if not datasets:
                 return None
-                
-            # Concatenate datasets if more than one
             if len(datasets) == 1:
                 combined = datasets[0]
             else:
                 combined = xr.concat(datasets, dim='time')
-            print(f"[LOAD] Loaded dataset variables: {list(combined.data_vars)}")
-            print(f"[LOAD] Loaded dataset coordinates: {list(combined.coords)}")
-            print(f"[LOAD] Loaded time: {combined.time.values[:5]} ... total: {len(combined.time.values)}")
-            
-            # Create a LoadedData object that mimics the class structure
+            t4 = time.time()
+            print(f"[TIMER][ZARR] concatenate datasets: {t4 - t3:.3f} s")
+            # Add requested debug print for combined dataset size
+            if data_type == 'mag_RTN_4sa':
+                print(f"[DEBUG][ZARR][LOAD] mag_RTN_4sa dataset size: {len(combined.time)} timestamps")
+
+            # Define the inner class here
             class LoadedData:
                 def __init__(self, ds):
+                    print_manager.zarr_integration("[DEBUG][ZARR][LOAD] Entered LoadedData.__init__")
                     self.datetime_array = ds.time.values
-                    # Convert to TT2000 for compatibility
-                    dt_series = pd.to_datetime(ds.time.values)
-                    dt_components = [[dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, int(dt.microsecond / 1000)] for dt in dt_series]
-                    self.times = cdflib.cdfepoch.compute_tt2000(dt_components)
+                    print_manager.zarr_integration("[DEBUG][ZARR][LOAD] datetime_array loaded")
+
+                    # --- TT2000 Handling --- 
+                    # Fast path: Load pre-computed TT2000 if it exists in the Zarr store
+                    if 'tt2000' in ds:
+                        self.times = ds.tt2000.values
+                        print_manager.zarr_integration("[DEBUG][ZARR][LOAD] TT2000 times loaded directly from Zarr.")
+                    else:
+                        # Slow fallback path: Compute TT2000 if not found (should only happen on first load)
+                        print_manager.warning("[DEBUG][ZARR][LOAD] TT2000 not found in Zarr, calculating fallback...")
+                        try:
+                            dt_series = pd.to_datetime(self.datetime_array, errors='coerce') 
+                            valid_dt_series = dt_series.dropna()
+                            if len(valid_dt_series) == 0:
+                                 raise ValueError("No valid datetime values for TT2000 calculation.")
+                            dt_components = [
+                                [dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, int(dt.microsecond / 1000)] 
+                                for dt in valid_dt_series
+                            ]
+                            computed_times = cdflib.cdfepoch.compute_tt2000(dt_components)
+                            self.times = np.full(len(dt_series), np.nan, dtype='int64') 
+                            self.times[dt_series.notna()] = computed_times
+                            print_manager.zarr_integration(f"[DEBUG][ZARR][LOAD] TT2000 times calculated (fallback) for {len(computed_times)} timestamps.")
+                        except Exception as e:
+                             print_manager.error(f"[ERROR][ZARR][LOAD] Failed TT2000 fallback: {e}")
+                             self.times = None
+                    # --- End TT2000 Handling ---
+                    
                     self.raw_data = {}
+                    print_manager.zarr_integration('[DEBUG][ZARR][LOAD] raw_data dict initialized')
+                    
+                    # Load main data variables (excluding tt2000 if loaded directly)
                     for var_name in ds.data_vars:
-                        self.raw_data[var_name] = ds[var_name].values
+                        if var_name != 'tt2000': 
+                            print_manager.zarr_integration(f"[DEBUG][ZARR][LOAD] Attempting to load var: {var_name}")
+                            self.raw_data[var_name] = ds[var_name].values
+                            print_manager.zarr_integration(f"[DEBUG][ZARR][LOAD] Finished loading var: {var_name}")
+                            print_manager.zarr_integration(f"[DEBUG][ZARR][LOAD] Loaded var '{var_name}': type={type(self.raw_data[var_name])}, shape={getattr(self.raw_data[var_name], 'shape', 'N/A')}")
+                    print_manager.zarr_integration("[DEBUG][ZARR][LOAD] Data vars loaded into raw_data")
+                    
                     # Also check ds.coords for axis arrays saved as coordinates
                     for coord_name in ['pitch_angle', 'energy_vals', 'theta_vals', 'phi_vals']:
                         if coord_name in ds.coords and coord_name not in self.raw_data:
-                            self.raw_data[coord_name] = ds.coords[coord_name].values
-                    # Directly assign meshgrids as attributes for immediate use in plotting
-                    if 'times_mesh' in self.raw_data:
-                        self.times_mesh = self.raw_data['times_mesh']
-                    if 'pitch_mesh' in self.raw_data:
-                        self.pitch_mesh = self.raw_data['pitch_mesh']
-                    # Patch: If meshgrids aren't stored (for older Zarr files), create them
-                    if 'pitch_angle' in self.raw_data and 'strahl' in self.raw_data:
-                        if not hasattr(self, 'times_mesh') or not hasattr(self, 'pitch_mesh'):
-                            print("[DEBUG][ZARR] Reconstructing meshgrids - consider re-saving this data")
-                            time_mesh, pitch_mesh = np.meshgrid(
-                                self.datetime_array, 
-                                self.raw_data['pitch_angle'],
-                                indexing='ij'
-                            )
-                            self.times_mesh = time_mesh
-                            self.pitch_mesh = pitch_mesh
-                            self.raw_data['times_mesh'] = time_mesh
-                            self.raw_data['pitch_mesh'] = pitch_mesh
+                            arr = ds.coords[coord_name].values
+                            self.raw_data[coord_name] = arr
+                            if data_type == 'spe_sf0_pad':
+                                print(f"[DEBUG][ZARR][LOAD] Loaded coord '{coord_name}': type={type(arr)}, shape: {getattr(arr, 'shape', None)}")
+                    print('[DEBUG][ZARR][LOAD] Coords loaded into raw_data')
                     self.data = self.raw_data  # Patch: add data attribute for compatibility
+                    print('[DEBUG][ZARR][LOAD] self.data assigned')
                     # Patch: stack br, bt, bn for mag_rtn
                     if data_type == 'mag_RTN' and all(k in self.data for k in ['br', 'bt', 'bn']):
                         self.data['psp_fld_l2_mag_RTN'] = np.stack([
@@ -229,6 +262,7 @@ class ZarrStorage:
                             self.data['bt'],
                             self.data['bn']
                         ], axis=1)
+                        print('[DEBUG][ZARR][LOAD] psp_fld_l2_mag_RTN stacked')
                     # Patch: stack br, bt, bn for mag_rtn_4sa
                     if data_type == 'mag_RTN_4sa' and all(k in self.data for k in ['br', 'bt', 'bn']):
                         self.data['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] = np.stack([
@@ -236,6 +270,7 @@ class ZarrStorage:
                             self.data['bt'],
                             self.data['bn']
                         ], axis=1)
+                        print('[DEBUG][ZARR][LOAD] psp_fld_l2_mag_RTN_4_Sa_per_Cyc stacked')
                     # Patch: stack bx, by, bz for mag_sc
                     if data_type == 'mag_SC' and all(k in self.data for k in ['bx', 'by', 'bz']):
                         self.data['psp_fld_l2_mag_SC'] = np.stack([
@@ -243,13 +278,16 @@ class ZarrStorage:
                             self.data['by'],
                             self.data['bz']
                         ], axis=1)
+                        print('[DEBUG][ZARR][LOAD] psp_fld_l2_mag_SC stacked')
                     # Patch: map strahl/centroids for epad.strahl
                     if data_type == 'spe_sf0_pad':
                         if 'strahl' in self.data:
                             self.data['EFLUX_VS_PA_E'] = self.data['strahl']
+                            print('[DEBUG][ZARR][LOAD] EFLUX_VS_PA_E mapped from strahl')
                         # Do NOT map centroids to PITCHANGLE; only set PITCHANGLE if a static bin array is present
                         if 'pitch_angle' in self.data:
                             self.data['PITCHANGLE'] = self.data['pitch_angle']
+                            print('[DEBUG][ZARR][LOAD] PITCHANGLE mapped from pitch_angle')
                     print(f"[LOAD] LoadedData.raw_data keys: {list(self.raw_data.keys())}")
                     print(f"[LOAD] LoadedData.datetime_array: {self.datetime_array[:5]} ... total: {len(self.datetime_array)}")
                     print(f"[LOAD] All coordinates after loading:")
@@ -258,17 +296,21 @@ class ZarrStorage:
                         print(f"  - {coord}: shape={arr.shape}, first 5 values={arr[:5] if hasattr(arr, '__getitem__') else arr}")
                     # Reconstruct times_mesh and pitch_mesh for spectral plotting if needed
                     if data_type in ['spe_sf0_pad', 'spe_af0_pad'] and 'strahl' in self.raw_data:
+                        print('[DEBUG][ZARR][LOAD] Entering meshgrid reconstruction block')
                         # Convert datetime values to numeric for plotting compatibility
                         if np.issubdtype(self.datetime_array.dtype, np.datetime64):
                             numeric_times = (self.datetime_array - self.datetime_array[0]) / np.timedelta64(1, 's')
+                            print('[DEBUG][ZARR][LOAD] numeric_times created from datetime64')
                         else:
                             numeric_times = (pd.to_datetime(self.datetime_array) - pd.to_datetime(self.datetime_array[0])).total_seconds()
+                            print('[DEBUG][ZARR][LOAD] numeric_times created using pd.to_datetime')
                         pitch_angle = self.raw_data['pitch_angle']
                         time_mesh, pitch_mesh = np.meshgrid(
                             numeric_times,
                             pitch_angle,
                             indexing='ij'
                         )
+                        print('[DEBUG][ZARR][LOAD] np.meshgrid completed')
                         self.times_mesh = time_mesh
                         self.pitch_mesh = pitch_mesh
                         if 'pitch_mesh' not in self.raw_data:
@@ -276,13 +318,20 @@ class ZarrStorage:
                         print(f"[DEBUG][ZARR][LOAD] times_mesh shape: {self.times_mesh.shape}, pitch_mesh shape: {self.pitch_mesh.shape}, dtype: {self.times_mesh.dtype}")
                         print(f"[DEBUG][ZARR][LOAD] First 5 rows of times_mesh: {self.times_mesh[:5]}")
                         print(f"[DEBUG][ZARR][LOAD] First 5 rows of pitch_mesh: {self.pitch_mesh[:5]}")
-            loaded = LoadedData(combined)
-            return loaded
+            # --- Now, time the instantiation outside the class definition ---
+            t5_init = time.time() # Start timer for init
+            loaded = LoadedData(combined) # Instantiate the class
+            t6_init = time.time() # End timer for init
+            print(f"[TIMER][ZARR] LoadedData __init__: {t6_init - t5_init:.3f} s") 
+            # --- End Timing --- 
             
+            t7 = time.time()
+            print(f"[TIMER][ZARR] TOTAL load_data duration: {t7 - start_total:.3f} s")
+            return loaded
         except Exception as e:
-            print_manager.zarr_integration(f"[load_data] Exception: {e}")
             print_manager.error(f"Error loading Zarr data for {data_type}: {e}")
-            return None
+            # Optionally re-raise or return a specific error indicator
+            return None # Indicate failure
             
     def _get_zarr_path(self, data_type, timestamp, file_time_format):
         """Generate zarr path based on data type and timestamp"""

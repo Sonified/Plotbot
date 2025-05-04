@@ -105,7 +105,8 @@ class epad_strahl_class:
         """Handle attribute assignment with friendly error messages."""
         # Allow setting known attributes
         print_manager.debug(f"Setting attribute: {name} with value: {value}")
-        if name in ['datetime', 'datetime_array', 'raw_data', 'time', 'field', 'times_mesh', 'pitch_angle', 'energy_index'] or name in self.raw_data:
+        if name in ['datetime', 'datetime_array', 'raw_data', 'time', 'field', 'times_mesh', 
+                   'pitch_angle', 'energy_index', 'pitch_mesh'] or name in self.raw_data:
             super().__setattr__(name, value)
         else:
             # Print friendly error message
@@ -203,8 +204,7 @@ class epad_strahl_class:
             'strahl': strahl,
             'centroids': centroids,
             'pitch_angle': self.pitch_angle,
-            'pitch_mesh': pitch_mesh,
-            'times_mesh': time_mesh
+            'pitch_mesh': pitch_mesh
         }
 
     def set_ploptions(self):
@@ -413,8 +413,7 @@ class epad_strahl_high_res_class:
             'strahl': strahl,
             'centroids': centroids,
             'pitch_angle': self.pitch_angle,
-            'pitch_mesh': pitch_mesh,
-            'times_mesh': time_mesh
+            'pitch_mesh': pitch_mesh
         }
     
     def set_ploptions(self):

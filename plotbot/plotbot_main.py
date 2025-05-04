@@ -487,23 +487,74 @@ def plotbot(trange, *args):
                         x_mesh = getattr(var, 'datetime_array', None)
                         y_mesh = getattr(var, 'additional_mesh', None)
                         if y_mesh is not None and x_mesh is not None and x_mesh.shape == y_mesh.shape == data_clipped.shape:
-                            im = ax.pcolormesh(
-                                x_mesh[time_indices],
-                                y_mesh[time_indices],
-                                data_clipped,
-                                norm=norm,
-                                cmap=var.colormap if hasattr(var, 'colormap') else None,
-                                shading='auto'
-                            )
+                            # Check for dimension compatibility before plotting
+                            x_plot = x_mesh[time_indices]
+                            y_plot = y_mesh[time_indices]
+                            data_plot = data_clipped # Already clipped
+
+                            if x_plot.shape != y_plot.shape or x_plot.shape != data_plot.shape:
+                                print_manager.warning(f"Skipping spectral plot for {var.var_name}: Shape mismatch after time clipping.")
+                                print_manager.warning(f"  x_mesh shape: {x_plot.shape}, y_mesh shape: {y_plot.shape}, data shape: {data_plot.shape}")
+                                continue # Skip to next variable
+                            
+                            # Add the conditional meshgrid creation here
+                            if x_plot.ndim == 1 and y_plot.ndim == 1:
+                                # Create proper meshgrids if we have 1D coordinate arrays
+                                datetime_mesh, pitch_mesh = np.meshgrid(
+                                    x_plot,
+                                    y_plot,
+                                    indexing='ij'
+                                )
+                                
+                                # Use the meshgrids for plotting
+                                im = ax.pcolormesh(
+                                    datetime_mesh,
+                                    pitch_mesh,
+                                    data_plot,
+                                    norm=norm,
+                                    cmap=var.colormap if hasattr(var, 'colormap') else None,
+                                    shading='auto'
+                                )
+                            else:
+                                # Original code for when meshgrids might already exist (or other cases)
+                                im = ax.pcolormesh(
+                                    x_plot,
+                                    y_plot,
+                                    data_plot,
+                                    norm=norm,
+                                    cmap=var.colormap if hasattr(var, 'colormap') else None,
+                                    shading='auto'
+                                )
                         else:
-                            im = ax.pcolormesh(
-                                datetime_clipped,
-                                additional_data_clipped,
-                                data_clipped,
-                                norm=norm,
-                                cmap=var.colormap if hasattr(var, 'colormap') else None,
-                                shading='auto'
-                            )
+                            # Original pcolormesh call - this is the target for replacement
+                            # Add the conditional meshgrid creation here
+                            if var.plot_type == 'spectral' and datetime_clipped.ndim == 1 and additional_data_clipped.ndim == 1:
+                                # Create proper meshgrids if we have 1D coordinate arrays
+                                datetime_mesh, pitch_mesh = np.meshgrid(
+                                    datetime_clipped,
+                                    additional_data_clipped,
+                                    indexing='ij'
+                                )
+                                
+                                # Use the meshgrids for plotting
+                                im = ax.pcolormesh(
+                                    datetime_mesh,
+                                    pitch_mesh,
+                                    data_clipped,
+                                    norm=norm,
+                                    cmap=var.colormap if hasattr(var, 'colormap') else None,
+                                    shading='auto'
+                                )
+                            else:
+                                # Original code for when meshgrids might already exist (or other cases)
+                                im = ax.pcolormesh(
+                                    datetime_clipped,
+                                    additional_data_clipped,
+                                    data_clipped,
+                                    norm=norm,
+                                    cmap=var.colormap if hasattr(var, 'colormap') else None,
+                                    shading='auto'
+                                )
                         
                         # Add and configure colorbar
                         pos = ax.get_position()  # Get plot position
