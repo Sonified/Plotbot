@@ -58,20 +58,30 @@ class TestPositionalXAxisTypes(unittest.TestCase):
             'x_axis_r_sun': pbplt.options.x_axis_r_sun,
             'use_relative_time': pbplt.options.use_relative_time,
             'window': pbplt.options.window,
-            'x_axis_positional_range': pbplt.options.x_axis_positional_range
+            'x_axis_positional_range': pbplt.options.x_axis_positional_range,
+            # Add perihelion option if it exists
+            **({'use_degrees_from_perihelion': getattr(pbplt.options, 'use_degrees_from_perihelion', None)} 
+              if hasattr(pbplt.options, 'use_degrees_from_perihelion') else {})
         }
+        print("\n[setUp] Original options stored:", self.original_settings)
         
         # Reset all options to defaults
         pbplt.options.reset()
         pbplt.options.window = '24:00:00.000'  # 24 hour window
+        print("[setUp] Options reset to defaults.")
         
     def tearDown(self):
         """Restore original settings and close plots"""
         plt.close('all')
         
         # Restore original settings
+        print("\n[tearDown] Restoring original options:")
         for key, value in self.original_settings.items():
-            setattr(pbplt.options, key, value)
+            if hasattr(pbplt.options, key):
+                print(f"  Restoring {key} = {value}")
+                setattr(pbplt.options, key, value)
+            else:
+                 print(f"  Skipping restore for {key} (not found in current options)")
     
     def save_figure(self, fig, filename):
         """Helper method to properly render and save a figure"""
@@ -196,10 +206,12 @@ class TestPositionalXAxisTypes(unittest.TestCase):
     
     def test_carrington_longitude_x_axis(self):
         """Test multiplot with Carrington longitude x-axis"""
+        print("\n--- Running test_carrington_longitude_x_axis ---")
         # Configure for longitude x-axis
         pbplt.options.x_axis_carrington_lon = True
         pbplt.options.x_axis_r_sun = False
         pbplt.options.x_axis_carrington_lat = False
+        print(f"[Pre-plot] Options: lon={pbplt.options.x_axis_carrington_lon}, lat={pbplt.options.x_axis_carrington_lat}, rsun={pbplt.options.x_axis_r_sun}, peri={getattr(pbplt.options, 'use_degrees_from_perihelion', 'N/A')}")
         
         # Create plot
         fig, axes = multiplot([(self.center_time, pb.mag_rtn_4sa.br)])
@@ -218,18 +230,61 @@ class TestPositionalXAxisTypes(unittest.TestCase):
         self.save_figure(fig, "test_carrington_longitude.png")
         plt.close(fig)
     
+    def test_degrees_from_perihelion_x_axis(self):
+        """Test multiplot with degrees from perihelion x-axis"""
+        print("\n--- Running test_degrees_from_perihelion_x_axis ---")
+        # Configure for degrees from perihelion x-axis
+        # Ensure the new option exists before setting
+        if hasattr(pbplt.options, 'use_degrees_from_perihelion'):
+            pbplt.options.use_degrees_from_perihelion = True
+        else:
+            self.skipTest("Option 'use_degrees_from_perihelion' not found in MultiplotOptions.")
+            
+        # Explicitly disable other conflicting modes
+        pbplt.options.x_axis_carrington_lon = False
+        pbplt.options.x_axis_r_sun = False
+        pbplt.options.x_axis_carrington_lat = False
+        pbplt.options.use_relative_time = False
+        print(f"[Pre-plot] Options: lon={pbplt.options.x_axis_carrington_lon}, lat={pbplt.options.x_axis_carrington_lat}, rsun={pbplt.options.x_axis_r_sun}, peri={getattr(pbplt.options, 'use_degrees_from_perihelion', 'N/A')}")
+        
+        # Create plot
+        fig, axes = multiplot([(self.center_time, pb.mag_rtn_4sa.br)])
+        
+        # Check x-axis label contains "Degrees from Perihelion"
+        x_label = axes[0].get_xlabel()
+        print(f"[Post-plot] Actual x-label: '{x_label}'")
+        self.assertIn("Degrees from Perihelion", x_label, 
+                      f"X-label was '{x_label}', expected to contain 'Degrees from Perihelion'")
+        
+        # Get some x-data to verify it's in the expected range (-180 to 180)
+        lines = axes[0].get_lines()
+        if lines:
+            x_data = lines[0].get_xdata()
+            if len(x_data) > 0:
+                self.assertTrue(np.all((x_data >= -180) & (x_data <= 180)),
+                                f"Perihelion degrees data range ({np.min(x_data):.2f} to {np.max(x_data):.2f}) exceeds expected -180 to 180 range.")
+            else:
+                print("Warning: No data points plotted for perihelion degrees test.")
+        
+        # Save image with enhanced approach
+        self.save_figure(fig, "test_degrees_from_perihelion.png")
+        plt.close(fig)
+    
     def test_r_sun_x_axis(self):
         """Test multiplot with R_sun (radial distance) x-axis"""
+        print("\n--- Running test_r_sun_x_axis ---")
         # Configure for R_sun x-axis
         pbplt.options.x_axis_carrington_lon = False
         pbplt.options.x_axis_r_sun = True
         pbplt.options.x_axis_carrington_lat = False
+        print(f"[Pre-plot] Options: lon={pbplt.options.x_axis_carrington_lon}, lat={pbplt.options.x_axis_carrington_lat}, rsun={pbplt.options.x_axis_r_sun}, peri={getattr(pbplt.options, 'use_degrees_from_perihelion', 'N/A')}")
         
         # Create plot
         fig, axes = multiplot([(self.center_time, pb.mag_rtn_4sa.br)])
         
         # Check x-axis label contains "radial" or "r_sun"
         x_label = axes[0].get_xlabel().lower()
+        print(f"[Post-plot] Actual x-label: '{x_label}'")
         self.assertTrue("radial" in x_label or "r_sun" in x_label or "distance" in x_label)
         
         # Get some x-data to verify it's in a reasonable R_sun range
@@ -244,16 +299,19 @@ class TestPositionalXAxisTypes(unittest.TestCase):
     
     def test_carrington_latitude_x_axis(self):
         """Test multiplot with Carrington latitude x-axis"""
+        print("\n--- Running test_carrington_latitude_x_axis ---")
         # Configure for latitude x-axis
         pbplt.options.x_axis_carrington_lon = False
         pbplt.options.x_axis_r_sun = False
         pbplt.options.x_axis_carrington_lat = True
+        print(f"[Pre-plot] Options: lon={pbplt.options.x_axis_carrington_lon}, lat={pbplt.options.x_axis_carrington_lat}, rsun={pbplt.options.x_axis_r_sun}, peri={getattr(pbplt.options, 'use_degrees_from_perihelion', 'N/A')}")
         
         # Create plot
         fig, axes = multiplot([(self.center_time, pb.mag_rtn_4sa.br)])
         
         # Check x-axis label contains "latitude"
         x_label = axes[0].get_xlabel().lower()
+        print(f"[Post-plot] Actual x-label: '{x_label}'")
         self.assertIn("latitude", x_label)
         
         # Get some x-data to verify it's in the latitude range
@@ -268,18 +326,22 @@ class TestPositionalXAxisTypes(unittest.TestCase):
     
     def test_multiple_positional_options_conflict(self):
         """Test that the most recently set positional x-axis option takes precedence"""
+        print("\n--- Running test_multiple_positional_options_conflict ---")
         # Reset options
         pbplt.options.reset()
+        print("[Conflict Test 1] Options reset.")
         
         # Set options in sequence - last one should win
         pbplt.options.x_axis_carrington_lon = True
         pbplt.options.x_axis_r_sun = True
         pbplt.options.x_axis_carrington_lat = True  # This should be the one used
+        print(f"[Conflict Test 1 - Pre-plot] Options: lon={pbplt.options.x_axis_carrington_lon}, lat={pbplt.options.x_axis_carrington_lat}, rsun={pbplt.options.x_axis_r_sun}, peri={getattr(pbplt.options, 'use_degrees_from_perihelion', 'N/A')}, active={pbplt.options.active_positional_data_type}")
         
         # Create plot
         fig, axes = multiplot([(self.center_time, pb.mag_rtn_4sa.br)])
         
         # Check that latitude is the active type since it was set last
+        print(f"[Conflict Test 1 - Post-plot] Active type: {pbplt.options.active_positional_data_type}, Expected: carrington_lat")
         self.assertEqual(pbplt.options.active_positional_data_type, 'carrington_lat')
         
         # Check x-axis label contains "latitude"
@@ -292,14 +354,17 @@ class TestPositionalXAxisTypes(unittest.TestCase):
         
         # Try in a different order - longitude should win
         pbplt.options.reset()
+        print("\n[Conflict Test 2] Options reset.")
         pbplt.options.x_axis_r_sun = True
         pbplt.options.x_axis_carrington_lat = True
         pbplt.options.x_axis_carrington_lon = True  # This should be the one used
+        print(f"[Conflict Test 2 - Pre-plot] Options: lon={pbplt.options.x_axis_carrington_lon}, lat={pbplt.options.x_axis_carrington_lat}, rsun={pbplt.options.x_axis_r_sun}, peri={getattr(pbplt.options, 'use_degrees_from_perihelion', 'N/A')}, active={pbplt.options.active_positional_data_type}")
         
         # Create plot
         fig, axes = multiplot([(self.center_time, pb.mag_rtn_4sa.br)])
         
         # Check that longitude is the active type since it was set last
+        print(f"[Conflict Test 2 - Post-plot] Active type: {pbplt.options.active_positional_data_type}, Expected: carrington_lon")
         self.assertEqual(pbplt.options.active_positional_data_type, 'carrington_lon')
         
         # Check x-axis label contains "longitude"
@@ -312,29 +377,40 @@ class TestPositionalXAxisTypes(unittest.TestCase):
     
     def test_dynamic_plotting_with_all_types(self):
         """Test plotting with all three positional data types in sequence"""
-        
+        print("\n--- Running test_dynamic_plotting_with_all_types ---")
         # Test all three types in sequence
         data_types = [
             {'name': 'Carrington Longitude', 'setting': 'x_axis_carrington_lon', 'expected': 'longitude'},
             {'name': 'Radial Distance', 'setting': 'x_axis_r_sun', 'expected': 'distance'},
-            {'name': 'Carrington Latitude', 'setting': 'x_axis_carrington_lat', 'expected': 'latitude'}
+            {'name': 'Carrington Latitude', 'setting': 'x_axis_carrington_lat', 'expected': 'latitude'},
+            # Add perihelion test here
+            {'name': 'Degrees from Perihelion', 'setting': 'use_degrees_from_perihelion', 'expected': 'degrees from perihelion'}
         ]
         
         for data_type in data_types:
-            print(f"\nTesting {data_type['name']} x-axis")
+            print(f"\n[Dynamic Test] Testing {data_type['name']} x-axis")
             
             # Reset options
             pbplt.options.reset()
             pbplt.options.window = '24:00:00.000'
+            print("[Dynamic Test] Options reset.")
             
             # Set only this data type
-            setattr(pbplt.options, data_type['setting'], True)
+            # Check if attribute exists before setting
+            if hasattr(pbplt.options, data_type['setting']):
+                setattr(pbplt.options, data_type['setting'], True)
+                print(f"[Dynamic Test - Pre-plot] Set {data_type['setting']}=True")
+                print(f"  Options: lon={pbplt.options.x_axis_carrington_lon}, lat={pbplt.options.x_axis_carrington_lat}, rsun={pbplt.options.x_axis_r_sun}, peri={getattr(pbplt.options, 'use_degrees_from_perihelion', 'N/A')}")
+            else:
+                self.skipTest(f"Option '{data_type['setting']}' not found.")
+                continue # Skip to next data type
             
             # Create plot
             fig, axes = multiplot([(self.center_time, pb.mag_rtn_4sa.br)])
             
             # Verify x-axis label
             x_label = axes[0].get_xlabel().lower()
+            print(f"[Dynamic Test - Post-plot] Actual x-label: '{x_label}'")
             self.assertIn(data_type['expected'], x_label, 
                          f"X-axis label should contain '{data_type['expected']}', got '{x_label}'")
             

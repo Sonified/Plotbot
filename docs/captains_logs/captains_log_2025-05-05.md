@@ -47,4 +47,19 @@ This ensures that data is merged correctly even when the cubby contains disjoint
 
 Summary: Perihelion axis feature is now complete, fully matching Carrington longitude axis formatting and behavior. All tests pass. See implementation plan and above for details.
 
+## Feature Update: Degrees-from-Perihelion Axis Integrated (w/ Issue)
+
+- Integrated the Degrees from Perihelion x-axis feature based on the plan, mirroring Carrington longitude formatting.
+- Added a specific test case for this feature in `tests/multiplot_tests/text_x_axis_positional_types.py`.
+- Fixed various issues related to option setters and mode determination logic in `multiplot.py` and `multiplot_options.py`.
+- Restored the full `PERIHELION_TIMES` dictionary in `plotbot/utils.py`.
+- **Known Issue:** While tests for labels and option conflicts pass, the calculated degrees show a significant offset (0° does not align with perihelion time in plots). Further debugging needed on the calculation/mapping logic in `multiplot.py`.
+
+## Push: v2.12
+
+- Version: 2025_05_05_v2.12
+- Commit message: feat: Integrate degrees-from-perihelion axis (calculation offset issue) (v2.12)
+
+Summary: Pushing integrated perihelion axis feature. Core logic and formatting in place, but calculation has a known offset issue requiring further debugging.
+
 (Log remains open for further updates on 2025-05-05) 

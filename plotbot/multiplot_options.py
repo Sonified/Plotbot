@@ -582,18 +582,17 @@ class MultiplotOptions:
         
     @x_axis_r_sun.setter
     def x_axis_r_sun(self, value: bool):
-        """Set whether to use radial distance for the x-axis."""
-        # Only proceed if value is different from current state
-        if value != self.__dict__.get('_x_axis_r_sun', False):
-            # If enabling this option, disable the others
-            if value:
-                self.__dict__['_x_axis_carrington_lon'] = False
-                self.__dict__['_x_axis_carrington_lat'] = False
-                # Disable relative time as it conflicts with positional mapping
-                if self.__dict__.get('_use_relative_time', False):
-                    print_manager.status("Disabling relative time since radial distance mapping is now enabled")
-                    self.__dict__['_use_relative_time'] = False
-            self.__dict__['_x_axis_r_sun'] = value
+        """Set the R_sun x-axis option, disabling others."""
+        self.__dict__['_x_axis_r_sun'] = value
+        if value:
+            print_manager.debug("Positional Axis: R_sun enabled")
+            self.__dict__['_x_axis_carrington_lon'] = False
+            self.__dict__['_x_axis_carrington_lat'] = False
+            self.__dict__['_use_relative_time'] = False
+            # Ensure degrees from perihelion is also disabled
+            if hasattr(self, '_use_degrees_from_perihelion'):
+                 self.__dict__['_use_degrees_from_perihelion'] = False
+            self.__dict__['_active_positional_data_type'] = 'r_sun'
             
     @property
     def x_axis_carrington_lon(self) -> bool:
@@ -602,18 +601,17 @@ class MultiplotOptions:
 
     @x_axis_carrington_lon.setter
     def x_axis_carrington_lon(self, value: bool):
-        """Set whether to use Carrington longitude for the x-axis."""
-        # Only proceed if value is different from current state
-        if value != self.__dict__.get('_x_axis_carrington_lon', False):
-            # If enabling this option, disable the others
-            if value:
-                self.__dict__['_x_axis_r_sun'] = False
-                self.__dict__['_x_axis_carrington_lat'] = False
-                # Disable relative time as it conflicts with positional mapping
-                if self.__dict__.get('_use_relative_time', False):
-                    print_manager.status("Disabling relative time since Carrington longitude mapping is now enabled")
-                    self.__dict__['_use_relative_time'] = False
-            self.__dict__['_x_axis_carrington_lon'] = value
+        """Set the Carrington longitude x-axis option, disabling others."""
+        self.__dict__['_x_axis_carrington_lon'] = value
+        if value:
+            print_manager.debug("Positional Axis: Carrington Lon enabled")
+            self.__dict__['_x_axis_r_sun'] = False
+            self.__dict__['_x_axis_carrington_lat'] = False
+            self.__dict__['_use_relative_time'] = False
+            # Ensure degrees from perihelion is also disabled
+            if hasattr(self, '_use_degrees_from_perihelion'):
+                 self.__dict__['_use_degrees_from_perihelion'] = False
+            self.__dict__['_active_positional_data_type'] = 'carrington_lon'
             
     @property
     def x_axis_carrington_lat(self) -> bool:
@@ -622,18 +620,17 @@ class MultiplotOptions:
         
     @x_axis_carrington_lat.setter
     def x_axis_carrington_lat(self, value: bool):
-        """Set whether to use Carrington latitude for the x-axis."""
-        # Only proceed if value is different from current state
-        if value != self.__dict__.get('_x_axis_carrington_lat', False):
-            # If enabling this option, disable the others
-            if value:
-                self.__dict__['_x_axis_r_sun'] = False
-                self.__dict__['_x_axis_carrington_lon'] = False
-                # Disable relative time as it conflicts with positional mapping
-                if self.__dict__.get('_use_relative_time', False):
-                    print_manager.status("Disabling relative time since Carrington latitude mapping is now enabled")
-                    self.__dict__['_use_relative_time'] = False
-            self.__dict__['_x_axis_carrington_lat'] = value
+        """Set the Carrington latitude x-axis option, disabling others."""
+        self.__dict__['_x_axis_carrington_lat'] = value
+        if value:
+            print_manager.debug("Positional Axis: Carrington Lat enabled")
+            self.__dict__['_x_axis_r_sun'] = False
+            self.__dict__['_x_axis_carrington_lon'] = False
+            self.__dict__['_use_relative_time'] = False
+            # Ensure degrees from perihelion is also disabled
+            if hasattr(self, '_use_degrees_from_perihelion'):
+                 self.__dict__['_use_degrees_from_perihelion'] = False
+            self.__dict__['_active_positional_data_type'] = 'carrington_lat'
             
     @property
     def using_positional_x_axis(self) -> bool:

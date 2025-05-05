@@ -7,7 +7,7 @@
 - The degrees-from-perihelion axis is now fully implemented and behaves identically to the Carrington longitude axis in all respects (ticks, labels, limits, wrap-around, etc.).
 - The implementation strictly follows the Carrington longitude logic, with the only difference being a longitude shift so that 0° aligns with perihelion.
 - The axis formatting logic now uses a robust flag (`panel_actually_uses_degrees`) to ensure correct degree formatting, avoiding unreliable heuristics.
-- All relevant tests pass (see `tests/test_degrees_from_perihelion.py`).
+- **Note:** The original verification script (`tests/test_degrees_from_perihelion.py`) is currently missing. A suitable replacement needs to be identified or created from existing tests in `tests/multiplot_tests/`.
 - See Captain's Log 2025-05-05 for details on the debugging and lessons learned.
 
 **Key Lessons Learned:**
@@ -107,7 +107,7 @@
     *   Ensure `get_perihelion_time` is robust. Consider removing any functions made redundant by this plan (like `calculate_degrees_from_perihelion` if it exists).
 
 **Verification:**
-*   Use `test_degrees_from_perihelion.py` (with `use_degrees_from_perihelion = True`) to confirm the axis label, ticks, and data range are correct.
+*   **[Missing]** Use `test_degrees_from_perihelion.py` (with `use_degrees_from_perihelion = True`) to confirm the axis label, ticks, and data range are correct. **This script needs to be recreated or adapted from existing tests.**
 *   Use `Examples_Multiplot.ipynb` with `x_axis_carrington_lon = True` and then separately with `use_degrees_from_perihelion = True` to visually compare and ensure consistent degree formatting.
 *   Verify that setting `use_degrees_from_perihelion = True` correctly disables `use_relative_time`.
 
@@ -131,7 +131,8 @@ This plan directly addresses the requirements, leverages existing working code, 
         *   Uses these relative degrees as the `x_data` when plotting.
         *   In the final formatting loop, applies the *same* tick/label formatting as `carrington_lon` when this mode is active.
 *   **Relevant Tests:**
-    *   `tests/test_degrees_from_perihelion.py`: Should be the primary script to verify this specific feature works correctly (checks label, ticks, data range).
+    *   `tests/test_degrees_from_perihelion.py`: **(Currently Missing)** Should be the primary script to verify this specific feature works correctly (checks label, ticks, data range).
     *   `tests/multiplot_tests/test_x_axis_positional_standalone.py` & `test_single_x_axis_positional.py`: Serve as examples of how the *standard* positional axes (like `carrington_lon`) are intended to work and look, providing a baseline for comparison.
+    *   `tests/multiplot_tests/text_x_axis_positional_types.py`: Tests all standard positional axes (`lon`, `lat`, `r_sun`). Could be adapted.
     *   `Examples_Multiplot.ipynb`: Useful for visual inspection and integration testing with various options.
 *   **Rationale for Simplicity:** This plan aligns with the existing, robust pattern for positional axes, making the code cleaner, more maintainable, and easier to understand by integrating the new feature cleanly rather than adding complex, separate logic.
