@@ -252,6 +252,28 @@ class MultiplotOptions:
     @save_bbox_inches.setter
     def save_bbox_inches(self, value: str) -> None: ...
 
+    @positional_tick_density.setter
+    def positional_tick_density(self, value: int) -> None: ...
+
+    # --- NEW PROPERTIES for Degrees from Perihelion --- 
+    @property
+    def use_degrees_from_perihelion(self) -> bool: ...
+    @use_degrees_from_perihelion.setter
+    def use_degrees_from_perihelion(self, value: bool) -> None: ...
+
+    @property
+    def degrees_from_perihelion_range(self) -> Optional[Tuple[float, float]]: ...
+    @degrees_from_perihelion_range.setter
+    def degrees_from_perihelion_range(self, value: Optional[Tuple[float, float]]) -> None: ...
+
+    @property
+    def degrees_from_perihelion_tick_step(self) -> Optional[float]: ...
+    @degrees_from_perihelion_tick_step.setter
+    def degrees_from_perihelion_tick_step(self, value: Optional[float]) -> None: ...
+    # --- END NEW PROPERTIES --- 
+
+    # --- HAM DATA PROPERTIES ---
+
 # --- EnhancedPlotting Class ---
 class EnhancedPlotting:
     # --- Attributes ---

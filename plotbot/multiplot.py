@@ -104,70 +104,125 @@ def multiplot(plot_list, **kwargs):
     # Get options instance
     options = plt.options
 
-    # Initialize positional mapper if needed
-    positional_mapper = None
-    using_positional_axis = False  # Flag to track if positional data is available
-    if options.using_positional_x_axis:
-        print_manager.status(f"Positional X-axis requested. Initializing mapper with path: {options.positional_data_path}")
-        positional_mapper = XAxisPositionalDataMapper(options.positional_data_path)
-        # Check if mapper initialized successfully (data loaded)
-        using_positional_axis = hasattr(positional_mapper, 'data_loaded') and positional_mapper.data_loaded
-        # Adding clearer diagnostic information about positional mapping status
-        print_manager.status(f"Positional mapping status: data_loaded={getattr(positional_mapper, 'data_loaded', False)}")
-        print_manager.status(f"using_positional_axis flag set to: {using_positional_axis}")
-        if using_positional_axis:
-            data_type = options.active_positional_data_type
-            # Check which type of data we're using for the x-axis
-            if data_type == 'carrington_lon':
-                values_array = positional_mapper.longitude_values
-                axis_label = "Carrington Longitude (deg)"
-                units = "°"
-            elif data_type == 'r_sun':
-                values_array = positional_mapper.radial_values
-                axis_label = "Radial Distance (R_sun)"
-                units = "R_sun"
-            elif data_type == 'carrington_lat':
-                values_array = positional_mapper.latitude_values
-                axis_label = "Carrington Latitude (deg)"
-                units = "°"
-            else:
-                print_manager.warning(f"Unknown positional data type: {data_type}")
-                values_array = None
-                axis_label = "Unknown"
-                units = ""
-                
-            if values_array is not None:
-                print_manager.status(f"✓ Successfully initialized {data_type} mapping with {len(positional_mapper.times_numeric)} data points")
-                print_manager.debug(f"{data_type.capitalize()} data range: {np.min(values_array):.2f}{units} to {np.max(values_array):.2f}{units}")
-            
-            # Add explicit check to verify relative time is disabled
-            if options.use_relative_time:
-                    print_manager.warning("⚠️ Both positional axis and relative time are enabled. This may cause unexpected behavior.")
-                    print_manager.status("Automatically disabling use_relative_time since positional mapping is active")
-                    options.use_relative_time = False
-        else:
-                print_manager.status(f"❌ Failed to find {data_type} data in the positional data file.")
-                print_manager.debug(f"Mapper attributes: {dir(positional_mapper)}")
-                # If no positional data found, disable it to prevent issues
-                if data_type == 'carrington_lon':
-                    options.x_axis_carrington_lon = False
-                elif data_type == 'r_sun':
-                    options.x_axis_r_sun = False
-                elif data_type == 'carrington_lat':
-                    options.x_axis_carrington_lat = False
-                using_positional_axis = False
-    else:
-        # Don't show failure message if positional mapping wasn't requested
-        print_manager.debug("Using time axis (positional mapping not requested)")
-        using_positional_axis = False
-
-    # Store original rcParams to restore later
-    original_rcparams = {}
-    
-    # Override any options with provided kwargs
+    # Override any options with provided kwargs - BEFORE initializing mapper
     for key, value in kwargs.items():
         if hasattr(options, key):
             setattr(options, key, value)
+        # Handle new options passed via kwargs
+        # Check for existence before setting to avoid creating if not passed
+        if key == 'use_degrees_from_perihelion' and value is not None:
+            options.use_degrees_from_perihelion = value
+        elif key == 'degrees_from_perihelion_range' and value is not None:
+            options.degrees_from_perihelion_range = value
+        elif key == 'degrees_from_perihelion_tick_step' and value is not None:
+            options.degrees_from_perihelion_tick_step = value
+            
+    # --- DEBUG PRINT: Show initial option state --- 
+    # (Keep existing debug prints)
+    # ... 
+
+    # Initialize positional mapper if needed
+    positional_mapper = None
+    using_positional_axis = False  # Default to False
+    data_type = 'time' # Default
+    axis_label = "Time" # Default
+    units = "" # Default
+    
+    # --- Check if *any* positional feature is enabled --- 
+    positional_feature_requested = (
+        options.x_axis_r_sun or 
+        options.x_axis_carrington_lon or 
+        options.x_axis_carrington_lat or 
+        getattr(options, 'use_degrees_from_perihelion', False) # Added perihelion option
+    )
+    print_manager.debug(f"Initial check - positional_feature_requested: {positional_feature_requested}")
+    
+    # --- Explicitly set using_positional_axis based on the check --- 
+    if positional_feature_requested:
+        using_positional_axis = True 
+        print_manager.debug(f"--> Setting using_positional_axis = True based on request.")
+    # --- END ---
+
+    # --- Initialize mapper only if a positional feature is requested --- 
+    if positional_feature_requested:
+        # Ensure positional_data_path exists
+        if not hasattr(options, 'positional_data_path') or not options.positional_data_path:
+             print_manager.error("❌ Positional data path (options.positional_data_path) is not set. Cannot use positional x-axis or degrees from perihelion.")
+             # Disable positional features if path is missing
+             if hasattr(options, 'use_degrees_from_perihelion'): options.use_degrees_from_perihelion = False
+             options.x_axis_r_sun = False 
+             options.x_axis_carrington_lon = False 
+             options.x_axis_carrington_lat = False
+             positional_feature_requested = False # Prevent further positional logic
+             using_positional_axis = False # Ensure this is false too
+             print_manager.debug("--> Resetting positional flags due to missing path.")
+        else:
+            print_manager.debug(f"--> Initializing XAxisPositionalDataMapper with path: {options.positional_data_path}")
+            positional_mapper = XAxisPositionalDataMapper(options.positional_data_path)
+            mapper_loaded = hasattr(positional_mapper, 'data_loaded') and positional_mapper.data_loaded
+            print_manager.debug(f"--> Mapper data_loaded status: {mapper_loaded}")
+            
+            if not mapper_loaded:
+                print_manager.warning("❌ Failed to load positional data. Disabling positional x-axis and degrees from perihelion.")
+                if hasattr(options, 'use_degrees_from_perihelion'): options.use_degrees_from_perihelion = False
+                options.x_axis_r_sun = False 
+                options.x_axis_carrington_lon = False 
+                options.x_axis_carrington_lat = False
+                positional_feature_requested = False 
+                using_positional_axis = False 
+            else:
+                # --- Determine the *primary* data type for plotting --- 
+                if getattr(options, 'use_degrees_from_perihelion', False):
+                    print_manager.debug("--> Mode Determination: use_degrees_from_perihelion is True.")
+                    data_type = 'degrees_from_perihelion' # Use a distinct type identifier
+                    axis_label = "Degrees from Perihelion (°)"
+                    units = "°"
+                    # Ensure conflicting modes are off (setters should handle this, but verify)
+                    options.x_axis_carrington_lon = False
+                    options.x_axis_r_sun = False
+                    options.x_axis_carrington_lat = False
+                elif options.x_axis_carrington_lon:
+                    print_manager.debug("--> Mode Determination: x_axis_carrington_lon is True.")
+                    data_type = 'carrington_lon'
+                    # values_array = positional_mapper.longitude_values # Not needed here
+                    axis_label = "Carrington Longitude (°)"
+                    units = "°"
+                elif options.x_axis_r_sun:
+                    print_manager.debug("--> Mode Determination: x_axis_r_sun is True.")
+                    data_type = 'r_sun'
+                    # values_array = positional_mapper.radial_values # Not needed here
+                    axis_label = "Radial Distance (R_sun)"
+                    units = "R_sun"
+                elif options.x_axis_carrington_lat:
+                    print_manager.debug("--> Mode Determination: x_axis_carrington_lat is True.")
+                    data_type = 'carrington_lat'
+                    # values_array = positional_mapper.latitude_values # Not needed here
+                    axis_label = "Carrington Latitude (°)"
+                    units = "°"
+                else:
+                     # This case means positional_feature_requested was true initially, but no specific mode ended up active.
+                     print_manager.warning("--> Mode Determination: Positional feature requested but no specific type active, defaulting to time.")
+                     using_positional_axis = False # Fallback
+                     axis_label = "Time"
+                     units = ""
+                     data_type = 'time'
+
+                # Verify relative time conflict only if a positional mode is confirmed active
+                if using_positional_axis and options.use_relative_time:
+                        print_manager.warning("⚠️ Positional axis/degrees AND relative time are enabled.")
+                        print_manager.status("--> Automatically disabling use_relative_time.")
+                        options.use_relative_time = False
+                        
+    # Final check: If positional feature was requested but ultimately failed or wasn't specific, default to time.
+    if not using_positional_axis:
+        print_manager.debug("--> Final check: using_positional_axis is False. Setting mode to Time.")
+        data_type = 'time'
+        axis_label = "Time" 
+        units = ""
+    # --- END Initialization Section Modifications ---
+
+    # Store original rcParams to restore later
+    original_rcparams = {}
     
     print_manager.debug("\n=== Starting Multiplot Function ===")
     

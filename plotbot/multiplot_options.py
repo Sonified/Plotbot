@@ -710,6 +710,53 @@ class MultiplotOptions:
         self.__dict__['_positional_tick_density'] = value
     # --- END POSITIONAL X-AXIS PROPERTIES ---
 
+    # --- NEW PROPERTIES for Degrees from Perihelion --- 
+    @property
+    def use_degrees_from_perihelion(self) -> bool:
+        """Whether to use degrees relative to perihelion longitude for the x-axis."""
+        return self.__dict__.get('use_degrees_from_perihelion', False)
+
+    @use_degrees_from_perihelion.setter
+    def use_degrees_from_perihelion(self, value: bool):
+        """Set whether to use degrees from perihelion for the x-axis."""
+        if value != self.__dict__.get('use_degrees_from_perihelion', False):
+            if value:
+                # If enabling this, disable conflicting modes
+                print_manager.status("Enabling degrees from perihelion axis. Disabling other positional/relative modes.")
+                self.__dict__['_x_axis_r_sun'] = False
+                self.__dict__['_x_axis_carrington_lon'] = False
+                self.__dict__['_x_axis_carrington_lat'] = False
+                if self.__dict__.get('_use_relative_time', False):
+                    self.__dict__['_use_relative_time'] = False
+            self.__dict__['use_degrees_from_perihelion'] = value
+
+    @property
+    def degrees_from_perihelion_range(self) -> Optional[Tuple[float, float]]:
+        """Fixed range for the 'degrees from perihelion' x-axis (min_deg, max_deg). None for auto."""
+        return self.__dict__.get('degrees_from_perihelion_range', None)
+
+    @degrees_from_perihelion_range.setter
+    def degrees_from_perihelion_range(self, value: Optional[Tuple[float, float]]):
+        """Set the fixed range for the 'degrees from perihelion' x-axis."""
+        if value is not None and not (isinstance(value, (tuple, list)) and len(value) == 2):
+            print_manager.warning(f"Invalid degrees_from_perihelion_range format: {value}. Expected (min, max) tuple or None.")
+            return
+        self.__dict__['degrees_from_perihelion_range'] = value
+
+    @property
+    def degrees_from_perihelion_tick_step(self) -> Optional[float]:
+        """Step size between major ticks for 'degrees from perihelion' x-axis. None for auto."""
+        return self.__dict__.get('degrees_from_perihelion_tick_step', None)
+
+    @degrees_from_perihelion_tick_step.setter
+    def degrees_from_perihelion_tick_step(self, value: Optional[float]):
+        """Set the step size for major ticks for 'degrees from perihelion' x-axis."""
+        if value is not None and not isinstance(value, (int, float)):
+            print_manager.warning(f"Invalid degrees_from_perihelion_tick_step format: {value}. Expected number or None.")
+            return
+        self.__dict__['degrees_from_perihelion_tick_step'] = value
+    # --- END NEW PROPERTIES --- 
+
     # --- HAM DATA PROPERTIES ---
     @property
     def hamify(self) -> bool:
