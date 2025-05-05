@@ -10,3 +10,24 @@ Summary: This push documents ongoing significant issues with multiplot rendering
 ---
 
 (Log remains open for further updates on 2025-05-05) 
+
+---
+
+## Bug Fix: DataCubby Merge Logic for Disjoint Ranges
+
+**Symptom:** When using `multiplot` with multiple time ranges, only the first panel's data was correctly loaded and plotted. Subsequent panels failed because the `DataCubby` incorrectly determined that the new time ranges (e.g., 2019) were already contained within the existing data (e.g., 2018 + 2021-2025).
+
+**Root Cause:** The `_merge_arrays` method in `data_cubby.py` calculated the overall start and end times of the data already in the cubby. It then checked if the *new* time range fell within this overall span. This logic failed when the existing data had gaps (disjoint ranges), leading it to incorrectly conclude the new data was already present.
+
+**Fix:** Modified `_merge_arrays` to:
+1. Combine existing and new time arrays.
+2. Find unique timestamps using `np.unique`.
+3. Compare the count of unique timestamps to the original count of existing timestamps.
+4. Only proceed with the merge if the unique count is *greater*, indicating that the new data adds genuinely new time points.
+
+This ensures that data is merged correctly even when the cubby contains disjoint time ranges.
+
+## Push: v2.06
+
+- Version: 2025_05_05_v2.06
+- Commit message: Fix: Correct DataCubby merge logic for disjoint time ranges (v2.06) 

@@ -158,8 +158,8 @@ __all__ = [
 BLUE = '\033[94m'
 RESET = '\033[0m'
 
-COMMIT_MSG = "v2.05: Significant multiplot issues and data cubby timing issues"
-print(f'{BLUE}   Version: 2025_05_05_v2.05{RESET}')
+COMMIT_MSG = "Fix: Correct DataCubby merge logic for disjoint time ranges (v2.06)"
+print(f'{BLUE}   Version: 2025_05_05_v2.06{RESET}')
 print(f"Commit: {COMMIT_MSG}")
 
 # --- Final Print Message ---

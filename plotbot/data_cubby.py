@@ -200,19 +200,23 @@ class data_cubby:
         """
         print_manager.datacubby("\n=== Array Merge Debug ===")
         # Basic validation
-        if existing_times is None or new_times is None or len(existing_times) == 0 or len(new_times) == 0:
-            print_manager.datacubby("MERGE ARRAYS ABORTED - One or both datetime arrays are None or empty")
+        if new_times is None or len(new_times) == 0 or new_raw_data is None:
+            print_manager.datacubby("MERGE ARRAYS ABORTED - New time array or data is None or empty")
             print_manager.datacubby("=== End Array Merge Debug ===\n")
-            return None, None
-        if existing_raw_data is None or new_raw_data is None:
-            print_manager.datacubby("MERGE ARRAYS ABORTED - Raw data dictionaries are None")
+            return None, None # Cannot merge nothing
+
+        # Handle case where existing data is empty/None
+        if existing_times is None or len(existing_times) == 0 or existing_raw_data is None:
+            print_manager.datacubby("MERGE ARRAYS INFO - Existing data is empty. Using new data directly.")
             print_manager.datacubby("=== End Array Merge Debug ===\n")
-            return None, None
-            
+            # Return the new data as the "merged" data
+            return new_times, new_raw_data
+
         # Ensure numpy datetime64 for comparison (input should already be this way ideally)
         try:
-            existing_start = np.datetime64(existing_times[0])
-            existing_end = np.datetime64(existing_times[-1])
+            # Get overall bounds for logging/simple checks
+            existing_start_bound = np.datetime64(existing_times[0])
+            existing_end_bound = np.datetime64(existing_times[-1])
             new_start = np.datetime64(new_times[0])
             new_end = np.datetime64(new_times[-1])
         except Exception as e:
@@ -221,88 +225,117 @@ class data_cubby:
             return None, None
 
         # Format the datetime objects before printing
-        existing_start_str = format_datetime_for_log(existing_start)
-        existing_end_str = format_datetime_for_log(existing_end)
+        existing_start_str = format_datetime_for_log(existing_start_bound)
+        existing_end_str = format_datetime_for_log(existing_end_bound)
         new_start_str = format_datetime_for_log(new_start)
         new_end_str = format_datetime_for_log(new_end)
 
-        print_manager.datacubby(f"MERGE ARRAYS RANGES - Existing: {existing_start_str} to {existing_end_str}")
-        print_manager.datacubby(f"MERGE ARRAYS RANGES - New:      {new_start_str} to {new_end_str}")
+        print_manager.datacubby(f"MERGE ARRAYS RANGES - Existing Bounds: {existing_start_str} to {existing_end_str}")
+        print_manager.datacubby(f"MERGE ARRAYS RANGES - New:           {new_start_str} to {new_end_str}")
 
-        # --- Time Range Comparison --- (Simplified for clarity)
-        is_identical = (new_start == existing_start) and (new_end == existing_end)
-        is_new_contained = (new_start >= existing_start) and (new_end <= existing_end)
-        is_entirely_before = new_end < existing_start
-        is_entirely_after = new_start > existing_end
+        # --- Robust Check for Need to Merge ---
+        # Combine times and find unique ones. A merge is needed if the unique set
+        # is larger than the original existing set. This handles gaps correctly.
+        combined_times = np.concatenate((existing_times, new_times))
+        unique_times = np.unique(combined_times)
 
-        # CASE 1: New data is already covered or identical - No merge needed
-        if is_identical or is_new_contained:
-            print_manager.datacubby("MERGE ARRAYS INFO - New range identical or contained. No merge needed.")
+        if len(unique_times) == len(existing_times):
+            # This implies all new times were already present in existing_times
+            print_manager.datacubby("MERGE ARRAYS INFO - All new timestamps are already present. No merge needed.")
             print_manager.datacubby("=== End Array Merge Debug ===\n")
             return None, None # Signal no merge action taken
 
-        # CASE 2: Non-overlapping ranges - Concatenate and sort
-        elif is_entirely_before or is_entirely_after:
-            print_manager.datacubby("MERGE ARRAYS ACTION - Non-overlapping ranges detected. Merging...")
-            try:
-                merged_times = np.concatenate((existing_times, new_times))
-                # Use stable sort
-                sort_indices = np.argsort(merged_times, kind='stable')
-                merged_times = merged_times[sort_indices]
-                
-                merged_raw_data = {}
-                # Combine and sort each data component
-                all_keys = set(existing_raw_data.keys()) | set(new_raw_data.keys())
-                for key in all_keys:
-                    # Skip 'all' for now, handle specific components
-                    if key == 'all': continue 
-                        
-                    existing_comp = existing_raw_data.get(key)
-                    new_comp = new_raw_data.get(key)
-                    
-                    if existing_comp is not None and new_comp is not None:
-                        if len(existing_comp) == len(existing_times) and len(new_comp) == len(new_times):
-                             merged_comp = np.concatenate((existing_comp, new_comp))
-                             merged_raw_data[key] = merged_comp[sort_indices]
-                        else:
-                             print_manager.datacubby(f"MERGE ARRAYS WARNING - Length mismatch for key '{key}'. Skipping merge for this key.")
-                    elif existing_comp is not None:
-                         print_manager.datacubby(f"MERGE ARRAYS WARNING - Key '{key}' missing in new data. Trying to pad/sort existing.")
-                         if len(existing_comp) == len(existing_times):
-                             # Need to figure out how to handle sorting just one part - complex
-                             pass # For now, skip if one part is missing
-                    elif new_comp is not None:
-                         print_manager.datacubby(f"MERGE ARRAYS WARNING - Key '{key}' missing in existing data. Trying to pad/sort new.")
-                         if len(new_comp) == len(new_times):
-                              pass # For now, skip if one part is missing
-                
-                # Reconstruct 'all' if possible (assuming components exist)
-                if 'br' in merged_raw_data and 'bt' in merged_raw_data and 'bn' in merged_raw_data:
-                    merged_raw_data['all'] = [merged_raw_data['br'], merged_raw_data['bt'], merged_raw_data['bn']]
-                
-                print_manager.datacubby("MERGE ARRAYS SUCCESS - Non-overlapping merge complete.")
-                print_manager.datacubby("=== End Array Merge Debug ===\n")
-                return merged_times, merged_raw_data
-            except Exception as e:
-                print_manager.datacubby(f"MERGE ARRAYS ERROR - During non-overlapping merge: {e}")
-                import traceback
-                print_manager.datacubby(traceback.format_exc())
-                print_manager.datacubby("=== End Array Merge Debug ===\n")
-                return None, None
+        # --- Perform the Merge ---
+        # Since we determined a merge is needed (new unique times exist)
+        print_manager.datacubby("MERGE ARRAYS ACTION - New unique timestamps found. Performing merge...")
+        try:
+            # We already combined the times, just need to sort and apply indices
+            sort_indices = np.argsort(combined_times, kind='stable')
+            merged_times = combined_times[sort_indices]
 
-        # CASE 3: Overlapping ranges - Use union (more complex, placeholder logic)
-        else: # Some form of overlap
-            print_manager.datacubby("MERGE ARRAYS ACTION - Overlapping ranges detected. Performing union (placeholder)...")
-            # --- Placeholder for Union Logic --- 
-            # This part is complex: need to find unique times, create new arrays,
-            # map data points correctly, handling conflicts (e.g., prefer new data).
-            # For now, we'll just return None, indicating merge wasn't performed for overlap.
-            print_manager.datacubby("MERGE ARRAYS INFO - Overlap merge logic not fully implemented. No merge action taken.")
-            # In a real scenario, you might choose to replace or implement the full union.
-            # Returning None signals to the caller that the existing data was NOT modified/merged.
-            # --- End Placeholder --- 
+            # Find indices to remove duplicates, preferring newer data if timestamps collide.
+            # np.unique returns the *first* occurrence index by default.
+            # To prefer *newer* data, we reverse, find unique on reversed, then un-reverse.
+            _, unique_indices_rev = np.unique(merged_times[::-1], return_index=True)
+            # Correct the indices to point to the original combined_times array before reversal
+            unique_indices = len(merged_times) - 1 - unique_indices_rev
+            # Ensure unique_indices are sorted
+            unique_indices = np.sort(unique_indices)
+
+            # Apply unique indices to the sorted times
+            final_merged_times = merged_times[unique_indices]
+
+            # Apply sorting and uniqueness to data arrays
+            merged_raw_data = {}
+            all_keys = set(existing_raw_data.keys()) | set(new_raw_data.keys())
+            for key in all_keys:
+                 if key == 'all': continue # Skip 'all', reconstruct later
+
+                 existing_comp = existing_raw_data.get(key)
+                 new_comp = new_raw_data.get(key)
+
+                 # Combine components, handling potential Nones or missing keys
+                 combined_comp = None
+                 if existing_comp is not None and new_comp is not None:
+                     # Ensure compatible lengths before concatenating
+                     if len(existing_comp) == len(existing_times) and len(new_comp) == len(new_times):
+                         combined_comp = np.concatenate((existing_comp, new_comp))
+                     else:
+                         print_manager.datacubby(f"MERGE ARRAYS WARNING - Length mismatch for key '{key}' during combine. Skipping merge for this key.")
+                         continue # Skip this key
+                 elif existing_comp is not None:
+                     if len(existing_comp) == len(existing_times):
+                         # If new data doesn't have the key, pad with NaNs or appropriate fill value
+                         fill_value = np.nan if np.issubdtype(existing_comp.dtype, np.number) else None
+                         if fill_value is not None:
+                             padding = np.full(len(new_times), fill_value, dtype=existing_comp.dtype)
+                             combined_comp = np.concatenate((existing_comp, padding))
+                         else:
+                             print_manager.datacubby(f"MERGE ARRAYS WARNING - Cannot determine fill value for key '{key}' (existing only). Skipping.")
+                             continue
+                     else:
+                         print_manager.datacubby(f"MERGE ARRAYS WARNING - Length mismatch for existing key '{key}'. Skipping.")
+                         continue
+                 elif new_comp is not None:
+                     if len(new_comp) == len(new_times):
+                         # If existing data doesn't have the key, pad with NaNs
+                         fill_value = np.nan if np.issubdtype(new_comp.dtype, np.number) else None
+                         if fill_value is not None:
+                             padding = np.full(len(existing_times), fill_value, dtype=new_comp.dtype)
+                             combined_comp = np.concatenate((padding, new_comp))
+                         else:
+                              print_manager.datacubby(f"MERGE ARRAYS WARNING - Cannot determine fill value for key '{key}' (new only). Skipping.")
+                              continue
+                     else:
+                         print_manager.datacubby(f"MERGE ARRAYS WARNING - Length mismatch for new key '{key}'. Skipping.")
+                         continue
+                 else:
+                     # Should not happen if all_keys is derived correctly, but handle defensively
+                     print_manager.datacubby(f"MERGE ARRAYS WARNING - Key '{key}' not found in either dataset?")
+                     continue
+
+                 # Apply the sorting and unique indices
+                 if combined_comp is not None:
+                     sorted_comp = combined_comp[sort_indices]
+                     final_merged_comp = sorted_comp[unique_indices]
+                     merged_raw_data[key] = final_merged_comp
+                 else:
+                      print_manager.datacubby(f"MERGE ARRAYS WARNING - combined_comp was None for key '{key}' after padding logic?")
+
+            # Reconstruct 'all' if possible
+            if 'br' in merged_raw_data and 'bt' in merged_raw_data and 'bn' in merged_raw_data:
+                merged_raw_data['all'] = [merged_raw_data['br'], merged_raw_data['bt'], merged_raw_data['bn']]
+
+            print_manager.datacubby("MERGE ARRAYS SUCCESS - Merge complete.")
             print_manager.datacubby("=== End Array Merge Debug ===\n")
-            return None, None # Signal no merge action taken for overlap yet
+            return final_merged_times, merged_raw_data
+
+        except Exception as e:
+            print_manager.datacubby(f"MERGE ARRAYS ERROR - During merge: {e}")
+            import traceback
+            print_manager.datacubby(traceback.format_exc())
+            print_manager.datacubby("=== End Array Merge Debug ===\n")
+            return None, None
 
     @classmethod
     def grab(cls, identifier):
