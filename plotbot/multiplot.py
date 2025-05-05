@@ -26,6 +26,7 @@ from PIL import Image
 import matplotlib.pyplot as mpl_plt
 import matplotlib.dates as mdates
 from matplotlib.ticker import FuncFormatter
+import matplotlib.ticker as mticker
 
 def debug_variable_time_ranges(var, trange, label=""):
     """Helper function to debug time range issues with variables."""
@@ -507,19 +508,35 @@ def multiplot(plot_list, **kwargs):
                             plot_color = single_var.color
     
                         # Get x-axis data - use longitude if available
-                        x_data = single_var.datetime_array[indices]
-                        if using_positional_axis and positional_mapper is not None:
-                            print_manager.debug(f"Panel {i+1} (Right Axis): Attempting longitude mapping for {len(x_data)} points")
-                            lon_vals = positional_mapper.map_to_position(x_data, data_type)
-                            if lon_vals is not None:
-                                x_data = lon_vals
-                                print_manager.debug(f"Panel {i+1} (Right Axis): Longitude mapping successful, using {len(lon_vals)} longitude values")
-                            else:
-                                print_manager.status(f"Panel {i+1} (Right Axis): Longitude mapping failed. Using time.")
+                        # x_data = single_var.datetime_array[indices] # OLD: Start with time
+                        time_slice = single_var.datetime_array[indices]
+                        data_slice = single_var.data[indices]
+                        x_data = time_slice # Default to time
 
-                        # Use x_data in plot
+                        if using_positional_axis and positional_mapper is not None:
+                            print_manager.debug(f"Panel {i+1} (Right Axis): Attempting positional mapping for {len(time_slice)} points")
+                            positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+
+                            if positional_vals is not None:
+                                # --- NEW: Create mask for successful mapping --- 
+                                # Assuming None or np.nan indicates a mapping failure
+                                valid_mask = ~np.isnan(positional_vals) 
+                                num_valid = np.sum(valid_mask)
+                                
+                                if num_valid > 0:
+                                    x_data = positional_vals[valid_mask] # Use only valid positions
+                                    data_slice = data_slice[valid_mask]   # Filter data slice accordingly
+                                    print_manager.debug(f"Panel {i+1} (Right Axis): Positional mapping successful, using {num_valid} valid points")
+                                else:
+                                    print_manager.status(f"Panel {i+1} (Right Axis): Positional mapping resulted in no valid points. Using time.")
+                                    # x_data remains time_slice, data_slice remains original data_slice
+                            else:
+                                print_manager.status(f"Panel {i+1} (Right Axis): Positional mapping failed (returned None). Using time.")
+                                # x_data remains time_slice, data_slice remains original data_slice
+
+                        # --- Use filtered x_data and data_slice --- 
                         ax2.plot(x_data, 
-                                single_var.data[indices],
+                                data_slice, # Use filtered data_slice
                                 linewidth=options.magnetic_field_line_width if options.save_preset else single_var.line_width,
                                 linestyle=single_var.line_style,
                                 label=single_var.legend_label,
@@ -595,19 +612,31 @@ def multiplot(plot_list, **kwargs):
                             plot_color = None
     
                         # Get x-axis data - use longitude if available
-                        x_data = single_var.datetime_array[indices]
-                        if using_positional_axis and positional_mapper is not None:
-                            print_manager.debug(f"Panel {i+1} (List Var): Attempting longitude mapping for {len(x_data)} points")
-                            lon_vals = positional_mapper.map_to_position(x_data, data_type)
-                            if lon_vals is not None:
-                                x_data = lon_vals
-                                print_manager.debug(f"Panel {i+1} (List Var): Longitude mapping successful, using {len(lon_vals)} longitude values")
-                            else:
-                                print_manager.status(f"Panel {i+1} (List Var): Longitude mapping failed. Using time.")
+                        # x_data = single_var.datetime_array[indices] # OLD
+                        time_slice = single_var.datetime_array[indices]
+                        data_slice = single_var.data[indices]
+                        x_data = time_slice # Default to time
 
-                        # Use x_data in plot
+                        if using_positional_axis and positional_mapper is not None:
+                            print_manager.debug(f"Panel {i+1} (List Var): Attempting positional mapping for {len(time_slice)} points")
+                            positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                            if positional_vals is not None:
+                                # --- NEW: Create mask for successful mapping --- 
+                                valid_mask = ~np.isnan(positional_vals) 
+                                num_valid = np.sum(valid_mask)
+                                
+                                if num_valid > 0:
+                                    x_data = positional_vals[valid_mask]
+                                    data_slice = data_slice[valid_mask] 
+                                    print_manager.debug(f"Panel {i+1} (List Var): Positional mapping successful, using {num_valid} valid points")
+                                else:
+                                    print_manager.status(f"Panel {i+1} (List Var): Positional mapping resulted in no valid points. Using time.")
+                            else:
+                                print_manager.status(f"Panel {i+1} (List Var): Positional mapping failed (returned None). Using time.")
+                        
+                        # --- Use filtered x_data and data_slice --- 
                         axs[i].plot(x_data, 
-                                   single_var.data[indices],
+                                   data_slice, # Use filtered data_slice
                                    linewidth=options.magnetic_field_line_width if options.save_preset else single_var.line_width,
                                    linestyle=single_var.line_style,
                                    label=single_var.legend_label,
@@ -699,19 +728,31 @@ def multiplot(plot_list, **kwargs):
                         # CRITICAL FIX: Check if indices is empty before trying to plot
                         if len(indices) > 0:
                             # Get x-axis data - use longitude if available
-                            x_data = var.datetime_array[indices]
+                            # x_data = var.datetime_array[indices] # OLD
+                            time_slice = var.datetime_array[indices]
+                            data_slice = var.data[indices]
+                            x_data = time_slice # Default to time
+
                             if using_positional_axis and positional_mapper is not None:
-                                print_manager.debug(f"Panel {i+1} (Time Series): Attempting longitude mapping for {len(x_data)} points")
-                                lon_vals = positional_mapper.map_to_position(x_data, data_type)
-                                if lon_vals is not None:
-                                    x_data = lon_vals
-                                    print_manager.debug(f"Panel {i+1} (Time Series): Longitude mapping successful, using {len(lon_vals)} longitude values")
-                                else:
-                                    print_manager.status(f"Panel {i+1} (Time Series): Longitude mapping failed. Using time.")
+                                print_manager.debug(f"Panel {i+1} (Time Series): Attempting positional mapping for {len(time_slice)} points")
+                                positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                                if positional_vals is not None:
+                                     # --- NEW: Create mask for successful mapping --- 
+                                    valid_mask = ~np.isnan(positional_vals) 
+                                    num_valid = np.sum(valid_mask)
                                     
-                            # Use x_data in plot
+                                    if num_valid > 0:
+                                        x_data = positional_vals[valid_mask]
+                                        data_slice = data_slice[valid_mask] 
+                                        print_manager.debug(f"Panel {i+1} (Time Series): Positional mapping successful, using {num_valid} valid points")
+                                    else:
+                                        print_manager.status(f"Panel {i+1} (Time Series): Positional mapping resulted in no valid points. Using time.")
+                                else:
+                                    print_manager.status(f"Panel {i+1} (Time Series): Positional mapping failed (returned None). Using time.")
+
+                            # --- Use filtered x_data and data_slice --- 
                             axs[i].plot(x_data, 
-                                        var.data[indices],
+                                        data_slice, # Use filtered data_slice
                                         linewidth=options.magnetic_field_line_width if options.save_preset else var.line_width,
                                         linestyle=var.line_style,
                                         color=plot_color)
@@ -739,19 +780,31 @@ def multiplot(plot_list, **kwargs):
                             legend_label = getattr(var, 'legend_label', None) # Get legend label if it exists
 
                             # Get x-axis data - use longitude if available
-                            x_data = var.datetime_array[indices]
-                            if using_positional_axis and positional_mapper is not None:
-                                print_manager.debug(f"Panel {i+1} (Scatter): Attempting longitude mapping for {len(x_data)} points")
-                                lon_vals = positional_mapper.map_to_position(x_data, data_type)
-                                if lon_vals is not None:
-                                    x_data = lon_vals
-                                    print_manager.debug(f"Panel {i+1} (Scatter): Longitude mapping successful, using {len(lon_vals)} longitude values")
-                                else:
-                                    print_manager.status(f"Panel {i+1} (Scatter): Longitude mapping failed. Using time.")
+                            # x_data = var.datetime_array[indices] # OLD
+                            time_slice = var.datetime_array[indices]
+                            data_slice = var.data[indices]
+                            x_data = time_slice # Default to time
 
-                            # Use x_data in plot
+                            if using_positional_axis and positional_mapper is not None:
+                                print_manager.debug(f"Panel {i+1} (Scatter): Attempting positional mapping for {len(time_slice)} points")
+                                positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                                if positional_vals is not None:
+                                     # --- NEW: Create mask for successful mapping --- 
+                                    valid_mask = ~np.isnan(positional_vals) 
+                                    num_valid = np.sum(valid_mask)
+                                    
+                                    if num_valid > 0:
+                                        x_data = positional_vals[valid_mask]
+                                        data_slice = data_slice[valid_mask] 
+                                        print_manager.debug(f"Panel {i+1} (Scatter): Positional mapping successful, using {num_valid} valid points")
+                                    else:
+                                        print_manager.status(f"Panel {i+1} (Scatter): Positional mapping resulted in no valid points. Using time.")
+                                else:
+                                    print_manager.status(f"Panel {i+1} (Scatter): Positional mapping failed (returned None). Using time.")
+
+                            # --- Use filtered x_data and data_slice --- 
                             axs[i].scatter(x_data,
-                                          var.data[indices],
+                                          data_slice, # Use filtered data_slice
                                           color=plot_color,
                                           marker=marker_style,
                                           s=marker_size,  # Note: Matplotlib uses 's' for size
@@ -786,48 +839,60 @@ def multiplot(plot_list, **kwargs):
                                 norm = colors.Normalize(vmin=colorbar_limits[0], vmax=colorbar_limits[1]) if colorbar_limits else None
         
                             # Get x-axis data - use longitude if available
-                            x_data = datetime_clipped
+                            # x_data = datetime_clipped # OLD
+                            time_slice = datetime_clipped
+                            data_slice = data_clipped # This is the 2D spectral data
+                            y_spectral_axis = additional_data_clipped # This is the y-axis (e.g., energy bins)
+                            x_data = time_slice # Default to time
+
                             if using_positional_axis and positional_mapper is not None:
-                                print_manager.debug(f"Panel {i+1} (Spectral): Attempting longitude mapping for {len(x_data)} points")
-                                lon_vals = positional_mapper.map_to_position(x_data, data_type)
-                                if lon_vals is not None:
-                                    x_data = lon_vals
-                                    print_manager.debug(f"Panel {i+1} (Spectral): Longitude mapping successful, using {len(lon_vals)} longitude values")
-                                else:
-                                    print_manager.status(f"Panel {i+1} (Spectral): Longitude mapping failed. Using time.")
+                                print_manager.debug(f"Panel {i+1} (Spectral): Attempting positional mapping for {len(time_slice)} points")
+                                positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                                if positional_vals is not None:
+                                     # --- NEW: Create mask for successful mapping --- 
+                                    valid_mask = ~np.isnan(positional_vals) 
+                                    num_valid = np.sum(valid_mask)
                                     
+                                    if num_valid > 0:
+                                        x_data = positional_vals[valid_mask] # Filter positions
+                                        # Filter the spectral data (Z axis) along the time dimension
+                                        data_slice = data_slice[valid_mask, :] 
+                                        print_manager.debug(f"Panel {i+1} (Spectral): Positional mapping successful, using {num_valid} valid points")
+                                    else:
+                                        print_manager.status(f"Panel {i+1} (Spectral): Positional mapping resulted in no valid points. Using time.")
+                                else:
+                                    print_manager.status(f"Panel {i+1} (Spectral): Positional mapping failed (returned None). Using time.")
+
                             # FIXED: Create properly shaped mesh grid for pcolormesh to avoid dimension mismatch
                             try:
                                 # Remove the transpose - data should not be transposed
                                 # Debug the shapes for troubleshooting
                                 x_shape = len(x_data)
-                                y_shape = len(additional_data_clipped)
-                                z_shape = data_clipped.shape
-                                print_manager.debug(f"Spectral data shapes: X:{x_shape}, Y:{y_shape}, Z:{z_shape}")
+                                # y_shape = len(additional_data_clipped) # y_spectral_axis might change
+                                z_shape = data_slice.shape # Use filtered data_slice shape
+                                y_shape = z_shape[1] if len(z_shape) > 1 else 0 # Infer Y shape from Z
+                                print_manager.debug(f"Spectral data shapes after filtering: X:{x_shape}, Y:{y_shape}, Z:{z_shape}")
                                 
-                                # Always use 'auto' shading which handles the dimension requirements correctly
-                                # and don't transpose the data
-                                im = axs[i].pcolormesh(x_data, additional_data_clipped, data_clipped,
-                                                      norm=norm, cmap=var.colormap, shading='auto')
-                                
-                                pos = axs[i].get_position()
-                                cax = fig.add_axes([pos.x1 + 0.01, pos.y0, 0.02, pos.height])
-                                cbar = fig.colorbar(im, cax=cax)
-            
-                                if hasattr(var, 'colorbar_label'):
-                                    cbar.set_label(var.colorbar_label)
+                                # Ensure y_spectral_axis matches the Z dimension
+                                if y_shape != len(y_spectral_axis):
+                                     print_manager.warning(f"Spectral Y axis length ({len(y_spectral_axis)}) does not match filtered data dimension ({y_shape}). Skipping plot.")
+                                     # Handle error: plot text or skip?
+                                else:
+                                    # Always use 'auto' shading which handles the dimension requirements correctly
+                                    # and don't transpose the data
+                                    im = axs[i].pcolormesh(x_data, y_spectral_axis, data_slice.T, # Transpose needed for pcolormesh
+                                                          norm=norm, cmap=var.colormap, shading='auto')
+                                    
+                                    pos = axs[i].get_position()
+                                    cax = fig.add_axes([pos.x1 + 0.01, pos.y0, 0.02, pos.height])
+                                    cbar = fig.colorbar(im, cax=cax)
+                
+                                    if hasattr(var, 'colorbar_label'):
+                                        cbar.set_label(var.colorbar_label)
                             except Exception as e:
                                 print_manager.warning(f"Error plotting spectral data: {str(e)}")
-                                print_manager.warning(f"Data shapes: X:{len(x_data)}, Y:{len(additional_data_clipped)}, Z:{data_clipped.shape}")
-                                axs[i].text(0.5, 0.5, f'Error plotting spectral data:\n{str(e)}', 
-                                           ha='center', va='center', transform=axs[i].transAxes,
-                                           fontsize=10, color='red', style='italic')
-                        else:
-                            # Handle empty data case for spectral data
-                            print_manager.warning(f"No spectral data to plot for panel {i+1} - skipping plot")
-                            axs[i].text(0.5, 0.5, 'No data for this time range', 
-                                       ha='center', va='center', transform=axs[i].transAxes,
-                                       fontsize=10, color='gray', style='italic')
+                                print_manager.warning(f"Data shapes: X:{len(x_data)}, Y:{len(y_spectral_axis)}, Z:{data_slice.shape}")
+
                 else:
                     plot_color = panel_color
                     if not plot_color:
@@ -836,19 +901,31 @@ def multiplot(plot_list, **kwargs):
                     # CRITICAL FIX: Check if indices is empty before trying to plot
                     if len(indices) > 0:
                         # Get x-axis data - use longitude if available
-                        x_data = var.datetime_array[indices]
+                        # x_data = var.datetime_array[indices] # OLD
+                        time_slice = var.datetime_array[indices]
+                        data_slice = var.data[indices]
+                        x_data = time_slice # Default to time
+
                         if using_positional_axis and positional_mapper is not None:
-                            print_manager.debug(f"Panel {i+1} (Default Plot): Attempting longitude mapping for {len(x_data)} points")
-                            lon_vals = positional_mapper.map_to_position(x_data, data_type)
-                            if lon_vals is not None:
-                                x_data = lon_vals
-                                print_manager.debug(f"Panel {i+1} (Default Plot): Longitude mapping successful, using {len(lon_vals)} longitude values")
+                            print_manager.debug(f"Panel {i+1} (Default Plot): Attempting positional mapping for {len(time_slice)} points")
+                            positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                            if positional_vals is not None:
+                                # --- NEW: Create mask for successful mapping --- 
+                                valid_mask = ~np.isnan(positional_vals) 
+                                num_valid = np.sum(valid_mask)
+                                
+                                if num_valid > 0:
+                                    x_data = positional_vals[valid_mask]
+                                    data_slice = data_slice[valid_mask] 
+                                    print_manager.debug(f"Panel {i+1} (Default Plot): Positional mapping successful, using {num_valid} valid points")
+                                else:
+                                    print_manager.status(f"Panel {i+1} (Default Plot): Positional mapping resulted in no valid points. Using time.")
                             else:
-                                print_manager.status(f"Panel {i+1} (Default Plot): Longitude mapping failed. Using time.")
+                                print_manager.status(f"Panel {i+1} (Default Plot): Positional mapping failed (returned None). Using time.")
                         
-                        # Use x_data in plot
+                        # --- Use filtered x_data and data_slice --- 
                         axs[i].plot(x_data, 
-                                    var.data[indices],
+                                    data_slice, # Use filtered data_slice
                                     linewidth=options.magnetic_field_line_width if options.save_preset else var.line_width,
                                     linestyle=var.line_style,
                                     color=plot_color)
@@ -900,17 +977,31 @@ def multiplot(plot_list, **kwargs):
                 
                 if len(ham_indices) > 0:
                     # Get x-axis data and handle positional mapping
-                    x_data = ham_var.datetime_array[ham_indices]
+                    # x_data = ham_var.datetime_array[ham_indices] # OLD
+                    time_slice = ham_var.datetime_array[ham_indices]
+                    data_slice = ham_var.data[ham_indices]
+                    x_data = time_slice # Default to time
+
                     if using_positional_axis and positional_mapper is not None:
-                        lon_vals = positional_mapper.map_to_position(x_data, data_type)
-                        if lon_vals is not None:
-                            x_data = lon_vals
-                            print_manager.debug(f"Panel {i+1}: Successfully mapped HAM data to {data_type} coordinates")
+                        positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                        if positional_vals is not None:
+                            # --- NEW: Create mask for successful mapping --- 
+                            valid_mask = ~np.isnan(positional_vals) 
+                            num_valid = np.sum(valid_mask)
+                            
+                            if num_valid > 0:
+                                x_data = positional_vals[valid_mask]
+                                data_slice = data_slice[valid_mask] 
+                                print_manager.debug(f"Panel {i+1}: Successfully mapped HAM data to {data_type} coordinates ({num_valid} points)")
+                            else:
+                                print_manager.status(f"Panel {i+1}: HAM positional mapping resulted in no valid points. Using time.")
+                        else:
+                             print_manager.status(f"Panel {i+1}: HAM positional mapping failed (returned None). Using time.")
                     
-                    # Plot the HAM data
+                    # Plot the HAM data using filtered x_data and data_slice
                     print_manager.debug(f"Panel {i+1}: Plotting HAM data on right axis")
                     ax2.plot(x_data, 
-                            ham_var.data[ham_indices],
+                            data_slice, # Use filtered data_slice
                             linewidth=ham_var.line_width,
                             linestyle=ham_var.line_style,
                             label=ham_var.legend_label,
@@ -1476,7 +1567,7 @@ def multiplot(plot_list, **kwargs):
         for i, ax in enumerate(axs):
             if i < len(axs) - 1:  # All but the last (bottom) plot
                 ax.set_xticklabels([])  # Force hide tick labels
-                print_manager.debug(f"Final fix: Hiding tick labels for panel {i}")
+                # print_manager.debug(f"Final fix: Hiding tick labels for panel {i}")
     
     # NEW: Apply x_label_pad directly using matplotlib's labelpad parameter
     for i, ax in enumerate(axs):
@@ -1484,7 +1575,7 @@ def multiplot(plot_list, **kwargs):
         if (options.use_single_x_axis and i == len(axs) - 1) or not options.use_single_x_axis:
             # Update the x-label pad directly - this controls spacing better than position
             ax.xaxis.labelpad = options.x_label_pad
-            print_manager.debug(f"Applied x_label_pad={options.x_label_pad} to axis {i}")
+            # print_manager.debug(f"Applied x_label_pad={options.x_label_pad} to axis {i}")
     
     # ALWAYS enforce hiding tick labels for single-x-axis mode, regardless of axis type
     if options.use_single_x_axis:
@@ -1495,7 +1586,7 @@ def multiplot(plot_list, **kwargs):
                 # Also set tick visibility to False for extra assurance
                 for tick in ax.get_xticklabels():
                     tick.set_visible(False)
-                print_manager.debug(f"Forcibly hid all tick labels for panel {i}")
+                # print_manager.debug(f"Forcibly hid all tick labels for panel {i}")
     
     print_manager.debug("=== Multiplot Complete ===\n")
     

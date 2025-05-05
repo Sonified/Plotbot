@@ -158,8 +158,8 @@ __all__ = [
 BLUE = '\033[94m'
 RESET = '\033[0m'
 
-COMMIT_MSG = "v2.04: Introduces Data Cubby adds snapshots, debugging, multi plot"
-print(f'{BLUE}   Version: 2025_05_05_v2.04{RESET}')
+COMMIT_MSG = "v2.05: Significant multiplot issues and data cubby timing issues"
+print(f'{BLUE}   Version: 2025_05_05_v2.05{RESET}')
 print(f"Commit: {COMMIT_MSG}")
 
 # --- Final Print Message ---

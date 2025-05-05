@@ -175,3 +175,36 @@ No immediate changes were made, but this exploration helps clarify the roles of 
 *   **Observation:** When using `multiplot`, particularly with positional x-axis mapping (e.g., R-Sun), some panels appear to render without the expected data lines, even though the preceding log messages indicate successful data loading and processing for the corresponding time ranges.
 *   **Initial Suspicion:** Potential misalignment between the time-clipped data indices and the mapped positional x-axis values during the plotting stage in `multiplot.py`.
 *   **Next Steps:** Investigate the data flow within the `multiplot` function's main plotting loop, specifically how positional `x_data` is generated and aligned with the `y_data` from the variable. 
+
+## New Feature: Degrees from Perihelion X-Axis (2025-05-05)
+
+**Goal:** Implement a new x-axis mode for `multiplot` that displays Carrington longitude relative to a specified perihelion time. The perihelion time defines the 0-degree point.
+
+**Work Plan:**
+
+1.  **Create Modular Function (`calculate_degrees_from_perihelion`)**:
+    *   Location: `plotbot/utils.py`.
+    *   Function Signature: `def calculate_degrees_from_perihelion(times, perihelion_time_str, positional_data_path):`
+    *   Functionality:
+        *   Load time and Carrington longitude from `positional_data_path` (NPZ file).
+        *   Convert `perihelion_time_str` to a comparable time format (datetime).
+        *   Find the longitude (`perihelion_lon_deg`) at the time closest to `perihelion_time_str`.
+        *   Find the longitudes corresponding to the input `times` array.
+        *   Calculate and return the relative longitudes (`loaded_longitudes - perihelion_lon_deg`).
+
+2.  **Add New Options to `MultiplotOptions`**:
+    *   Location: `plotbot/multiplot_options.py`.
+    *   Add boolean property: `x_axis_degrees_from_perihelion`.
+    *   Add string property: `perihelion_time_for_mapping`.
+    *   Implement logic to ensure mutual exclusivity with other x-axis modes (`x_axis_carrington_lon`, `x_axis_r_sun`). Setting `x_axis_degrees_from_perihelion = True` will set others to `False`.
+
+3.  **Modify `multiplot` Function**:
+    *   Location: `plotbot/multiplot.py`.
+    *   Identify x-axis generation logic (especially for `x_axis_carrington_lon`).
+    *   Add condition: `if options.x_axis_degrees_from_perihelion:`.
+    *   Inside condition:
+        *   Validate `options.perihelion_time_for_mapping`.
+        *   Call `utils.calculate_degrees_from_perihelion` using the plot's time range, `options.perihelion_time_for_mapping`, and `options.positional_data_path`.
+        *   Use the returned relative longitudes as the x-axis data.
+        *   Update x-axis label (e.g., "Degrees from Perihelion (YYYY/MM/DD HH:MM:SS)").
+        *   Ensure `options.x_axis_positional_range` works correctly with these new degree values. 
