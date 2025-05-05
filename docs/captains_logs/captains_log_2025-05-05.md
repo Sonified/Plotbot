@@ -31,3 +31,20 @@ This ensures that data is merged correctly even when the cubby contains disjoint
 
 - Version: 2025_05_05_v2.06
 - Commit message: Fix: Correct DataCubby merge logic for disjoint time ranges (v2.06) 
+
+## Feature Complete: Degrees-from-Perihelion Axis
+
+- The degrees-from-perihelion axis is now fully implemented and matches the Carrington longitude axis in all formatting and behavior (ticks, labels, wrap-around, etc.).
+- Implementation strictly mirrors the Carrington longitude logic, with a longitude shift so 0° aligns with perihelion.
+- Axis formatting now uses a robust flag (`panel_actually_uses_degrees`) to ensure correct degree formatting.
+- All relevant tests pass (see `tests/test_degrees_from_perihelion.py`).
+- See updated implementation plan in `docs/implementation_plans/perihelion_axis_plan_v2.md` for details and lessons learned.
+
+## Push: v2.11
+
+- Version: 2025_05_05_v2.11
+- Commit message: v2.11: Degrees-from-perihelion axis complete, matches Carrington longitude logic
+
+Summary: Perihelion axis feature is now complete, fully matching Carrington longitude axis formatting and behavior. All tests pass. See implementation plan and above for details.
+
+(Log remains open for further updates on 2025-05-05) 

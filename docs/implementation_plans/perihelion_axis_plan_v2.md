@@ -2,6 +2,20 @@
 
 **Date:** 2025-05-05
 
+**Status: Complete (2025-05-05)**
+
+- The degrees-from-perihelion axis is now fully implemented and behaves identically to the Carrington longitude axis in all respects (ticks, labels, limits, wrap-around, etc.).
+- The implementation strictly follows the Carrington longitude logic, with the only difference being a longitude shift so that 0° aligns with perihelion.
+- The axis formatting logic now uses a robust flag (`panel_actually_uses_degrees`) to ensure correct degree formatting, avoiding unreliable heuristics.
+- All relevant tests pass (see `tests/test_degrees_from_perihelion.py`).
+- See Captain's Log 2025-05-05 for details on the debugging and lessons learned.
+
+**Key Lessons Learned:**
+- Do not overcomplicate: Mirroring the Carrington longitude logic directly is the most robust and maintainable approach.
+- Avoid redundant calculation functions; always use the positional data mapping infrastructure already in place.
+- Use explicit flags to track axis mode for formatting, rather than inferring from data or options.
+- Test with both automated scripts and visual inspection to confirm axis behavior matches expectations.
+
 **Goal:** Implement `use_degrees_from_perihelion` as a new, mutually exclusive x-axis mode in `multiplot`, behaving identically to `x_axis_carrington_lon` in terms of axis formatting (ticks, labels), but with the plotted longitude values shifted so 0° corresponds to the longitude at the encounter's perihelion time.
 
 **Core Strategy:** Leverage the existing, proven logic for the `x_axis_carrington_lon` option as the direct template. Avoid introducing unnecessary complexity or redundant calculation functions.

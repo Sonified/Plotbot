@@ -161,7 +161,7 @@ def multiplot(plot_list, **kwargs):
             positional_mapper = XAxisPositionalDataMapper(options.positional_data_path)
             mapper_loaded = hasattr(positional_mapper, 'data_loaded') and positional_mapper.data_loaded
             print_manager.debug(f"--> Mapper data_loaded status: {mapper_loaded}")
-            
+
             if not mapper_loaded:
                 print_manager.warning("❌ Failed to load positional data. Disabling positional x-axis and degrees from perihelion.")
                 if hasattr(options, 'use_degrees_from_perihelion'): options.use_degrees_from_perihelion = False
@@ -186,20 +186,20 @@ def multiplot(plot_list, **kwargs):
                     data_type = 'carrington_lon'
                     # values_array = positional_mapper.longitude_values # Not needed here
                     axis_label = "Carrington Longitude (°)"
-                    units = "°"
+                        units = "°"
                 elif options.x_axis_r_sun:
                     print_manager.debug("--> Mode Determination: x_axis_r_sun is True.")
                     data_type = 'r_sun'
                     # values_array = positional_mapper.radial_values # Not needed here
-                    axis_label = "Radial Distance (R_sun)"
-                    units = "R_sun"
+                        axis_label = "Radial Distance (R_sun)"
+                        units = "R_sun"
                 elif options.x_axis_carrington_lat:
                     print_manager.debug("--> Mode Determination: x_axis_carrington_lat is True.")
                     data_type = 'carrington_lat'
                     # values_array = positional_mapper.latitude_values # Not needed here
                     axis_label = "Carrington Latitude (°)"
-                    units = "°"
-                else:
+                        units = "°"
+                    else:
                      # This case means positional_feature_requested was true initially, but no specific mode ended up active.
                      print_manager.warning("--> Mode Determination: Positional feature requested but no specific type active, defaulting to time.")
                      using_positional_axis = False # Fallback
@@ -212,7 +212,7 @@ def multiplot(plot_list, **kwargs):
                         print_manager.warning("⚠️ Positional axis/degrees AND relative time are enabled.")
                         print_manager.status("--> Automatically disabling use_relative_time.")
                         options.use_relative_time = False
-                        
+
     # Final check: If positional feature was requested but ultimately failed or wasn't specific, default to time.
     if not using_positional_axis:
         print_manager.debug("--> Final check: using_positional_axis is False. Setting mode to Time.")
@@ -473,10 +473,10 @@ def multiplot(plot_list, **kwargs):
         # Add diagnostic for HAM feature status
         print_manager.debug(f"Panel {i+1} - HAM feature status: hamify={options.hamify}, ham_var={options.ham_var is not None}")
         center_dt = pd.Timestamp(center_time)
-        
+
         # Get encounter number automatically
         enc_num = get_encounter_number(center_time)
-    
+
         # Format time range
         if options.position == 'around':
             start_time = center_dt - pd.Timedelta(options.window)/2
@@ -570,22 +570,22 @@ def multiplot(plot_list, **kwargs):
 
                         if using_positional_axis and positional_mapper is not None:
                             print_manager.debug(f"Panel {i+1} (Right Axis): Attempting positional mapping for {len(time_slice)} points")
-                            positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                                positional_vals = positional_mapper.map_to_position(time_slice, data_type)
 
-                            if positional_vals is not None:
+                                if positional_vals is not None:
                                 # --- NEW: Create mask for successful mapping --- 
                                 # Assuming None or np.nan indicates a mapping failure
-                                valid_mask = ~np.isnan(positional_vals) 
-                                num_valid = np.sum(valid_mask)
+                                    valid_mask = ~np.isnan(positional_vals)
+                                    num_valid = np.sum(valid_mask)
                                 
-                                if num_valid > 0:
+                                    if num_valid > 0:
                                     x_data = positional_vals[valid_mask] # Use only valid positions
                                     data_slice = data_slice[valid_mask]   # Filter data slice accordingly
                                     print_manager.debug(f"Panel {i+1} (Right Axis): Positional mapping successful, using {num_valid} valid points")
-                                else:
+                                    else:
                                     print_manager.status(f"Panel {i+1} (Right Axis): Positional mapping resulted in no valid points. Using time.")
                                     # x_data remains time_slice, data_slice remains original data_slice
-                            else:
+                                else:
                                 print_manager.status(f"Panel {i+1} (Right Axis): Positional mapping failed (returned None). Using time.")
                                 # x_data remains time_slice, data_slice remains original data_slice
 
@@ -639,7 +639,7 @@ def multiplot(plot_list, **kwargs):
                             for spine in ax2.spines.values():
                                 spine.set_color(panel_color)
                         # --- END NEW ---
-                        
+
                         # Set the right y-axis label to match the panel color and style
                         ham_ylabel = getattr(ham_var, 'y_label', 'HAM')
                         ax2.set_ylabel(ham_ylabel,
@@ -674,21 +674,21 @@ def multiplot(plot_list, **kwargs):
 
                         if using_positional_axis and positional_mapper is not None:
                             print_manager.debug(f"Panel {i+1} (List Var): Attempting positional mapping for {len(time_slice)} points")
-                            positional_vals = positional_mapper.map_to_position(time_slice, data_type)
-                            if positional_vals is not None:
+                                positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                                if positional_vals is not None:
                                 # --- NEW: Create mask for successful mapping --- 
-                                valid_mask = ~np.isnan(positional_vals) 
-                                num_valid = np.sum(valid_mask)
+                                    valid_mask = ~np.isnan(positional_vals)
+                                    num_valid = np.sum(valid_mask)
                                 
-                                if num_valid > 0:
-                                    x_data = positional_vals[valid_mask]
-                                    data_slice = data_slice[valid_mask] 
+                                    if num_valid > 0:
+                                        x_data = positional_vals[valid_mask]
+                                        data_slice = data_slice[valid_mask]
                                     print_manager.debug(f"Panel {i+1} (List Var): Positional mapping successful, using {num_valid} valid points")
-                                else:
+                                    else:
                                     print_manager.status(f"Panel {i+1} (List Var): Positional mapping resulted in no valid points. Using time.")
-                            else:
+                                else:
                                 print_manager.status(f"Panel {i+1} (List Var): Positional mapping failed (returned None). Using time.")
-                        
+
                         # --- Use filtered x_data and data_slice --- 
                         axs[i].plot(x_data, 
                                    data_slice, # Use filtered data_slice
@@ -782,14 +782,58 @@ def multiplot(plot_list, **kwargs):
                         
                         # CRITICAL FIX: Check if indices is empty before trying to plot
                         if len(indices) > 0:
-                            # Get x-axis data - use longitude if available
-                            # x_data = var.datetime_array[indices] # OLD
+                            # Get initial time and data slices
                             time_slice = var.datetime_array[indices]
                             data_slice = var.data[indices]
                             x_data = time_slice # Default to time
 
-                            if using_positional_axis and positional_mapper is not None:
-                                print_manager.debug(f"Panel {i+1} (Time Series): Attempting positional mapping for {len(time_slice)} points")
+                            # --- Perihelion Degree Calculation --- 
+                            if current_panel_use_degrees and perihelion_time_str and positional_mapper:
+                                print_manager.debug(f"Panel {i+1} (Time Series): Calculating Degrees from Perihelion.")
+                                try:
+                                    # 1. Map time slice to Carrington longitude
+                                    carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon')
+                                    
+                                    # 2. Map perihelion time to its longitude
+                                    perihelion_dt = datetime.strptime(perihelion_time_str, '%Y/%m/%d %H:%M:%S.%f') # Consider handling different formats
+                                    perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
+                                    perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon')
+                                    
+                                    if carrington_lons_slice is not None and perihelion_lon_arr is not None and len(perihelion_lon_arr) > 0:
+                                        perihelion_lon_val = perihelion_lon_arr[0]
+                                        print_manager.debug(f"  Perihelion Lon: {perihelion_lon_val:.2f}")
+                                        
+                                        # 3. Calculate relative degrees
+                                        relative_degrees = carrington_lons_slice - perihelion_lon_val
+                                        
+                                        # 4. Apply wrap-around
+                                        relative_degrees[relative_degrees > 180] -= 360
+                                        relative_degrees[relative_degrees <= -180] += 360
+                                        
+                                        # 5. Set x_data for plotting
+                                        x_data = relative_degrees
+                                        
+                                        # 6. Set panel flag
+                                        panel_actually_uses_degrees = True
+                                        print_manager.debug(f"  Successfully calculated relative degrees. Range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
+                                        
+                                        # 7. Store flag on axis
+                                        axs[i]._panel_actually_used_degrees = True
+                                        print_manager.debug(f"--> Stored _panel_actually_used_degrees=True on axis {i}")
+                                        
+                                    else:
+                                        print_manager.warning(f"Panel {i+1}: Failed to map time slice or perihelion time to longitude. Falling back to time axis.")
+                                        panel_actually_uses_degrees = False
+                                        x_data = time_slice # Ensure fallback
+                                        
+                                except Exception as e:
+                                    print_manager.error(f"Panel {i+1}: Error during degrees from perihelion calculation: {e}")
+                                    panel_actually_uses_degrees = False
+                                    x_data = time_slice # Ensure fallback
+                                    
+                            # --- Standard Positional Mapping (if degrees not used/failed) --- 
+                            elif using_positional_axis and positional_mapper is not None:
+                                print_manager.debug(f"Panel {i+1} (Time Series): Attempting standard positional mapping ({data_type}) for {len(time_slice)} points")
                                 positional_vals = positional_mapper.map_to_position(time_slice, data_type)
                                 if positional_vals is not None:
                                      # --- NEW: Create mask for successful mapping --- 
@@ -798,14 +842,18 @@ def multiplot(plot_list, **kwargs):
                                     
                                     if num_valid > 0:
                                         x_data = positional_vals[valid_mask]
+                                        # IMPORTANT: Filter data_slice to match valid x_data points
                                         data_slice = data_slice[valid_mask] 
-                                        print_manager.debug(f"Panel {i+1} (Time Series): Positional mapping successful, using {num_valid} valid points")
+                                        print_manager.debug(f"Panel {i+1} (Time Series): Standard positional mapping successful, using {num_valid} valid points")
                                     else:
-                                        print_manager.status(f"Panel {i+1} (Time Series): Positional mapping resulted in no valid points. Using time.")
+                                        print_manager.warning(f"Panel {i+1} (Time Series): Standard positional mapping resulted in no valid points. Using time axis.")
+                                        x_data = time_slice # Fallback to time if no valid points
+                                        # Ensure data_slice is also reset if needed (it should still align with time_slice here)
                                 else:
-                                    print_manager.status(f"Panel {i+1} (Time Series): Positional mapping failed (returned None). Using time.")
+                                    print_manager.warning(f"Panel {i+1} (Time Series): Standard positional mapping failed (returned None). Using time axis.")
+                                    x_data = time_slice # Fallback
 
-                            # --- Use filtered x_data and data_slice --- 
+                            # --- Plot using the determined x_data and potentially filtered data_slice --- 
                             axs[i].plot(x_data, 
                                         data_slice, # Use filtered data_slice
                                         linewidth=options.magnetic_field_line_width if options.save_preset else var.line_width,
@@ -814,12 +862,6 @@ def multiplot(plot_list, **kwargs):
                         else:
                             # Handle empty data case - add a message on the plot
                             print_manager.warning(f"No data to plot for panel {i+1} - skipping plot")
-                            axs[i].text(0.5, 0.5, 'No data for this time range', 
-                                       ha='center', va='center', transform=axs[i].transAxes,
-                                       fontsize=10, color='gray', style='italic')
-                        if panel_color:
-                            apply_panel_color(axs[i], panel_color, options)
-    
                     elif var.plot_type == 'scatter':
                         # Handle scatter plots
                         if len(indices) > 0:
@@ -842,19 +884,19 @@ def multiplot(plot_list, **kwargs):
 
                             if using_positional_axis and positional_mapper is not None:
                                 print_manager.debug(f"Panel {i+1} (Scatter): Attempting positional mapping for {len(time_slice)} points")
-                                positional_vals = positional_mapper.map_to_position(time_slice, data_type)
-                                if positional_vals is not None:
+                                    positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                                    if positional_vals is not None:
                                      # --- NEW: Create mask for successful mapping --- 
-                                    valid_mask = ~np.isnan(positional_vals) 
-                                    num_valid = np.sum(valid_mask)
+                                        valid_mask = ~np.isnan(positional_vals)
+                                        num_valid = np.sum(valid_mask)
                                     
-                                    if num_valid > 0:
-                                        x_data = positional_vals[valid_mask]
-                                        data_slice = data_slice[valid_mask] 
+                                        if num_valid > 0:
+                                            x_data = positional_vals[valid_mask]
+                                            data_slice = data_slice[valid_mask]
                                         print_manager.debug(f"Panel {i+1} (Scatter): Positional mapping successful, using {num_valid} valid points")
-                                    else:
+                                        else:
                                         print_manager.status(f"Panel {i+1} (Scatter): Positional mapping resulted in no valid points. Using time.")
-                                else:
+                                    else:
                                     print_manager.status(f"Panel {i+1} (Scatter): Positional mapping failed (returned None). Using time.")
 
                             # --- Use filtered x_data and data_slice --- 
@@ -902,20 +944,20 @@ def multiplot(plot_list, **kwargs):
 
                             if using_positional_axis and positional_mapper is not None:
                                 print_manager.debug(f"Panel {i+1} (Spectral): Attempting positional mapping for {len(time_slice)} points")
-                                positional_vals = positional_mapper.map_to_position(time_slice, data_type)
-                                if positional_vals is not None:
+                                    positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                                    if positional_vals is not None:
                                      # --- NEW: Create mask for successful mapping --- 
-                                    valid_mask = ~np.isnan(positional_vals) 
-                                    num_valid = np.sum(valid_mask)
+                                        valid_mask = ~np.isnan(positional_vals)
+                                        num_valid = np.sum(valid_mask)
                                     
-                                    if num_valid > 0:
+                                        if num_valid > 0:
                                         x_data = positional_vals[valid_mask] # Filter positions
                                         # Filter the spectral data (Z axis) along the time dimension
                                         data_slice = data_slice[valid_mask, :] 
                                         print_manager.debug(f"Panel {i+1} (Spectral): Positional mapping successful, using {num_valid} valid points")
-                                    else:
+                                        else:
                                         print_manager.status(f"Panel {i+1} (Spectral): Positional mapping resulted in no valid points. Using time.")
-                                else:
+                                    else:
                                     print_manager.status(f"Panel {i+1} (Spectral): Positional mapping failed (returned None). Using time.")
 
                             # FIXED: Create properly shaped mesh grid for pcolormesh to avoid dimension mismatch
@@ -936,14 +978,14 @@ def multiplot(plot_list, **kwargs):
                                     # Always use 'auto' shading which handles the dimension requirements correctly
                                     # and don't transpose the data
                                     im = axs[i].pcolormesh(x_data, y_spectral_axis, data_slice.T, # Transpose needed for pcolormesh
-                                                          norm=norm, cmap=var.colormap, shading='auto')
-                                    
-                                    pos = axs[i].get_position()
-                                    cax = fig.add_axes([pos.x1 + 0.01, pos.y0, 0.02, pos.height])
-                                    cbar = fig.colorbar(im, cax=cax)
-                
-                                    if hasattr(var, 'colorbar_label'):
-                                        cbar.set_label(var.colorbar_label)
+                                                                   norm=norm, cmap=var.colormap, shading='auto')
+
+                                             pos = axs[i].get_position()
+                                             cax = fig.add_axes([pos.x1 + 0.01, pos.y0, 0.02, pos.height])
+                                             cbar = fig.colorbar(im, cax=cax)
+
+                                             if hasattr(var, 'colorbar_label'):
+                                                 cbar.set_label(var.colorbar_label)
                             except Exception as e:
                                 print_manager.warning(f"Error plotting spectral data: {str(e)}")
                                 print_manager.warning(f"Data shapes: X:{len(x_data)}, Y:{len(y_spectral_axis)}, Z:{data_slice.shape}")
@@ -955,32 +997,75 @@ def multiplot(plot_list, **kwargs):
                     
                     # CRITICAL FIX: Check if indices is empty before trying to plot
                     if len(indices) > 0:
-                        # Get x-axis data - use longitude if available
-                        # x_data = var.datetime_array[indices] # OLD
+                        # --- MODIFIED: X-Data Calculation --- 
                         time_slice = var.datetime_array[indices]
                         data_slice = var.data[indices]
                         x_data = time_slice # Default to time
-
-                        if using_positional_axis and positional_mapper is not None:
-                            print_manager.debug(f"Panel {i+1} (Default Plot): Attempting positional mapping for {len(time_slice)} points")
-                            positional_vals = positional_mapper.map_to_position(time_slice, data_type)
-                            if positional_vals is not None:
-                                # --- NEW: Create mask for successful mapping --- 
-                                valid_mask = ~np.isnan(positional_vals) 
-                                num_valid = np.sum(valid_mask)
-                                
-                                if num_valid > 0:
-                                    x_data = positional_vals[valid_mask]
-                                    data_slice = data_slice[valid_mask] 
-                                    print_manager.debug(f"Panel {i+1} (Default Plot): Positional mapping successful, using {num_valid} valid points")
-                                else:
-                                    print_manager.status(f"Panel {i+1} (Default Plot): Positional mapping resulted in no valid points. Using time.")
-                            else:
-                                print_manager.status(f"Panel {i+1} (Default Plot): Positional mapping failed (returned None). Using time.")
+                        panel_actually_uses_degrees = False # Initialized earlier
                         
-                        # --- Use filtered x_data and data_slice --- 
+                        # --- Perihelion Degree Calculation --- 
+                        if current_panel_use_degrees and perihelion_time_str and positional_mapper:
+                            print_manager.debug(f"Panel {i+1} (Default): Calculating Degrees from Perihelion.")
+                            try:
+                                # 1. Map time slice to Carrington longitude
+                                carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon')
+                                
+                                # 2. Map perihelion time to its longitude
+                                perihelion_dt = datetime.strptime(perihelion_time_str, '%Y/%m/%d %H:%M:%S.%f')
+                                perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
+                                perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon')
+                                
+                                if carrington_lons_slice is not None and perihelion_lon_arr is not None and len(perihelion_lon_arr) > 0:
+                                    perihelion_lon_val = perihelion_lon_arr[0]
+                                    
+                                    # 3. Calculate relative degrees
+                                    relative_degrees = carrington_lons_slice - perihelion_lon_val
+                                    
+                                    # 4. Apply wrap-around
+                                    relative_degrees[relative_degrees > 180] -= 360
+                                    relative_degrees[relative_degrees <= -180] += 360
+                                    
+                                    # 5. Set x_data for plotting
+                                    x_data = relative_degrees
+                                    
+                                    # 6. Set panel flag
+                                    panel_actually_uses_degrees = True
+                                    
+                                    # 7. Store flag on axis
+                                    axs[i]._panel_actually_used_degrees = True
+                                    print_manager.debug(f"--> Stored _panel_actually_used_degrees=True on axis {i} (Default)")
+                                    
+                                else:
+                                    print_manager.warning(f"Panel {i+1} (Default): Failed map. Fallback time.")
+                                    panel_actually_uses_degrees = False
+                                    x_data = time_slice
+                                    
+                            except Exception as e:
+                                print_manager.error(f"Panel {i+1} (Default): Error during degrees calc: {e}")
+                                panel_actually_uses_degrees = False
+                                x_data = time_slice
+                                
+                        # --- Standard Positional Mapping (if degrees not used/failed) --- 
+                        elif using_positional_axis and positional_mapper is not None:
+                            print_manager.debug(f"Panel {i+1} (Default): Standard positional mapping ({data_type})")
+                                positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                                if positional_vals is not None:
+                                    valid_mask = ~np.isnan(positional_vals)
+                                    num_valid = np.sum(valid_mask)
+                                    if num_valid > 0:
+                                        x_data = positional_vals[valid_mask]
+                                    data_slice = data_slice[valid_mask] # Filter data too
+                                    else:
+                                    print_manager.warning(f"Panel {i+1} (Default): No valid pos points. Fallback time.")
+                                    x_data = time_slice
+                                else:
+                                print_manager.warning(f"Panel {i+1} (Default): Pos map failed. Fallback time.")
+                                x_data = time_slice
+                        # --- END X-Data Calc --- 
+                        
+                        # --- Plot using potentially modified x_data and data_slice --- 
                         axs[i].plot(x_data, 
-                                    data_slice, # Use filtered data_slice
+                                    data_slice, # Use potentially filtered data_slice
                                     linewidth=options.magnetic_field_line_width if options.save_preset else var.line_width,
                                     linestyle=var.line_style,
                                     color=plot_color)
@@ -1007,10 +1092,10 @@ def multiplot(plot_list, **kwargs):
             if ham_class_instance:
                 ham_var = ham_class_instance.get_subclass(getattr(options.ham_var, 'subclass_name', 'hamogram_30s'))
                 print_manager.debug(f"Panel {i+1}: Refreshed HAM variable reference from data_cubby")
-            else:
+                else:
                 print_manager.error(f"Panel {i+1}: Failed to get ham class from data_cubby")
             # Use ham_var for plotting below
-            print_manager.debug(f"Panel {i+1}: HAM feature enabled, plotting {ham_var.subclass_name if hasattr(ham_var, 'subclass_name') else 'HAM variable'} on right axis")
+                print_manager.debug(f"Panel {i+1}: HAM feature enabled, plotting {ham_var.subclass_name if hasattr(ham_var, 'subclass_name') else 'HAM variable'} on right axis")
             if ham_var is not None and hasattr(ham_var, 'datetime_array') and ham_var.datetime_array is not None:
                 # Create a twin axis for the HAM data
                 ax2 = axs[i].twinx()
@@ -1025,7 +1110,7 @@ def multiplot(plot_list, **kwargs):
                     
                 # Get time-clipped indices
                 print_manager.debug(f"Panel {i+1}: Attempting to time_clip HAM data with range: {trange[0]} to {trange[1]}")
-                print_manager.debug(f"Panel {i+1}: HAM data range is {ham_var.datetime_array[0]} to {ham_var.datetime_array[-1]}")
+                    print_manager.debug(f"Panel {i+1}: HAM data range is {ham_var.datetime_array[0]} to {ham_var.datetime_array[-1]}")
                 
                 ham_indices = time_clip(ham_var.datetime_array, trange[0], trange[1])
                 print_manager.debug(f"Panel {i+1}: Found {len(ham_indices)} HAM data points in time range")
@@ -1038,19 +1123,19 @@ def multiplot(plot_list, **kwargs):
                     x_data = time_slice # Default to time
 
                     if using_positional_axis and positional_mapper is not None:
-                        positional_vals = positional_mapper.map_to_position(time_slice, data_type)
-                        if positional_vals is not None:
+                            positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                            if positional_vals is not None:
                             # --- NEW: Create mask for successful mapping --- 
-                            valid_mask = ~np.isnan(positional_vals) 
-                            num_valid = np.sum(valid_mask)
+                                valid_mask = ~np.isnan(positional_vals)
+                                num_valid = np.sum(valid_mask)
                             
-                            if num_valid > 0:
-                                x_data = positional_vals[valid_mask]
-                                data_slice = data_slice[valid_mask] 
+                                if num_valid > 0:
+                                    x_data = positional_vals[valid_mask]
+                                    data_slice = data_slice[valid_mask]
                                 print_manager.debug(f"Panel {i+1}: Successfully mapped HAM data to {data_type} coordinates ({num_valid} points)")
-                            else:
+                                else:
                                 print_manager.status(f"Panel {i+1}: HAM positional mapping resulted in no valid points. Using time.")
-                        else:
+                            else:
                              print_manager.status(f"Panel {i+1}: HAM positional mapping failed (returned None). Using time.")
                     
                     # Plot the HAM data using filtered x_data and data_slice
@@ -1092,15 +1177,15 @@ def multiplot(plot_list, **kwargs):
                     lines_right, labels_right = ax2.get_legend_handles_labels()
                     axs[i].legend(lines_left + lines_right, 
                                 labels_left + labels_right,
-                                bbox_to_anchor=(1.025, 1),
-                                loc='upper left')
-                    # Set legend label color to rainbow if in rainbow mode
+                                            bbox_to_anchor=(1.025, 1),
+                                            loc='upper left')
+                        # Set legend label color to rainbow if in rainbow mode
                     if options.color_mode == 'rainbow' and panel_color is not None:
                         leg = axs[i].get_legend()
-                        for text in leg.get_texts():
-                            text.set_color(panel_color)
-                        # Set the legend border (frame) color to match the panel color
-                        leg.get_frame().set_edgecolor(panel_color)
+                            for text in leg.get_texts():
+                                text.set_color(panel_color)
+                            # Set the legend border (frame) color to match the panel color
+                            leg.get_frame().set_edgecolor(panel_color)
                 else:
                     print_manager.status(f"Panel {i+1}: No HAM data points found in time range {trange[0]} to {trange[1]}")
             else:
@@ -1175,9 +1260,9 @@ def multiplot(plot_list, **kwargs):
             # print_manager.debug(f"Panel {i+1}: Using auto-scaling.") # COMMENTED OUT
             current_ylim = axs[i].get_ylim()
             # print_manager.debug(f"Panel {i+1}: ylim after auto-scaling: {current_ylim}") # COMMENTED OUT
-    
+
         axs[i].set_xlim(start_time, end_time)
-    
+
         if isinstance(var, list):
             if all(hasattr(v, 'y_label') for v in var):
                 y_label = var[0].y_label
@@ -1231,11 +1316,11 @@ def multiplot(plot_list, **kwargs):
                     # Skip setting log scale for empty datasets
                     print_manager.warning(f"Cannot set log scale for panel {i+1} - no data points in time range")
                     # Set to linear scale instead to avoid errors
-                    axs[i].set_yscale('linear')
+            axs[i].set_yscale('linear')
             else:
                 # For non-log scales, just set directly
                 axs[i].set_yscale(var.y_scale)
-    
+             
         if options.use_relative_time and not using_positional_axis: # Only use relative time if NOT using longitude
             step_td = pd.Timedelta(value=options.relative_time_step, unit=options.relative_time_step_units)
             current = start_time
@@ -1269,16 +1354,16 @@ def multiplot(plot_list, **kwargs):
                 if i < n_panels - 1:
                     axs[i].set_xticklabels([])
                     axs[i].set_xlabel('')
-                else:
+                else: 
                     axs[i].set_xticklabels(tick_labels)
                     if options.use_custom_x_axis_label:
                          axs[i].set_xlabel(options.custom_x_axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
-                                           labelpad=options.x_label_pad)
+                                        labelpad=options.x_label_pad)
                     else:
                         axs[i].set_xlabel(f"Relative Time ({options.relative_time_step_units} from Perihelion)", 
-                                        fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
-                                        labelpad=options.x_label_pad)
-            else:
+                                     fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
+                                     labelpad=options.x_label_pad)
+                 else:
                 axs[i].set_xticklabels(tick_labels)
                 if i < n_panels - 1:
                     axs[i].set_xlabel('')
@@ -1293,11 +1378,11 @@ def multiplot(plot_list, **kwargs):
                 spine.set_linewidth(plt.options.border_line_width)
     
         if options.draw_vertical_line:
-            color_to_use = panel_color if panel_color else options.vertical_line_color
+                color_to_use = panel_color if panel_color else options.vertical_line_color
             axs[i].axvline(x=center_dt, 
-                           color=color_to_use,
-                           linestyle=options.vertical_line_style,
-                           linewidth=options.vertical_line_width)
+                               color=color_to_use,
+                               linestyle=options.vertical_line_style,
+                               linewidth=options.vertical_line_width)
     
         # --- Individual Title Setting (only if not using single title) ---
         if not options.use_single_title:
@@ -1333,24 +1418,24 @@ def multiplot(plot_list, **kwargs):
         # Apply border line width to all spines (top, bottom, left, right)
         for spine_name, spine in axs[i].spines.items():
             spine.set_linewidth(plt.options.border_line_width)
-    
+
     if not options.use_relative_time or using_positional_axis: # If NOT relative time, OR if using longitude (which disables relative)
-        for i, ax in enumerate(axs):
+    for i, ax in enumerate(axs):
             if options.use_single_x_axis:
                 if i < n_panels - 1:
                     ax.set_xticklabels([])
                     ax.set_xlabel('')
-                else:
+            else:
                     # --- APPLY X LABEL LOGIC HERE ---
                     if using_positional_axis:
                         # When positional mapping is enabled, use the appropriate axis label
                         ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
                                       labelpad=options.x_label_pad)
-                    elif options.use_custom_x_axis_label:
+            elif options.use_custom_x_axis_label:
                         # Only use custom label if not using positional mapping
                         ax.set_xlabel(options.custom_x_axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
                                       labelpad=options.x_label_pad)
-                    else:
+                 else:
                         # Default time label
                         ax.set_xlabel("Time", fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
                                       labelpad=options.x_label_pad)
@@ -1364,27 +1449,27 @@ def multiplot(plot_list, **kwargs):
                     elif options.use_custom_x_axis_label:
                         # Only use custom label if not using positional mapping
                         ax.set_xlabel(options.custom_x_axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
-                                      labelpad=options.x_label_pad)
-                    else:
+                          labelpad=options.x_label_pad)
+        else:
                         # Default time label
                         ax.set_xlabel("Time", fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
                                       labelpad=options.x_label_pad)
                 else: # Hide labels for upper panels if not single axis mode
-                    ax.set_xlabel('')
+            ax.set_xlabel('')
     
             # Apply tick size formatting for Time or Longitude axis
             if not using_positional_axis: # Standard Time Formatting
-                locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
-                formatter = mdates.ConciseDateFormatter(locator)
-                ax.xaxis.set_major_locator(locator)
-                ax.xaxis.set_major_formatter(formatter)
+                         locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
+                         formatter = mdates.ConciseDateFormatter(locator)
+                         ax.xaxis.set_major_locator(locator)
+                         ax.xaxis.set_major_formatter(formatter)
             else: # Configure axis for positional data display with appropriate limits
                 # This is critical - set up proper formatting for positional axis
                 print_manager.debug(f"Setting up axis {i} for {data_type} display")
                 
                 # Calculate number of ticks based on density multiplier
                 # Base number of ticks is 5, multiplied by the density factor
-                num_ticks = 5 * options.positional_tick_density
+                    num_ticks = 5 * options.positional_tick_density
                 print_manager.debug(f"Using {num_ticks} ticks for {data_type} axis (density={options.positional_tick_density}x)")
                 
                 # Set ticks for positional data
@@ -1397,12 +1482,12 @@ def multiplot(plot_list, **kwargs):
                             return f"{int(x)}°"
                         else:
                             return f"{x:.1f}°"
-                        ax.xaxis.set_major_formatter(FuncFormatter(angle_formatter))
+                    ax.xaxis.set_major_formatter(FuncFormatter(angle_formatter))
                 else:  # radial
                     def radial_formatter(x, pos):
                         if x == int(x):
                             return f"{int(x)}"
-                        else:
+            else:
                             return f"{x:.1f}"
                     ax.xaxis.set_major_formatter(FuncFormatter(radial_formatter))
                 
@@ -1414,8 +1499,8 @@ def multiplot(plot_list, **kwargs):
                 # Set axis limits based on user preference or data
                 if options.x_axis_positional_range is not None:
                     # User specified a fixed range for positional axis
-                    min_val, max_val = options.x_axis_positional_range
-                    ax.set_xlim(min_val, max_val)
+                min_val, max_val = options.x_axis_positional_range
+                     ax.set_xlim(min_val, max_val)
                     print_manager.debug(f"Using user-specified positional range for axis {i}: {min_val} to {max_val}")
                 else:
                     # Calculate range from data
@@ -1430,7 +1515,7 @@ def multiplot(plot_list, **kwargs):
                             ax._positional_data_range = (min_val, max_val)
                             
                         # Apply panel-specific range immediately if not using common x-axis
-                        if not options.use_single_x_axis:
+                    if not options.use_single_x_axis:
                             # Add reasonable padding
                             data_range = max_val - min_val
                             padding = data_range * 0.05  # 5% padding
@@ -1446,22 +1531,22 @@ def multiplot(plot_list, **kwargs):
                         else:  # radial
                             ax.set_xlim(0, 50)  # Default radial range
 
-            ax.tick_params(axis='x', labelsize=options.x_tick_label_font_size)
-            ax.tick_params(axis='y', labelsize=options.y_tick_label_font_size)
+        ax.tick_params(axis='x', labelsize=options.x_tick_label_font_size)
+        ax.tick_params(axis='y', labelsize=options.y_tick_label_font_size)
     
     # Apply common x-axis range if needed
     if using_positional_axis and options.use_single_x_axis and options.x_axis_positional_range is None:
         # Find the global min and max across all axes
-        all_mins = []
-        all_maxs = []
+            all_mins = []
+            all_maxs = []
         for ax in axs:
             if hasattr(ax, '_positional_data_range'):
                 min_val, max_val = ax._positional_data_range
                 # Only include numeric values for positional axis scaling
                 if isinstance(min_val, (int, float, np.number)) and isinstance(max_val, (int, float, np.number)):
-                    all_mins.append(min_val)
-                    all_maxs.append(max_val)
-                else:
+                         all_mins.append(min_val)
+                         all_maxs.append(max_val)
+                    else:
                     print_manager.warning(f"Non-numeric values found in positional data range: {type(min_val)}, {type(max_val)}")
         
         # --- Explicitly filter lists again to ensure only numerics remain ---
@@ -1480,13 +1565,13 @@ def multiplot(plot_list, **kwargs):
             padding = data_range * 0.05  # 5% padding
             global_min -= padding
             global_max += padding
-            
-            # Apply the global range to all axes
+
+                # Apply the global range to all axes
             for ax in axs:
                 ax.set_xlim(global_min, global_max)
             
             print_manager.debug(f"Applied common x-axis range to all panels: {global_min:.2f} to {global_max:.2f}")
-            
+
     # --- Final plot adjustments (Labels, titles, legends, grid) ---
     
     # NEW: Apply dynamic x-axis tick coloring for all panels (changed from only bottom panel)

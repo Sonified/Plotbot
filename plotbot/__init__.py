@@ -161,8 +161,8 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vMajor.Minor (Minor increments by 0.01 usually)
-__version__ = "2025_05_05_v2.10" # New version for refactor start
-__commit_message__ = "feat: Begin refactor for degrees from perihelion axis (v2.10)" # Commit message
+__version__ = "2025_05_05_v2.11" # v2.11: Degrees-from-perihelion axis complete, matches Carrington longitude logic
+__commit_message__ = "v2.11: Degrees-from-perihelion axis complete, matches Carrington longitude logic"
 
 # Print version information on import
 print(f"   Version: {__version__}")
