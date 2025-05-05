@@ -184,12 +184,13 @@ def multiplot(plot_list, **kwargs):
                 using_positional_axis = False 
             else:
                 # --- Determine the *primary* data type for plotting --- 
+                # <<< ADD PERIHELION CHECK HERE >>>
                 if getattr(options, 'use_degrees_from_perihelion', False):
                     print_manager.debug("--> Mode Determination: use_degrees_from_perihelion is True.")
                     data_type = 'degrees_from_perihelion' # Use a distinct type identifier
                     axis_label = "Degrees from Perihelion (°)"
                     units = "°"
-                    # Ensure conflicting modes are off (setters should handle this, but verify)
+                    # Ensure conflicting modes are off (setters should handle this)
                     options.x_axis_carrington_lon = False
                     options.x_axis_r_sun = False
                     options.x_axis_carrington_lat = False
@@ -197,21 +198,18 @@ def multiplot(plot_list, **kwargs):
                 elif options.x_axis_carrington_lon:
                     print_manager.debug("--> Mode Determination: x_axis_carrington_lon is True.")
                     data_type = 'carrington_lon'
-                    # values_array = positional_mapper.longitude_values # Not needed here
                     axis_label = "Carrington Longitude (°)"
                     units = "°"
                     options.use_relative_time = False # Explicitly disable relative time
                 elif options.x_axis_r_sun:
                     print_manager.debug("--> Mode Determination: x_axis_r_sun is True.")
                     data_type = 'r_sun'
-                    # values_array = positional_mapper.radial_values # Not needed here
                     axis_label = "Radial Distance (R_sun)"
                     units = "R_sun"
                     options.use_relative_time = False # Explicitly disable relative time
                 elif options.x_axis_carrington_lat:
                     print_manager.debug("--> Mode Determination: x_axis_carrington_lat is True.")
                     data_type = 'carrington_lat'
-                    # values_array = positional_mapper.latitude_values # Not needed here
                     axis_label = "Carrington Latitude (°)"
                     units = "°"
                     options.use_relative_time = False # Explicitly disable relative time
@@ -223,12 +221,10 @@ def multiplot(plot_list, **kwargs):
                     units = ""
                     data_type = 'time'
 
-                # Verify relative time conflict only if a positional mode is confirmed active
-                # (This check is now redundant as positional setters disable relative time)
+                # Verify relative time conflict - (Redundant, handled by setters now)
                 # if using_positional_axis and options.use_relative_time:
-                #         print_manager.warning("⚠️ Positional axis/degrees AND relative time are enabled.")
-                #         print_manager.status("--> Automatically disabling use_relative_time.")
-                #         options.use_relative_time = False
+                #     print_manager.warning("Positional axis/degrees AND relative time enabled. Disabling relative time.")
+                #     options.use_relative_time = False
                         
     # Final check: If positional feature was requested but ultimately failed or wasn't specific, default to time.
     if not using_positional_axis:

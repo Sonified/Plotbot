@@ -161,8 +161,8 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vMajor.Minor (Minor increments by 0.01 usually)
-__version__ = "2025_05_05_v2.12" # v2.12: Integrated degrees-from-perihelion axis (calculation offset issue)
-__commit_message__ = "feat: Integrate degrees-from-perihelion axis (calculation offset issue) (v2.12)"
+__version__ = "2025_05_05_v2.13"
+__commit_message__ = "Refactor: Reset multiplot.py, fix utils/options, re-add perihelion init (v2.13)"
 
 # Print version information on import
 print(f"   Version: {__version__}")

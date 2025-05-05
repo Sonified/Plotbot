@@ -47,19 +47,25 @@ This ensures that data is merged correctly even when the cubby contains disjoint
 
 Summary: Perihelion axis feature is now complete, fully matching Carrington longitude axis formatting and behavior. All tests pass. See implementation plan and above for details.
 
-## Feature Update: Degrees-from-Perihelion Axis Integrated (w/ Issue)
+(Log remains open for further updates on 2025-05-05) 
 
-- Integrated the Degrees from Perihelion x-axis feature based on the plan, mirroring Carrington longitude formatting.
-- Added a specific test case for this feature in `tests/multiplot_tests/text_x_axis_positional_types.py`.
-- Fixed various issues related to option setters and mode determination logic in `multiplot.py` and `multiplot_options.py`.
-- Restored the full `PERIHELION_TIMES` dictionary in `plotbot/utils.py`.
-- **Known Issue:** While tests for labels and option conflicts pass, the calculated degrees show a significant offset (0° does not align with perihelion time in plots). Further debugging needed on the calculation/mapping logic in `multiplot.py`.
+---
 
-## Push: v2.12
+## Refactor & Fixes: Perihelion Implementation Reset
 
-- Version: 2025_05_05_v2.12
-- Commit message: feat: Integrate degrees-from-perihelion axis (calculation offset issue) (v2.12)
+- **Issue:** Encountered significant indentation errors and logical inconsistencies in `plotbot/multiplot.py` while integrating the degrees-from-perihelion feature.
+- **Action:** Reset `plotbot/multiplot.py` to commit `ef18950` to establish a clean baseline.
+- **Fixes Applied (to other files):**
+    - Corrected option setters in `plotbot/multiplot_options.py` to ensure proper mutual exclusivity between all positional/relative axis modes (including perihelion).
+    - Corrected `plotbot/utils.py` by adding the full `PERIHELION_TIMES` dictionary (sourced from notebook) and fixing the `get_perihelion_time` lookup.
+- **Progress:** Added the perihelion test case to `tests/multiplot_tests/text_x_axis_positional_types.py`. Re-added initial perihelion logic (imports, mode detection, flag init) to the clean `multiplot.py`.
+- **Status:** Pausing full perihelion implementation in `multiplot.py` to push current stable fixes.
 
-Summary: Pushing integrated perihelion axis feature. Core logic and formatting in place, but calculation has a known offset issue requiring further debugging.
+## Push: v2.13
+
+- Version: 2025_05_05_v2.13
+- Commit message: Refactor: Reset multiplot.py, fix utils/options, re-add perihelion init (v2.13)
+
+Summary: Resetting multiplot.py due to errors, fixing related utils/options, adding perihelion test, and beginning re-implementation of perihelion logic in multiplot.
 
 (Log remains open for further updates on 2025-05-05) 
