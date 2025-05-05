@@ -184,13 +184,12 @@ def multiplot(plot_list, **kwargs):
                 using_positional_axis = False 
             else:
                 # --- Determine the *primary* data type for plotting --- 
-                # <<< ADD PERIHELION CHECK HERE >>>
                 if getattr(options, 'use_degrees_from_perihelion', False):
                     print_manager.debug("--> Mode Determination: use_degrees_from_perihelion is True.")
                     data_type = 'degrees_from_perihelion' # Use a distinct type identifier
                     axis_label = "Degrees from Perihelion (°)"
                     units = "°"
-                    # Ensure conflicting modes are off (setters should handle this)
+                    # Ensure conflicting modes are off (setters should handle this, but verify)
                     options.x_axis_carrington_lon = False
                     options.x_axis_r_sun = False
                     options.x_axis_carrington_lat = False
@@ -198,18 +197,21 @@ def multiplot(plot_list, **kwargs):
                 elif options.x_axis_carrington_lon:
                     print_manager.debug("--> Mode Determination: x_axis_carrington_lon is True.")
                     data_type = 'carrington_lon'
+                    # values_array = positional_mapper.longitude_values # Not needed here
                     axis_label = "Carrington Longitude (°)"
                     units = "°"
                     options.use_relative_time = False # Explicitly disable relative time
                 elif options.x_axis_r_sun:
                     print_manager.debug("--> Mode Determination: x_axis_r_sun is True.")
                     data_type = 'r_sun'
+                    # values_array = positional_mapper.radial_values # Not needed here
                     axis_label = "Radial Distance (R_sun)"
                     units = "R_sun"
                     options.use_relative_time = False # Explicitly disable relative time
                 elif options.x_axis_carrington_lat:
                     print_manager.debug("--> Mode Determination: x_axis_carrington_lat is True.")
                     data_type = 'carrington_lat'
+                    # values_array = positional_mapper.latitude_values # Not needed here
                     axis_label = "Carrington Latitude (°)"
                     units = "°"
                     options.use_relative_time = False # Explicitly disable relative time
@@ -221,10 +223,12 @@ def multiplot(plot_list, **kwargs):
                     units = ""
                     data_type = 'time'
 
-                # Verify relative time conflict - (Redundant, handled by setters now)
+                # Verify relative time conflict only if a positional mode is confirmed active
+                # (This check is now redundant as positional setters disable relative time)
                 # if using_positional_axis and options.use_relative_time:
-                #     print_manager.warning("Positional axis/degrees AND relative time enabled. Disabling relative time.")
-                #     options.use_relative_time = False
+                #         print_manager.warning("⚠️ Positional axis/degrees AND relative time are enabled.")
+                #         print_manager.status("--> Automatically disabling use_relative_time.")
+                #         options.use_relative_time = False
                         
     # Final check: If positional feature was requested but ultimately failed or wasn't specific, default to time.
     if not using_positional_axis:
@@ -955,39 +959,50 @@ def multiplot(plot_list, **kwargs):
                             if current_panel_use_degrees and perihelion_time_str and positional_mapper:
                                 print_manager.debug(f"Panel {i+1} (Scatter): Calculating Degrees from Perihelion.")
                                 try:
+                                    # 1. Map time slice to Carrington longitude
                                     carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon')
+                                    
+                                    # 2. Map perihelion time to its longitude
                                     perihelion_dt = datetime.strptime(perihelion_time_str, '%Y/%m/%d %H:%M:%S.%f')
                                     perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
                                     perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon')
                                     
                                     if carrington_lons_slice is not None and perihelion_lon_arr is not None and len(perihelion_lon_arr) > 0:
                                         perihelion_lon_val = perihelion_lon_arr[0]
+                                        
+                                        # Create mask for valid longitude values in the slice
                                         valid_lon_mask = ~np.isnan(carrington_lons_slice)
                                         num_valid_lons = np.sum(valid_lon_mask)
                                         
                                         if num_valid_lons > 0:
+                                            # Filter slice data based on valid longitudes
                                             carrington_lons_slice_valid = carrington_lons_slice[valid_lon_mask]
                                             data_slice_filtered_lon = data_slice[valid_lon_mask]
+                                            
+                                            # 3. Calculate relative degrees
                                             relative_degrees = carrington_lons_slice_valid - perihelion_lon_val
+                                            
+                                            # 4. Apply wrap-around
                                             relative_degrees[relative_degrees > 180] -= 360
                                             relative_degrees[relative_degrees <= -180] += 360
+                                            
+                                            # 5. Set x_data & filtered data_slice
                                             x_data = relative_degrees
                                             data_slice = data_slice_filtered_lon
+                                            
+                                            # 6. Set flags
                                             panel_actually_uses_degrees = True
                                             axs[i]._panel_actually_used_degrees = True
                                             print_manager.debug(f"--> Stored _panel_actually_used_degrees=True on axis {i} (Scatter)")
                                         else:
                                             print_manager.warning(f"Panel {i+1} (Scatter): No valid longitudes. Fallback time.")
-                                            panel_actually_uses_degrees = False
-                                            x_data = time_slice
+                                            x_data = time_slice # Fallback
                                     else:
                                         print_manager.warning(f"Panel {i+1} (Scatter): Failed map. Fallback time.")
-                                        panel_actually_uses_degrees = False
-                                        x_data = time_slice
+                                        x_data = time_slice # Fallback
                                 except Exception as e:
                                     print_manager.error(f"Panel {i+1} (Scatter): Error during degrees calc: {e}")
-                                    panel_actually_uses_degrees = False
-                                    x_data = time_slice
+                                    x_data = time_slice # Fallback
                                     
                             # --- Standard Positional Mapping (if degrees not used/failed - Scatter) --- 
                             elif using_positional_axis and positional_mapper is not None:
@@ -1053,42 +1068,53 @@ def multiplot(plot_list, **kwargs):
                             if current_panel_use_degrees and perihelion_time_str and positional_mapper:
                                 print_manager.debug(f"Panel {i+1} (Spectral): Calculating Degrees from Perihelion.")
                                 try:
+                                    # 1. Map time slice to Carrington longitude
                                     carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon')
+                                    
+                                    # 2. Map perihelion time to its longitude
                                     perihelion_dt = datetime.strptime(perihelion_time_str, '%Y/%m/%d %H:%M:%S.%f')
                                     perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
                                     perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon')
                                     
                                     if carrington_lons_slice is not None and perihelion_lon_arr is not None and len(perihelion_lon_arr) > 0:
                                         perihelion_lon_val = perihelion_lon_arr[0]
+                                        
+                                        # Create mask for valid longitude values in the slice
                                         valid_lon_mask = ~np.isnan(carrington_lons_slice)
                                         num_valid_lons = np.sum(valid_lon_mask)
                                         
                                         if num_valid_lons > 0:
+                                            # Filter slice data based on valid longitudes
                                             carrington_lons_slice_valid = carrington_lons_slice[valid_lon_mask]
                                             # Filter the 2D spectral data along the time dimension (axis 0)
                                             data_slice_filtered_lon = data_slice[valid_lon_mask, :]
+                                            
+                                            # 3. Calculate relative degrees
                                             relative_degrees = carrington_lons_slice_valid - perihelion_lon_val
+                                            
+                                            # 4. Apply wrap-around
                                             relative_degrees[relative_degrees > 180] -= 360
                                             relative_degrees[relative_degrees <= -180] += 360
+                                            
+                                            # 5. Set x_data & filtered data_slice
                                             x_data = relative_degrees
                                             data_slice = data_slice_filtered_lon # Use filtered spectral data
+                                            
+                                            # 6. Set flags
                                             panel_actually_uses_degrees = True
                                             axs[i]._panel_actually_used_degrees = True
                                             print_manager.debug(f"--> Stored _panel_actually_used_degrees=True on axis {i} (Spectral)")
                                         else:
                                             print_manager.warning(f"Panel {i+1} (Spectral): No valid longitudes. Fallback time.")
-                                            panel_actually_uses_degrees = False
-                                            x_data = time_slice
+                                            x_data = time_slice # Fallback
                                             # data_slice remains original full spectral data
                                     else:
                                         print_manager.warning(f"Panel {i+1} (Spectral): Failed map. Fallback time.")
-                                        panel_actually_uses_degrees = False
-                                        x_data = time_slice
+                                        x_data = time_slice # Fallback
                                         # data_slice remains original full spectral data
                                 except Exception as e:
                                     print_manager.error(f"Panel {i+1} (Spectral): Error during degrees calc: {e}")
-                                    panel_actually_uses_degrees = False
-                                    x_data = time_slice
+                                    x_data = time_slice # Fallback
                                     # data_slice remains original full spectral data
 
                             # --- Standard Positional Mapping (if degrees not used/failed - Spectral) --- 
@@ -1153,45 +1179,55 @@ def multiplot(plot_list, **kwargs):
                         time_slice = var.datetime_array[indices]
                         data_slice = var.data[indices]
                         x_data = time_slice # Default to time
-                        # panel_actually_uses_degrees = False # Initialized earlier - REMOVED REDUNDANT INIT
                         
                         # --- Perihelion Degree Calculation (Default) --- 
                         if current_panel_use_degrees and perihelion_time_str and positional_mapper:
                             print_manager.debug(f"Panel {i+1} (Default): Calculating Degrees from Perihelion.")
                             try:
+                                # 1. Map time slice to Carrington longitude
                                 carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon')
+                                
+                                # 2. Map perihelion time to its longitude
                                 perihelion_dt = datetime.strptime(perihelion_time_str, '%Y/%m/%d %H:%M:%S.%f')
                                 perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
                                 perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon')
                                 
                                 if carrington_lons_slice is not None and perihelion_lon_arr is not None and len(perihelion_lon_arr) > 0:
                                     perihelion_lon_val = perihelion_lon_arr[0]
+                                    
+                                    # Create mask for valid longitude values in the slice
                                     valid_lon_mask = ~np.isnan(carrington_lons_slice)
                                     num_valid_lons = np.sum(valid_lon_mask)
                                     
                                     if num_valid_lons > 0:
+                                        # Filter slice data based on valid longitudes
                                         carrington_lons_slice_valid = carrington_lons_slice[valid_lon_mask]
                                         data_slice_filtered_lon = data_slice[valid_lon_mask]
+                                        
+                                        # 3. Calculate relative degrees
                                         relative_degrees = carrington_lons_slice_valid - perihelion_lon_val
+                                        
+                                        # 4. Apply wrap-around
                                         relative_degrees[relative_degrees > 180] -= 360
                                         relative_degrees[relative_degrees <= -180] += 360
+                                        
+                                        # 5. Set x_data & filtered data_slice
                                         x_data = relative_degrees
                                         data_slice = data_slice_filtered_lon
+                                        
+                                        # 6. Set flags
                                         panel_actually_uses_degrees = True
                                         axs[i]._panel_actually_used_degrees = True
                                         print_manager.debug(f"--> Stored _panel_actually_used_degrees=True on axis {i} (Default)")
                                     else:
                                         print_manager.warning(f"Panel {i+1} (Default): No valid longitudes. Fallback time.")
-                                        panel_actually_uses_degrees = False
-                                        x_data = time_slice
+                                        x_data = time_slice # Fallback
                                 else:
                                     print_manager.warning(f"Panel {i+1} (Default): Failed map. Fallback time.")
-                                    panel_actually_uses_degrees = False
-                                    x_data = time_slice
+                                    x_data = time_slice # Fallback
                             except Exception as e:
                                 print_manager.error(f"Panel {i+1} (Default): Error during degrees calc: {e}")
-                                panel_actually_uses_degrees = False
-                                x_data = time_slice
+                                x_data = time_slice # Fallback
                                 
                         # --- Standard Positional Mapping (if degrees not used/failed - Default) --- 
                         elif using_positional_axis and positional_mapper is not None:
