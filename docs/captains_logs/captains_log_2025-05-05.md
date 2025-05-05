@@ -136,4 +136,21 @@ To pinpoint the failure, we need to trace the execution path and intermediate va
 - **Version:** 2025_05_05_v2.07
 - **Commit message:** feat: Implement degrees from perihelion axis attempt & fixes (v2.07)
 
-**Summary:** Pushing current state after numerous attempts to implement and debug the 'degrees from perihelion' feature in multiplot. This includes fixes for various runtime errors and additions to options/utils. The feature is still not fully working (defaults to Time axis). Next step is to analyze debug output from prints added in `multiplot.py`. 
+**Summary:** Pushing current state after numerous attempts to implement and debug the 'degrees from perihelion' feature in multiplot. This includes fixes for various runtime errors and additions to options/utils. The feature is still not fully working (defaults to Time axis). Next step is to analyze debug output from prints added in `multiplot.py`.
+
+---
+
+## Refactoring Plan: Degrees from Perihelion Axis
+
+**Problem:** Implementation of the `use_degrees_from_perihelion` x-axis became overly complex, deviating from the simpler, working pattern established by `x_axis_carrington_lon`. This led to unexpected behavior (e.g., incorrect axis labels) and difficult debugging.
+
+**Decision:** Revert the complex additions (like `utils.calculate_degrees_from_perihelion` and associated merge logic in `multiplot.py`) and refactor the feature following a clean plan.
+
+**New Plan:** Documented in `docs/implementation_plans/perihelion_axis_plan_v2.md`. The core strategy is to treat the perihelion axis as a direct variation of the Carrington longitude axis, leveraging existing positional mapping and degree formatting logic within `multiplot.py` and `XAxisPositionalDataMapper`.
+
+## Push: v2.08
+
+- **Version:** 2025_05_05_v2.08
+- **Commit message:** refactor: Clean plan for degrees from perihelion axis (v2.08)
+
+**Summary:** Pushing the refined implementation plan (`perihelion_axis_plan_v2.md`) and updated version information before proceeding with the refactoring. 

@@ -141,7 +141,7 @@ def calculate_degrees_from_perihelion(target_times, perihelion_time_str, positio
     Args:
         target_times (list or np.ndarray): Array of datetime objects for which to calculate relative longitude.
         perihelion_time_str (str): The perihelion time string (e.g., 'YYYY/MM/DD HH:MM:SS.fff').
-        positional_data_path (str): Path to the .npz file containing 'times' and 'lon_carr' arrays.
+        positional_data_path (str): Path to the .npz file containing 'times' and 'carrington_lon' arrays.
 
     Returns:
         np.ndarray: Array of longitudes relative to the perihelion longitude, corresponding to target_times.
@@ -152,12 +152,13 @@ def calculate_degrees_from_perihelion(target_times, perihelion_time_str, positio
         # Assuming times in the npz file are stored as datetime64[ns]
         # Convert them to datetime objects for easier comparison
         file_times_dt = pd.to_datetime(data['times']).to_pydatetime()
-        file_lon_carr = data['lon_carr']
+        # Use 'carrington_lon' key instead of 'lon_carr'
+        file_lon_carr = data['carrington_lon']
     except FileNotFoundError:
         print(f"Error: Positional data file not found at {positional_data_path}")
         return None
     except KeyError:
-        print(f"Error: Required keys ('times', 'lon_carr') not found in {positional_data_path}")
+        print(f"Error: Required keys ('times', 'carrington_lon') not found in {positional_data_path}")
         return None
 
     try:

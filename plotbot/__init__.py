@@ -158,12 +158,15 @@ __all__ = [
 BLUE = '\033[94m'
 RESET = '\033[0m'
 
-# --- MODIFIED Version Info ---
-COMMIT_MSG = "feat: Implement degrees from perihelion axis attempt & fixes (v2.07)"
-VERSION_TAG = "2025_05_05_v2.07"
-print(f'{BLUE}   Version: {VERSION_TAG}{RESET}')
-# --- END MODIFICATION ---
-print(f"Commit: {COMMIT_MSG}")
+# --- Version Info ---
+# Increment this version number each time significant changes are pushed.
+# Format: YYYY_MM_DD_vMajor.Minor (Minor increments by 0.01 usually)
+__version__ = "2025_05_05_v2.08" # Updated version
+__commit_message__ = "refactor: Clean plan for degrees from perihelion axis (v2.08)" # Updated commit message
+
+# Print version information on import
+print(f"   Version: {__version__}")
+print(f"Commit: {__commit_message__}")
 
 # --- Final Print Message ---
 print(f"\n{BLUE}🤖 Plotbot Initialized{RESET}")

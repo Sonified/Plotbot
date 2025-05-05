@@ -107,14 +107,48 @@ def multiplot(plot_list, **kwargs):
     # Get options instance
     options = plt.options
 
+    # Override any options with provided kwargs - BEFORE initializing mapper
+    for key, value in kwargs.items():
+        if hasattr(options, key):
+            setattr(options, key, value)
+        # Handle new options passed via kwargs
+        elif key == 'use_degrees_from_perihelion':
+            options.use_degrees_from_perihelion = value
+        elif key == 'degrees_from_perihelion_range':
+            options.degrees_from_perihelion_range = value
+        elif key == 'degrees_from_perihelion_tick_step':
+            options.degrees_from_perihelion_tick_step = value
+            
+    # --- DEBUG PRINT: Show initial option state --- 
+    print_manager.debug("--- Multiplot Start --- Options State After Kwargs ---")
+    print_manager.debug(f"  use_degrees_from_perihelion: {getattr(options, 'use_degrees_from_perihelion', 'N/A')}")
+    print_manager.debug(f"  x_axis_carrington_lon: {getattr(options, 'x_axis_carrington_lon', 'N/A')}")
+    print_manager.debug(f"  x_axis_carrington_lat: {getattr(options, 'x_axis_carrington_lat', 'N/A')}")
+    print_manager.debug(f"  x_axis_r_sun: {getattr(options, 'x_axis_r_sun', 'N/A')}")
+    print_manager.debug(f"  use_relative_time: {getattr(options, 'use_relative_time', 'N/A')}")
+    print_manager.debug("-----------------------------------------------------")
+    # --- END DEBUG PRINT --- 
+
     # Initialize positional mapper if needed
     positional_mapper = None
-    using_positional_axis = False  # Flag to track if positional data is available
-    # --- MODIFIED: Check if *any* positional feature is enabled ---
+    # --- MODIFIED: Determine if ANY positional feature is active *after* applying kwargs ---
+    using_positional_axis = False  # Default to False
+    data_type = 'time' # Default
+    axis_label = "Time" # Default
+    units = "" # Default
+    
     positional_feature_requested = (
-        options.using_positional_x_axis or
-        getattr(options, 'use_degrees_from_perihelion', False) # Use getattr for safety
+        options.x_axis_r_sun or 
+        options.x_axis_carrington_lon or 
+        options.x_axis_carrington_lat or 
+        getattr(options, 'use_degrees_from_perihelion', False) 
     )
+    print_manager.debug(f"Initial check - positional_feature_requested: {positional_feature_requested}")
+    # --- Explicitly set using_positional_axis based on the check --- 
+    if positional_feature_requested:
+        using_positional_axis = True 
+        print_manager.debug(f"--> Setting using_positional_axis = True based on request.")
+    # --- END ---
     # --- END MODIFIED ---
 
     # --- MODIFIED: Initialize mapper only if a positional feature is requested ---
@@ -123,85 +157,77 @@ def multiplot(plot_list, **kwargs):
         if not hasattr(options, 'positional_data_path') or not options.positional_data_path:
              print_manager.error("❌ Positional data path (options.positional_data_path) is not set. Cannot use positional x-axis or degrees from perihelion.")
              # Disable positional features if path is missing
-             options.using_positional_x_axis = False
-             options.use_degrees_from_perihelion = False
+             options.use_degrees_from_perihelion = False # Also disable degrees explicitly
+             options.x_axis_r_sun = False 
+             options.x_axis_carrington_lon = False 
+             options.x_axis_carrington_lat = False
              positional_feature_requested = False # Prevent further positional logic
              using_positional_axis = False # Ensure this is false too
+             print_manager.debug("--> Resetting positional flags due to missing path.")
         else:
-            print_manager.status(f"Positional X-axis or Degrees from Perihelion requested. Initializing mapper with path: {options.positional_data_path}")
+            print_manager.debug(f"--> Initializing XAxisPositionalDataMapper with path: {options.positional_data_path}")
             positional_mapper = XAxisPositionalDataMapper(options.positional_data_path)
             # Check if mapper initialized successfully (data loaded)
-            using_positional_axis = hasattr(positional_mapper, 'data_loaded') and positional_mapper.data_loaded
-            print_manager.status(f"Positional mapping status: data_loaded={getattr(positional_mapper, 'data_loaded', False)}")
-
-            if not using_positional_axis:
+            mapper_loaded = hasattr(positional_mapper, 'data_loaded') and positional_mapper.data_loaded
+            print_manager.debug(f"--> Mapper data_loaded status: {mapper_loaded}")
+            
+            # If mapper failed, reset flags
+            if not mapper_loaded:
                 print_manager.warning("❌ Failed to load positional data. Disabling positional x-axis and degrees from perihelion.")
-                options.using_positional_x_axis = False
                 options.use_degrees_from_perihelion = False
-                positional_feature_requested = False # Update this too
+                options.x_axis_r_sun = False 
+                options.x_axis_carrington_lon = False 
+                options.x_axis_carrington_lat = False
+                positional_feature_requested = False 
+                using_positional_axis = False 
             else:
-                # Determine the *primary* data type for plotting (longitude or relative degrees)
+                # Mapper loaded, now determine the *primary* data type for plotting
                 if options.use_degrees_from_perihelion:
-                    # Degrees from perihelion takes precedence if enabled
-                    print_manager.status("-> Using Degrees from Perihelion for X-axis.")
+                    print_manager.debug("--> Mode Determination: use_degrees_from_perihelion is True.")
                     data_type = 'degrees_from_perihelion'
                     axis_label = "Degrees from Perihelion (°)"
                     units = "°"
-                    # --- REMOVE incorrect assignment to read-only property --- 
-                    # options.using_positional_x_axis = False 
+                    # Ensure conflicting standard positional options are off (should be handled by setter, but double-check)
                     options.x_axis_carrington_lon = False
                     options.x_axis_r_sun = False
                     options.x_axis_carrington_lat = False
-                elif options.using_positional_x_axis:
-                    # Fallback to standard positional types if degrees from perihelion is off
-                    # Read the dynamically determined data type from the property
-                    data_type = options.active_positional_data_type
-                    if data_type == 'carrington_lon':
-                        values_array = positional_mapper.longitude_values
-                        axis_label = "Carrington Longitude (deg)"
-                        units = "°"
-                    elif data_type == 'r_sun':
-                        values_array = positional_mapper.radial_values
-                        axis_label = "Radial Distance (R_sun)"
-                        units = "R_sun"
-                    elif data_type == 'carrington_lat':
-                        values_array = positional_mapper.latitude_values
-                        axis_label = "Carrington Latitude (deg)"
-                        units = "°"
-                    else:
-                        print_manager.warning(f"No standard positional data type selected (lon/lat/r_sun=False). Disabling positional axis.")
-                        options.using_positional_x_axis = False
-                        using_positional_axis = False # Set main flag to false
-                        values_array = None
-                        axis_label = "Time"
-                        units = ""
-                        data_type = 'time' # Fallback to time
-
-                    if values_array is not None:
-                        print_manager.status(f"✓ Successfully initialized {data_type} mapping with {len(positional_mapper.times_numeric)} data points")
-                        print_manager.debug(f"{data_type.capitalize()} data range: {np.min(values_array):.2f}{units} to {np.max(values_array):.2f}{units}")
+                elif options.x_axis_carrington_lon:
+                    print_manager.debug("--> Mode Determination: x_axis_carrington_lon is True.")
+                    data_type = 'carrington_lon'
+                    values_array = positional_mapper.longitude_values
+                    axis_label = "Carrington Longitude (°)"
+                    units = "°"
+                elif options.x_axis_r_sun:
+                    print_manager.debug("--> Mode Determination: x_axis_r_sun is True.")
+                    data_type = 'r_sun'
+                    values_array = positional_mapper.radial_values
+                    axis_label = "Radial Distance (R_sun)"
+                    units = "R_sun"
+                elif options.x_axis_carrington_lat:
+                    print_manager.debug("--> Mode Determination: x_axis_carrington_lat is True.")
+                    data_type = 'carrington_lat'
+                    values_array = positional_mapper.latitude_values
+                    axis_label = "Carrington Latitude (°)"
+                    units = "°"
                 else:
-                     # This case means positional_feature_requested was true, but neither
-                     # use_degrees_from_perihelion nor using_positional_x_axis ended up true.
-                     # Fallback to time.
-                     print_manager.debug("Positional feature requested but no specific type active, defaulting to time.")
-                     using_positional_axis = False # Ensure main flag is false
+                     # This case means positional_feature_requested was true initially, but no specific mode ended up active.
+                     print_manager.debug("--> Mode Determination: Positional feature requested but no specific type active, defaulting to time.")
+                     using_positional_axis = False # Fallback
                      axis_label = "Time"
                      units = ""
                      data_type = 'time'
 
-                # Add explicit check to verify relative time is disabled if any positional axis is active
-                # (using_positional_axis flag correctly reflects if *any* positional mode is active and loaded)
+                # Verify relative time conflict only if a positional mode is confirmed active
                 if using_positional_axis and options.use_relative_time:
-                        print_manager.warning("⚠️ Both positional axis/degrees from perihelion and relative time are enabled.")
-                        print_manager.status("Automatically disabling use_relative_time.")
+                        print_manager.warning("⚠️ Positional axis/degrees AND relative time are enabled.")
+                        print_manager.status("--> Automatically disabling use_relative_time.")
                         options.use_relative_time = False
-
-    # --- Reset if no positional features are active ---
+                        
+    # Final check: If positional feature was requested but ultimately failed or wasn't specific, default to time.
     if not using_positional_axis:
-        print_manager.debug("Using time axis (positional mapping not active or failed)")
+        print_manager.debug("--> Final check: using_positional_axis is False. Setting mode to Time.")
         data_type = 'time'
-        axis_label = "Time" # Default label
+        axis_label = "Time" 
         units = ""
     # --- END MODIFIED ---
 
@@ -231,71 +257,6 @@ def multiplot(plot_list, **kwargs):
     if not hasattr(options, 'degrees_from_perihelion_tick_step'):
         options.degrees_from_perihelion_tick_step = None # Auto-ticks by default
     # --- END ADDED ---
-    
-    print_manager.debug("\n=== Starting Multiplot Function ===")
-    
-    # Apply preset configuration if specified
-    if options.using_positional_x_axis:
-        print_manager.status(f"Positional X-axis requested. Initializing mapper with path: {options.positional_data_path}")
-        positional_mapper = XAxisPositionalDataMapper(options.positional_data_path)
-        # Check if mapper initialized successfully (data loaded)
-        using_positional_axis = hasattr(positional_mapper, 'data_loaded') and positional_mapper.data_loaded
-        # Adding clearer diagnostic information about positional mapping status
-        print_manager.status(f"Positional mapping status: data_loaded={getattr(positional_mapper, 'data_loaded', False)}")
-        print_manager.status(f"using_positional_axis flag set to: {using_positional_axis}")
-        if using_positional_axis:
-            data_type = options.active_positional_data_type
-            # Check which type of data we're using for the x-axis
-            if data_type == 'carrington_lon':
-                values_array = positional_mapper.longitude_values
-                axis_label = "Carrington Longitude (deg)"
-                units = "°"
-            elif data_type == 'r_sun':
-                values_array = positional_mapper.radial_values
-                axis_label = "Radial Distance (R_sun)"
-                units = "R_sun"
-            elif data_type == 'carrington_lat':
-                values_array = positional_mapper.latitude_values
-                axis_label = "Carrington Latitude (deg)"
-                units = "°"
-            else:
-                print_manager.warning(f"Unknown positional data type: {data_type}")
-                values_array = None
-                axis_label = "Unknown"
-                units = ""
-                
-            if values_array is not None:
-                print_manager.status(f"✓ Successfully initialized {data_type} mapping with {len(positional_mapper.times_numeric)} data points")
-                print_manager.debug(f"{data_type.capitalize()} data range: {np.min(values_array):.2f}{units} to {np.max(values_array):.2f}{units}")
-            
-            # Add explicit check to verify relative time is disabled
-            if options.use_relative_time:
-                    print_manager.warning("⚠️ Both positional axis and relative time are enabled. This may cause unexpected behavior.")
-                    print_manager.status("Automatically disabling use_relative_time since positional mapping is active")
-                    options.use_relative_time = False
-        else:
-                print_manager.status(f"❌ Failed to find {data_type} data in the positional data file.")
-                print_manager.debug(f"Mapper attributes: {dir(positional_mapper)}")
-                # If no positional data found, disable it to prevent issues
-                if data_type == 'carrington_lon':
-                    options.x_axis_carrington_lon = False
-                elif data_type == 'r_sun':
-                    options.x_axis_r_sun = False
-                elif data_type == 'carrington_lat':
-                    options.x_axis_carrington_lat = False
-                using_positional_axis = False
-    else:
-        # Don't show failure message if positional mapping wasn't requested
-        print_manager.debug("Using time axis (positional mapping not requested)")
-        using_positional_axis = False
-
-    # Store original rcParams to restore later
-    original_rcparams = {}
-    
-    # Override any options with provided kwargs
-    for key, value in kwargs.items():
-        if hasattr(options, key):
-            setattr(options, key, value)
     
     print_manager.debug("\n=== Starting Multiplot Function ===")
     
@@ -555,16 +516,19 @@ def multiplot(plot_list, **kwargs):
 
         # --- ADDED: Get Perihelion Time if needed ---
         perihelion_time_str = None
+        current_panel_use_degrees = False # Reset for this panel
         # Use getattr for safety, check if positional axis is generally usable
         if getattr(options, 'use_degrees_from_perihelion', False) and using_positional_axis:
+            print_manager.debug(f"Panel {i+1} [Data Prep]: Trying to get perihelion time for center: {center_time}")
             perihelion_time_str = get_perihelion_time(center_time) # Use center_time of the plot
             if perihelion_time_str is None:
-                print_manager.warning(f"Panel {i+1}: Could not get perihelion time for {center_time}. Cannot use degrees from perihelion for this panel.")
+                print_manager.debug(f"Panel {i+1} [Data Prep]: Could not get perihelion time. Setting current_panel_use_degrees = False.")
                 current_panel_use_degrees = False # Flag that degrees cannot be used for this panel
             else:
-                print_manager.debug(f"Panel {i+1}: Using perihelion time {perihelion_time_str} for degrees calculation.")
+                print_manager.debug(f"Panel {i+1} [Data Prep]: Got perihelion time: {perihelion_time_str}. Setting current_panel_use_degrees = True.")
                 current_panel_use_degrees = True # Flag that we intend to use degrees
         else:
+            print_manager.debug(f"Panel {i+1} [Data Prep]: Degrees not requested or positional axis not active. current_panel_use_degrees = False.")
             current_panel_use_degrees = False
         # --- END ADDED ---
 
@@ -589,6 +553,10 @@ def multiplot(plot_list, **kwargs):
         # ====================================================================
         panel_color = color_scheme['panel_colors'][i] if color_scheme else None
         axis_options = getattr(options, f'ax{i+1}')
+        
+        # --- Add a point to store the final x_data before plotting --- 
+        final_x_data_for_plot = None
+        final_y_data_for_plot = None
         
         if isinstance(var, list):
             for idx, single_var in enumerate(var):
@@ -835,6 +803,8 @@ def multiplot(plot_list, **kwargs):
                                     times_for_data = merged_df['time'].values
                                     print_manager.debug(f"Panel {i+1} (List Var): Using {len(x_data)} points for degrees from perihelion plot.")
                                     panel_actually_uses_degrees = True  # Success
+                                    # Store flag on axis for later formatting check
+                                    axs[i]._panel_actually_used_degrees = True 
                                 else:
                                     print_manager.warning(f"Panel {i+1} (List Var): Failed to align data with relative degrees after merge. Falling back to time axis.")
                                     x_data = time_slice
@@ -977,6 +947,9 @@ def multiplot(plot_list, **kwargs):
                                         x_data = positional_vals[valid_mask]
                                         data_slice = data_slice[valid_mask] 
                                         print_manager.debug(f"Panel {i+1} (Time Series): Positional mapping successful, using {num_valid} valid points")
+                                        panel_actually_uses_degrees = True # Success
+                                        # Store flag on axis for later formatting check
+                                        axs[i]._panel_actually_used_degrees = True 
                                     else:
                                         print_manager.status(f"Panel {i+1} (Time Series): Positional mapping resulted in no valid points. Using time.")
                                 else:
@@ -1039,6 +1012,8 @@ def multiplot(plot_list, **kwargs):
                                         times_for_data = merged_df['time'].values
                                         print_manager.debug(f"Panel {i+1} (Scatter): Using {len(x_data)} points for degrees from perihelion plot.")
                                         panel_actually_uses_degrees = True # Success
+                                        # Store flag on axis for later formatting check
+                                        axs[i]._panel_actually_used_degrees = True 
                                     else:
                                         print_manager.warning(f"Panel {i+1} (Scatter): Failed to align data with relative degrees after merge. Falling back to time axis.")
                                         x_data = time_slice
@@ -1153,6 +1128,8 @@ def multiplot(plot_list, **kwargs):
                                             spectral_data_slice = filtered_spectral_data[~nan_degree_mask, :]
                                             print_manager.debug(f"Panel {i+1} (Spectral): Using {len(x_data)} points for degrees from perihelion plot.")
                                             panel_actually_uses_degrees = True # Success
+                                            # Store flag on axis for later formatting check
+                                            axs[i]._panel_actually_used_degrees = True 
                                     else:
                                         print_manager.warning(f"Panel {i+1} (Spectral): Failed to align spectral data with relative degrees. Falling back to time axis.")
                                         x_data = time_slice
@@ -1261,6 +1238,8 @@ def multiplot(plot_list, **kwargs):
                                     times_for_data = merged_df['time'].values
                                     print_manager.debug(f"Panel {i+1} (Default Plot): Using {len(x_data)} points for degrees from perihelion plot.")
                                     panel_actually_uses_degrees = True # Success
+                                    # Store flag on axis for later formatting check
+                                    axs[i]._panel_actually_used_degrees = True 
                                 else:
                                     print_manager.warning(f"Panel {i+1} (Default Plot): Failed to align data with relative degrees after merge. Falling back to time axis.")
                                     x_data = time_slice
@@ -1498,9 +1477,6 @@ def multiplot(plot_list, **kwargs):
                     print_manager.status(f"Panel {i+1}: Not plotting HAM - ham_var is missing or has None datetime_array")
                 elif not hasattr(ham_var, 'data') or ham_var.data is None:
                      print_manager.status(f"Panel {i+1}: Not plotting HAM - ham_var is missing or has None data array")
-        else:
-            # print_manager.status(f"Panel {i+1}: Not plotting HAM data - conditions not met: hamify={options.hamify}, ham_var={options.ham_var is not None}, second_variable_on_right_axis={options.second_variable_on_right_axis}") # COMMENTED OUT
-            pass # Keep pass to avoid syntax error
         
         if axis_options.y_limit:
             # Determine the y_scale
@@ -1731,61 +1707,28 @@ def multiplot(plot_list, **kwargs):
     # --- MODIFIED: Final X-Axis Formatting Logic --- 
     # Iterate through axes to set final x-axis properties (label, ticks, limits)
     for i, ax in enumerate(axs):
+        print_manager.debug(f"--- Final Formatting Axis {i} ---") # DEBUG
         is_bottom_panel = (i == n_panels - 1)
         apply_label_and_ticks = not options.use_single_x_axis or is_bottom_panel
 
         # Determine the active axis type for this plot configuration
-        # We need to check if degrees from perihelion was *successfully* applied
-        # to the main data plotted on this axis, otherwise fall back.
+        # --- MODIFIED: More robust mode detection --- 
         current_axis_mode = 'time' # Default
-        # panel_plotted_degrees = False # Replaced with direct check below
+        # Get the panel-specific flag indicating successful degree plotting
+        panel_used_degrees_flag = getattr(ax, '_panel_actually_used_degrees', False)
+        print_manager.debug(f"Axis {i}: Retrieved _panel_actually_used_degrees flag: {panel_used_degrees_flag}") # DEBUG
 
-        # Check if degrees from perihelion was intended AND successful for the primary variable
-        if getattr(options, 'use_degrees_from_perihelion', False) and using_positional_axis:
-            # Check if plotting actually used degrees (might have fallen back)
-            # Heuristic: Look for degree-like values (-361 to 361) in the plotted data's x-coordinates.
-            # This assumes the first line/collection represents the primary x-axis data.
-            x_sample = []
-            is_numeric_check = False
-            plotted_in_mode = False # Flag to check if data matches intended mode
-
-            if ax.lines: # Check line plots
-                if len(ax.lines) > 0 and hasattr(ax.lines[0], 'get_xdata') and len(ax.lines[0].get_xdata()) > 0:
-                    x_sample = ax.lines[0].get_xdata()
-                    is_numeric_check = not isinstance(x_sample[0], (datetime, np.datetime64))
-            elif ax.collections: # Check scatter/pcolormesh
-                 # pcolormesh adds PatchCollection, scatter adds PathCollection
-                 if len(ax.collections) > 0 and isinstance(ax.collections[0], mpl_plt.collections.PathCollection):
-                     x_sample = ax.collections[0].get_offsets()[:, 0]
-                     if len(x_sample) > 0: is_numeric_check = True # Scatter offsets are numeric
-                 # Check for QuadMesh (pcolormesh)
-                 elif len(ax.collections) > 0 and isinstance(ax.collections[0], mpl_plt.collections.QuadMesh):
-                     # Extracting X centers/edges from QuadMesh is complex, assume numeric if positional mode active
-                      is_numeric_check = True 
-                      x_sample = ax.get_xlim() # Use axis limits as proxy for range check
-
-            # Check if data is numeric and in expected degree range
-            if is_numeric_check and len(x_sample) > 0 and np.nanmin(x_sample) >= -361 and np.nanmax(x_sample) <= 361:
-               current_axis_mode = 'degrees_from_perihelion'
-               plotted_in_mode = True
-            else:
-               # Fallback if degrees were intended but likely not plotted or data is time-like
-               print_manager.debug(f"Axis {i}: Degrees intended but plotted data doesn't look like degrees/numeric. Falling back.")
-               # Determine fallback mode
-               if using_positional_axis and options.using_positional_x_axis and options.active_positional_data_type:
-                    current_axis_mode = options.active_positional_data_type
-               elif options.use_relative_time:
-                   current_axis_mode = 'relative_time'
-               # else remains 'time'
-
-        # Handle other modes if degrees were not intended/successful
+        if panel_used_degrees_flag:
+            current_axis_mode = 'degrees_from_perihelion'
         elif using_positional_axis and options.using_positional_x_axis and options.active_positional_data_type:
-            current_axis_mode = options.active_positional_data_type # e.g., 'carrington_lon', 'r_sun'
+            # Check if standard positional axis was used (e.g., carrington_lon, r_sun)
+            current_axis_mode = options.active_positional_data_type
         elif options.use_relative_time:
              current_axis_mode = 'relative_time'
-        # else: current_axis_mode remains 'time'
+        # else: current_axis_mode remains 'time' (default)
+        # --- END MODIFIED MODE DETECTION --- 
 
-        print_manager.debug(f"Axis {i} final formatting mode: {current_axis_mode}")
+        print_manager.debug(f"Axis {i}: Determined final formatting mode: {current_axis_mode}") # DEBUG
 
         # Set X Label based on mode
         if apply_label_and_ticks:
@@ -1807,17 +1750,20 @@ def multiplot(plot_list, **kwargs):
                  else:
                      # Keep the specific mode label if custom label is set but mode isn't time
                      # Get the label determined during initialization phase
-                     if data_type == 'degrees_from_perihelion': final_axis_label = "Degrees from Perihelion (°)"
-                     elif data_type == 'carrington_lon': final_axis_label = "Carrington Longitude (°)"
-                     elif data_type == 'r_sun': final_axis_label = "Radial Distance (R_sun)"
-                     elif data_type == 'carrington_lat': final_axis_label = "Carrington Latitude (°)"
+                     # REVISIT: data_type might not be correct here if fallback occurred
+                     if current_axis_mode == 'degrees_from_perihelion': final_axis_label = "Degrees from Perihelion (°)"
+                     elif current_axis_mode == 'carrington_lon': final_axis_label = "Carrington Longitude (°)"
+                     elif current_axis_mode == 'r_sun': final_axis_label = "Radial Distance (R_sun)"
+                     elif current_axis_mode == 'carrington_lat': final_axis_label = "Carrington Latitude (°)"
                      else: final_axis_label = "Time" # Fallback 
             else: # Default time label
                 final_axis_label = "Time"
 
+            print_manager.debug(f"Axis {i}: Setting final_axis_label to: '{final_axis_label}'") # DEBUG
             ax.set_xlabel(final_axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
                           labelpad=options.x_label_pad)
         else:
+            print_manager.debug(f"Axis {i}: Not applying label/ticks (not bottom or not single axis).") # DEBUG
             ax.set_xlabel('')
             # Ensure tick labels are hidden for non-bottom plots in single-axis mode
             if options.use_single_x_axis:
@@ -1825,6 +1771,7 @@ def multiplot(plot_list, **kwargs):
 
         # Set Ticks and Limits based on mode
         if current_axis_mode == 'time':
+            print_manager.debug(f"Axis {i}: Entering TIME formatting block.") # DEBUG
             if apply_label_and_ticks:
                 # Check if formatter is already set (e.g., by relative time)
                 # Ensure we don't overwrite a potentially numeric formatter if time fallback occurred
@@ -1859,74 +1806,98 @@ def multiplot(plot_list, **kwargs):
                  print_manager.debug(f"Axis {i}: Set final time limits: {start_dt_panel} to {end_dt_panel}")
 
         elif current_axis_mode == 'relative_time':
-             # This mode handles its own ticks and labels inside the main loop
-             # However, ensure limits are set correctly if not done already
-             if ax.get_xlim() == (0.0, 1.0): # Check for default limits
-                  center_time_panel, _ = plot_list[i]
-                  center_dt_panel = pd.Timestamp(center_time_panel)
-                  start_dt_panel = center_dt_panel - pd.Timedelta(options.window)/2 if options.position == 'around' else (center_dt_panel - pd.Timedelta(options.window) if options.position == 'before' else center_dt_panel)
-                  end_dt_panel = center_dt_panel + pd.Timedelta(options.window)/2 if options.position == 'around' else (center_dt_panel if options.position == 'before' else center_dt_panel + pd.Timedelta(options.window))
-                  ax.set_xlim(start_dt_panel, end_dt_panel) # Set underlying limits as datetime
-                  print_manager.debug(f"Axis {i}: Set underlying limits for relative time axis.")
+            print_manager.debug(f"Axis {i}: Entering RELATIVE_TIME formatting block.") # DEBUG
+            # This mode handles its own ticks and labels inside the main loop
+            # However, ensure limits are set correctly if not done already
+            # Ensure this block has correct indentation relative to the elif above
+            if ax.get_xlim() == (0.0, 1.0): # Check for default limits
+                 center_time_panel, _ = plot_list[i]
+                 center_dt_panel = pd.Timestamp(center_time_panel)
+                 start_dt_panel = center_dt_panel - pd.Timedelta(options.window)/2 if options.position == 'around' else (center_dt_panel - pd.Timedelta(options.window) if options.position == 'before' else center_dt_panel)
+                 end_dt_panel = center_dt_panel + pd.Timedelta(options.window)/2 if options.position == 'around' else (center_dt_panel if options.position == 'before' else center_dt_panel + pd.Timedelta(options.window))
+                 ax.set_xlim(start_dt_panel, end_dt_panel) # Set underlying limits as datetime
+                 print_manager.debug(f"Axis {i}: Set underlying limits for relative time axis.")
 
-        elif current_axis_mode == 'degrees_from_perihelion':
-            print_manager.debug(f"Setting up axis {i} for Degrees from Perihelion")
-            # Set Ticks
+        # --- MODIFIED: Combine degrees and longitude formatting --- 
+        elif current_axis_mode == 'degrees_from_perihelion' or current_axis_mode == 'carrington_lon' or current_axis_mode == 'carrington_lat':
+            print_manager.debug(f"Axis {i}: Entering DEGREE formatting block ({current_axis_mode}).") # DEBUG
+            print_manager.debug(f"Setting up axis {i} for Degree-based display: {current_axis_mode}")
+            current_units = "°"
+             # Set Ticks
             if apply_label_and_ticks:
-                if options.degrees_from_perihelion_tick_step:
-                    step = options.degrees_from_perihelion_tick_step
-                    step = abs(step) if isinstance(step, (int, float)) and step != 0 else 10 # Default step 10
+                # Determine tick step based on mode
+                tick_step = None
+                if current_axis_mode == 'degrees_from_perihelion' and options.degrees_from_perihelion_tick_step:
+                    tick_step = options.degrees_from_perihelion_tick_step
+                    step_source = "degrees_from_perihelion_tick_step"
+                # Add similar check if there was a specific tick step for carrington_lon/lat
+                # elif current_axis_mode == 'carrington_lon' and options.carrington_lon_tick_step:
+                #     tick_step = options.carrington_lon_tick_step 
+                #     step_source = "carrington_lon_tick_step"
+                
+                if tick_step is not None:
+                    step = abs(tick_step) if isinstance(tick_step, (int, float)) and tick_step != 0 else 10 # Default step 10
                     locator = mticker.MultipleLocator(base=step)
-                    print_manager.debug(f"-> Using tick step: {step}°")
+                    print_manager.debug(f"-> Using tick step: {step}° (from {step_source})")
                 else:
+                    # Default MaxNLocator if no specific step is set
                     num_ticks = 5 * options.positional_tick_density
                     locator = mpl_plt.MaxNLocator(int(max(2, num_ticks)), prune='both')
-                    print_manager.debug(f"-> Using MaxNLocator with ~{int(max(2, num_ticks))} ticks")
+                    print_manager.debug(f"-> Using MaxNLocator with ~{int(max(2, num_ticks))} ticks (density={options.positional_tick_density}x)")
                 ax.xaxis.set_major_locator(locator)
 
-                # Set Formatter
+                # Set Formatter (Same for all degree types)
                 def degree_formatter(x, pos):
                     if abs(x - round(x)) < 1e-6: return f"{int(round(x))}°"
                     else: return f"{x:.1f}°"
                 ax.xaxis.set_major_formatter(FuncFormatter(degree_formatter))
+                print_manager.debug(f"Axis {i}: Applying Formatter: degree_formatter") # DEBUG
             else:
                  ax.set_xticklabels([]) # Hide labels if not bottom
 
-            # Set Limits
-            if options.degrees_from_perihelion_range:
-                min_deg, max_deg = options.degrees_from_perihelion_range
-                if isinstance(min_deg, (int, float)) and isinstance(max_deg, (int, float)) and min_deg < max_deg:
-                    ax.set_xlim(min_deg, max_deg)
-                    print_manager.debug(f"-> Using user-specified degree range: {min_deg}° to {max_deg}°")
+            # Set Limits (logic combines degrees and standard positional range options)
+            user_range = None
+            if current_axis_mode == 'degrees_from_perihelion' and options.degrees_from_perihelion_range:
+                user_range = options.degrees_from_perihelion_range
+                range_source = "degrees_from_perihelion_range"
+            elif current_axis_mode != 'degrees_from_perihelion' and options.x_axis_positional_range:
+                 # Use standard positional range for carrington_lon/lat if set
+                 user_range = options.x_axis_positional_range
+                 range_source = "x_axis_positional_range"
+                 
+            if user_range:
+                min_val, max_val = user_range
+                if isinstance(min_val, (int, float)) and isinstance(max_val, (int, float)) and min_val < max_val:
+                     ax.set_xlim(min_val, max_val)
+                     print_manager.debug(f"-> Using user-specified range: {min_val} to {max_val} {current_units} (from {range_source})")
                 else:
-                    print_manager.warning(f"Invalid degrees_from_perihelion_range: {options.degrees_from_perihelion_range}. Auto-scaling.")
-                    if not options.use_single_x_axis:
-                       ax.relim()
-                       ax.autoscale(enable=True, axis='x', tight=False)
-                       xlim = ax.get_xlim()
-                       data_range = xlim[1] - xlim[0]
-                       padding = data_range * 0.05 if data_range > 0 else 1
-                       ax.set_xlim(xlim[0] - padding, xlim[1] + padding)
-                       xlim = ax.get_xlim()
-                       print_manager.debug(f"-> Auto-scaled individual axis {i} range: {xlim[0]:.1f}° to {xlim[1]:.1f}°")
-            elif not options.use_single_x_axis:
-                ax.relim()
-                ax.autoscale(enable=True, axis='x', tight=False)
-                xlim = ax.get_xlim()
-                data_range = xlim[1] - xlim[0]
-                padding = data_range * 0.05 if data_range > 0 else 1
-                ax.set_xlim(xlim[0] - padding, xlim[1] + padding)
-                xlim = ax.get_xlim()
-                print_manager.debug(f"-> Auto-scaled individual axis {i} range: {xlim[0]:.1f}° to {xlim[1]:.1f}°")
-            # Else: Common range calculation will handle limits if use_single_x_axis is True
+                    print_manager.warning(f"Invalid user-specified range: {user_range} from {range_source}. Auto-scaling.")
+                    # Fall through to auto-scaling if user range is invalid
+                    user_range = None # Ensure auto-scaling happens
+                    
+            if not user_range: # Auto-scale if no valid user range provided
+                 if not options.use_single_x_axis:
+                     # Auto-scale individual panel
+                     ax.relim()
+                     ax.autoscale(enable=True, axis='x', tight=False)
+                     xlim = ax.get_xlim()
+                     data_range = xlim[1] - xlim[0]
+                     padding = data_range * 0.05 if data_range > 0 else 1 # Default padding 1 degree
+                     ax.set_xlim(xlim[0] - padding, xlim[1] + padding)
+                     xlim = ax.get_xlim()
+                     print_manager.debug(f"-> Auto-scaled individual axis {i} range: {xlim[0]:.1f}° to {xlim[1]:.1f}°")
+                 # Else: Common range calculation will handle limits if use_single_x_axis is True
+                 
             # Apply tight margin if requested
             if getattr(options, 'tight_x_axis', False):
                  ax.margins(x=0)
                  print_manager.debug(f"-> Applied tight x-axis margin to axis {i}")
  
-        elif current_axis_mode in ['carrington_lon', 'r_sun', 'carrington_lat']:
+        elif current_axis_mode == 'r_sun':
+            print_manager.debug(f"Axis {i}: Entering R_SUN formatting block.") # DEBUG
+            # Keep R_sun formatting separate as it uses different units/formatter
             print_manager.debug(f"Setting up axis {i} for standard positional display: {current_axis_mode}")
-            current_units = "°" if current_axis_mode != 'r_sun' else "R_sun"
+            current_units = "R_sun"
              # Set Ticks
             if apply_label_and_ticks:
                 num_ticks = 5 * options.positional_tick_density
@@ -1934,22 +1905,17 @@ def multiplot(plot_list, **kwargs):
                 ax.xaxis.set_major_locator(locator)
                 print_manager.debug(f"-> Using MaxNLocator with ~{int(max(2, num_ticks))} ticks")
 
-                # Set Formatter
-                if current_axis_mode == 'carrington_lon' or current_axis_mode == 'carrington_lat':
-                    def angle_formatter(x, pos):
-                        if abs(x - round(x)) < 1e-6: return f"{int(round(x))}°"
-                        else: return f"{x:.1f}°"
-                    ax.xaxis.set_major_formatter(FuncFormatter(angle_formatter))
-                else: # r_sun
-                    def radial_formatter(x, pos):
-                        if abs(x - round(x)) < 1e-6: return f"{int(round(x))}"
-                        elif abs(x*10 - round(x*10)) < 1e-6: return f"{x:.1f}"
-                        else: return f"{x:.2f}"
-                    ax.xaxis.set_major_formatter(FuncFormatter(radial_formatter))
+                # Set Formatter for R_sun
+                def radial_formatter(x, pos):
+                    if abs(x - round(x)) < 1e-6: return f"{int(round(x))}"
+                    elif abs(x*10 - round(x*10)) < 1e-6: return f"{x:.1f}"
+                    else: return f"{x:.2f}"
+                ax.xaxis.set_major_formatter(FuncFormatter(radial_formatter))
+                print_manager.debug(f"Axis {i}: Applying Formatter: radial_formatter") # DEBUG
             else:
                  ax.set_xticklabels([]) # Hide labels if not bottom
 
-            # Set Limits (similar logic to degrees, but using positional range option)
+            # Set Limits for R_sun
             if options.x_axis_positional_range:
                 min_val, max_val = options.x_axis_positional_range
                 if isinstance(min_val, (int, float)) and isinstance(max_val, (int, float)) and min_val < max_val:
@@ -1962,7 +1928,7 @@ def multiplot(plot_list, **kwargs):
                          ax.autoscale(enable=True, axis='x', tight=False)
                          xlim = ax.get_xlim()
                          data_range = xlim[1] - xlim[0]
-                         padding = data_range * 0.05 if data_range > 0 else (0.1 if current_units == "R_sun" else 1)
+                         padding = data_range * 0.05 if data_range > 0 else 0.1 # Default padding for R_sun
                          ax.set_xlim(xlim[0] - padding, xlim[1] + padding)
                          xlim = ax.get_xlim()
                          print_manager.debug(f"-> Auto-scaled individual axis {i} range: {xlim[0]:.2f} to {xlim[1]:.2f} {current_units}")
@@ -1971,7 +1937,7 @@ def multiplot(plot_list, **kwargs):
                  ax.autoscale(enable=True, axis='x', tight=False)
                  xlim = ax.get_xlim()
                  data_range = xlim[1] - xlim[0]
-                 padding = data_range * 0.05 if data_range > 0 else (0.1 if current_units == "R_sun" else 1)
+                 padding = data_range * 0.05 if data_range > 0 else 0.1 # Default padding for R_sun
                  ax.set_xlim(xlim[0] - padding, xlim[1] + padding)
                  xlim = ax.get_xlim()
                  print_manager.debug(f"-> Auto-scaled individual axis {i} range: {xlim[0]:.2f} to {xlim[1]:.2f} {current_units}")
@@ -1980,11 +1946,13 @@ def multiplot(plot_list, **kwargs):
             if getattr(options, 'tight_x_axis', False):
                  ax.margins(x=0)
                  print_manager.debug(f"-> Applied tight x-axis margin to axis {i}")
+        # --- END MODIFIED --- 
  
         # Apply tick label font size universally
         ax.tick_params(axis='x', labelsize=options.x_tick_label_font_size)
         ax.tick_params(axis='y', labelsize=options.y_tick_label_font_size)
-    # --- END MODIFIED Final X-Axis Formatting ---
+        print_manager.debug(f"--- End Final Formatting Axis {i} ---") # DEBUG
+    # --- END Final X-Axis Formatting Loop ---
 
     # Apply common x-axis range if needed for POSITIONAL or DEGREE axes
     # --- MODIFIED: Check for positional or degree mode and ensure axis mode matches ---
@@ -2064,7 +2032,7 @@ def multiplot(plot_list, **kwargs):
                     padding = data_range * 0.05
                 else: # Handle single point or flat line case across all panels
                     padding = 0 if getattr(options, 'tight_x_axis', False) else (1 if common_axis_mode != 'r_sun' else 0.1)
-                
+
                 final_min = global_min - padding
                 final_max = global_max + padding
 
@@ -2111,7 +2079,7 @@ def multiplot(plot_list, **kwargs):
             print_manager.debug("Using user-specified range for common x-axis. No auto-scaling needed.")
     # --- END MODIFIED Common Axis Range Logic ---
 
-    # --- Final plot adjustments (Labels, titles, legends, grid) ---
+    # --- Final plot adjustments (Labels, titles, legends, grid) --- 
     
     # NEW: Apply dynamic x-axis tick coloring for all panels (changed from only bottom panel)
     if color_scheme:
