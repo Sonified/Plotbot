@@ -15,6 +15,9 @@ from .get_data import get_data
 from .x_axis_positional_data_helpers import XAxisPositionalDataMapper
 # Import str_to_datetime from time_utils
 from .time_utils import str_to_datetime
+# --- ADDED: Import perihelion functions from utils ---
+from .utils import get_perihelion_time, calculate_degrees_from_perihelion
+# --- END ADDED ---
 
 # Import standard libraries
 import matplotlib.colors as colors
@@ -107,6 +110,131 @@ def multiplot(plot_list, **kwargs):
     # Initialize positional mapper if needed
     positional_mapper = None
     using_positional_axis = False  # Flag to track if positional data is available
+    # --- MODIFIED: Check if *any* positional feature is enabled ---
+    positional_feature_requested = (
+        options.using_positional_x_axis or
+        getattr(options, 'use_degrees_from_perihelion', False) # Use getattr for safety
+    )
+    # --- END MODIFIED ---
+
+    # --- MODIFIED: Initialize mapper only if a positional feature is requested ---
+    if positional_feature_requested:
+        # Ensure positional_data_path exists
+        if not hasattr(options, 'positional_data_path') or not options.positional_data_path:
+             print_manager.error("❌ Positional data path (options.positional_data_path) is not set. Cannot use positional x-axis or degrees from perihelion.")
+             # Disable positional features if path is missing
+             options.using_positional_x_axis = False
+             options.use_degrees_from_perihelion = False
+             positional_feature_requested = False # Prevent further positional logic
+             using_positional_axis = False # Ensure this is false too
+        else:
+            print_manager.status(f"Positional X-axis or Degrees from Perihelion requested. Initializing mapper with path: {options.positional_data_path}")
+            positional_mapper = XAxisPositionalDataMapper(options.positional_data_path)
+            # Check if mapper initialized successfully (data loaded)
+            using_positional_axis = hasattr(positional_mapper, 'data_loaded') and positional_mapper.data_loaded
+            print_manager.status(f"Positional mapping status: data_loaded={getattr(positional_mapper, 'data_loaded', False)}")
+
+            if not using_positional_axis:
+                print_manager.warning("❌ Failed to load positional data. Disabling positional x-axis and degrees from perihelion.")
+                options.using_positional_x_axis = False
+                options.use_degrees_from_perihelion = False
+                positional_feature_requested = False # Update this too
+            else:
+                # Determine the *primary* data type for plotting (longitude or relative degrees)
+                if options.use_degrees_from_perihelion:
+                    # Degrees from perihelion takes precedence if enabled
+                    print_manager.status("-> Using Degrees from Perihelion for X-axis.")
+                    data_type = 'degrees_from_perihelion'
+                    axis_label = "Degrees from Perihelion (°)"
+                    units = "°"
+                    # --- REMOVE incorrect assignment to read-only property --- 
+                    # options.using_positional_x_axis = False 
+                    options.x_axis_carrington_lon = False
+                    options.x_axis_r_sun = False
+                    options.x_axis_carrington_lat = False
+                elif options.using_positional_x_axis:
+                    # Fallback to standard positional types if degrees from perihelion is off
+                    # Read the dynamically determined data type from the property
+                    data_type = options.active_positional_data_type
+                    if data_type == 'carrington_lon':
+                        values_array = positional_mapper.longitude_values
+                        axis_label = "Carrington Longitude (deg)"
+                        units = "°"
+                    elif data_type == 'r_sun':
+                        values_array = positional_mapper.radial_values
+                        axis_label = "Radial Distance (R_sun)"
+                        units = "R_sun"
+                    elif data_type == 'carrington_lat':
+                        values_array = positional_mapper.latitude_values
+                        axis_label = "Carrington Latitude (deg)"
+                        units = "°"
+                    else:
+                        print_manager.warning(f"No standard positional data type selected (lon/lat/r_sun=False). Disabling positional axis.")
+                        options.using_positional_x_axis = False
+                        using_positional_axis = False # Set main flag to false
+                        values_array = None
+                        axis_label = "Time"
+                        units = ""
+                        data_type = 'time' # Fallback to time
+
+                    if values_array is not None:
+                        print_manager.status(f"✓ Successfully initialized {data_type} mapping with {len(positional_mapper.times_numeric)} data points")
+                        print_manager.debug(f"{data_type.capitalize()} data range: {np.min(values_array):.2f}{units} to {np.max(values_array):.2f}{units}")
+                else:
+                     # This case means positional_feature_requested was true, but neither
+                     # use_degrees_from_perihelion nor using_positional_x_axis ended up true.
+                     # Fallback to time.
+                     print_manager.debug("Positional feature requested but no specific type active, defaulting to time.")
+                     using_positional_axis = False # Ensure main flag is false
+                     axis_label = "Time"
+                     units = ""
+                     data_type = 'time'
+
+                # Add explicit check to verify relative time is disabled if any positional axis is active
+                # (using_positional_axis flag correctly reflects if *any* positional mode is active and loaded)
+                if using_positional_axis and options.use_relative_time:
+                        print_manager.warning("⚠️ Both positional axis/degrees from perihelion and relative time are enabled.")
+                        print_manager.status("Automatically disabling use_relative_time.")
+                        options.use_relative_time = False
+
+    # --- Reset if no positional features are active ---
+    if not using_positional_axis:
+        print_manager.debug("Using time axis (positional mapping not active or failed)")
+        data_type = 'time'
+        axis_label = "Time" # Default label
+        units = ""
+    # --- END MODIFIED ---
+
+    # Store original rcParams to restore later
+    original_rcparams = {}
+    
+    # Override any options with provided kwargs - INCLUDING NEW ONES
+    for key, value in kwargs.items():
+        if hasattr(options, key):
+            setattr(options, key, value)
+        # --- ADDED: Handling for new options if passed via kwargs ---
+        # These would ideally be in MultiplotOptions class
+        elif key == 'use_degrees_from_perihelion':
+            options.use_degrees_from_perihelion = value
+        elif key == 'degrees_from_perihelion_range':
+            options.degrees_from_perihelion_range = value
+        elif key == 'degrees_from_perihelion_tick_step':
+            options.degrees_from_perihelion_tick_step = value
+        # --- END ADDED ---
+
+    # --- ADDED: Define defaults for new options if not set ---
+    # These should live in MultiplotOptions eventually
+    if not hasattr(options, 'use_degrees_from_perihelion'):
+        options.use_degrees_from_perihelion = False
+    if not hasattr(options, 'degrees_from_perihelion_range'):
+        options.degrees_from_perihelion_range = None # Auto-range by default
+    if not hasattr(options, 'degrees_from_perihelion_tick_step'):
+        options.degrees_from_perihelion_tick_step = None # Auto-ticks by default
+    # --- END ADDED ---
+    
+    print_manager.debug("\n=== Starting Multiplot Function ===")
+    
+    # Apply preset configuration if specified
     if options.using_positional_x_axis:
         print_manager.status(f"Positional X-axis requested. Initializing mapper with path: {options.positional_data_path}")
         positional_mapper = XAxisPositionalDataMapper(options.positional_data_path)
@@ -418,10 +546,28 @@ def multiplot(plot_list, **kwargs):
         # Add diagnostic for HAM feature status
         print_manager.debug(f"Panel {i+1} - HAM feature status: hamify={options.hamify}, ham_var={options.ham_var is not None}")
         center_dt = pd.Timestamp(center_time)
-        
+
         # Get encounter number automatically
         enc_num = get_encounter_number(center_time)
-    
+
+        # --- Initialize flag for successful degree plotting --- 
+        panel_actually_uses_degrees = False # Default to False for this panel
+
+        # --- ADDED: Get Perihelion Time if needed ---
+        perihelion_time_str = None
+        # Use getattr for safety, check if positional axis is generally usable
+        if getattr(options, 'use_degrees_from_perihelion', False) and using_positional_axis:
+            perihelion_time_str = get_perihelion_time(center_time) # Use center_time of the plot
+            if perihelion_time_str is None:
+                print_manager.warning(f"Panel {i+1}: Could not get perihelion time for {center_time}. Cannot use degrees from perihelion for this panel.")
+                current_panel_use_degrees = False # Flag that degrees cannot be used for this panel
+            else:
+                print_manager.debug(f"Panel {i+1}: Using perihelion time {perihelion_time_str} for degrees calculation.")
+                current_panel_use_degrees = True # Flag that we intend to use degrees
+        else:
+            current_panel_use_degrees = False
+        # --- END ADDED ---
+
         # Format time range
         if options.position == 'around':
             start_time = center_dt - pd.Timedelta(options.window)/2
@@ -489,7 +635,7 @@ def multiplot(plot_list, **kwargs):
                         # print_manager.debug(f"Panel {i+1} pre-clip: Var data range: INDEX ERROR (array likely empty despite len check?)") # COMMENTED OUT
                         pass # Keep pass to avoid syntax error
                     # print_manager.debug(f"Panel {i+1} pre-clip: Requested trange: {trange[0]} to {trange[1]}") # COMMENTED OUT
-                    # <<< END ADDED DEBUG PRINTS >>>
+
                     indices = time_clip(single_var.datetime_array, trange[0], trange[1])
                 else:
                     print_manager.warning(f"Empty datetime_array for panel {i+1} - cannot clip times")
@@ -507,34 +653,64 @@ def multiplot(plot_list, **kwargs):
                         else:
                             plot_color = single_var.color
     
-                        # Get x-axis data - use longitude if available
-                        # x_data = single_var.datetime_array[indices] # OLD: Start with time
+                        # --- MODIFIED: X-Data Calculation ---
                         time_slice = single_var.datetime_array[indices]
                         data_slice = single_var.data[indices]
                         x_data = time_slice # Default to time
+                        times_for_data = time_slice # Track the time corresponding to data_slice
+                        panel_actually_uses_degrees = False # Reset flag
 
-                        if using_positional_axis and positional_mapper is not None:
-                            print_manager.debug(f"Panel {i+1} (Right Axis): Attempting positional mapping for {len(time_slice)} points")
-                            positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                        if current_panel_use_degrees and perihelion_time_str:
+                            print_manager.debug(f"Panel {i+1} (Right Axis): Calculating degrees from perihelion for {len(time_slice)} points")
+                            output_times, relative_degrees = calculate_degrees_from_perihelion(
+                                time_slice, perihelion_time_str, options.positional_data_path
+                            )
+                            if relative_degrees is not None and len(relative_degrees) > 0 and not np.all(np.isnan(relative_degrees)):
+                                original_df = pd.DataFrame({'time': time_slice, 'data': data_slice})
+                                output_df = pd.DataFrame({'time': output_times, 'x_data': relative_degrees})
+                                original_df['time'] = pd.to_datetime(original_df['time'])
+                                output_df['time'] = pd.to_datetime(output_df['time'])
+                                merged_df = pd.merge_asof(output_df.sort_values('time'),
+                                                          original_df.sort_values('time'),
+                                                          on='time', direction='nearest', tolerance=pd.Timedelta('1s'))
+                                merged_df.dropna(subset=['data', 'x_data'], inplace=True)
 
-                            if positional_vals is not None:
-                                # --- NEW: Create mask for successful mapping --- 
-                                # Assuming None or np.nan indicates a mapping failure
-                                valid_mask = ~np.isnan(positional_vals) 
-                                num_valid = np.sum(valid_mask)
-                                
-                                if num_valid > 0:
-                                    x_data = positional_vals[valid_mask] # Use only valid positions
-                                    data_slice = data_slice[valid_mask]   # Filter data slice accordingly
-                                    print_manager.debug(f"Panel {i+1} (Right Axis): Positional mapping successful, using {num_valid} valid points")
+                                if not merged_df.empty:
+                                    x_data = merged_df['x_data'].values
+                                    data_slice = merged_df['data'].values
+                                    times_for_data = merged_df['time'].values
+                                    print_manager.debug(f"Panel {i+1} (Right Axis): Using {len(x_data)} points for degrees from perihelion plot.")
+                                    panel_actually_uses_degrees = True # Success
                                 else:
-                                    print_manager.status(f"Panel {i+1} (Right Axis): Positional mapping resulted in no valid points. Using time.")
-                                    # x_data remains time_slice, data_slice remains original data_slice
+                                    print_manager.warning(f"Panel {i+1} (Right Axis): Failed to align data with relative degrees after merge. Falling back to time axis.")
+                                    x_data = time_slice
+                                    data_slice = single_var.data[indices]
+                                    times_for_data = time_slice
                             else:
-                                print_manager.status(f"Panel {i+1} (Right Axis): Positional mapping failed (returned None). Using time.")
-                                # x_data remains time_slice, data_slice remains original data_slice
+                                print_manager.warning(f"Panel {i+1} (Right Axis): Calculation of relative degrees failed or returned all NaNs. Falling back to time axis.")
+                                x_data = time_slice
+                                data_slice = single_var.data[indices]
+                                times_for_data = time_slice
 
-                        # --- Use filtered x_data and data_slice --- 
+                        if not panel_actually_uses_degrees:
+                            if using_positional_axis and positional_mapper is not None and not options.use_degrees_from_perihelion:
+                                # --- Existing Standard Positional Logic ---
+                                print_manager.debug(f"Panel {i+1} (Right Axis): Attempting standard positional mapping ({data_type}) for {len(time_slice)} points")
+                                positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                                if positional_vals is not None:
+                                    valid_mask = ~np.isnan(positional_vals)
+                                    num_valid = np.sum(valid_mask)
+                                    if num_valid > 0:
+                                        x_data = positional_vals[valid_mask]
+                                        data_slice = data_slice[valid_mask]
+                                        times_for_data = time_slice[valid_mask]
+                                        print_manager.debug(f"Panel {i+1} (Right Axis): Standard positional mapping successful, using {num_valid} valid points")
+                                    else:
+                                        print_manager.status(f"Panel {i+1} (Right Axis): Standard positional mapping resulted in no valid points. Using time.")
+                                else:
+                                    print_manager.status(f"Panel {i+1} (Right Axis): Standard positional mapping failed (returned None). Using time.")
+                            # else: x_data remains time_slice (default)
+                        # --- END MODIFIED X-Data Calculation ---
                         ax2.plot(x_data, 
                                 data_slice, # Use filtered data_slice
                                 linewidth=options.magnetic_field_line_width if options.save_preset else single_var.line_width,
@@ -573,18 +749,30 @@ def multiplot(plot_list, **kwargs):
                         # --- NEW: Apply rainbow color to all right axis elements ---
                         if panel_color is not None:
                             # Set y-axis label color and font weight
-                            ax2.yaxis.label.set_color(panel_color)
-                            if hasattr(options, 'bold_y_axis_label') and options.bold_y_axis_label:
-                                ax2.yaxis.label.set_weight('bold')
-                            else:
-                                ax2.yaxis.label.set_weight('normal')
+                            ham_ylabel = getattr(ham_var, 'y_label', 'HAM') 
+                            # --- REMOVE set_ylabel for HAM plot --- 
+                            # ax2.set_ylabel(ham_ylabel,
+                            #               fontsize=options.y_axis_label_font_size,
+                            #               labelpad=options.y_label_pad,
+                            #               fontweight='bold' if options.bold_y_axis_label else 'normal',
+                            #               ha=options.y_label_alignment,
+                            #               color=panel_color) # Apply color here too
+                            
                             # Set tick color and label size
                             ax2.tick_params(axis='y', colors=panel_color, which='both', labelsize=options.y_tick_label_font_size)
                             # Set all spines to panel color
                             for spine in ax2.spines.values():
                                 spine.set_color(panel_color)
-                        # --- END NEW ---
-                        
+                        # --- END Apply rainbow --- 
+                        else: # Apply normal label if not rainbow
+                             ham_ylabel = getattr(ham_var, 'y_label', 'HAM') 
+                             # --- REMOVE set_ylabel for HAM plot --- 
+                             # ax2.set_ylabel(ham_ylabel,
+                             #               fontsize=options.y_axis_label_font_size,
+                             #               labelpad=options.y_label_pad,
+                             #               fontweight='bold' if options.bold_y_axis_label else 'normal',
+                             #               ha=options.y_label_alignment)
+
                         # Set the right y-axis label to match the panel color and style
                         ham_ylabel = getattr(ham_var, 'y_label', 'HAM')
                         ax2.set_ylabel(ham_ylabel,
@@ -593,15 +781,17 @@ def multiplot(plot_list, **kwargs):
                                       fontweight='bold' if options.bold_y_axis_label else 'normal',
                                       ha=options.y_label_alignment)
                         # Force all right axis elements to rainbow color
-                        apply_right_axis_color(ax2, panel_color, options)
+                        # --- REMOVED call to non-existent function --- 
+                        # apply_right_axis_color(ax2, panel_color, options) 
                         print(f"DEBUG: Panel {i+1} right axis label is: '{ax2.get_ylabel()}'")
                         # Set right y-axis tick params and spine colors to match panel color
-                        ax2.tick_params(axis='y', colors=panel_color, which='both')
-                        for spine in ax2.spines.values():
-                            spine.set_color(panel_color)
-                        # Now apply the panel color to ax2 (for y-label, etc.)
+                        # This is handled correctly by the `if panel_color is not None:` block above
+                        # ax2.tick_params(axis='y', colors=panel_color, which='both')
+                        # for spine in ax2.spines.values():
+                        #     spine.set_color(panel_color)
+                        # Now apply the panel color to ax2 (for y-label, etc.) # This comment seems out of place
                     
-                    else:
+                    else: # Plotting first variable (or only variable) in list on left axis
                         if options.color_mode in ['rainbow', 'single'] and panel_color:
                             plot_color = panel_color
                         elif hasattr(single_var, 'color') and single_var.color is not None:
@@ -617,24 +807,66 @@ def multiplot(plot_list, **kwargs):
                         data_slice = single_var.data[indices]
                         x_data = time_slice # Default to time
 
-                        if using_positional_axis and positional_mapper is not None:
-                            print_manager.debug(f"Panel {i+1} (List Var): Attempting positional mapping for {len(time_slice)} points")
-                            positional_vals = positional_mapper.map_to_position(time_slice, data_type)
-                            if positional_vals is not None:
-                                # --- NEW: Create mask for successful mapping --- 
-                                valid_mask = ~np.isnan(positional_vals) 
-                                num_valid = np.sum(valid_mask)
-                                
-                                if num_valid > 0:
-                                    x_data = positional_vals[valid_mask]
-                                    data_slice = data_slice[valid_mask] 
-                                    print_manager.debug(f"Panel {i+1} (List Var): Positional mapping successful, using {num_valid} valid points")
+                        # --- MODIFIED: X-Data Calculation ---
+                        time_slice = single_var.datetime_array[indices]
+                        data_slice = single_var.data[indices]
+                        x_data = time_slice  # Default to time
+                        times_for_data = time_slice
+                        panel_actually_uses_degrees = False  # Reset flag
+
+                        if current_panel_use_degrees and perihelion_time_str:
+                            print_manager.debug(f"Panel {i+1} (List Var): Calculating degrees from perihelion for {len(time_slice)} points")
+                            output_times, relative_degrees = calculate_degrees_from_perihelion(
+                                time_slice, perihelion_time_str, options.positional_data_path
+                            )
+                            if relative_degrees is not None and len(relative_degrees) > 0 and not np.all(np.isnan(relative_degrees)):
+                                original_df = pd.DataFrame({'time': time_slice, 'data': data_slice})
+                                output_df = pd.DataFrame({'time': output_times, 'x_data': relative_degrees})
+                                original_df['time'] = pd.to_datetime(original_df['time'])
+                                output_df['time'] = pd.to_datetime(output_df['time'])
+                                merged_df = pd.merge_asof(output_df.sort_values('time'),
+                                                          original_df.sort_values('time'),
+                                                          on='time', direction='nearest', tolerance=pd.Timedelta('1s'))
+                                merged_df.dropna(subset=['data', 'x_data'], inplace=True)
+
+                                if not merged_df.empty:
+                                    x_data = merged_df['x_data'].values
+                                    data_slice = merged_df['data'].values
+                                    times_for_data = merged_df['time'].values
+                                    print_manager.debug(f"Panel {i+1} (List Var): Using {len(x_data)} points for degrees from perihelion plot.")
+                                    panel_actually_uses_degrees = True  # Success
                                 else:
-                                    print_manager.status(f"Panel {i+1} (List Var): Positional mapping resulted in no valid points. Using time.")
+                                    print_manager.warning(f"Panel {i+1} (List Var): Failed to align data with relative degrees after merge. Falling back to time axis.")
+                                    x_data = time_slice
+                                    data_slice = single_var.data[indices]
+                                    times_for_data = time_slice
                             else:
-                                print_manager.status(f"Panel {i+1} (List Var): Positional mapping failed (returned None). Using time.")
-                        
-                        # --- Use filtered x_data and data_slice --- 
+                                print_manager.warning(f"Panel {i+1} (List Var): Calculation of relative degrees failed or returned all NaNs. Falling back to time axis.")
+                                x_data = time_slice
+                                data_slice = single_var.data[indices]
+                                times_for_data = time_slice
+
+                        if not panel_actually_uses_degrees:
+                            if using_positional_axis and positional_mapper is not None and not options.use_degrees_from_perihelion:
+                                # --- Existing Standard Positional Logic ---
+                                print_manager.debug(f"Panel {i+1} (List Var): Attempting standard positional mapping ({data_type}) for {len(time_slice)} points")
+                                positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                                if positional_vals is not None:
+                                    valid_mask = ~np.isnan(positional_vals)
+                                    num_valid = np.sum(valid_mask)
+                                    if num_valid > 0:
+                                        x_data = positional_vals[valid_mask]
+                                        data_slice = data_slice[valid_mask]
+                                        times_for_data = time_slice[valid_mask]
+                                        print_manager.debug(f"Panel {i+1} (List Var): Standard positional mapping successful, using {num_valid} valid points")
+                                    else:
+                                        print_manager.status(f"Panel {i+1} (List Var): Standard positional mapping resulted in no valid points. Using time.")
+                                else:
+                                    print_manager.status(f"Panel {i+1} (List Var): Standard positional mapping failed (returned None). Using time.")
+                            # else: x_data remains time_slice (default)
+                        # --- END MODIFIED X-Data Calculation ---
+
+                        # --- Plot using potentially modified x_data and data_slice ---
                         axs[i].plot(x_data, 
                                    data_slice, # Use filtered data_slice
                                    linewidth=options.magnetic_field_line_width if options.save_preset else single_var.line_width,
@@ -779,28 +1011,64 @@ def multiplot(plot_list, **kwargs):
                             alpha = getattr(var, 'alpha', 1.0)               # Default alpha
                             legend_label = getattr(var, 'legend_label', None) # Get legend label if it exists
 
-                            # Get x-axis data - use longitude if available
-                            # x_data = var.datetime_array[indices] # OLD
+                            # --- MODIFIED: X-Data Calculation for Scatter ---
                             time_slice = var.datetime_array[indices]
                             data_slice = var.data[indices]
                             x_data = time_slice # Default to time
+                            times_for_data = time_slice
+                            panel_actually_uses_degrees = False # Reset flag
 
-                            if using_positional_axis and positional_mapper is not None:
-                                print_manager.debug(f"Panel {i+1} (Scatter): Attempting positional mapping for {len(time_slice)} points")
-                                positional_vals = positional_mapper.map_to_position(time_slice, data_type)
-                                if positional_vals is not None:
-                                     # --- NEW: Create mask for successful mapping --- 
-                                    valid_mask = ~np.isnan(positional_vals) 
-                                    num_valid = np.sum(valid_mask)
-                                    
-                                    if num_valid > 0:
-                                        x_data = positional_vals[valid_mask]
-                                        data_slice = data_slice[valid_mask] 
-                                        print_manager.debug(f"Panel {i+1} (Scatter): Positional mapping successful, using {num_valid} valid points")
+                            if current_panel_use_degrees and perihelion_time_str:
+                                print_manager.debug(f"Panel {i+1} (Scatter): Calculating degrees from perihelion for {len(time_slice)} points")
+                                output_times, relative_degrees = calculate_degrees_from_perihelion(
+                                    time_slice, perihelion_time_str, options.positional_data_path
+                                )
+                                if relative_degrees is not None and len(relative_degrees) > 0 and not np.all(np.isnan(relative_degrees)):
+                                    original_df = pd.DataFrame({'time': time_slice, 'data': data_slice})
+                                    output_df = pd.DataFrame({'time': output_times, 'x_data': relative_degrees})
+                                    original_df['time'] = pd.to_datetime(original_df['time'])
+                                    output_df['time'] = pd.to_datetime(output_df['time'])
+                                    merged_df = pd.merge_asof(output_df.sort_values('time'),
+                                                              original_df.sort_values('time'),
+                                                              on='time', direction='nearest', tolerance=pd.Timedelta('1s'))
+                                    merged_df.dropna(subset=['data', 'x_data'], inplace=True)
+
+                                    if not merged_df.empty:
+                                        x_data = merged_df['x_data'].values
+                                        data_slice = merged_df['data'].values
+                                        times_for_data = merged_df['time'].values
+                                        print_manager.debug(f"Panel {i+1} (Scatter): Using {len(x_data)} points for degrees from perihelion plot.")
+                                        panel_actually_uses_degrees = True # Success
                                     else:
-                                        print_manager.status(f"Panel {i+1} (Scatter): Positional mapping resulted in no valid points. Using time.")
+                                        print_manager.warning(f"Panel {i+1} (Scatter): Failed to align data with relative degrees after merge. Falling back to time axis.")
+                                        x_data = time_slice
+                                        data_slice = var.data[indices]
+                                        times_for_data = time_slice
                                 else:
-                                    print_manager.status(f"Panel {i+1} (Scatter): Positional mapping failed (returned None). Using time.")
+                                    print_manager.warning(f"Panel {i+1} (Scatter): Calculation of relative degrees failed or returned all NaNs. Falling back to time axis.")
+                                    x_data = time_slice
+                                    data_slice = var.data[indices]
+                                    times_for_data = time_slice
+
+                            if not panel_actually_uses_degrees:
+                                if using_positional_axis and positional_mapper is not None and not options.use_degrees_from_perihelion:
+                                    # --- Existing Standard Positional Logic ---
+                                    print_manager.debug(f"Panel {i+1} (Scatter): Attempting standard positional mapping ({data_type}) for {len(time_slice)} points")
+                                    positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                                    if positional_vals is not None:
+                                        valid_mask = ~np.isnan(positional_vals)
+                                        num_valid = np.sum(valid_mask)
+                                        if num_valid > 0:
+                                            x_data = positional_vals[valid_mask]
+                                            data_slice = data_slice[valid_mask]
+                                            times_for_data = time_slice[valid_mask]
+                                            print_manager.debug(f"Panel {i+1} (Scatter): Standard positional mapping successful, using {num_valid} valid points")
+                                        else:
+                                            print_manager.status(f"Panel {i+1} (Scatter): Standard positional mapping resulted in no valid points. Using time.")
+                                    else:
+                                        print_manager.status(f"Panel {i+1} (Scatter): Standard positional mapping failed (returned None). Using time.")
+                                # else: x_data remains time_slice (default)
+                            # --- END MODIFIED X-Data Calculation ---
 
                             # --- Use filtered x_data and data_slice --- 
                             axs[i].scatter(x_data,
@@ -829,103 +1097,206 @@ def multiplot(plot_list, **kwargs):
                         # CRITICAL FIX: Check if indices is empty before trying to plot spectral data
                         if len(indices) > 0:
                             datetime_clipped = var.datetime_array[indices]
-                            data_clipped = np.array(var.data)[indices]
-                            additional_data_clipped = np.array(var.additional_data)[indices]
+                            # data_clipped = np.array(var.data)[indices] # Handled below
+                            # additional_data_clipped = np.array(var.additional_data)[indices] # Handled below
                             
                             colorbar_limits = axis_options.colorbar_limits if hasattr(axis_options, 'colorbar_limits') and axis_options.colorbar_limits else var.colorbar_limits
                             if var.colorbar_scale == 'log':
                                 norm = colors.LogNorm(vmin=colorbar_limits[0], vmax=colorbar_limits[1]) if colorbar_limits else colors.LogNorm()
                             elif var.colorbar_scale == 'linear':
                                 norm = colors.Normalize(vmin=colorbar_limits[0], vmax=colorbar_limits[1]) if colorbar_limits else None
+                            else: # Default or unknown scale
+                                norm = None
         
-                            # Get x-axis data - use longitude if available
-                            # x_data = datetime_clipped # OLD
-                            time_slice = datetime_clipped
-                            data_slice = data_clipped # This is the 2D spectral data
-                            y_spectral_axis = additional_data_clipped # This is the y-axis (e.g., energy bins)
-                            x_data = time_slice # Default to time
+                            # --- MODIFIED: X-Data Calculation for Spectral ---
+                            # Spectral data needs slightly different handling
+                            time_slice = datetime_clipped # Use already clipped times
+                            # Use UNCLIPPED y-axis bins (additional_data assumed to be energy bins etc.)
+                            y_spectral_axis_full = np.array(var.additional_data)
+                            # Use time-indexed spectral data (already clipped along time axis)
+                            spectral_data_slice = np.array(var.data)[indices]
 
-                            if using_positional_axis and positional_mapper is not None:
-                                print_manager.debug(f"Panel {i+1} (Spectral): Attempting positional mapping for {len(time_slice)} points")
-                                positional_vals = positional_mapper.map_to_position(time_slice, data_type)
-                                if positional_vals is not None:
-                                     # --- NEW: Create mask for successful mapping --- 
-                                    valid_mask = ~np.isnan(positional_vals) 
-                                    num_valid = np.sum(valid_mask)
-                                    
-                                    if num_valid > 0:
-                                        x_data = positional_vals[valid_mask] # Filter positions
-                                        # Filter the spectral data (Z axis) along the time dimension
-                                        data_slice = data_slice[valid_mask, :] 
-                                        print_manager.debug(f"Panel {i+1} (Spectral): Positional mapping successful, using {num_valid} valid points")
+                            x_data = time_slice # Default to time (as raw datetimes or np.datetime64)
+                            times_for_data = time_slice # Keep track
+                            panel_actually_uses_degrees = False # Reset flag
+
+                            if current_panel_use_degrees and perihelion_time_str:
+                                print_manager.debug(f"Panel {i+1} (Spectral): Calculating degrees from perihelion for {len(time_slice)} time points")
+                                output_times, relative_degrees = calculate_degrees_from_perihelion(
+                                    time_slice, perihelion_time_str, options.positional_data_path
+                                )
+
+                                if relative_degrees is not None and len(relative_degrees) > 0 and not np.all(np.isnan(relative_degrees)):
+                                    # Align spectral data with the output times/degrees
+                                    original_times_pd = pd.Series(time_slice)
+                                    output_times_pd = pd.Series(output_times)
+                                    original_times_ns = pd.to_datetime(original_times_pd).astype(np.int64)
+                                    output_times_ns = pd.to_datetime(output_times_pd).astype(np.int64)
+                                    output_time_to_index_map = {t: idx for idx, t in enumerate(output_times_ns)}
+                                    original_indices_present_in_output = []
+                                    output_indices_to_keep = []
+                                    for original_idx, t_ns in enumerate(original_times_ns):
+                                        if t_ns in output_time_to_index_map:
+                                            original_indices_present_in_output.append(original_idx)
+                                            output_indices_to_keep.append(output_time_to_index_map[t_ns])
+
+                                    if original_indices_present_in_output:
+                                        filtered_spectral_data = spectral_data_slice[original_indices_present_in_output, :]
+                                        filtered_relative_degrees = relative_degrees[output_indices_to_keep]
+                                        nan_degree_mask = np.isnan(filtered_relative_degrees)
+                                        if np.all(nan_degree_mask):
+                                             print_manager.warning(f"Panel {i+1} (Spectral): All aligned degrees are NaN. Falling back to time axis.")
+                                             x_data = time_slice
+                                             spectral_data_slice = np.array(var.data)[indices]
+                                        else:
+                                            x_data = filtered_relative_degrees[~nan_degree_mask]
+                                            spectral_data_slice = filtered_spectral_data[~nan_degree_mask, :]
+                                            print_manager.debug(f"Panel {i+1} (Spectral): Using {len(x_data)} points for degrees from perihelion plot.")
+                                            panel_actually_uses_degrees = True # Success
                                     else:
-                                        print_manager.status(f"Panel {i+1} (Spectral): Positional mapping resulted in no valid points. Using time.")
+                                        print_manager.warning(f"Panel {i+1} (Spectral): Failed to align spectral data with relative degrees. Falling back to time axis.")
+                                        x_data = time_slice
+                                        spectral_data_slice = np.array(var.data)[indices]
                                 else:
-                                    print_manager.status(f"Panel {i+1} (Spectral): Positional mapping failed (returned None). Using time.")
+                                    print_manager.warning(f"Panel {i+1} (Spectral): Calculation of relative degrees failed or returned all NaNs. Falling back to time axis.")
+                                    x_data = time_slice
+                                    spectral_data_slice = np.array(var.data)[indices]
+
+                            if not panel_actually_uses_degrees:
+                                if using_positional_axis and positional_mapper is not None and not options.use_degrees_from_perihelion:
+                                    # --- Existing Standard Positional Logic ---
+                                    print_manager.debug(f"Panel {i+1} (Spectral): Attempting standard positional mapping ({data_type}) for {len(time_slice)} points")
+                                    positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                                    if positional_vals is not None:
+                                        valid_mask = ~np.isnan(positional_vals)
+                                        num_valid = np.sum(valid_mask)
+                                        if num_valid > 0:
+                                            x_data = positional_vals[valid_mask]
+                                            spectral_data_slice = spectral_data_slice[valid_mask, :]
+                                            print_manager.debug(f"Panel {i+1} (Spectral): Standard positional mapping successful, using {num_valid} valid points")
+                                        else:
+                                            print_manager.status(f"Panel {i+1} (Spectral): Standard positional mapping resulted in no valid points. Using time.")
+                                            x_data = time_slice
+                                    else:
+                                        print_manager.status(f"Panel {i+1} (Spectral): Standard positional mapping failed (returned None). Using time.")
+                                        x_data = time_slice
+                                # else: x_data remains time_slice (default)
+                            # --- END MODIFIED X-Data Calculation for Spectral ---
 
                             # FIXED: Create properly shaped mesh grid for pcolormesh to avoid dimension mismatch
                             try:
-                                # Remove the transpose - data should not be transposed
-                                # Debug the shapes for troubleshooting
-                                x_shape = len(x_data)
-                                # y_shape = len(additional_data_clipped) # y_spectral_axis might change
-                                z_shape = data_slice.shape # Use filtered data_slice shape
-                                y_shape = z_shape[1] if len(z_shape) > 1 else 0 # Infer Y shape from Z
-                                print_manager.debug(f"Spectral data shapes after filtering: X:{x_shape}, Y:{y_shape}, Z:{z_shape}")
-                                
-                                # Ensure y_spectral_axis matches the Z dimension
-                                if y_shape != len(y_spectral_axis):
-                                     print_manager.warning(f"Spectral Y axis length ({len(y_spectral_axis)}) does not match filtered data dimension ({y_shape}). Skipping plot.")
-                                     # Handle error: plot text or skip?
+                                z_shape = spectral_data_slice.shape
+                                y_shape_expected = z_shape[1] if len(z_shape) > 1 else 0
+                                x_len = len(x_data) if hasattr(x_data, '__len__') else 0
+                                print_manager.debug(f"Spectral data shapes for pcolormesh: X:{x_len}, Y:{len(y_spectral_axis_full)}, Z:{z_shape}")
+
+                                if y_shape_expected != len(y_spectral_axis_full):
+                                     print_manager.warning(f"Spectral Y axis length ({len(y_spectral_axis_full)}) does not match filtered data dimension ({y_shape_expected}). Skipping plot.")
                                 else:
-                                    # Always use 'auto' shading which handles the dimension requirements correctly
-                                    # and don't transpose the data
-                                    im = axs[i].pcolormesh(x_data, y_spectral_axis, data_slice.T, # Transpose needed for pcolormesh
-                                                          norm=norm, cmap=var.colormap, shading='auto')
-                                    
-                                    pos = axs[i].get_position()
-                                    cax = fig.add_axes([pos.x1 + 0.01, pos.y0, 0.02, pos.height])
-                                    cbar = fig.colorbar(im, cax=cax)
-                
-                                    if hasattr(var, 'colorbar_label'):
-                                        cbar.set_label(var.colorbar_label)
+                                     # --- MODIFIED: Use potentially updated x_data and handle datetimes ---
+                                     if x_len > 0:
+                                         if isinstance(x_data[0], (datetime, np.datetime64)):
+                                             x_plot_data = mdates.date2num(x_data)
+                                         else:
+                                             x_plot_data = x_data
+
+                                         # Ensure x_plot_data and y_spectral_axis_full have compatible lengths for pcolormesh
+                                         # pcolormesh needs X and Y to define the grid corners, so dimensions should be N+1 or handled by shading='auto'
+                                         # With shading='auto', X defines the centers (or edges) of N columns, Y defines centers/edges of M rows.
+                                         # Data Z should be M x N.
+                                         if len(x_plot_data) == z_shape[0] and len(y_spectral_axis_full) == z_shape[1]:
+                                             im = axs[i].pcolormesh(x_plot_data, y_spectral_axis_full, spectral_data_slice.T, # Transpose Z data
+                                                                   norm=norm, cmap=var.colormap, shading='auto')
+
+                                             pos = axs[i].get_position()
+                                             cax = fig.add_axes([pos.x1 + 0.01, pos.y0, 0.02, pos.height])
+                                             cbar = fig.colorbar(im, cax=cax)
+
+                                             if hasattr(var, 'colorbar_label'):
+                                                 cbar.set_label(var.colorbar_label)
+                                         else:
+                                             print_manager.warning(f"Dimension mismatch for pcolormesh: X({len(x_plot_data)}), Y({len(y_spectral_axis_full)}), Z({z_shape}). Skipping plot.")
+                                     else: # x_len is 0
+                                         print_manager.warning("No X data points for spectral plot after processing. Skipping plot.")
+
                             except Exception as e:
                                 print_manager.warning(f"Error plotting spectral data: {str(e)}")
-                                print_manager.warning(f"Data shapes: X:{len(x_data)}, Y:{len(y_spectral_axis)}, Z:{data_slice.shape}")
+                                x_len_err = len(x_data) if hasattr(x_data, '__len__') else 'scalar'
+                                y_len_err = len(y_spectral_axis_full) if hasattr(y_spectral_axis_full, '__len__') else 'scalar'
+                                z_shape_err = spectral_data_slice.shape if hasattr(spectral_data_slice, 'shape') else 'unknown'
+                                print_manager.warning(f"Data shapes at error: X:{x_len_err}, Y:{y_len_err}, Z:{z_shape_err}")
 
-                else:
+                else: # Default plot type (handles if var.plot_type is not set or different)
                     plot_color = panel_color
                     if not plot_color:
                         plot_color = axis_options.color if axis_options.color else var.color
                     
                     # CRITICAL FIX: Check if indices is empty before trying to plot
                     if len(indices) > 0:
-                        # Get x-axis data - use longitude if available
-                        # x_data = var.datetime_array[indices] # OLD
+                        # --- MODIFIED: X-Data Calculation --- 
                         time_slice = var.datetime_array[indices]
                         data_slice = var.data[indices]
                         x_data = time_slice # Default to time
+                        times_for_data = time_slice
+                        panel_actually_uses_degrees = False # Reset flag
 
-                        if using_positional_axis and positional_mapper is not None:
-                            print_manager.debug(f"Panel {i+1} (Default Plot): Attempting positional mapping for {len(time_slice)} points")
-                            positional_vals = positional_mapper.map_to_position(time_slice, data_type)
-                            if positional_vals is not None:
-                                # --- NEW: Create mask for successful mapping --- 
-                                valid_mask = ~np.isnan(positional_vals) 
-                                num_valid = np.sum(valid_mask)
-                                
-                                if num_valid > 0:
-                                    x_data = positional_vals[valid_mask]
-                                    data_slice = data_slice[valid_mask] 
-                                    print_manager.debug(f"Panel {i+1} (Default Plot): Positional mapping successful, using {num_valid} valid points")
+                        if current_panel_use_degrees and perihelion_time_str:
+                            print_manager.debug(f"Panel {i+1} (Default Plot): Calculating degrees from perihelion for {len(time_slice)} points")
+                            output_times, relative_degrees = calculate_degrees_from_perihelion(
+                                time_slice, perihelion_time_str, options.positional_data_path
+                            )
+                            if relative_degrees is not None and len(relative_degrees) > 0 and not np.all(np.isnan(relative_degrees)):
+                                original_df = pd.DataFrame({'time': time_slice, 'data': data_slice})
+                                output_df = pd.DataFrame({'time': output_times, 'x_data': relative_degrees})
+                                original_df['time'] = pd.to_datetime(original_df['time'])
+                                output_df['time'] = pd.to_datetime(output_df['time'])
+                                merged_df = pd.merge_asof(output_df.sort_values('time'),
+                                                          original_df.sort_values('time'),
+                                                          on='time', direction='nearest', tolerance=pd.Timedelta('1s'))
+                                merged_df.dropna(subset=['data', 'x_data'], inplace=True)
+
+                                if not merged_df.empty:
+                                    x_data = merged_df['x_data'].values
+                                    data_slice = merged_df['data'].values
+                                    times_for_data = merged_df['time'].values
+                                    print_manager.debug(f"Panel {i+1} (Default Plot): Using {len(x_data)} points for degrees from perihelion plot.")
+                                    panel_actually_uses_degrees = True # Success
                                 else:
-                                    print_manager.status(f"Panel {i+1} (Default Plot): Positional mapping resulted in no valid points. Using time.")
+                                    print_manager.warning(f"Panel {i+1} (Default Plot): Failed to align data with relative degrees after merge. Falling back to time axis.")
+                                    x_data = time_slice
+                                    data_slice = var.data[indices]
+                                    times_for_data = time_slice
                             else:
-                                print_manager.status(f"Panel {i+1} (Default Plot): Positional mapping failed (returned None). Using time.")
+                                print_manager.warning(f"Panel {i+1} (Default Plot): Calculation of relative degrees failed or returned all NaNs. Falling back to time axis.")
+                                x_data = time_slice
+                                data_slice = var.data[indices]
+                                times_for_data = time_slice
+
+                        if not panel_actually_uses_degrees:
+                            if using_positional_axis and positional_mapper is not None and not options.use_degrees_from_perihelion:
+                                # --- Existing Standard Positional Logic ---
+                                print_manager.debug(f"Panel {i+1} (Default Plot): Attempting standard positional mapping ({data_type}) for {len(time_slice)} points")
+                                positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                                if positional_vals is not None:
+                                    valid_mask = ~np.isnan(positional_vals)
+                                    num_valid = np.sum(valid_mask)
+                                    if num_valid > 0:
+                                        x_data = positional_vals[valid_mask]
+                                        data_slice = data_slice[valid_mask]
+                                        times_for_data = time_slice[valid_mask]
+                                        print_manager.debug(f"Panel {i+1} (Default Plot): Standard positional mapping successful, using {num_valid} valid points")
+                                    else:
+                                        print_manager.status(f"Panel {i+1} (Default Plot): Standard positional mapping resulted in no valid points. Using time.")
+                                        x_data = time_slice # Ensure fallback
+                                else:
+                                    print_manager.status(f"Panel {i+1} (Default Plot): Standard positional mapping failed (returned None). Using time.")
+                                    x_data = time_slice # Ensure fallback
+                            # else: x_data remains time_slice (default)
+                        # --- END MODIFIED X-Data Calculation ---
                         
-                        # --- Use filtered x_data and data_slice --- 
+                        # --- Plot using potentially modified x_data and data_slice --- 
                         axs[i].plot(x_data, 
-                                    data_slice, # Use filtered data_slice
+                                    data_slice, # Use potentially filtered data_slice
                                     linewidth=options.magnetic_field_line_width if options.save_preset else var.line_width,
                                     linestyle=var.line_style,
                                     color=plot_color)
@@ -950,13 +1321,23 @@ def multiplot(plot_list, **kwargs):
             # Refresh the reference from data_cubby
             ham_class_instance = data_cubby.grab('ham')
             if ham_class_instance:
-                ham_var = ham_class_instance.get_subclass(getattr(options.ham_var, 'subclass_name', 'hamogram_30s'))
-                print_manager.debug(f"Panel {i+1}: Refreshed HAM variable reference from data_cubby")
+                ham_var_subclass_name = getattr(options.ham_var, 'subclass_name', 'hamogram_30s') # Get name before overwriting
+                ham_var = ham_class_instance.get_subclass(ham_var_subclass_name) # Use the potentially default name
+                # --- MODIFIED: Explicit check for None --- 
+                if ham_var is not None:
+                # --- END MODIFIED --- 
+                    print_manager.debug(f"Panel {i+1}: Refreshed HAM variable '{ham_var_subclass_name}' reference from data_cubby")
+                else:
+                    print_manager.error(f"Panel {i+1}: Failed to get HAM subclass '{ham_var_subclass_name}' from data_cubby after get_data")
+                    ham_var = None # Ensure ham_var is None if lookup failed
             else:
-                print_manager.error(f"Panel {i+1}: Failed to get ham class from data_cubby")
+                print_manager.error(f"Panel {i+1}: Failed to get ham class instance from data_cubby")
+                ham_var = None # Ensure ham_var is None if lookup failed
+            
             # Use ham_var for plotting below
-            print_manager.debug(f"Panel {i+1}: HAM feature enabled, plotting {ham_var.subclass_name if hasattr(ham_var, 'subclass_name') else 'HAM variable'} on right axis")
-            if ham_var is not None and hasattr(ham_var, 'datetime_array') and ham_var.datetime_array is not None:
+            # Add checks for ham_var existence and necessary attributes
+            if ham_var is not None and hasattr(ham_var, 'datetime_array') and ham_var.datetime_array is not None and hasattr(ham_var, 'data') and ham_var.data is not None:
+                print_manager.debug(f"Panel {i+1}: HAM feature enabled, plotting {ham_var.subclass_name if hasattr(ham_var, 'subclass_name') else 'HAM variable'} on right axis")
                 # Create a twin axis for the HAM data
                 ax2 = axs[i].twinx()
                 
@@ -966,42 +1347,87 @@ def multiplot(plot_list, **kwargs):
                 elif hasattr(axis_options, 'r') and axis_options.r.color is not None:
                     plot_color = axis_options.r.color
                 else:
-                    plot_color = ham_var.color
+                    plot_color = ham_var.color # Fallback to ham_var's defined color
                     
-                # Get time-clipped indices
+                # Get time-clipped indices for HAM data
                 print_manager.debug(f"Panel {i+1}: Attempting to time_clip HAM data with range: {trange[0]} to {trange[1]}")
-                print_manager.debug(f"Panel {i+1}: HAM data range is {ham_var.datetime_array[0]} to {ham_var.datetime_array[-1]}")
+                # Check if ham_var.datetime_array is empty before accessing elements
+                if len(ham_var.datetime_array) > 0:
+                    print_manager.debug(f"Panel {i+1}: HAM data range is {ham_var.datetime_array[0]} to {ham_var.datetime_array[-1]}")
+                    ham_indices = time_clip(ham_var.datetime_array, trange[0], trange[1])
+                else:
+                    print_manager.warning(f"Panel {i+1}: HAM variable has empty datetime_array. Skipping HAM plot.")
+                    ham_indices = [] # Ensure indices list is empty
                 
-                ham_indices = time_clip(ham_var.datetime_array, trange[0], trange[1])
                 print_manager.debug(f"Panel {i+1}: Found {len(ham_indices)} HAM data points in time range")
                 
                 if len(ham_indices) > 0:
-                    # Get x-axis data and handle positional mapping
-                    # x_data = ham_var.datetime_array[ham_indices] # OLD
+                    # --- MODIFIED: X-Data Calculation for HAM ---
                     time_slice = ham_var.datetime_array[ham_indices]
                     data_slice = ham_var.data[ham_indices]
                     x_data = time_slice # Default to time
+                    times_for_data = time_slice
+                    # Check if main panel intended to use degrees
+                    ham_panel_actually_uses_degrees = False # Reset flag for HAM
 
-                    if using_positional_axis and positional_mapper is not None:
-                        positional_vals = positional_mapper.map_to_position(time_slice, data_type)
-                        if positional_vals is not None:
-                            # --- NEW: Create mask for successful mapping --- 
-                            valid_mask = ~np.isnan(positional_vals) 
-                            num_valid = np.sum(valid_mask)
-                            
-                            if num_valid > 0:
-                                x_data = positional_vals[valid_mask]
-                                data_slice = data_slice[valid_mask] 
-                                print_manager.debug(f"Panel {i+1}: Successfully mapped HAM data to {data_type} coordinates ({num_valid} points)")
+                    if current_panel_use_degrees and perihelion_time_str:
+                        print_manager.debug(f"Panel {i+1} (HAM Plot): Calculating degrees from perihelion for {len(time_slice)} points")
+                        output_times, relative_degrees = calculate_degrees_from_perihelion(
+                            time_slice, perihelion_time_str, options.positional_data_path
+                        )
+                        if relative_degrees is not None and len(relative_degrees) > 0 and not np.all(np.isnan(relative_degrees)):
+                            original_df = pd.DataFrame({'time': time_slice, 'data': data_slice})
+                            output_df = pd.DataFrame({'time': output_times, 'x_data': relative_degrees})
+                            original_df['time'] = pd.to_datetime(original_df['time'])
+                            output_df['time'] = pd.to_datetime(output_df['time'])
+                            merged_df = pd.merge_asof(output_df.sort_values('time'),
+                                                      original_df.sort_values('time'),
+                                                      on='time', direction='nearest', tolerance=pd.Timedelta('1s'))
+                            merged_df.dropna(subset=['data', 'x_data'], inplace=True)
+
+                            if not merged_df.empty:
+                                x_data = merged_df['x_data'].values
+                                data_slice = merged_df['data'].values
+                                times_for_data = merged_df['time'].values
+                                print_manager.debug(f"Panel {i+1} (HAM Plot): Using {len(x_data)} points for degrees from perihelion plot.")
+                                ham_panel_actually_uses_degrees = True # HAM uses degrees
                             else:
-                                print_manager.status(f"Panel {i+1}: HAM positional mapping resulted in no valid points. Using time.")
+                                print_manager.warning(f"Panel {i+1} (HAM Plot): Failed to align HAM data with relative degrees after merge. Falling back to time axis.")
+                                x_data = time_slice
+                                data_slice = ham_var.data[ham_indices]
+                                times_for_data = time_slice
                         else:
-                             print_manager.status(f"Panel {i+1}: HAM positional mapping failed (returned None). Using time.")
+                            print_manager.warning(f"Panel {i+1} (HAM Plot): Calculation of relative degrees failed or returned all NaNs for HAM data. Falling back to time axis.")
+                            x_data = time_slice
+                            data_slice = ham_var.data[ham_indices]
+                            times_for_data = time_slice
+
+                    if not ham_panel_actually_uses_degrees:
+                         if using_positional_axis and positional_mapper is not None and not options.use_degrees_from_perihelion:
+                            # --- Existing Standard Positional Logic ---
+                            print_manager.debug(f"Panel {i+1} (HAM Plot): Attempting standard positional mapping ({data_type}) for {len(time_slice)} points")
+                            positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                            if positional_vals is not None:
+                                valid_mask = ~np.isnan(positional_vals)
+                                num_valid = np.sum(valid_mask)
+                                if num_valid > 0:
+                                    x_data = positional_vals[valid_mask]
+                                    data_slice = data_slice[valid_mask]
+                                    times_for_data = time_slice[valid_mask]
+                                    print_manager.debug(f"Panel {i+1} (HAM Plot): Standard positional mapping successful, using {num_valid} valid points")
+                                else:
+                                    print_manager.status(f"Panel {i+1} (HAM Plot): Standard positional mapping resulted in no valid points. Using time.")
+                                    x_data = time_slice # Ensure fallback
+                            else:
+                                 print_manager.status(f"Panel {i+1} (HAM Plot): Standard positional mapping failed (returned None). Using time.")
+                                 x_data = time_slice # Ensure fallback
+                         # else: x_data remains time_slice (default)
+                    # --- END MODIFIED X-Data Calculation ---
                     
-                    # Plot the HAM data using filtered x_data and data_slice
+                    # Plot the HAM data using potentially filtered x_data and data_slice
                     print_manager.debug(f"Panel {i+1}: Plotting HAM data on right axis")
                     ax2.plot(x_data, 
-                            data_slice, # Use filtered data_slice
+                            data_slice, # Use potentially filtered data_slice
                             linewidth=ham_var.line_width,
                             linestyle=ham_var.line_style,
                             label=ham_var.legend_label,
@@ -1017,45 +1443,61 @@ def multiplot(plot_list, **kwargs):
                         ax2.set_ylim(ham_var.y_limit)
                         print_manager.debug(f"Panel {i+1}: Applied right axis y-limits from ham_var: {ham_var.y_limit}")
                     
-                    # --- NEW: Apply rainbow color to all right axis elements ---
+                    # --- Apply rainbow color to all right axis elements ---
                     if panel_color is not None:
                         # Set y-axis label color and font weight
-                        ax2.yaxis.label.set_color(panel_color)
-                        if hasattr(options, 'bold_y_axis_label') and options.bold_y_axis_label:
-                            ax2.yaxis.label.set_weight('bold')
-                        else:
-                            ax2.yaxis.label.set_weight('normal')
+                        ham_ylabel = getattr(ham_var, 'y_label', 'HAM') 
+                        # --- REMOVE set_ylabel for HAM plot --- 
+                        # ax2.set_ylabel(ham_ylabel,
+                        #               fontsize=options.y_axis_label_font_size,
+                        #               labelpad=options.y_label_pad,
+                        #               fontweight='bold' if options.bold_y_axis_label else 'normal',
+                        #               ha=options.y_label_alignment,
+                        #               color=panel_color) # Apply color here too
+                        
                         # Set tick color and label size
                         ax2.tick_params(axis='y', colors=panel_color, which='both', labelsize=options.y_tick_label_font_size)
                         # Set all spines to panel color
                         for spine in ax2.spines.values():
                             spine.set_color(panel_color)
-                    # --- END NEW ---
+                    # --- END Apply rainbow --- 
+                    else: # Apply normal label if not rainbow
+                         ham_ylabel = getattr(ham_var, 'y_label', 'HAM') 
+                         # --- REMOVE set_ylabel for HAM plot --- 
+                         # ax2.set_ylabel(ham_ylabel,
+                         #               fontsize=options.y_axis_label_font_size,
+                         #               labelpad=options.y_label_pad,
+                         #               fontweight='bold' if options.bold_y_axis_label else 'normal',
+                         #               ha=options.y_label_alignment)
+
                     
                     # Include HAM in legend
                     lines_left, labels_left = axs[i].get_legend_handles_labels()
                     lines_right, labels_right = ax2.get_legend_handles_labels()
-                    axs[i].legend(lines_left + lines_right, 
-                                labels_left + labels_right,
-                                bbox_to_anchor=(1.025, 1),
-                                loc='upper left')
-                    # Set legend label color to rainbow if in rainbow mode
-                    if options.color_mode == 'rainbow' and panel_color is not None:
-                        leg = axs[i].get_legend()
-                        for text in leg.get_texts():
-                            text.set_color(panel_color)
-                        # Set the legend border (frame) color to match the panel color
-                        leg.get_frame().set_edgecolor(panel_color)
+                    # Combine legends
+                    all_lines = lines_left + lines_right
+                    all_labels = labels_left + labels_right
+                    # Create legend only if there are labels to show
+                    if all_labels:
+                        leg = axs[i].legend(all_lines, all_labels,
+                                            bbox_to_anchor=(1.025, 1),
+                                            loc='upper left')
+                        # Set legend label color to rainbow if in rainbow mode
+                        if options.color_mode == 'rainbow' and panel_color is not None and leg:
+                            for text in leg.get_texts():
+                                text.set_color(panel_color)
+                            # Set the legend border (frame) color to match the panel color
+                            leg.get_frame().set_edgecolor(panel_color)
                 else:
                     print_manager.status(f"Panel {i+1}: No HAM data points found in time range {trange[0]} to {trange[1]}")
             else:
-                print_manager.status(f"Panel {i+1}: HAM variable {getattr(ham_var, 'subclass_name', 'unknown')} has no datetime_array or is None")
+                # Print more specific reason why HAM wasn't plotted
                 if ham_var is None:
-                    print_manager.status(f"Panel {i+1}: ham_var is None")
-                elif not hasattr(ham_var, 'datetime_array'):
-                    print_manager.status(f"Panel {i+1}: ham_var has no datetime_array attribute")
-                elif ham_var.datetime_array is None:
-                    print_manager.status(f"Panel {i+1}: ham_var.datetime_array is None")
+                    print_manager.status(f"Panel {i+1}: Not plotting HAM - ham_var is None (check data cubby/get_data)")
+                elif not hasattr(ham_var, 'datetime_array') or ham_var.datetime_array is None:
+                    print_manager.status(f"Panel {i+1}: Not plotting HAM - ham_var is missing or has None datetime_array")
+                elif not hasattr(ham_var, 'data') or ham_var.data is None:
+                     print_manager.status(f"Panel {i+1}: Not plotting HAM - ham_var is missing or has None data array")
         else:
             # print_manager.status(f"Panel {i+1}: Not plotting HAM data - conditions not met: hamify={options.hamify}, ham_var={options.ham_var is not None}, second_variable_on_right_axis={options.second_variable_on_right_axis}") # COMMENTED OUT
             pass # Keep pass to avoid syntax error
@@ -1117,19 +1559,21 @@ def multiplot(plot_list, **kwargs):
             print_manager.debug(f"Panel {i+1}: ylim after setting via var.y_limit: {axs[i].get_ylim()}")
         else:
             # Auto-scaling happens by default
-            # print_manager.debug(f"Panel {i+1}: Using auto-scaling.") # COMMENTED OUT
             current_ylim = axs[i].get_ylim()
-            # print_manager.debug(f"Panel {i+1}: ylim after auto-scaling: {current_ylim}") # COMMENTED OUT
-    
-        axs[i].set_xlim(start_time, end_time)
-    
+
+        # --- MODIFIED: Defer Set X Limits until final formatting stage ---
+        pass # Limit setting moved to final formatting loop
+        # --- END MODIFIED ---
+
+        # --- Y Label and Scale Setting --- 
+        # ... [Existing Y Label and Scale Logic - should be here]
         if isinstance(var, list):
             if all(hasattr(v, 'y_label') for v in var):
                 y_label = var[0].y_label
             else:
                 y_label = ''
         else:
-            y_label = var.y_label
+            y_label = getattr(var, 'y_label', '') # Use getattr for safety
     
         if options.y_label_uses_encounter:
             if options.y_label_includes_time:
@@ -1150,38 +1594,35 @@ def multiplot(plot_list, **kwargs):
                               labelpad=options.y_label_pad, fontweight='bold' if options.bold_y_axis_label else 'normal',
                               ha=options.y_label_alignment)
     
+        # --- Y Scale Setting --- 
+        current_y_scale = 'linear' # Default
+        can_set_log = False
         if isinstance(var, list):
-            if hasattr(var[0], 'y_scale') and var[0].y_scale:
-                axs[i].set_yscale(var[0].y_scale)
-        elif hasattr(var, 'y_scale') and var.y_scale:
-            # CRITICAL FIX: Check if we have data points before setting log scale
-            # This fixes the "Data has no positive values, and therefore cannot be log-scaled" error
-            if var.y_scale == 'log':
-                # Check if we have any data points in the current time range
-                has_data_points = False
-                if hasattr(var, 'datetime_array') and hasattr(var, 'data'):
-                    indices = []
-                    if len(var.datetime_array) > 0:
-                        # Get indices of points within the time range
-                        start_dt64 = np.datetime64(start_time)
-                        end_dt64 = np.datetime64(end_time)
-                        indices = np.where((np.array(var.datetime_array) >= start_dt64) & 
-                                          (np.array(var.datetime_array) <= end_dt64))[0]
-                        has_data_points = len(indices) > 0
-                
-                if has_data_points:
-                    # Safe to set log scale since we have data points
-                    axs[i].set_yscale(var.y_scale)
-                else:
-                    # Skip setting log scale for empty datasets
-                    print_manager.warning(f"Cannot set log scale for panel {i+1} - no data points in time range")
-                    # Set to linear scale instead to avoid errors
-                    axs[i].set_yscale('linear')
-            else:
-                # For non-log scales, just set directly
-                axs[i].set_yscale(var.y_scale)
-    
-        if options.use_relative_time and not using_positional_axis: # Only use relative time if NOT using longitude
+            if hasattr(var[0], 'y_scale') and var[0].y_scale == 'log':
+                 current_y_scale = 'log'
+                 # Check if data exists for log scale
+                 if hasattr(var[0], 'data') and len(indices) > 0:
+                      data_subset = var[0].data[indices]
+                      if np.any(data_subset > 0):
+                          can_set_log = True 
+        elif hasattr(var, 'y_scale') and var.y_scale == 'log':
+            current_y_scale = 'log'
+            if hasattr(var, 'data') and len(indices) > 0:
+                data_subset = var.data[indices]
+                if np.any(data_subset > 0):
+                    can_set_log = True
+        elif hasattr(var, 'y_scale'): # Handle non-log scales directly
+             current_y_scale = var.y_scale
+             can_set_log = False # Ensure log isn't set
+
+        if current_y_scale == 'log' and not can_set_log:
+            print_manager.warning(f"Panel {i+1}: Cannot set log scale - no positive data in range. Using linear scale.")
+            axs[i].set_yscale('linear')
+        elif current_y_scale:
+             axs[i].set_yscale(current_y_scale)
+             
+        # --- Handle Relative Time Ticks inside loop if active --- 
+        if options.use_relative_time and not using_positional_axis: # Only use relative time if NOT using longitude/degrees
             step_td = pd.Timedelta(value=options.relative_time_step, unit=options.relative_time_step_units)
             current = start_time
             ticks = []
@@ -1199,9 +1640,9 @@ def multiplot(plot_list, **kwargs):
                     value_from_center = time_from_center.total_seconds()
                 else:
                     print(f"Unrecognized time step unit: {options.relative_time_step_units}. Please use 'days', 'hours', 'minutes', or 'seconds'.")
-                    return
+                    return # Abort plot if units invalid
     
-                if value_from_center == 0:
+                if abs(value_from_center) < 1e-9: # Check for near-zero float
                     label = "0"
                 else:
                     label = f"{value_from_center:.1f}".rstrip('0').rstrip('.')
@@ -1209,42 +1650,48 @@ def multiplot(plot_list, **kwargs):
                 current += step_td
     
             axs[i].set_xticks(ticks)
-            
-            if options.use_single_x_axis:
-                if i < n_panels - 1:
-                    axs[i].set_xticklabels([])
-                    axs[i].set_xlabel('')
-                else:
-                    axs[i].set_xticklabels(tick_labels)
-                    if options.use_custom_x_axis_label:
-                         axs[i].set_xlabel(options.custom_x_axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
-                                           labelpad=options.x_label_pad)
-                    else:
-                        axs[i].set_xlabel(f"Relative Time ({options.relative_time_step_units} from Perihelion)", 
-                                        fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
-                                        labelpad=options.x_label_pad)
-            else:
-                axs[i].set_xticklabels(tick_labels)
-                if i < n_panels - 1:
-                    axs[i].set_xlabel('')
-    
-            # Add these two lines to set tick label sizes when using relative time
+            axs[i].set_xticklabels(tick_labels)
+             # Add tick label sizes when using relative time
             axs[i].tick_params(axis='x', labelsize=options.x_tick_label_font_size)
             axs[i].tick_params(axis='y', labelsize=options.y_tick_label_font_size)
-    
-            # After setting tick sizes 
-            # Apply border line width to all spines (top, bottom, left, right)
-            for spine_name, spine in axs[i].spines.items():
-                spine.set_linewidth(plt.options.border_line_width)
-    
+             # Set relative time label only on bottom plot if using single axis
+            if options.use_single_x_axis:
+                if i < n_panels - 1:
+                    axs[i].set_xticklabels([]) # Hide labels for non-bottom
+                    axs[i].set_xlabel('')
+                else: 
+                    axs[i].set_xlabel(f"Relative Time ({options.relative_time_step_units} from Center)", 
+                                        fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
+                                        labelpad=options.x_label_pad)
+            else: # Not single axis - apply label to all
+                 axs[i].set_xlabel(f"Relative Time ({options.relative_time_step_units} from Center)", 
+                                     fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
+                                     labelpad=options.x_label_pad)
+
+        # --- Draw Vertical Line --- 
         if options.draw_vertical_line:
-            color_to_use = panel_color if panel_color else options.vertical_line_color
-            axs[i].axvline(x=center_dt, 
-                           color=color_to_use,
-                           linestyle=options.vertical_line_style,
-                           linewidth=options.vertical_line_width)
+            # Determine value for vertical line based on axis type
+            vline_value = center_dt # Default for time/relative time
+            # Now this check is safe because the variable is guaranteed to exist
+            if panel_actually_uses_degrees: 
+                 vline_value = 0 # Center is 0 degrees
+            elif using_positional_axis and positional_mapper is not None and not options.use_degrees_from_perihelion:
+                 # Map center time to positional value
+                 center_pos_val = positional_mapper.map_to_position([center_dt], data_type)
+                 if center_pos_val is not None and len(center_pos_val) > 0 and not np.isnan(center_pos_val[0]):
+                     vline_value = center_pos_val[0]
+                 else:
+                     print_manager.warning(f"Panel {i+1}: Could not map center time {center_dt} to {data_type} for vertical line.")
+                     vline_value = None # Prevent drawing line if mapping fails
+            
+            if vline_value is not None:
+                color_to_use = panel_color if panel_color else options.vertical_line_color
+                axs[i].axvline(x=vline_value, 
+                               color=color_to_use,
+                               linestyle=options.vertical_line_style,
+                               linewidth=options.vertical_line_width)
     
-        # --- Individual Title Setting (only if not using single title) ---
+        # --- Individual Title Setting --- 
         if not options.use_single_title:
             title = f"{enc_num} - {pos_desc[options.position]} - {pd.Timestamp(center_time).strftime('%Y-%m-%d %H:%M')}"
             if options.color_mode in ['rainbow', 'single'] and panel_color:
@@ -1256,6 +1703,7 @@ def multiplot(plot_list, **kwargs):
                                pad=options.title_pad, fontweight='bold' if options.bold_title else 'normal',
                                y=options.title_y_position)
     
+        # --- Horizontal Lines --- 
         # Check for global horizontal line
         if plt.options.draw_horizontal_line:
             axs[i].axhline(
@@ -1264,9 +1712,8 @@ def multiplot(plot_list, **kwargs):
                 color=plt.options.horizontal_line_color,
                 linestyle=plt.options.horizontal_line_style
             )
-    
         # Check for axis-specific horizontal line
-        axis_options = getattr(options, f'ax{i+1}')
+        axis_options = getattr(options, f'ax{i+1}') # Get axis options again
         if axis_options and axis_options.draw_horizontal_line:
             axs[i].axhline(
                 y=axis_options.horizontal_line_value,
@@ -1275,163 +1722,395 @@ def multiplot(plot_list, **kwargs):
                 linestyle=axis_options.horizontal_line_style
             )
     
-        # Apply border line width to all spines (top, bottom, left, right)
+        # --- Apply Border Width --- 
         for spine_name, spine in axs[i].spines.items():
             spine.set_linewidth(plt.options.border_line_width)
-    
-    if not options.use_relative_time or using_positional_axis: # If NOT relative time, OR if using longitude (which disables relative)
-        for i, ax in enumerate(axs):
+
+    # --- End of Main Plotting Loop --- 
+
+    # --- MODIFIED: Final X-Axis Formatting Logic --- 
+    # Iterate through axes to set final x-axis properties (label, ticks, limits)
+    for i, ax in enumerate(axs):
+        is_bottom_panel = (i == n_panels - 1)
+        apply_label_and_ticks = not options.use_single_x_axis or is_bottom_panel
+
+        # Determine the active axis type for this plot configuration
+        # We need to check if degrees from perihelion was *successfully* applied
+        # to the main data plotted on this axis, otherwise fall back.
+        current_axis_mode = 'time' # Default
+        # panel_plotted_degrees = False # Replaced with direct check below
+
+        # Check if degrees from perihelion was intended AND successful for the primary variable
+        if getattr(options, 'use_degrees_from_perihelion', False) and using_positional_axis:
+            # Check if plotting actually used degrees (might have fallen back)
+            # Heuristic: Look for degree-like values (-361 to 361) in the plotted data's x-coordinates.
+            # This assumes the first line/collection represents the primary x-axis data.
+            x_sample = []
+            is_numeric_check = False
+            plotted_in_mode = False # Flag to check if data matches intended mode
+
+            if ax.lines: # Check line plots
+                if len(ax.lines) > 0 and hasattr(ax.lines[0], 'get_xdata') and len(ax.lines[0].get_xdata()) > 0:
+                    x_sample = ax.lines[0].get_xdata()
+                    is_numeric_check = not isinstance(x_sample[0], (datetime, np.datetime64))
+            elif ax.collections: # Check scatter/pcolormesh
+                 # pcolormesh adds PatchCollection, scatter adds PathCollection
+                 if len(ax.collections) > 0 and isinstance(ax.collections[0], mpl_plt.collections.PathCollection):
+                     x_sample = ax.collections[0].get_offsets()[:, 0]
+                     if len(x_sample) > 0: is_numeric_check = True # Scatter offsets are numeric
+                 # Check for QuadMesh (pcolormesh)
+                 elif len(ax.collections) > 0 and isinstance(ax.collections[0], mpl_plt.collections.QuadMesh):
+                     # Extracting X centers/edges from QuadMesh is complex, assume numeric if positional mode active
+                      is_numeric_check = True 
+                      x_sample = ax.get_xlim() # Use axis limits as proxy for range check
+
+            # Check if data is numeric and in expected degree range
+            if is_numeric_check and len(x_sample) > 0 and np.nanmin(x_sample) >= -361 and np.nanmax(x_sample) <= 361:
+               current_axis_mode = 'degrees_from_perihelion'
+               plotted_in_mode = True
+            else:
+               # Fallback if degrees were intended but likely not plotted or data is time-like
+               print_manager.debug(f"Axis {i}: Degrees intended but plotted data doesn't look like degrees/numeric. Falling back.")
+               # Determine fallback mode
+               if using_positional_axis and options.using_positional_x_axis and options.active_positional_data_type:
+                    current_axis_mode = options.active_positional_data_type
+               elif options.use_relative_time:
+                   current_axis_mode = 'relative_time'
+               # else remains 'time'
+
+        # Handle other modes if degrees were not intended/successful
+        elif using_positional_axis and options.using_positional_x_axis and options.active_positional_data_type:
+            current_axis_mode = options.active_positional_data_type # e.g., 'carrington_lon', 'r_sun'
+        elif options.use_relative_time:
+             current_axis_mode = 'relative_time'
+        # else: current_axis_mode remains 'time'
+
+        print_manager.debug(f"Axis {i} final formatting mode: {current_axis_mode}")
+
+        # Set X Label based on mode
+        if apply_label_and_ticks:
+            final_axis_label = "" # Initialize
+            if current_axis_mode == 'degrees_from_perihelion':
+                final_axis_label = "Degrees from Perihelion (°)"
+            elif current_axis_mode == 'carrington_lon':
+                final_axis_label = "Carrington Longitude (°)"
+            elif current_axis_mode == 'r_sun':
+                final_axis_label = "Radial Distance (R_sun)"
+            elif current_axis_mode == 'carrington_lat':
+                 final_axis_label = "Carrington Latitude (°)"
+            elif current_axis_mode == 'relative_time':
+                 final_axis_label = f"Relative Time ({options.relative_time_step_units} from Center)"
+            elif options.use_custom_x_axis_label:
+                 # Apply custom label only if not using a specific positional/degree/relative mode
+                 if current_axis_mode == 'time':
+                     final_axis_label = options.custom_x_axis_label
+                 else:
+                     # Keep the specific mode label if custom label is set but mode isn't time
+                     # Get the label determined during initialization phase
+                     if data_type == 'degrees_from_perihelion': final_axis_label = "Degrees from Perihelion (°)"
+                     elif data_type == 'carrington_lon': final_axis_label = "Carrington Longitude (°)"
+                     elif data_type == 'r_sun': final_axis_label = "Radial Distance (R_sun)"
+                     elif data_type == 'carrington_lat': final_axis_label = "Carrington Latitude (°)"
+                     else: final_axis_label = "Time" # Fallback 
+            else: # Default time label
+                final_axis_label = "Time"
+
+            ax.set_xlabel(final_axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
+                          labelpad=options.x_label_pad)
+        else:
+            ax.set_xlabel('')
+            # Ensure tick labels are hidden for non-bottom plots in single-axis mode
             if options.use_single_x_axis:
-                if i < n_panels - 1:
-                    ax.set_xticklabels([])
-                    ax.set_xlabel('')
+                ax.set_xticklabels([]) # Explicitly hide labels
+
+        # Set Ticks and Limits based on mode
+        if current_axis_mode == 'time':
+            if apply_label_and_ticks:
+                # Check if formatter is already set (e.g., by relative time)
+                # Ensure we don't overwrite a potentially numeric formatter if time fallback occurred
+                if not isinstance(ax.xaxis.get_major_formatter(), (mdates.ConciseDateFormatter, FuncFormatter)):
+                    try:
+                         # Attempt to set date formatter, might fail if axis holds non-date data
+                         locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
+                         formatter = mdates.ConciseDateFormatter(locator)
+                         ax.xaxis.set_major_locator(locator)
+                         ax.xaxis.set_major_formatter(formatter)
+                    except Exception as e:
+                        print_manager.warning(f"Axis {i}: Failed to set date formatter for 'time' mode ({e}). Axis might contain non-time data.")
+                        # Consider setting a default numeric formatter here if needed
+            
+            # Set time limits if not already set (e.g., if plot failed or axis defaulted to time)
+            xlim = ax.get_xlim()
+            needs_time_limits = False
+            try: # Check if limits are convertible to datetime
+                 dt_min = pd.to_datetime(xlim[0], unit='d') # date2num uses days since epoch
+                 dt_max = pd.to_datetime(xlim[1], unit='d')
+                 # If limits are default (0,1) or look like large numbers (posix), reset
+                 if xlim == (0.0, 1.0) or (xlim[0] > 1e9 and xlim[1] > 1e9):
+                      needs_time_limits = True
+            except (ValueError, TypeError, OverflowError):
+                 needs_time_limits = True # Assume they need setting if not datetime-like
+            
+            if needs_time_limits:
+                 center_time_panel, _ = plot_list[i]
+                 start_dt_panel = pd.Timestamp(center_time_panel) - pd.Timedelta(options.window)/2 if options.position == 'around' else (pd.Timestamp(center_time_panel) - pd.Timedelta(options.window) if options.position == 'before' else pd.Timestamp(center_time_panel))
+                 end_dt_panel = pd.Timestamp(center_time_panel) + pd.Timedelta(options.window)/2 if options.position == 'around' else (pd.Timestamp(center_time_panel) if options.position == 'before' else pd.Timestamp(center_time_panel) + pd.Timedelta(options.window))
+                 ax.set_xlim(start_dt_panel, end_dt_panel)
+                 print_manager.debug(f"Axis {i}: Set final time limits: {start_dt_panel} to {end_dt_panel}")
+
+        elif current_axis_mode == 'relative_time':
+             # This mode handles its own ticks and labels inside the main loop
+             # However, ensure limits are set correctly if not done already
+             if ax.get_xlim() == (0.0, 1.0): # Check for default limits
+                  center_time_panel, _ = plot_list[i]
+                  center_dt_panel = pd.Timestamp(center_time_panel)
+                  start_dt_panel = center_dt_panel - pd.Timedelta(options.window)/2 if options.position == 'around' else (center_dt_panel - pd.Timedelta(options.window) if options.position == 'before' else center_dt_panel)
+                  end_dt_panel = center_dt_panel + pd.Timedelta(options.window)/2 if options.position == 'around' else (center_dt_panel if options.position == 'before' else center_dt_panel + pd.Timedelta(options.window))
+                  ax.set_xlim(start_dt_panel, end_dt_panel) # Set underlying limits as datetime
+                  print_manager.debug(f"Axis {i}: Set underlying limits for relative time axis.")
+
+        elif current_axis_mode == 'degrees_from_perihelion':
+            print_manager.debug(f"Setting up axis {i} for Degrees from Perihelion")
+            # Set Ticks
+            if apply_label_and_ticks:
+                if options.degrees_from_perihelion_tick_step:
+                    step = options.degrees_from_perihelion_tick_step
+                    step = abs(step) if isinstance(step, (int, float)) and step != 0 else 10 # Default step 10
+                    locator = mticker.MultipleLocator(base=step)
+                    print_manager.debug(f"-> Using tick step: {step}°")
                 else:
-                    # --- APPLY X LABEL LOGIC HERE ---
-                    if using_positional_axis:
-                        # When positional mapping is enabled, use the appropriate axis label
-                        ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
-                                      labelpad=options.x_label_pad)
-                    elif options.use_custom_x_axis_label:
-                        # Only use custom label if not using positional mapping
-                        ax.set_xlabel(options.custom_x_axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
-                                      labelpad=options.x_label_pad)
-                    else:
-                        # Default time label
-                        ax.set_xlabel("Time", fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
-                                      labelpad=options.x_label_pad)
-            else: # Not using single x axis
-                # --- APPLY X LABEL LOGIC HERE TOO ---
-                if i == len(axs) - 1: # Apply label only to bottom-most axis if not single
-                    if using_positional_axis:
-                        # When positional mapping is enabled, use the appropriate axis label
-                        ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
-                                      labelpad=options.x_label_pad)
-                    elif options.use_custom_x_axis_label:
-                        # Only use custom label if not using positional mapping
-                        ax.set_xlabel(options.custom_x_axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
-                                      labelpad=options.x_label_pad)
-                    else:
-                        # Default time label
-                        ax.set_xlabel("Time", fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
-                                      labelpad=options.x_label_pad)
-                else: # Hide labels for upper panels if not single axis mode
-                    ax.set_xlabel('')
-    
-            # Apply tick size formatting for Time or Longitude axis
-            if not using_positional_axis: # Standard Time Formatting
-                locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
-                formatter = mdates.ConciseDateFormatter(locator)
+                    num_ticks = 5 * options.positional_tick_density
+                    locator = mpl_plt.MaxNLocator(int(max(2, num_ticks)), prune='both')
+                    print_manager.debug(f"-> Using MaxNLocator with ~{int(max(2, num_ticks))} ticks")
                 ax.xaxis.set_major_locator(locator)
-                ax.xaxis.set_major_formatter(formatter)
-            else: # Configure axis for positional data display with appropriate limits
-                # This is critical - set up proper formatting for positional axis
-                print_manager.debug(f"Setting up axis {i} for {data_type} display")
-                
-                # Calculate number of ticks based on density multiplier
-                # Base number of ticks is 5, multiplied by the density factor
+
+                # Set Formatter
+                def degree_formatter(x, pos):
+                    if abs(x - round(x)) < 1e-6: return f"{int(round(x))}°"
+                    else: return f"{x:.1f}°"
+                ax.xaxis.set_major_formatter(FuncFormatter(degree_formatter))
+            else:
+                 ax.set_xticklabels([]) # Hide labels if not bottom
+
+            # Set Limits
+            if options.degrees_from_perihelion_range:
+                min_deg, max_deg = options.degrees_from_perihelion_range
+                if isinstance(min_deg, (int, float)) and isinstance(max_deg, (int, float)) and min_deg < max_deg:
+                    ax.set_xlim(min_deg, max_deg)
+                    print_manager.debug(f"-> Using user-specified degree range: {min_deg}° to {max_deg}°")
+                else:
+                    print_manager.warning(f"Invalid degrees_from_perihelion_range: {options.degrees_from_perihelion_range}. Auto-scaling.")
+                    if not options.use_single_x_axis:
+                       ax.relim()
+                       ax.autoscale(enable=True, axis='x', tight=False)
+                       xlim = ax.get_xlim()
+                       data_range = xlim[1] - xlim[0]
+                       padding = data_range * 0.05 if data_range > 0 else 1
+                       ax.set_xlim(xlim[0] - padding, xlim[1] + padding)
+                       xlim = ax.get_xlim()
+                       print_manager.debug(f"-> Auto-scaled individual axis {i} range: {xlim[0]:.1f}° to {xlim[1]:.1f}°")
+            elif not options.use_single_x_axis:
+                ax.relim()
+                ax.autoscale(enable=True, axis='x', tight=False)
+                xlim = ax.get_xlim()
+                data_range = xlim[1] - xlim[0]
+                padding = data_range * 0.05 if data_range > 0 else 1
+                ax.set_xlim(xlim[0] - padding, xlim[1] + padding)
+                xlim = ax.get_xlim()
+                print_manager.debug(f"-> Auto-scaled individual axis {i} range: {xlim[0]:.1f}° to {xlim[1]:.1f}°")
+            # Else: Common range calculation will handle limits if use_single_x_axis is True
+            # Apply tight margin if requested
+            if getattr(options, 'tight_x_axis', False):
+                 ax.margins(x=0)
+                 print_manager.debug(f"-> Applied tight x-axis margin to axis {i}")
+ 
+        elif current_axis_mode in ['carrington_lon', 'r_sun', 'carrington_lat']:
+            print_manager.debug(f"Setting up axis {i} for standard positional display: {current_axis_mode}")
+            current_units = "°" if current_axis_mode != 'r_sun' else "R_sun"
+             # Set Ticks
+            if apply_label_and_ticks:
                 num_ticks = 5 * options.positional_tick_density
-                print_manager.debug(f"Using {num_ticks} ticks for {data_type} axis (density={options.positional_tick_density}x)")
-                
-                # Set ticks for positional data
-                ax.xaxis.set_major_locator(mpl_plt.MaxNLocator(num_ticks))
-                
-                # Use a simple numeric formatter with appropriate units
-                if data_type == 'carrington_lon' or data_type == 'carrington_lat':
+                locator = mpl_plt.MaxNLocator(int(max(2, num_ticks)), prune='both')
+                ax.xaxis.set_major_locator(locator)
+                print_manager.debug(f"-> Using MaxNLocator with ~{int(max(2, num_ticks))} ticks")
+
+                # Set Formatter
+                if current_axis_mode == 'carrington_lon' or current_axis_mode == 'carrington_lat':
                     def angle_formatter(x, pos):
-                        if x == int(x):
-                            return f"{int(x)}°"
-                        else:
-                            return f"{x:.1f}°"
-                        ax.xaxis.set_major_formatter(FuncFormatter(angle_formatter))
-                else:  # radial
+                        if abs(x - round(x)) < 1e-6: return f"{int(round(x))}°"
+                        else: return f"{x:.1f}°"
+                    ax.xaxis.set_major_formatter(FuncFormatter(angle_formatter))
+                else: # r_sun
                     def radial_formatter(x, pos):
-                        if x == int(x):
-                            return f"{int(x)}"
-                        else:
-                            return f"{x:.1f}"
+                        if abs(x - round(x)) < 1e-6: return f"{int(round(x))}"
+                        elif abs(x*10 - round(x*10)) < 1e-6: return f"{x:.1f}"
+                        else: return f"{x:.2f}"
                     ax.xaxis.set_major_formatter(FuncFormatter(radial_formatter))
-                
-                # IMPORTANT FIX: Hide tick labels for all but bottom plot when using single x-axis
-                if options.use_single_x_axis and i < len(axs) - 1:
-                    ax.set_xticklabels([])
-                    print_manager.debug(f"Hiding x tick labels for panel {i} (not bottom panel)")
-                
-                # Set axis limits based on user preference or data
-                if options.x_axis_positional_range is not None:
-                    # User specified a fixed range for positional axis
-                    min_val, max_val = options.x_axis_positional_range
-                    ax.set_xlim(min_val, max_val)
-                    print_manager.debug(f"Using user-specified positional range for axis {i}: {min_val} to {max_val}")
+            else:
+                 ax.set_xticklabels([]) # Hide labels if not bottom
+
+            # Set Limits (similar logic to degrees, but using positional range option)
+            if options.x_axis_positional_range:
+                min_val, max_val = options.x_axis_positional_range
+                if isinstance(min_val, (int, float)) and isinstance(max_val, (int, float)) and min_val < max_val:
+                     ax.set_xlim(min_val, max_val)
+                     print_manager.debug(f"-> Using user-specified positional range: {min_val} to {max_val} {current_units}")
                 else:
-                    # Calculate range from data
-                    lines = ax.get_lines()
-                    if lines and len(lines) > 0 and len(lines[0].get_xdata()) > 0:
-                        x_data = lines[0].get_xdata()
-                        min_val = np.min(x_data)
-                        max_val = np.max(x_data)
-                        
-                        # Store the data ranges for each panel (needed for common x-axis logic)
-                        if not hasattr(ax, '_positional_data_range'):
-                            ax._positional_data_range = (min_val, max_val)
-                            
-                        # Apply panel-specific range immediately if not using common x-axis
-                        if not options.use_single_x_axis:
-                            # Add reasonable padding
-                            data_range = max_val - min_val
-                            padding = data_range * 0.05  # 5% padding
-                            ax.set_xlim(min_val - padding, max_val + padding)
-                            print_manager.debug(f"Set individual range for axis {i}: {min_val-padding:.2f} to {max_val+padding:.2f}")
+                    print_manager.warning(f"Invalid x_axis_positional_range: {options.x_axis_positional_range}. Auto-scaling.")
+                    if not options.use_single_x_axis:
+                         ax.relim()
+                         ax.autoscale(enable=True, axis='x', tight=False)
+                         xlim = ax.get_xlim()
+                         data_range = xlim[1] - xlim[0]
+                         padding = data_range * 0.05 if data_range > 0 else (0.1 if current_units == "R_sun" else 1)
+                         ax.set_xlim(xlim[0] - padding, xlim[1] + padding)
+                         xlim = ax.get_xlim()
+                         print_manager.debug(f"-> Auto-scaled individual axis {i} range: {xlim[0]:.2f} to {xlim[1]:.2f} {current_units}")
+            elif not options.use_single_x_axis:
+                 ax.relim()
+                 ax.autoscale(enable=True, axis='x', tight=False)
+                 xlim = ax.get_xlim()
+                 data_range = xlim[1] - xlim[0]
+                 padding = data_range * 0.05 if data_range > 0 else (0.1 if current_units == "R_sun" else 1)
+                 ax.set_xlim(xlim[0] - padding, xlim[1] + padding)
+                 xlim = ax.get_xlim()
+                 print_manager.debug(f"-> Auto-scaled individual axis {i} range: {xlim[0]:.2f} to {xlim[1]:.2f} {current_units}")
+            # Else: Common range calculation handles limits if use_single_x_axis is True
+            # Apply tight margin if requested
+            if getattr(options, 'tight_x_axis', False):
+                 ax.margins(x=0)
+                 print_manager.debug(f"-> Applied tight x-axis margin to axis {i}")
+ 
+        # Apply tick label font size universally
+        ax.tick_params(axis='x', labelsize=options.x_tick_label_font_size)
+        ax.tick_params(axis='y', labelsize=options.y_tick_label_font_size)
+    # --- END MODIFIED Final X-Axis Formatting ---
+
+    # Apply common x-axis range if needed for POSITIONAL or DEGREE axes
+    # --- MODIFIED: Check for positional or degree mode and ensure axis mode matches ---
+    common_axis_mode = None
+    if options.use_single_x_axis:
+        # Determine the intended common mode based on options
+        # Degrees mode takes precedence if enabled and functional
+        if getattr(options, 'use_degrees_from_perihelion', False) and using_positional_axis:
+            common_axis_mode = 'degrees_from_perihelion'
+        elif options.using_positional_x_axis and options.active_positional_data_type:
+            common_axis_mode = options.active_positional_data_type
+        # else: no common positional/degree axis needed (likely time or relative time)
+
+    if common_axis_mode:
+        print_manager.debug(f"Attempting common x-axis range calculation for mode: {common_axis_mode}")
+        # Only apply common range if a specific range wasn't provided by the user
+        user_range_set = (common_axis_mode == 'degrees_from_perihelion' and options.degrees_from_perihelion_range is not None) or \
+                         (common_axis_mode != 'degrees_from_perihelion' and options.x_axis_positional_range is not None)
+
+        if not user_range_set:
+            all_mins = []
+            all_maxs = []
+            found_data_for_common_range = False
+            for i, ax in enumerate(axs):
+                # Check if this axis actually plotted data in the target common mode
+                # Re-check the heuristic used in the formatting loop more carefully
+                x_sample = []
+                is_numeric = False
+                plotted_in_mode = False
+                x_data_plotted = None # Store the actual x data used for limits
+
+                if ax.lines:
+                    if len(ax.lines) > 0 and hasattr(ax.lines[0], 'get_xdata') and len(ax.lines[0].get_xdata()) > 0:
+                        x_data_plotted = ax.lines[0].get_xdata()
+                        is_numeric = not isinstance(x_data_plotted[0], (datetime, np.datetime64))
+                elif ax.collections:
+                     if len(ax.collections) > 0 and isinstance(ax.collections[0], mpl_plt.collections.PathCollection): # Scatter
+                         x_data_plotted = ax.collections[0].get_offsets()[:, 0]
+                         if len(x_data_plotted) > 0: is_numeric = True
+                     elif len(ax.collections) > 0 and isinstance(ax.collections[0], mpl_plt.collections.QuadMesh): # pcolormesh
+                          # For pcolormesh, x data might be edges or centers. Get limits as proxy.
+                          # We already determined it's likely numeric in the previous loop if mode is positional/degrees.
+                           x_data_plotted = ax.get_xlim()
+                           is_numeric = True # Assume numeric for range check
+
+                if is_numeric and x_data_plotted is not None and len(x_data_plotted) > 0:
+                    # Check range based on common_axis_mode
+                    min_x, max_x = np.nanmin(x_data_plotted), np.nanmax(x_data_plotted)
+                    if common_axis_mode == 'degrees_from_perihelion' or common_axis_mode == 'carrington_lon' or common_axis_mode == 'carrington_lat':
+                        if min_x >= -361 and max_x <= 361: plotted_in_mode = True
+                    elif common_axis_mode == 'r_sun':
+                        if min_x > 0: plotted_in_mode = True # Simple check for R_sun
+
+                if plotted_in_mode:
+                    min_val, max_val = np.nanmin(x_data_plotted), np.nanmax(x_data_plotted)
+                    # Ensure values are finite numbers before adding
+                    if np.isfinite(min_val) and np.isfinite(max_val):
+                         all_mins.append(min_val)
+                         all_maxs.append(max_val)
+                         found_data_for_common_range = True
+                         print_manager.debug(f"Axis {i}: Included in common range calc (Min: {min_val:.2f}, Max: {max_val:.2f})")
                     else:
-                        print_manager.warning(f"No {data_type} data found for axis {i}, using default limits")
-                        # Default range depends on data type
-                        if data_type == 'carrington_lon':
-                            ax.set_xlim(0, 90)  # Default longitude range
-                        elif data_type == 'carrington_lat':
-                            ax.set_xlim(-10, 10)  # Default latitude range
-                        else:  # radial
-                            ax.set_xlim(0, 50)  # Default radial range
-
-            ax.tick_params(axis='x', labelsize=options.x_tick_label_font_size)
-            ax.tick_params(axis='y', labelsize=options.y_tick_label_font_size)
-    
-    # Apply common x-axis range if needed
-    if using_positional_axis and options.use_single_x_axis and options.x_axis_positional_range is None:
-        # Find the global min and max across all axes
-        all_mins = []
-        all_maxs = []
-        for ax in axs:
-            if hasattr(ax, '_positional_data_range'):
-                min_val, max_val = ax._positional_data_range
-                # Only include numeric values for positional axis scaling
-                if isinstance(min_val, (int, float, np.number)) and isinstance(max_val, (int, float, np.number)):
-                    all_mins.append(min_val)
-                    all_maxs.append(max_val)
+                         print_manager.debug(f"Axis {i}: Found non-finite data ({min_val}, {max_val}). Excluding from common range.")
                 else:
-                    print_manager.warning(f"Non-numeric values found in positional data range: {type(min_val)}, {type(max_val)}")
-        
-        # --- Explicitly filter lists again to ensure only numerics remain ---
-        initial_min_count = len(all_mins)
-        numeric_mins = [m for m in all_mins if isinstance(m, (int, float, np.number))]
-        numeric_maxs = [m for m in all_maxs if isinstance(m, (int, float, np.number))]
-        
-        if len(numeric_mins) != initial_min_count:
-             print_manager.warning(f"Filtered out {initial_min_count - len(numeric_mins)} non-numeric values from positional range calculation. Check axis types.")
+                    print_manager.debug(f"Axis {i}: Data not plotted in common mode '{common_axis_mode}' or non-numeric/empty. Excluding from common range calculation.")
 
-        # Now use the filtered lists
-        if numeric_mins and numeric_maxs:
-            global_min = min(numeric_mins)
-            global_max = max(numeric_maxs)
-            data_range = global_max - global_min
-            padding = data_range * 0.05  # 5% padding
-            global_min -= padding
-            global_max += padding
-            
-            # Apply the global range to all axes
-            for ax in axs:
-                ax.set_xlim(global_min, global_max)
-            
-            print_manager.debug(f"Applied common x-axis range to all panels: {global_min:.2f} to {global_max:.2f}")
-            
+            if found_data_for_common_range and all_mins and all_maxs:
+                global_min = min(all_mins)
+                global_max = max(all_maxs)
+                data_range = global_max - global_min
+                
+                # Determine padding based on units, considering tight_x_axis
+                if getattr(options, 'tight_x_axis', False):
+                    padding = 0
+                    print_manager.debug("Common range: tight_x_axis enabled, setting padding=0")
+                elif data_range > 1e-9: # Check if range is effectively non-zero
+                    padding = data_range * 0.05
+                else: # Handle single point or flat line case across all panels
+                    padding = 0 if getattr(options, 'tight_x_axis', False) else (1 if common_axis_mode != 'r_sun' else 0.1)
+                
+                final_min = global_min - padding
+                final_max = global_max + padding
+
+                # Apply the global range to all axes
+                for k, ax_k in enumerate(axs):
+                     # Re-check if this specific axis actually plotted in the common mode before applying limits
+                     # (Prevents applying degree limits to a panel that fell back to time)
+                    x_sample_k = []
+                    is_numeric_k = False
+                    plotted_in_mode_k = False
+                    x_data_plotted_k = None
+
+                    if ax_k.lines:
+                        if len(ax_k.lines) > 0 and hasattr(ax_k.lines[0], 'get_xdata') and len(ax_k.lines[0].get_xdata()) > 0:
+                             x_data_plotted_k = ax_k.lines[0].get_xdata()
+                             is_numeric_k = not isinstance(x_data_plotted_k[0], (datetime, np.datetime64))
+                    elif ax_k.collections:
+                         if len(ax_k.collections) > 0 and isinstance(ax_k.collections[0], mpl_plt.collections.PathCollection):
+                              x_data_plotted_k = ax_k.collections[0].get_offsets()[:, 0]
+                              if len(x_data_plotted_k) > 0: is_numeric_k = True
+                         elif len(ax_k.collections) > 0 and isinstance(ax_k.collections[0], mpl_plt.collections.QuadMesh):
+                              x_data_plotted_k = ax_k.get_xlim() # Use limits proxy
+                              is_numeric_k = True
+                    
+                    if is_numeric_k and x_data_plotted_k is not None and len(x_data_plotted_k) > 0:
+                        min_xk, max_xk = np.nanmin(x_data_plotted_k), np.nanmax(x_data_plotted_k)
+                        if common_axis_mode == 'degrees_from_perihelion' or common_axis_mode == 'carrington_lon' or common_axis_mode == 'carrington_lat':
+                            if min_xk >= -361 and max_xk <= 361: plotted_in_mode_k = True
+                        elif common_axis_mode == 'r_sun':
+                            if min_xk > 0: plotted_in_mode_k = True
+                    
+                    if plotted_in_mode_k:
+                         ax_k.set_xlim(final_min, final_max)
+                         print_manager.debug(f" -> Applied common range to Axis {k}")
+                    else:
+                         print_manager.debug(f" -> Skipped applying common range to Axis {k} (not in common mode '{common_axis_mode}')")
+
+                print_manager.status(f"Applied common auto-scaled x-axis range ({common_axis_mode}): {final_min:.2f} to {final_max:.2f}")
+            elif found_data_for_common_range: # Data found, but min/max lists ended up empty (e.g., all NaNs)
+                print_manager.warning(f"Could not determine numeric min/max for common range mode '{common_axis_mode}'. Check plotted data.")
+            else: # No data found across any panel for the specified common mode
+                 print_manager.warning(f"Could not determine common range for mode '{common_axis_mode}' - no data found in this mode across panels.")
+        else:
+            print_manager.debug("Using user-specified range for common x-axis. No auto-scaling needed.")
+    # --- END MODIFIED Common Axis Range Logic ---
+
     # --- Final plot adjustments (Labels, titles, legends, grid) ---
     
     # NEW: Apply dynamic x-axis tick coloring for all panels (changed from only bottom panel)

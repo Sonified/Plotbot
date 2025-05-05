@@ -245,6 +245,12 @@ class MultiplotOptions:
         self.x_axis_carrington_lon = False 
         self.x_axis_carrington_lat = False
         
+        # --- DEGREES FROM PERIHELION PROPERTIES (NEW) ---
+        self.use_degrees_from_perihelion = False
+        self.degrees_from_perihelion_range = None # Tuple (min_deg, max_deg) or None for auto
+        self.degrees_from_perihelion_tick_step = None # Float (degrees) or None for auto
+        # --- END NEW --- 
+        
         try:
             # Use try-except for __file__ which might not exist in all contexts
             _current_dir = pathlib.Path(__file__).parent.resolve()
@@ -355,10 +361,21 @@ class MultiplotOptions:
         self.__dict__['_x_axis_positional_range'] = None
         self.__dict__['_positional_tick_density'] = 1
 
+        # Reset degrees from perihelion properties (NEW)
+        self.__dict__['use_degrees_from_perihelion'] = False
+        self.__dict__['degrees_from_perihelion_range'] = None
+        self.__dict__['degrees_from_perihelion_tick_step'] = None
+
         # User-facing option: bypass all Plotbot presets and use matplotlib's default plot settings (constrained_layout, etc.)
         self.use_default_plot_settings = False  # If True, disables all Plotbot layout/preset logic
 
         self.y_label_alignment = 'center'  # 'left', 'center', or 'right' alignment for y-axis labels
+
+        # Option to remove horizontal padding
+        self.tight_x_axis = False # If True, data extends to the edges horizontally
+
+        # Reset tight x-axis option
+        self.__dict__['tight_x_axis'] = False
 
     def _get_axis_options(self, axis_number: int) -> AxisOptions:
         """Helper method to get or create axis options"""
@@ -938,6 +955,64 @@ class MultiplotOptions:
     @title_fontsize.setter
     def title_fontsize(self, value: int):
         self.title_font_size = value
+
+    # --- NEW PROPERTIES for Degrees from Perihelion --- 
+    @property
+    def use_degrees_from_perihelion(self) -> bool:
+        """Whether to use degrees relative to perihelion longitude for the x-axis."""
+        return self.__dict__.get('use_degrees_from_perihelion', False)
+
+    @use_degrees_from_perihelion.setter
+    def use_degrees_from_perihelion(self, value: bool):
+        """Set whether to use degrees from perihelion for the x-axis."""
+        if value:
+            # If enabling this, disable conflicting modes
+            self.__dict__['_x_axis_r_sun'] = False
+            self.__dict__['_x_axis_carrington_lon'] = False
+            self.__dict__['_x_axis_carrington_lat'] = False
+            if self.__dict__.get('_use_relative_time', False):
+                print_manager.status("Disabling relative time since degrees from perihelion is now enabled")
+                self.__dict__['_use_relative_time'] = False
+        self.__dict__['use_degrees_from_perihelion'] = value
+
+    @property
+    def degrees_from_perihelion_range(self) -> Optional[Tuple[float, float]]:
+        """Fixed range for the 'degrees from perihelion' x-axis (min_deg, max_deg). None for auto."""
+        return self.__dict__.get('degrees_from_perihelion_range', None)
+
+    @degrees_from_perihelion_range.setter
+    def degrees_from_perihelion_range(self, value: Optional[Tuple[float, float]]):
+        """Set the fixed range for the 'degrees from perihelion' x-axis."""
+        if value is not None and not (isinstance(value, (tuple, list)) and len(value) == 2):
+            print_manager.warning(f"Invalid degrees_from_perihelion_range format: {value}. Expected (min, max) tuple or None.")
+            return
+        self.__dict__['degrees_from_perihelion_range'] = value
+
+    @property
+    def degrees_from_perihelion_tick_step(self) -> Optional[float]:
+        """Step size between major ticks for 'degrees from perihelion' x-axis. None for auto."""
+        return self.__dict__.get('degrees_from_perihelion_tick_step', None)
+
+    @degrees_from_perihelion_tick_step.setter
+    def degrees_from_perihelion_tick_step(self, value: Optional[float]):
+        """Set the step size for major ticks for 'degrees from perihelion' x-axis."""
+        if value is not None and not isinstance(value, (int, float)):
+            print_manager.warning(f"Invalid degrees_from_perihelion_tick_step format: {value}. Expected number or None.")
+            return
+        self.__dict__['degrees_from_perihelion_tick_step'] = value
+    # --- END NEW PROPERTIES --- 
+
+    # --- NEW PROPERTY for Tight X Axis ---
+    @property
+    def tight_x_axis(self) -> bool:
+        """If True, remove horizontal padding so data extends to the panel edges."""
+        return self.__dict__.get('tight_x_axis', False)
+    
+    @tight_x_axis.setter
+    def tight_x_axis(self, value: bool):
+        """Set whether to remove horizontal padding on the x-axis."""
+        self.__dict__['tight_x_axis'] = value
+    # --- END NEW PROPERTY ---
 
 # Create a custom plt object that extends matplotlib.pyplot
 class EnhancedPlotting:

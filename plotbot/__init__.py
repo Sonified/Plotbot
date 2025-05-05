@@ -158,8 +158,11 @@ __all__ = [
 BLUE = '\033[94m'
 RESET = '\033[0m'
 
-COMMIT_MSG = "Fix: Correct DataCubby merge logic for disjoint time ranges (v2.06)"
-print(f'{BLUE}   Version: 2025_05_05_v2.06{RESET}')
+# --- MODIFIED Version Info ---
+COMMIT_MSG = "feat: Implement degrees from perihelion axis attempt & fixes (v2.07)"
+VERSION_TAG = "2025_05_05_v2.07"
+print(f'{BLUE}   Version: {VERSION_TAG}{RESET}')
+# --- END MODIFICATION ---
 print(f"Commit: {COMMIT_MSG}")
 
 # --- Final Print Message ---
