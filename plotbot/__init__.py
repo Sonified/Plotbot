@@ -142,9 +142,9 @@ __all__ = [
 BLUE = '\033[94m'
 RESET = '\033[0m'
 
-COMMIT_MSG = "v2.02: chore: clean and organize files"
-print(f'{BLUE}   Version: 2025_05_04_v2.02{RESET}')
-print("Commit: v2.02: chore: clean and organize files")
+COMMIT_MSG = "v2.03: Clone of f186bfc, follows an accidental github compression command that was not pushed, restoring balance in the universe"
+print(f'{BLUE}   Version: 2025_05_04_v2.03{RESET}')
+print("Commit: v2.03: Clone of f186bfc, follows an accidental github compression command that was not pushed, restoring balance in the universe")
 
 # --- Final Print Message ---
 print(f"\n{BLUE}🤖 Plotbot Initialized{RESET}")

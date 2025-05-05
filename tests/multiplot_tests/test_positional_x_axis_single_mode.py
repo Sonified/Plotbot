@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 import plotbot as pb 
 from plotbot.time_utils import str_to_datetime
 from plotbot.multiplot import multiplot
-import plotbot.plotting as pbplt
+# import plotbot.plotting as pbplt  # COMMENTED OUT: ModuleNotFoundError
 
 class TestPositionalXAxisSingleMode(unittest.TestCase):
     """Test class to verify x-axis tick labels only show on bottom plot with use_single_x_axis=True"""
