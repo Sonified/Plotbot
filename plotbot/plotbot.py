@@ -7,13 +7,12 @@ from plotbot_main import plotbot
 # Import frequently used modules for convenient access
 from print_manager import print_manager
 from server_access import server_access
-from data_tracker import global_tracker
+from .data_tracker import global_tracker
 from ploptions import ploptions
+from .data_cubby import data_cubby
 
-# Import data classes
-from psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
-from psp_electron_classes import epad
-from psp_proton_classes import proton
+# Import helper functions
+# ... existing code ...
 
 # Re-export everything
 __all__ = [
@@ -22,12 +21,7 @@ __all__ = [
     'server_access',
     'global_tracker',
     'ploptions',
-    'mag_rtn_4sa',
-    'mag_rtn',
-    'mag_sc_4sa',
-    'mag_sc',
-    'epad',
-    'proton'
+    'data_cubby'
 ]
 
 # Display Plotbot banner with version and commit info

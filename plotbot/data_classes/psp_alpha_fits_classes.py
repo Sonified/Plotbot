@@ -186,19 +186,28 @@ class alpha_fits_class: # Renamed class
             return None
 
     def __getattr__(self, name):
-        """Provide helpful error message for attribute access."""
+        # Allow direct access to dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            try:
+                return object.__getattribute__(self, name)
+            except AttributeError:
+                raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
         print_manager.debug(f'alpha_fits_class __getattr__ triggered for: {name}')
         available_attrs = [attr for attr in dir(self) 
                            if isinstance(getattr(self, attr, None), plot_manager) 
                            and not attr.startswith('_')]
         error_message = f"'{name}' is not a recognized alpha_fits attribute, friend!"
         if available_attrs:
-            error_message += f"\\nAvailable plot managers: {', '.join(sorted(available_attrs))}"
+            error_message += f"\nAvailable plot managers: {', '.join(sorted(available_attrs))}"
         else:
-            error_message += "\\nNo plot manager attributes seem to be available yet."
+            error_message += "\nNo plot manager attributes seem to be available yet."
         raise AttributeError(error_message)
 
     def __setattr__(self, name, value):
+        # Allow direct setting of dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            object.__setattr__(self, name, value)
+            return
         """Allow setting attributes directly."""
         # Simplified: Allow setting any attribute directly.
         super().__setattr__(name, value)

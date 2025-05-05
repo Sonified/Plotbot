@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 # Import our custom managers (UPDATED PATHS)
 from plotbot.print_manager import print_manager
-from plotbot.data_cubby import data_cubby
+# from plotbot.data_cubby import data_cubby # REMOVED to break circular import
 from plotbot.plot_manager import plot_manager
 from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
 
@@ -55,9 +55,6 @@ class proton_class:
             self.set_ploptions()
             print_manager.status("Successfully calculated proton variables.")
 
-        # Stash the instance in data_cubby for later retrieval / to avoid circular references
-        data_cubby.stash(self, class_name='proton')
-
     #updateprotons
     def update(self, imported_data): #This is function is the exact same across all classes :)
         """Method to update class with new data. 
@@ -68,6 +65,25 @@ class proton_class:
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
             return
         
+        # Check with DataTracker before recalculating
+        from plotbot.data_tracker import global_tracker
+        # Try to get time range from imported_data
+        trange = None
+        if hasattr(imported_data, 'times') and imported_data.times is not None and len(imported_data.times) > 1:
+            dt_array = cdflib.cdfepoch.to_datetime(imported_data.times)
+            start = dt_array[0]
+            end = dt_array[-1]
+            # Format as string for DataTracker
+            if hasattr(start, 'strftime'):
+                start = start.strftime('%Y-%m-%d/%H:%M:%S.%f')
+            if hasattr(end, 'strftime'):
+                end = end.strftime('%Y-%m-%d/%H:%M:%S.%f')
+            trange = [start, end]
+        data_type = getattr(self, 'data_type', self.__class__.__name__)
+        if trange and not global_tracker.is_calculation_needed(trange, data_type):
+            print_manager.status(f"{data_type} already calculated for the time range: {trange}")
+            return
+
         print_manager.datacubby("\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
         
@@ -96,7 +112,7 @@ class proton_class:
                 print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_ploption_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\n")
-    
+
     def get_subclass(self, subclass_name):  # Dynamic component retrieval method
         """Retrieve a specific component"""
         print_manager.debug(f"Getting subclass: {subclass_name}")  # Log which component is requested
@@ -108,17 +124,29 @@ class proton_class:
             print(f"Try one of these: {', '.join(self.raw_data.keys())}")  # Show available components
             return None  # Return None if not found
     
-    def __getattr__(self, name): # Prints a friendly error message if an attribute is not found
+    def __getattr__(self, name):
+        # Allow direct access to dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            try:
+                return object.__getattribute__(self, name)
+            except AttributeError:
+                raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+        if 'raw_data' not in self.__dict__:
+            raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
         print_manager.debug('proton getattr helper!')
-        available_attrs = list(self.raw_data.keys()) if self.raw_data else []  # Get list of valid attributes from raw_data
-        
-        print(f"'{name}' is not a recognized attribute, friend!")                
-        print(f"Try one of these: {', '.join(available_attrs)}") # Show list of valid attributes to use
+        available_attrs = list(self.raw_data.keys()) if self.raw_data else []
+        print(f"'{name}' is not a recognized attribute, friend!")
+        print(f"Try one of these: {', '.join(available_attrs)}")
         # raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
         # return None
     
     def __setattr__(self, name, value):
-        """Handle attribute assignment with friendly error messages."""
+        # Allow direct setting of dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            object.__setattr__(self, name, value)
+            return
+
         # Allow setting known attributes
         print_manager.debug(f"Setting attribute: {name} with value: {value}")
         if name in ['datetime_array', 'raw_data', 'time', 'field', 'mag_field', 'temp_tensor', 'energy_flux', 'theta_flux', 'phi_flux', 'energy_vals', 'theta_vals', 'phi_vals', 'times_mesh', 'times_mesh_angle'] or name in self.raw_data:
@@ -667,6 +695,15 @@ class proton_class:
             )
         )
 
+    def restore_from_snapshot(self, snapshot_data):
+        """
+        Restore all relevant fields from a snapshot dictionary/object.
+        This is used to directly assign all attributes from a pickled object,
+        bypassing calculation.
+        """
+        for key, value in snapshot_data.__dict__.items():
+            setattr(self, key, value)
+
 proton = proton_class(None) #Initialize the class with no data
 print('initialized proton class')
 
@@ -716,9 +753,6 @@ class proton_hr_class:
             self.set_ploptions()
             print_manager.status("Successfully calculated high-resolution proton variables.")
 
-        # Stash the instance in data_cubby for later retrieval / to avoid circular references
-        data_cubby.stash(self, class_name='proton_hr')
-
     def update(self, imported_data): #This is function is the exact same across all classes :)
         """Method to update class with new data. 
         NOTE: This function updates the class with newly imported data. We need to use the data_cubby
@@ -728,6 +762,25 @@ class proton_hr_class:
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
             return
         
+        # Check with DataTracker before recalculating
+        from plotbot.data_tracker import global_tracker
+        # Try to get time range from imported_data
+        trange = None
+        if hasattr(imported_data, 'times') and imported_data.times is not None and len(imported_data.times) > 1:
+            dt_array = cdflib.cdfepoch.to_datetime(imported_data.times)
+            start = dt_array[0]
+            end = dt_array[-1]
+            # Format as string for DataTracker
+            if hasattr(start, 'strftime'):
+                start = start.strftime('%Y-%m-%d/%H:%M:%S.%f')
+            if hasattr(end, 'strftime'):
+                end = end.strftime('%Y-%m-%d/%H:%M:%S.%f')
+            trange = [start, end]
+        data_type = getattr(self, 'data_type', self.__class__.__name__)
+        if trange and not global_tracker.is_calculation_needed(trange, data_type):
+            print_manager.status(f"{data_type} already calculated for the time range: {trange}")
+            return
+
         print_manager.datacubby("\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
         
@@ -768,16 +821,28 @@ class proton_hr_class:
             print(f"Try one of these: {', '.join(self.raw_data.keys())}")  # Show available components
             return None  # Return None if not found
     
-    def __getattr__(self, name): # Prints a friendly error message if an attribute is not found
+    def __getattr__(self, name):
+        # Allow direct access to dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            try:
+                return object.__getattribute__(self, name)
+            except AttributeError:
+                raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+        if 'raw_data' not in self.__dict__:
+            raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
         print_manager.debug('proton_hr getattr helper!')
-        available_attrs = list(self.raw_data.keys()) if self.raw_data else []  # Get list of valid attributes from raw_data
-        
-        print(f"'{name}' is not a recognized attribute, friend!")                
-        print(f"Try one of these: {', '.join(available_attrs)}") # Show list of valid attributes to use
+        available_attrs = list(self.raw_data.keys()) if self.raw_data else []
+        print(f"'{name}' is not a recognized attribute, friend!")
+        print(f"Try one of these: {', '.join(available_attrs)}")
         return None
     
     def __setattr__(self, name, value):
-        """Handle attribute assignment with friendly error messages."""
+        # Allow direct setting of dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            object.__setattr__(self, name, value)
+            return
+
         # Allow setting known attributes
         print_manager.debug(f"Setting attribute: {name} with value: {value}")
         if name in ['datetime_array', 'raw_data', 'time', 'field', 'mag_field', 'temp_tensor', 'energy_flux', 'theta_flux', 'phi_flux', 'energy_vals', 'theta_vals', 'phi_vals', 'times_mesh', 'times_mesh_angle', 'data'] or name in self.raw_data:
@@ -1311,6 +1376,15 @@ class proton_hr_class:
                 colorbar_scale='linear'
             )
         )
+
+    def restore_from_snapshot(self, snapshot_data):
+        """
+        Restore all relevant fields from a snapshot dictionary/object.
+        This is used to directly assign all attributes from a pickled object,
+        bypassing calculation.
+        """
+        for key, value in snapshot_data.__dict__.items():
+            setattr(self, key, value)
 
 proton_hr = proton_hr_class(None) #Initialize the class with no data
 print('initialized proton_hr class')

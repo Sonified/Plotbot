@@ -21,7 +21,7 @@ m_proton_kg = proton_mass_kg_scipy
 
 # Import our custom managers (UPDATED PATHS)
 from plotbot.print_manager import print_manager
-from plotbot.data_cubby import data_cubby
+# from plotbot.data_cubby import data_cubby # REMOVED
 from plotbot.plot_manager import plot_manager
 from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
 # Import get_data and proton instance for dependency loading (within method if needed)
@@ -101,9 +101,6 @@ class proton_fits_class:
             self.set_ploptions()
             print_manager.status("Successfully calculated proton fits variables.")
 
-        # Stash the instance in data_cubby for later retrieval / to avoid circular references
-        data_cubby.stash(self, class_name='proton_fits')
-
     def update(self, imported_data): #This is function is the exact same across all classes :)
         """Method to update class with new data.
         NOTE: This function updates the class with newly imported data. We need to use the data_cubby
@@ -111,6 +108,29 @@ class proton_fits_class:
         if the class stored itself as an attribute and tried to reference itself directly. The code breaks without the cubby!"""
         if imported_data is None:                                                # Exit if no new data
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
+            return
+
+        # Check with DataTracker before recalculating
+        from plotbot.data_tracker import global_tracker
+        trange = None
+        if hasattr(imported_data, 'times') and imported_data.times is not None and len(imported_data.times) > 1:
+            import cdflib
+            dt_array = cdflib.cdfepoch.to_datetime(imported_data.times)
+            start = dt_array[0]
+            end = dt_array[-1]
+            # Format as string for DataTracker
+            if hasattr(start, 'strftime'):
+                start = start.strftime('%Y-%m-%d/%H:%M:%S.%f')
+            else:
+                start = str(start)  # Add this line to handle datetime64 objects
+            if hasattr(end, 'strftime'):
+                end = end.strftime('%Y-%m-%d/%H:%M:%S.%f')
+            else:
+                end = str(end)  # Add this line to handle datetime64 objects
+            trange = [start, end]
+        data_type = getattr(self, 'data_type', self.__class__.__name__)
+        if trange and not global_tracker.is_calculation_needed(trange, data_type):
+            print_manager.status(f"{data_type} already calculated for the time range: {trange}")
             return
 
         print_manager.datacubby("\n=== Update Debug ===")
@@ -129,7 +149,6 @@ class proton_fits_class:
 
         # Perform update
         self.calculate_variables(imported_data)                                # Update raw data arrays
-        
         self.set_ploptions()                                                  # Recreate plot managers
 
         # Restore state (including any modified ploptions!)
@@ -169,28 +188,31 @@ class proton_fits_class:
             return None # Return None if not found
 
     def __getattr__(self, name):
-        """Provide a helpful error message when an attribute is not found.
-        Lists the available plot_manager attributes that can be accessed.
-        """
+        # Allow direct access to dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            try:
+                return object.__getattribute__(self, name)
+            except AttributeError:
+                # Re-raise AttributeError if the internal/dunder method truly doesn't exist
+                raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+        if 'raw_data' not in self.__dict__:
+            raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
         print_manager.debug(f'proton_fits __getattr__ triggered for: {name}')
-        
-        # Generate the list of ACTUAL plottable attributes (plot_manager instances)
         available_attrs = [attr for attr in dir(self) 
                            if isinstance(getattr(self, attr, None), plot_manager) 
                            and not attr.startswith('_')]
-        
-        # Construct the error message
         error_message = f"'{name}' is not a recognized attribute, friend!"
         if available_attrs:
             error_message += f"\nAvailable plot managers: {', '.join(sorted(available_attrs))}"
         else:
-            error_message += "\nNo plot manager attributes seem to be available yet." # Should not happen after init
-            
-        # Raise AttributeError, which is standard practice for __getattr__
+            error_message += "\nNo plot manager attributes seem to be available yet."
         raise AttributeError(error_message)
 
     def __setattr__(self, name, value):
-        """Allow setting attributes directly. The strict checking was preventing set_ploptions from working."""
+        # Allow direct setting of dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            object.__setattr__(self, name, value)
+            return
         # Simplified: Allow setting any attribute directly.
         # The previous logic blocked setting plot_manager instances if their attribute
         # name didn't exactly match a raw_data key.
@@ -627,9 +649,6 @@ class proton_fits_class:
                     self.raw_data[key] = None
             self.datetime_array = None # Also clear time
             self.time = None
-
-        # Stash the instance in data_cubby for later retrieval / to avoid circular references
-        data_cubby.stash(self, class_name='proton_fits')
 
     def _create_fits_scatter_ploptions(self, var_name, subclass_name, y_label, legend_label, color):
         """Helper method to create ploptions for standard FITS scatter plots."""
@@ -1110,6 +1129,15 @@ class proton_fits_class:
                 legend_label=r'V$_{A}$'   
             )
         )
+
+    def restore_from_snapshot(self, snapshot_data):
+        """
+        Restore all relevant fields from a snapshot dictionary/object.
+        This is used to directly assign all attributes from a pickled object,
+        bypassing calculation.
+        """
+        for key, value in snapshot_data.__dict__.items():
+            setattr(self, key, value)
 
 
 # Initialize with no data - this creates the global singleton instance

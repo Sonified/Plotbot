@@ -36,6 +36,20 @@ from .data_classes.psp_proton_classes import proton, proton_hr
 from .data_classes.psp_proton_fits_classes import proton_fits # Import the FITS class
 from .data_classes.psp_ham_classes import ham # ADDED: Import the HAM class instance
 
+# --- Explicitly Register Global Instances with DataCubby --- #
+data_cubby.stash(mag_rtn_4sa, class_name='mag_rtn_4sa')
+data_cubby.stash(mag_rtn, class_name='mag_rtn')
+data_cubby.stash(mag_sc_4sa, class_name='mag_sc_4sa')
+data_cubby.stash(mag_sc, class_name='mag_sc')
+data_cubby.stash(epad, class_name='epad')
+data_cubby.stash(epad_hr, class_name='epad_hr')
+data_cubby.stash(proton, class_name='proton')
+data_cubby.stash(proton_hr, class_name='proton_hr')
+data_cubby.stash(proton_fits, class_name='proton_fits')
+data_cubby.stash(ham, class_name='ham')
+print_manager.datacubby("Registered global data instances with DataCubby.")
+# ---------------------------------------------------------- #
+
 # Import custom variables system
 from .data_classes.custom_variables import custom_variable, CustomVariablesContainer
 
@@ -102,6 +116,7 @@ from .showdahodo import showdahodo
 from .multiplot import multiplot
 from .multiplot_options import MultiplotOptions
 from .get_data import get_data
+from . import data_snapshot  # Import data_snapshot
 
 # Specify what gets imported with `from plotbot import *`
 __all__ = [
@@ -135,16 +150,17 @@ __all__ = [
     'phase',
     'system_check',
     'time_clip',      # ADDED time_clip helper function
-    'config'          # ADDED config to __all__
+    'config',         # ADDED config to __all__
+    'data_snapshot'   # Add data_snapshot to __all__
 ]
 
 # Colors for printing
 BLUE = '\033[94m'
 RESET = '\033[0m'
 
-COMMIT_MSG = "v2.03: Clone of f186bfc, follows an accidental github compression command that was not pushed, restoring balance in the universe"
-print(f'{BLUE}   Version: 2025_05_04_v2.03{RESET}')
-print("Commit: v2.03: Clone of f186bfc, follows an accidental github compression command that was not pushed, restoring balance in the universe")
+COMMIT_MSG = "v2.04: Introduces Data Cubby adds snapshots, debugging, multi plot"
+print(f'{BLUE}   Version: 2025_05_05_v2.04{RESET}')
+print(f"Commit: {COMMIT_MSG}")
 
 # --- Final Print Message ---
 print(f"\n{BLUE}🤖 Plotbot Initialized{RESET}")

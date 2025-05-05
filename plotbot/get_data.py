@@ -44,7 +44,7 @@ def debug_object(obj, prefix=""):
     if hasattr(obj, 'var_name'):
         print_manager.variable_testing(f"{prefix}var_name: {obj.var_name}")
 
-def get_data(trange: List[str], *variables):
+def get_data(trange: List[str], *variables, skip_refresh_check=False):
     """
     Get data for specified time range and variables. This function checks if data is available locally,
     downloads if needed, and imports it.
@@ -56,6 +56,8 @@ def get_data(trange: List[str], *variables):
     *variables : object
         Variables to load (e.g., mag_rtn_4sa.bmag, proton.anisotropy)
         or entire data types (e.g., mag_rtn_4sa, proton)
+    skip_refresh_check : bool, optional
+        If True, skips the in-memory refresh check for proton_fits (useful after loading from pickle)
     
     Returns
     -------
@@ -70,6 +72,9 @@ def get_data(trange: List[str], *variables):
     
     # Get all variables for specific data types
     get_data(trange, mag_rtn_4sa, proton)
+    
+    # Skip refresh check after loading from pickle
+    get_data(trange, pb.proton_fits.abs_qz_p, skip_refresh_check=True)
     """
     # Validate time range and ensure UTC timezone
     try:
@@ -130,7 +135,9 @@ def get_data(trange: List[str], *variables):
                  subclass_name = getattr(var, 'subclass_name', '?')
         
         if data_type:
-             required_data_types.add(data_type)
+             required_data_types.add(data_type) # Use the identified data type directly
+
+             # Use the identified data type for subclass tracking
              if data_type not in subclasses_by_type: subclasses_by_type[data_type] = []
              if subclass_name and subclass_name not in subclasses_by_type[data_type]:
                  subclasses_by_type[data_type].append(subclass_name)
@@ -143,45 +150,32 @@ def get_data(trange: List[str], *variables):
     for dt in required_data_types:
         subclasses = subclasses_by_type.get(dt, [])
         if dt == 'proton_fits':
-             print_manager.status(f"🛰️ {dt} - calculation may be needed")
+             print_manager.debug(f"🛰️ {dt} - calculation may be needed")
         elif subclasses:
-            print_manager.status(f"🛰️ {dt} - acquiring variables: {', '.join(subclasses)}")
+            print_manager.debug(f"🛰️ {dt} - acquiring variables: {', '.join(subclasses)}")
         else:
-            print_manager.status(f"🛰️ {dt} - acquiring all variables")
+            print_manager.debug(f"🛰️ {dt} - acquiring all variables")
 
     #====================================================================
     # STEP 2: PROCESS EACH REQUIRED DATA TYPE
     #====================================================================
     
     for data_type in required_data_types:
-        print_manager.debug(f"\nProcessing Data Type: {data_type}...")
+        print_manager.debug(f"Processing Data Type: {data_type}...")
         
         # --- Handle FITS Calculation Type --- 
         if data_type == 'proton_fits':
             fits_calc_key = 'proton_fits'
             fits_calc_trigger = 'fits_calculated'
             
-            # Check if calculation needs to run (using tracker AND refresh logic)
+            # Check if calculation needs to run (using tracker as the source of truth)
+            # print_manager.debug(f"[DEBUG] Checking if proton_fits calculation is needed for trange: {trange}")
             calculation_needed_by_tracker = global_tracker.is_calculation_needed(trange, fits_calc_key)
-            proton_fits_needs_refresh = False
-            if hasattr(proton_fits, 'datetime_array') and proton_fits.datetime_array is not None and len(proton_fits.datetime_array) > 0:
-                try:
-                    cached_start = np.datetime64(proton_fits.datetime_array[0])
-                    cached_end = np.datetime64(proton_fits.datetime_array[-1])
-                    buffer = np.timedelta64(10, 's')
-                    # Use pre-converted numpy values for comparison
-                    if (cached_start - buffer) > requested_start_np or (cached_end + buffer) < requested_end_np:
-                        proton_fits_needs_refresh = True
-                except (IndexError, TypeError, ValueError) as e:
-                    print_manager.warning(f"Could not compare proton_fits ranges: {e}. Assuming refresh needed.")
-                    proton_fits_needs_refresh = True
-            else:
-                proton_fits_needs_refresh = True # No data means refresh needed
+            # print_manager.debug(f"[DEBUG] calculation_needed_by_tracker: {calculation_needed_by_tracker}")
 
-            if calculation_needed_by_tracker or proton_fits_needs_refresh:
-                print_manager.debug(f"FITS Calculation required for {trange} (Triggered by {data_type}).")
+            if calculation_needed_by_tracker:
+                # print_manager.debug(f"FITS Calculation required for {trange} (Triggered by {data_type}).")
                 data_obj_fits = import_data_function(trange, fits_calc_trigger)
-                
                 if data_obj_fits:
                     print_manager.status(f"📥 Updating {fits_calc_key} with calculated data...")
                     if hasattr(proton_fits, 'update'):
@@ -193,8 +187,12 @@ def get_data(trange: List[str], *variables):
                 else:
                     print_manager.warning(f"FITS calculation returned no data for {trange}.")
             else:
+                # Tracker says calculation is NOT needed. Trust the tracker.
+                # Optionally, check if in-memory object is empty and warn.
+                if not (hasattr(proton_fits, 'datetime_array') and proton_fits.datetime_array is not None and len(proton_fits.datetime_array) > 0):
+                    print_manager.warning(f"[DEBUG] Tracker says calculation is NOT needed, but in-memory proton_fits object is empty or missing data. This may indicate a problem with the snapshot or tracker.")
                 print_manager.status(f"📤 Using existing {fits_calc_key} data, calculation not needed.")
-                
+
             # Continue to next data_type - processing for proton_fits is done
             continue 
 
@@ -238,7 +236,8 @@ def get_data(trange: List[str], *variables):
             continue
 
         # --- Handle Standard CDF Types --- 
-        config = data_types.get(data_type)
+        # data_type here will be e.g., 'spe_sf0_pad'
+        config = data_types.get(data_type) # Use original data_type for config lookup
         if not config: 
             print_manager.warning(f"Config not found for standard type {data_type} during processing loop.")
             continue 
@@ -247,85 +246,79 @@ def get_data(trange: List[str], *variables):
             print_manager.warning(f"Skipping standard processing for local_csv type {data_type}. Should be handled by proton_fits.")
             continue
             
-        # Conditional data download based on configuration
-        server_mode = plotbot.config.data_server.lower() # <-- Get value and convert to lowercase
-        print_manager.debug(f"Server mode for {data_type}: {server_mode}")
+        # Determine the canonical key for cubby/tracker interactions
+        if data_type == 'spe_sf0_pad':
+            cubby_key = 'epad'
+        elif data_type == 'spe_af0_pad':
+            cubby_key = 'epad_hr'
+        # Add other mappings if necessary
+        else:
+            cubby_key = data_type.lower() # Default to lowercase
         
-        download_successful = False # Assume files might exist locally
+        class_instance = data_cubby.grab(cubby_key) # Use canonical key
+        
+        # --- Check Calculation Cache ---
+        # Use canonical key here too for consistency
+        calculation_needed = global_tracker.is_calculation_needed(trange, cubby_key) # Use canonical key
 
-        if server_mode == 'spdf':
-            print_manager.debug(f"Attempting SPDF download for {data_type}...")
-            download_successful = download_spdf_data(trange, data_type)
-        elif server_mode == 'berkeley':
-            print_manager.debug(f"Attempting Berkeley download for {data_type}...")
-            download_successful = download_berkeley_data(trange, data_type)
-        elif server_mode == 'dynamic':
-            print_manager.debug(f"Attempting SPDF download (dynamic mode) for {data_type}...")
-            download_successful = download_spdf_data(trange, data_type)
-            if not download_successful:
-                print_manager.debug(f"SPDF download failed/incomplete for {data_type}, falling back to Berkeley...")
+        # *** Corrected Logic ***
+        # Prioritize the calculation check. If calculation is NOT needed, we're done.
+        if calculation_needed:
+            # Clarify debug message
+            print_manager.debug(f"Tracker indicates calculation needed for {cubby_key} (using original type {data_type}). Proceeding...")
+            
+            # Determine server mode (Berkeley or SPDF)
+            # This part uses the original data_type implicitly via config
+            server_mode = plotbot.config.data_server.lower()
+            print_manager.debug(f"Server mode for {data_type}: {server_mode}")
+            download_successful = False # Reset flag
+            
+            if server_mode == 'spdf':
+                print_manager.debug(f"Attempting SPDF download for {data_type}...")
+                download_successful = download_spdf_data(trange, data_type)
+            elif server_mode == 'berkeley' or server_mode == 'berkley':
+                print_manager.debug(f"Attempting Berkeley download for {data_type}...")
                 download_successful = download_berkeley_data(trange, data_type)
-        else:
-            print_manager.warning(f"Invalid config.data_server mode: '{server_mode}'. Defaulting to Berkeley.")
-            download_successful = download_berkeley_data(trange, data_type)
-            
-        # The import logic below relies on files being present locally if needed.
-        # The download functions are responsible for ensuring this.
-        # We proceed to check if the *in-memory* cache needs updating.
-        
-        class_name = data_type  # Assume class_name matches data_type for standard types
-        class_instance = data_cubby.grab(class_name)
-        
-        needs_import = global_tracker.is_import_needed(trange, data_type)
-        needs_refresh = False
-        
-        # Check refresh based on instance data range
-        if class_instance is not None and hasattr(class_instance, 'datetime_array') and class_instance.datetime_array is not None and len(class_instance.datetime_array) > 0:
-            try:
-                 cached_start = np.datetime64(class_instance.datetime_array[0])
-                 cached_end = np.datetime64(class_instance.datetime_array[-1])
-                 buffer = np.timedelta64(10, 's')
-                 # Use pre-converted numpy values for comparison
-                 if (cached_start - buffer) > requested_start_np or (cached_end + buffer) < requested_end_np:
-                     needs_refresh = True
-            except (IndexError, TypeError, ValueError) as e:
-                 print_manager.warning(f"Could not compare time ranges for {data_type}: {e}. Assuming refresh needed.")
-                 needs_refresh = True
-        else:
-            needs_refresh = True # Treat no data as needing refresh
-        
-        # Import/update CDF data if needed
-        if needs_import or needs_refresh:
-            print_manager.debug(f"{data_type} - Import/Refresh required")
-            data_obj = import_data_function(trange, data_type)
-            if data_obj is None: continue
-            if needs_import: global_tracker.update_imported_range(trange, data_type)
-            
-            print_manager.status(f"📥 Updating {data_type}...")
-            if class_instance is None:
-                 # Get global instance (using updated paths implicitly via __init__)
-                 if data_type.lower() == 'mag_rtn_4sa': class_instance = mag_rtn_4sa
-                 elif data_type.lower() == 'mag_rtn': class_instance = mag_rtn
-                 elif data_type.lower() == 'mag_sc_4sa': class_instance = mag_sc_4sa
-                 elif data_type.lower() == 'mag_sc': class_instance = mag_sc
-                 elif data_type.lower() == 'spi_sf00_l3_mom': class_instance = proton
-                 elif data_type.lower() == 'spi_af00_l3_mom': class_instance = proton_hr
-                 elif data_type.lower() == 'spe_sf0_pad': class_instance = epad
-                 elif data_type.lower() == 'spe_af0_pad': class_instance = epad_hr
-                 # No need to explicitly handle proton_fits here as it's done earlier
-                 else:
-                      print_manager.warning(f"Could not find global class instance for {data_type}")
-                      continue
-
-            if hasattr(class_instance, 'update'):
-                class_instance.update(data_obj)
+            elif server_mode == 'dynamic':
+                print_manager.debug(f"Attempting SPDF download (dynamic mode) for {data_type}...")
+                download_successful = download_spdf_data(trange, data_type)
+                if not download_successful:
+                    print_manager.debug(f"SPDF download failed/incomplete for {data_type}, falling back to Berkeley...")
+                    download_successful = download_berkeley_data(trange, data_type)
             else:
-                print_manager.warning(f"{data_type} class instance has no update method")
-        else:
-            print_manager.status(f"📤 Using existing {data_type} data, update not needed.")
+                print_manager.warning(f"Invalid config.data_server mode: '{server_mode}'. Defaulting to Berkeley (or Berkley). Handle invalid mode.")
+                download_successful = download_berkeley_data(trange, data_type)
+
+            # --- Import/Update Data --- 
+            # The import logic below relies on files being present locally if needed.
+            # The download functions are responsible for ensuring this.
+            # Pass ORIGINAL data_type to import_data_function
+            print_manager.debug(f"{data_type} - Import/Refresh required") # Use original data_type
+            data_obj = import_data_function(trange, data_type) # Use original data_type
+
+            if data_obj is None: 
+                print_manager.warning(f"Import returned no data for {data_type}, skipping update.")
+                continue
+
+            # Tell DataCubby to handle the update/merge for the global instance
+            # Use canonical key for cubby update
+            print_manager.status(f"📥 Requesting DataCubby to update/merge global instance for {cubby_key}...")
+            update_success = data_cubby.update_global_instance(cubby_key, data_obj)
+
+            if update_success:
+                print_manager.status(f"✅ DataCubby processed update for {cubby_key}.")
+                # Use canonical key for tracker update
+                global_tracker.update_calculated_range(trange, cubby_key)
+            else:
+                print_manager.warning(f"DataCubby failed to process update for {cubby_key}. Tracker not updated.")
+            # --- End Import/Update Data --- 
+
+        else: # Calculation NOT needed
+             # Use canonical key in status message
+            print_manager.status(f"📤 Using existing {cubby_key} data, calculation/import not needed.")
     
     #====================================================================
     # STEP 3: FINALIZATION
     #====================================================================
-    print_manager.status("✅ Data acquisition complete\n")
+    print_manager.status("✅ Complete")
     return None 

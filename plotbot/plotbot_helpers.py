@@ -8,7 +8,6 @@ import matplotlib.dates as mdates
 from datetime import datetime, timedelta, timezone
 from dateutil.parser import parse
 from .print_manager import print_manager
-from .data_cubby import data_cubby
 import inspect
 import textwrap
 from .multiplot_options import plt  # Import our enhanced plt with options

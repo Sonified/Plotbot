@@ -1,6 +1,7 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from dateutil.parser import parse
 from .print_manager import print_manager
+import pandas as pd
 
 class DataTracker:
     """Tracks imported and calculated data ranges to prevent redundant operations."""
@@ -141,38 +142,134 @@ class DataTracker:
     #====================================================================
     def _is_action_needed(self, trange, data_type, ranges_dict, action_type):
         """Determine if an action is needed by checking existing time ranges."""
-        # Validate time range and ensure UTC timezone
+        # --- Handle input trange (string list/tuple or datetime tuple) ---
         try:
-            start_time = parse(trange[0]).replace(tzinfo=timezone.utc)
-            end_time = parse(trange[1]).replace(tzinfo=timezone.utc)
-        except ValueError as e:
-            print(f"Error parsing time range: {e}")
-            return
+            if isinstance(trange, (list, tuple)) and len(trange) == 2:
+                if isinstance(trange[0], str):
+                    # Parse strings
+                    start_time = parse(trange[0]).replace(tzinfo=timezone.utc)
+                    end_time = parse(trange[1]).replace(tzinfo=timezone.utc)
+                elif isinstance(trange[0], (datetime, pd.Timestamp)):
+                    # Assume timezone-aware datetime/timestamp objects
+                    start_time = trange[0]
+                    end_time = trange[1]
+                    # Ensure they are UTC (or convert)
+                    if start_time.tzinfo is None:
+                        start_time = start_time.replace(tzinfo=timezone.utc)
+                    else:
+                        start_time = start_time.astimezone(timezone.utc)
+                    if end_time.tzinfo is None:
+                        end_time = end_time.replace(tzinfo=timezone.utc)
+                    else:
+                        end_time = end_time.astimezone(timezone.utc)
+                else:
+                    raise ValueError("Input trange elements must be strings or datetime/timestamp objects")
+            else:
+                raise ValueError("Input trange must be a list/tuple of length 2")
+        except Exception as e: # Catch parsing errors too
+            print_manager.error(f"Error parsing/validating input time range for {data_type}: {e}")
+            return True # Assume action needed if parse/validation fails
+        # --- End input handling ---
 
-        if data_type in ranges_dict:                                     # If we have existing ranges for this data
-            for stored_start, stored_end in ranges_dict[data_type]:      # Check each stored time range
-                if start_time >= stored_start and end_time <= stored_end: # If requested range is fully contained
-                    return False                                          # No action needed - already covered
+        print_manager.debug(f"[Tracker Check] Checking {action_type} for {data_type} with requested range: {start_time} to {end_time}")
 
-        return True                                                      # Action needed if no containing range found
+        # --- Define Tolerance ---
+        tolerance = timedelta(seconds=5) # <<< ADDED 5-second tolerance
+
+        if data_type in ranges_dict:
+            print_manager.debug(f"[Tracker Check] Found stored ranges for {data_type}: {ranges_dict[data_type]}")
+            for i, (stored_start, stored_end) in enumerate(ranges_dict[data_type]):
+                print_manager.debug(f"[Tracker Check]  Comparing with stored range #{i}: {stored_start} to {stored_end}")
+                
+                # --- Modified Check with Tolerance ---
+                # Check if requested range is fully contained *within the tolerance*
+                start_covered = (start_time >= (stored_start - tolerance))
+                end_covered = (end_time <= (stored_end + tolerance))
+                is_contained_with_tolerance = start_covered and end_covered
+                # --- End Modified Check ---
+
+                print_manager.debug(f"[Tracker Check]    Is contained (w/ {tolerance} tolerance)? {is_contained_with_tolerance} (Start: {start_covered}, End: {end_covered})")
+                if is_contained_with_tolerance:
+                    print_manager.debug(f"[Tracker Check]  Found containing range (within tolerance). Action NOT needed.")
+                    return False  # No action needed - already covered within tolerance
+            print_manager.debug(f"[Tracker Check] No single stored range contains the requested range (within tolerance) for {data_type}.")
+        else:
+            print_manager.debug(f"[Tracker Check] No stored ranges found for key: {data_type}")
+
+        print_manager.debug(f"[Tracker Check] Action IS needed for {data_type}.")
+        return True  # Action needed if no containing range found
 
     #====================================================================
     # FUNCTION: _update_range (Internal), Updates stored time ranges
     #====================================================================
     def _update_range(self, trange, data_type, ranges_dict):
-        """Update the stored time ranges for a specific data type."""
-        # Validate time range and ensure UTC timezone
+        """Update the stored time ranges, merging overlapping/adjacent ones."""
+        # --- Handle input trange (string list/tuple or datetime tuple) ---
         try:
-            start_time = parse(trange[0]).replace(tzinfo=timezone.utc)
-            end_time = parse(trange[1]).replace(tzinfo=timezone.utc)
-        except ValueError as e:
-            print(f"Error parsing time range: {e}")
+            if isinstance(trange, (list, tuple)) and len(trange) == 2:
+                if isinstance(trange[0], str):
+                    # Parse strings
+                    new_start = parse(trange[0]).replace(tzinfo=timezone.utc)
+                    new_end = parse(trange[1]).replace(tzinfo=timezone.utc)
+                elif isinstance(trange[0], (datetime, pd.Timestamp)):
+                    # Assume timezone-aware datetime/timestamp objects
+                    new_start = trange[0]
+                    new_end = trange[1]
+                    # Ensure they are UTC (or convert)
+                    if new_start.tzinfo is None:
+                        new_start = new_start.replace(tzinfo=timezone.utc)
+                    else:
+                        new_start = new_start.astimezone(timezone.utc)
+                    if new_end.tzinfo is None:
+                        new_end = new_end.replace(tzinfo=timezone.utc)
+                    else:
+                        new_end = new_end.astimezone(timezone.utc)
+                else:
+                    raise ValueError("Input trange elements must be strings or datetime/timestamp objects")
+            else:
+                 raise ValueError("Input trange must be a list/tuple of length 2")
+
+            if new_start >= new_end:
+                print_manager.warning(f"Skipping invalid range for {data_type}: {trange}")
+                return
+        except Exception as e: # Catch parsing errors too
+            print_manager.error(f"Error parsing/validating input time range for {data_type}: {e}")
             return
+        # --- End input handling ---
 
-        if data_type not in ranges_dict:                                # If first range for this data type
-            ranges_dict[data_type] = []                                 # Initialize empty list for ranges
+        if data_type not in ranges_dict:
+            ranges_dict[data_type] = []
 
-        ranges_dict[data_type].append((start_time, end_time))          # Store new time range as tuple
+        # Add the new range
+        ranges_dict[data_type].append((new_start, new_end))
+
+        # Sort ranges by start time
+        ranges_dict[data_type].sort(key=lambda x: x[0])
+
+        # Merge overlapping or adjacent ranges
+        merged_ranges = []
+        if not ranges_dict[data_type]:
+            return # Should not happen if we just added one, but safety check
+
+        current_start, current_end = ranges_dict[data_type][0]
+
+        for next_start, next_end in ranges_dict[data_type][1:]:
+            # Check if the next range overlaps or is adjacent to the current merged range
+            if next_start <= current_end:
+                # Merge by extending the current end time if the next range ends later
+                current_end = max(current_end, next_end)
+            else:
+                # No overlap, the current merged range is final
+                merged_ranges.append((current_start, current_end))
+                # Start a new merged range
+                current_start, current_end = next_start, next_end
+
+        # Add the last merged range
+        merged_ranges.append((current_start, current_end))
+
+        # Replace the old list with the merged list
+        ranges_dict[data_type] = merged_ranges
+        print_manager.debug(f"Updated and merged ranges for {data_type}: {ranges_dict[data_type]}")
 
     #====================================================================
     # FUNCTION: print_imported_ranges, Displays all tracked import ranges
@@ -180,7 +277,7 @@ class DataTracker:
     def print_imported_ranges(self):
         """Display all imported time ranges by data type."""
         for data_type, ranges in self.imported_ranges.items():          # Iterate through all tracked data types
-            print(f"{data_type}: {ranges}")                             # Print ranges for each type
+            print_manager.debug(f"{data_type}: {ranges}")                             # Print ranges for each type
             
     #====================================================================
     # FUNCTION: clear_calculation_cache, Clears calculation cache for type

@@ -7,11 +7,11 @@ from collections import namedtuple
 from datetime import datetime, timezone, timedelta
 from dateutil.parser import parse
 from fnmatch import fnmatch # Import for wildcard matching
-from .print_manager import print_manager
+from .print_manager import print_manager, format_datetime_for_log
 from .time_utils import daterange
 from .data_tracker import global_tracker
 from .data_classes.psp_data_types import data_types as psp_data_types # UPDATED PATH
-from .data_cubby import data_cubby
+# from .data_cubby import data_cubby # MOVED inside import_data_function
 # from .plotbot_helpers import find_local_fits_csvs # This function is defined locally below
 
 # Import the NEW calculation function
@@ -92,7 +92,12 @@ def import_data_function(trange, data_type):
     """Import data function that reads CDF or calculates FITS CSV data within the specified time range."""
     
     print_manager.debug('Import data function called')
-    print_manager.debug(f"Input trange: {trange}")
+    
+    # Format trange for printing (remove .000000)
+    trange_str = str(trange)
+    if '.000000' in trange_str:
+        trange_str = trange_str.replace('.000000', '')
+    print_manager.debug(f"Input trange: {trange_str}")
     print_manager.variable_testing(f"import_data_function called for data_type: {data_type}")
     
     # Add time tracking for function entry
@@ -129,13 +134,15 @@ def import_data_function(trange, data_type):
     try:
         start_time = parse(trange[0]).replace(tzinfo=timezone.utc) # Ensure UTC
         end_time = parse(trange[1]).replace(tzinfo=timezone.utc)   # Ensure UTC
-        print_manager.time_tracking(f"Parsed time range: {start_time} to {end_time}")
+        print_manager.time_tracking(f"Parsed time range: {format_datetime_for_log(start_time)} to {format_datetime_for_log(end_time)}")
     except ValueError as e:
         print(f"Error parsing time range: {e}")
         print_manager.time_output("import_data_function", "error: time parsing failed")
         return None
     
-    print_manager.debug(f"\nImporting data for UTC time range: {trange}")
+    # Format the original trange list using the helper for the next print statement
+    formatted_trange_list = [format_datetime_for_log(t) for t in trange]
+    print_manager.debug(f"\nImporting data for UTC time range: {formatted_trange_list}")
 
     #====================================================================
     # CHECK DATA SOURCE TYPE (FITS Calculation vs CDF vs Other Local CSV)
@@ -321,6 +328,7 @@ def import_data_function(trange, data_type):
         # Calculate output range based on sorted times
         output_range_dt = cdflib.epochs.CDFepoch.to_datetime(times_sorted[[0, -1]])
         print_manager.time_output("import_data_function", output_range_dt.tolist())
+
         return data_object
 
     # --- Handle Hammerhead (ham) CSV Loading ---
@@ -745,8 +753,15 @@ def import_data_function(trange, data_type):
         # Create and return DataObject for CDF
         data_object = DataObject(times=times_sorted, data=data_sorted)
         global_tracker.update_imported_range(trange, data_type)
-        print_manager.status(f"☑️ - CDF Data import complete for {data_type} range {trange}.\n")
+        
+        # Format the original trange again for the completion message
+        formatted_trange_list_end = [format_datetime_for_log(t) for t in trange] 
+        print_manager.status(f"☑️ - CDF Data import complete for {data_type} range {formatted_trange_list_end}.\n")
+        
         output_range = [cdflib.epochs.CDFepoch.to_datetime(times_sorted[0]),
                         cdflib.epochs.CDFepoch.to_datetime(times_sorted[-1])]
-        print_manager.time_output("import_data_function", output_range)
+        # Format output range for time_output log
+        formatted_output_range = [format_datetime_for_log(t) for t in output_range]
+        print_manager.time_output("import_data_function", formatted_output_range)
+
         return data_object

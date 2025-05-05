@@ -1,9 +1,12 @@
 import numpy as np
 import types
 from ..print_manager import print_manager
-from ..data_cubby import data_cubby
+# from ..data_cubby import data_cubby # Moved inside functions
 from ..data_tracker import global_tracker
 from ..plotbot_helpers import time_clip
+
+# List to hold custom variables
+custom_variables_list = []
 
 class CustomVariablesContainer:
     """
@@ -26,6 +29,7 @@ class CustomVariablesContainer:
         self.class_name = 'custom_class'
         
         # Register this instance in data_cubby
+        from ..data_cubby import data_cubby
         data_cubby.stash(self, class_name='custom_class')
         print_manager.custom_debug("✨ Custom variables system initialized")
     
@@ -496,3 +500,15 @@ def test_custom_variables():
     
     print_manager.custom_debug("Custom variables test completed")
     return True 
+
+def recalculate_custom_variables():
+    """
+    Iterates through registered custom variables and recalculates their values
+    based on potentially updated source variables.
+    """
+    from ..print_manager import print_manager # Moved import
+    from ..data_cubby import data_cubby # Moved import
+    from ..plot_manager import plot_manager # Needed for isinstance check
+
+    print_manager.custom_debug("[CUSTOM VAR] Starting recalculation process...")
+    recalculation_needed = False 

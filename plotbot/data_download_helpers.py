@@ -3,7 +3,7 @@ import re
 from datetime import datetime, timezone, timedelta
 from dateutil.parser import parse
 from bs4 import BeautifulSoup
-from .print_manager import print_manager
+from .print_manager import print_manager, format_datetime_for_log
 from .time_utils import daterange, get_needed_6hour_blocks
 from .data_classes.psp_data_types import data_types
 from .server_access import server_access
@@ -35,7 +35,13 @@ def check_local_files(trange: tuple, data_type: str) -> tuple[bool, list, list]:
                 (without version or extension) that were *not* found locally.
     """
     print_manager.debug("Local Files Time Debug")
-    print_manager.debug(f"Input trange: {trange}")
+    
+    # Format trange for printing (remove .000000)
+    trange_str = str(trange)
+    if '.000000' in trange_str:
+        trange_str = trange_str.replace('.000000', '')
+    print_manager.debug(f"Input trange: {trange_str}")
+    
     # Validate time range and ensure UTC timezone
     try:
         start_time = parse(trange[0]).replace(tzinfo=timezone.utc)
@@ -43,9 +49,13 @@ def check_local_files(trange: tuple, data_type: str) -> tuple[bool, list, list]:
     except ValueError as e:
         print(f"Error parsing time range: {e}")
         return False, [], []
-    print_manager.debug(f"Parsed start time: {start_time}")
-    print_manager.debug(f"Parsed end time: {end_time}")
-    print_manager.debug(f"Checking local files for time range: {trange} and data type: {data_type}")
+    print_manager.debug(f"Parsed start time: {format_datetime_for_log(start_time)}")
+    print_manager.debug(f"Parsed end time: {format_datetime_for_log(end_time)}")
+    
+    # Format the original trange list using the helper for the next print statement
+    formatted_trange_list = [format_datetime_for_log(t) for t in trange]
+    print_manager.debug(f"Checking local files for time range: {formatted_trange_list} and data type: {data_type}")
+    
     if data_type not in data_types:                                    # Validate requested data type exists
         print(f"Data type {data_type} is not recognized.")
         return False, [], []                                           # Return empty results if invalid type

@@ -30,6 +30,7 @@ class print_manager_class:
     _pyspedas_verbose: bool
     pyspedas_filter_instance: Optional[PyspedasInfoFilter]
     show_datacubby: bool # For backward compatibility
+    show_data_snapshot: bool
 
     # Prefixes
     debug_prefix: str

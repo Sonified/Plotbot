@@ -178,7 +178,7 @@ def plotbot(trange, *args):
         subclasses = subclasses_by_type[data_type]
         print_manager.status(f"🛰️ {data_type} - acquiring variables: {', '.join(subclasses)}")
 
-    print_manager.status(" ")    # Add spacing between sections
+    # print_manager.status(" ")    # Add spacing between sections
 
     #====================================================================
     # PHASE 1: HANDLE CUSTOM VARIABLES AND THEIR SOURCE DATA
@@ -216,8 +216,34 @@ def plotbot(trange, *args):
                     else:
                         print_manager.warning(f"Warning: Failed to update '{name}'")
 
+    print_manager.status(" ")    # Add spacing between sections
+
     #====================================================================
-    # PHASE 2: HANDLE REGULAR VARIABLES
+    # PHASE 2: LOAD STANDARD (NON-CUSTOM) DATA USING get_data
+    #====================================================================
+    loaded_data_objects = {}
+    print_manager.debug("--- [plotbot] STARTING PHASE 2: Load Standard Data ---")
+    for data_type in required_data_types:
+        # Skip if it's a custom type already handled
+        if data_type == 'custom_data_type':
+            continue
+        
+        print_manager.debug(f"--- [plotbot] Calling get_data for data_type: '{data_type}' ---")
+        loaded_data = get_data(trange, data_type)  # Call get_data for each required type
+        print_manager.debug(f"--- [plotbot] Returned from get_data for data_type: '{data_type}'. Result type: {type(loaded_data)} ---")
+        loaded_data_objects[data_type] = loaded_data
+        # Debug: Print if data was loaded successfully or not
+        if loaded_data is not None and hasattr(loaded_data, 'data') and loaded_data.data:
+            print_manager.variable_testing(f"✅ Successfully loaded data for {data_type}")
+        else:
+            print_manager.warning(f"⚠️ Failed to load data for {data_type}")
+            
+    print_manager.debug("--- [plotbot] FINISHED PHASE 2: Load Standard Data ---")
+
+    print_manager.status(" ")    # Add spacing between sections
+
+    #====================================================================
+    # PHASE 3: HANDLE REGULAR VARIABLES
     #====================================================================
     regular_vars = []
     for request in plot_requests:
@@ -305,8 +331,20 @@ def plotbot(trange, *args):
                 print_manager.status(f"📈 Plotting {var.class_name}.{var.subclass_name}")
 
                 # Validate data exists and has content
+                try:
+                    # print_manager.debug(f"[PLOT DEBUG] id(var)={id(var)}, type(var)={type(var)}") # Commented out
+                    # if hasattr(var, '__len__'): # Commented out
+                    #     print_manager.debug(f"[PLOT DEBUG] len(var)={len(var)}") # Commented out
+                    # if hasattr(var, 'datetime_array') and var.datetime_array is not None and len(var.datetime_array) > 0: # Commented out
+                    #     arr = var.datetime_array # Commented out
+                    #     print_manager.debug(f"[PLOT DEBUG] datetime_array: min={arr[0]}, max={arr[-1]}, len={len(arr)}") # Commented out
+                    # print_manager.debug(f"[PLOT DEBUG] requested trange: {trange}") # Commented out
+                    pass # Added pass for empty try block
+                except Exception as e:
+                    # print_manager.debug(f"[PLOT DEBUG] Error printing debug info: {e}") # Commented out
+                    pass # Added pass for empty except block
                 if var is None or (hasattr(var, 'data') and np.array(var).size == 0) or var.datetime_array is None:
-                    print_manager.status(f"No data available for {var.class_name}.{var.subclass_name} in time range")
+                    # print_manager.debug(f"No data available for {var.class_name}.{var.subclass_name} in time range")
                     continue
 
                 empty_plot = False                # We have valid data to plot

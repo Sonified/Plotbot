@@ -930,6 +930,15 @@ class MultiplotOptions:
     def title_font_size(self, value: int):
         self.__dict__['title_font_size'] = value
 
+    # Alias for title_font_size
+    @property
+    def title_fontsize(self) -> int:
+        return self.title_font_size
+
+    @title_fontsize.setter
+    def title_fontsize(self, value: int):
+        self.title_font_size = value
+
 # Create a custom plt object that extends matplotlib.pyplot
 class EnhancedPlotting:
     """Enhanced matplotlib.pyplot with custom options support"""

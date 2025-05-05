@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 # Import our custom managers (UPDATED PATHS)
 from plotbot.print_manager import print_manager
-from plotbot.data_cubby import data_cubby
+# from plotbot.data_cubby import data_cubby # REMOVED Circular Import
 from plotbot.plot_manager import plot_manager
 from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
 from plotbot.get_encounter import get_encounter_number
@@ -36,7 +36,7 @@ class epad_strahl_class:
             print_manager.status("Successfully calculated EPAD strahl variables.")
 
         # Stash the instance in data_cubby for later retrieval / to avoid circular references
-        data_cubby.stash(self, class_name='epad')
+        # data_cubby.stash(self, class_name='epad')
 
 
     #strahl_update
@@ -89,17 +89,29 @@ class epad_strahl_class:
             print(f"Try one of these: {', '.join(self.raw_data.keys())}")  # Show available components
             return None  # Return None if not found
 
-    def __getattr__(self, name): # Prints a friendly error message if an attribute is not found
+    def __getattr__(self, name):
+        # Allow direct access to dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            try:
+                return object.__getattribute__(self, name)
+            except AttributeError:
+                raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+        if 'raw_data' not in self.__dict__:
+            raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
         print('epad_strahl getattr helper!')
         available_attrs = list(self.raw_data.keys()) if self.raw_data else []  # Get list of valid attributes from raw_data
-        
         print(f"'{name}' is not a recognized attribute, friend!")                
         print(f"Try one of these: {', '.join(available_attrs)}") # Show list of valid attributes to use
         # raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
         # return None
     
     def __setattr__(self, name, value):
-        """Handle attribute assignment with friendly error messages."""
+        # Allow direct setting of dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            object.__setattr__(self, name, value)
+            return
+
         # Allow setting known attributes
         print_manager.debug(f"Setting attribute: {name} with value: {value}")
         if name in ['datetime', 'datetime_array', 'raw_data', 'time', 'field', 'times_mesh', 'pitch_angle', 'energy_index'] or name in self.raw_data:
@@ -211,6 +223,15 @@ class epad_strahl_class:
             )
         )
 
+    def restore_from_snapshot(self, snapshot_data):
+        """
+        Restore all relevant fields from a snapshot dictionary/object.
+        This is used to directly assign all attributes from a pickled object,
+        bypassing calculation.
+        """
+        for key, value in snapshot_data.__dict__.items():
+            setattr(self, key, value)
+
 epad = epad_strahl_class(None) #Initialize the class with no data
 print('initialized epad class')
 
@@ -238,7 +259,7 @@ class epad_strahl_high_res_class:
             print_manager.status("Successfully calculated high-resolution EPAD strahl variables.")
 
         # Stash the instance in data_cubby for later retrieval / to avoid circular references
-        data_cubby.stash(self, class_name='epad_hr')
+        # data_cubby.stash(self, class_name='epad_hr')
 
     def update(self, imported_data): #This is function is the exact same across all classes :)
         """Method to update class with new data. 
@@ -277,7 +298,7 @@ class epad_strahl_high_res_class:
                 print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_ploption_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\n")
-    
+
     def get_subclass(self, subclass_name):  # Dynamic component retrieval method
         """Retrieve a specific component"""
         print_manager.debug(f"Getting subclass: {subclass_name}")  # Log which component is requested
@@ -289,17 +310,29 @@ class epad_strahl_high_res_class:
             print(f"Try one of these: {', '.join(self.raw_data.keys())}")  # Show available components
             return None  # Return None if not found
     
-    def __getattr__(self, name): # Prints a friendly error message if an attribute is not found
+    def __getattr__(self, name):
+        # Allow direct access to dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            try:
+                return object.__getattribute__(self, name)
+            except AttributeError:
+                raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+        if 'raw_data' not in self.__dict__:
+            raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
         print_manager.debug('epad_strahl_hr getattr helper!')
         available_attrs = list(self.raw_data.keys()) if self.raw_data else []  # Get list of valid attributes from raw_data
-        
         print(f"'{name}' is not a recognized attribute, friend!")                
         print(f"Try one of these: {', '.join(available_attrs)}") # Show list of valid attributes to use
         # raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
         # return None
     
     def __setattr__(self, name, value):
-        """Handle attribute assignment with friendly error messages."""
+        # Allow direct setting of dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            object.__setattr__(self, name, value)
+            return
+
         # Allow setting known attributes
         print_manager.debug(f"Setting attribute: {name} with value: {value}")
         if name in ['datetime', 'datetime_array', 'raw_data', 'time', 'field', 'times_mesh', 'pitch_angle', 'energy_index'] or name in self.raw_data:
@@ -408,6 +441,15 @@ class epad_strahl_high_res_class:
                 line_style='-'
             )
         )
+
+    def restore_from_snapshot(self, snapshot_data):
+        """
+        Restore all relevant fields from a snapshot dictionary/object.
+        This is used to directly assign all attributes from a pickled object,
+        bypassing calculation.
+        """
+        for key, value in snapshot_data.__dict__.items():
+            setattr(self, key, value)
 
 epad_hr = epad_strahl_high_res_class(None) #Initialize the class with no data
 print('initialized epad_hr class')

@@ -2,11 +2,13 @@
 #SAFE! 
 
 import numpy as np
+import pandas as pd
+import logging
 import matplotlib.pyplot as plt
 from .ploptions import ploptions
 from .print_manager import print_manager
-from .data_cubby import data_cubby
 from .data_classes.custom_variables import custom_variable  # UPDATED PATH
+from . import data_cubby # Import the global data_cubby instance
 
 class plot_manager(np.ndarray):
     
@@ -82,18 +84,19 @@ class plot_manager(np.ndarray):
     def __array_finalize__(self, obj):
         if obj is None:
             return
-        print_manager.debug("\n=== Array Finalize Status ===")
-        print_manager.debug(f"Finalizing array, obj type: {type(obj)}")
-        
-        # Add this line for plot state
-        self._plot_state = getattr(obj, '_plot_state', {}).copy()
-        print_manager.debug(f"Copied plot state: {self._plot_state}")
-        
-        # Keep existing lines
+        # Always ensure _plot_state exists
+        self._plot_state = getattr(obj, '_plot_state', None)
+        if self._plot_state is None:
+            self._plot_state = {}
+        else:
+            self._plot_state = dict(self._plot_state)
+        # Always ensure plot_options exists
+        self.plot_options = getattr(obj, 'plot_options', None)
+        if self.plot_options is None:
+            from .ploptions import ploptions
+            self.plot_options = ploptions()
         if not hasattr(self, '_original_options'):
             self._original_options = getattr(obj, '_original_options', None)
-        self.plot_options = getattr(obj, 'plot_options', None)
-        print_manager.debug("=== End Array Finalize Status ===\n")
 
     @property
     def data(self):
@@ -305,6 +308,10 @@ class plot_manager(np.ndarray):
 
     #Inline friendly error handling in __setattr__, consistent with your style
     def __setattr__(self, name, value):
+        # Allow direct setting of dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            object.__setattr__(self, name, value)
+            return
         try:
             if name in ['plot_options', '__dict__', '__doc__', '__module__', '_ipython_display_', '_original_options'] or name.startswith('_'):
                 # Directly set these special or private attributes
@@ -418,17 +425,32 @@ class plot_manager(np.ndarray):
 
     # Attribute access handler for dynamic attributes
     def __getattr__(self, name):
-        # Add this section at the start
+        # Allow direct access to dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            try:
+                # Important: Use object.__getattribute__ for these
+                return object.__getattribute__(self, name)
+            except AttributeError:
+                # Let AttributeError propagate if internal/dunder doesn't exist
+                raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+        # If _plot_state is missing, initialize it and warn (except if directly accessing _plot_state)
+        if name == '_plot_state':
+            if '_plot_state' not in self.__dict__:
+                self._plot_state = {}
+            return self._plot_state
+        elif '_plot_state' not in self.__dict__:
+            self._plot_state = {}
+        # Fallback: If plot_options is missing, auto-initialize and warn
+        if 'plot_options' not in self.__dict__ or self.plot_options is None:
+            from .ploptions import ploptions
+            self.plot_options = ploptions()
         if hasattr(self, '_plot_state') and name in self._plot_state:
             return self._plot_state[name]
-        
         # This is only called if an attribute is not found 
         # in the normal places (i.e., not found in __dict__ and not a dynamic attribute).
-        
         # For recognized attributes, return from plot_options if available
         if name in self.PLOT_ATTRIBUTES:
             return getattr(self.plot_options, name, None)
-        
         # For unrecognized attributes, TEMPORARY FIX: still allow storing the attribute
         # but print a warning
         if not name.startswith('_'):
@@ -548,7 +570,7 @@ class plot_manager(np.ndarray):
             Aligned numpy arrays and the common datetime array
         """
         from .print_manager import print_manager
-        from .data_cubby import data_cubby
+        from .data_classes.custom_variables import custom_variable
         
         # CRITICAL FIX: Check if variables have been corrupted and try to reload if possible
         # This fixes the state corruption issue when plotbot loads data for a different timerange

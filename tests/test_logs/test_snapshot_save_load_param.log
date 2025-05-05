@@ -1,0 +1,161 @@
+initialized server_access
+initialized global_tracker
+initialized ploptions
+initialized data_cubby
+initialized plot_manager
+initialized mag_rtn_4sa class
+initialized mag_rtn class
+initialized mag_sc_4sa class
+initialized mag_sc class
+initialized epad class
+initialized epad_hr class
+initialized proton class
+initialized proton_hr class
+initialized proton_fits class
+initialized ham_class
+🔉 initialized audifier
+
+Importing libraries, this may take a moment. Hold tight... 
+
+✅ Imported standard libraries and utilities.
+✅ Imported numpy, pandas, and scipy libraries.
+✅ Imported matplotlib libraries.
+✅ Imported cdflib, BeautifulSoup, requests, dateutil, and datetime libraries.
+
+🤖 Plotbot Initialized
+✨ Showdahodo initialized
+Positional Data Helper Initialized
+📈📉 Multiplot Initialized
+[94m   Version: 2025_05_04_v2.03[0m
+Commit: v2.03: Clone of f186bfc, follows an accidental github compression command that was not pushed, restoring balance in the universe
+
+[94m🤖 Plotbot Initialized[0m
+Test-only mode enabled
+============================= test session starts ==============================
+platform darwin -- Python 3.12.4, pytest-7.4.4, pluggy-1.5.0 -- /opt/anaconda3/envs/plotbot_env/bin/python3.12
+cachedir: .pytest_cache
+rootdir: /Users/robertalexander/GitHub/Plotbot
+configfile: pytest.ini
+collecting ... epad_strahl getattr helper!
+'_pytestfixturefunction' is not a recognized attribute, friend!
+Try one of these: strahl, centroids
+'_pytestfixturefunction' is not a recognized attribute, friend!
+Try one of these: strahl, centroids
+'_pytestfixturefunction' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+'_pytestfixturefunction' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+'_pytestfixturefunction' is not a recognized attribute, friend!
+Try one of these: all, bx, by, bz, bmag, pmag
+'_pytestfixturefunction' is not a recognized attribute, friend!
+Try one of these: all, bx, by, bz, bmag, pmag
+'_pytestfixturefunction' is not a recognized attribute, friend!
+Try one of these: vr, vt, vn, t_par, t_perp, anisotropy, v_alfven, beta_ppar, beta_pperp, pressure_ppar, pressure_pperp, energy_flux, theta_flux, phi_flux, v_sw, m_alfven, temperature, pressure, density, bmag
+'_pytestfixturefunction' is not a recognized attribute, friend!
+Try one of these: vr, vt, vn, t_par, t_perp, anisotropy, v_alfven, beta_ppar, beta_pperp, pressure_ppar, pressure_pperp, energy_flux, theta_flux, phi_flux, v_sw, m_alfven, temperature, pressure, density, bmag
+'__bases__' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+'__test__' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+'__bases__' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+'__test__' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+'__bases__' is not a recognized attribute, friend!
+Try one of these: all, bx, by, bz, bmag, pmag
+'__test__' is not a recognized attribute, friend!
+Try one of these: all, bx, by, bz, bmag, pmag
+'__bases__' is not a recognized attribute, friend!
+Try one of these: all, bx, by, bz, bmag, pmag
+'__test__' is not a recognized attribute, friend!
+Try one of these: all, bx, by, bz, bmag, pmag
+'__bases__' is not a recognized attribute, friend!
+Try one of these: vr, vt, vn, t_par, t_perp, anisotropy, v_alfven, beta_ppar, beta_pperp, pressure_ppar, pressure_pperp, energy_flux, theta_flux, phi_flux, v_sw, m_alfven, temperature, pressure, density, bmag
+'__test__' is not a recognized attribute, friend!
+Try one of these: vr, vt, vn, t_par, t_perp, anisotropy, v_alfven, beta_ppar, beta_pperp, pressure_ppar, pressure_pperp, energy_flux, theta_flux, phi_flux, v_sw, m_alfven, temperature, pressure, density, bmag
+'__bases__' is not a recognized attribute, friend!
+Try one of these: vr, vt, vn, t_par, t_perp, anisotropy, v_alfven, beta_ppar, beta_pperp, pressure_ppar, pressure_pperp, energy_flux, theta_flux, phi_flux, v_sw, m_alfven, temperature, pressure, density, bmag
+'__test__' is not a recognized attribute, friend!
+Try one of these: vr, vt, vn, t_par, t_perp, anisotropy, v_alfven, beta_ppar, beta_pperp, pressure_ppar, pressure_pperp, energy_flux, theta_flux, phi_flux, v_sw, m_alfven, temperature, pressure, density, bmag
+epad_strahl getattr helper!
+'__bases__' is not a recognized attribute, friend!
+Try one of these: strahl, centroids
+epad_strahl getattr helper!
+'__test__' is not a recognized attribute, friend!
+Try one of these: strahl, centroids
+'__bases__' is not a recognized attribute, friend!
+Try one of these: strahl, centroids
+'__test__' is not a recognized attribute, friend!
+Try one of these: strahl, centroids
+collected 11 items
+
+tests/test_snapshot_save_load.py::test_snapshot_save_load_per_type[mag_rtn_4sa_br] 
+--- [Fixture] Setting config.data_server to 'berkeley' (was 'dynamic') ---
+
+=== [START] Testing Snapshot Save/Load for mag_rtn_4sa.br ===
+--- [Step 1] Calling plotbot for mag_rtn_4sa.br (Standard Load) ---
+--- [Step 1a] plotbot call completed for mag_rtn_4sa.br. Saving plot... ---
+Saved standard load plot to tests/test_logs/mag_rtn_4sa_br_standard_load.png
+--- [Step 1b] Closed plot figure for mag_rtn_4sa.br (Standard) ---
+--- [Step 2] Saving Snapshot for mag_rtn_4sa --- (test_snapshot_mag_rtn_4sa.pkl)
+Saved snapshot.
+--- [Step 3] Clearing Data for mag_rtn_4sa --- (mag_rtn_4sa)
+Cleared raw_data for mag_rtn_4sa
+--- [Step 4] Loading Snapshot test_snapshot_mag_rtn_4sa.pkl ---
+Snapshot loaded.
+--- [Step 5] Calling plotbot for mag_rtn_4sa.br (Snapshot Load) ---
+--- [Step 5a] plotbot call completed for mag_rtn_4sa.br (Snapshot). Saving plot... ---
+Saved snapshot load plot to tests/test_logs/mag_rtn_4sa_br_snapshot_load.png
+--- [Step 5b] Closed plot figure for mag_rtn_4sa.br (Snapshot) ---
+--- [Step 6] Cleaning up test_snapshot_mag_rtn_4sa.pkl ---
+Snapshot file test_snapshot_mag_rtn_4sa.pkl not found for cleanup.
+=== [PASS] Testing Snapshot Save/Load for mag_rtn_4sa.br ===
+PASSED--- [Fixture] Restoring config.data_server to 'dynamic' ---
+
+tests/test_snapshot_save_load.py::test_snapshot_save_load_per_type[mag_rtn_bt] 
+--- [Fixture] Setting config.data_server to 'berkeley' (was 'dynamic') ---
+
+=== [START] Testing Snapshot Save/Load for mag_rtn.bt ===
+--- [Step 1] Calling plotbot for mag_rtn.bt (Standard Load) ---
+--- [Step 1a] plotbot call completed for mag_rtn.bt. Saving plot... ---
+Saved standard load plot to tests/test_logs/mag_rtn_bt_standard_load.png
+--- [Step 1b] Closed plot figure for mag_rtn.bt (Standard) ---
+--- [Step 2] Saving Snapshot for mag_rtn --- (test_snapshot_mag_rtn.pkl)
+Saved snapshot.
+--- [Step 3] Clearing Data for mag_rtn --- (mag_rtn)
+Cleared raw_data for mag_rtn
+--- [Step 4] Loading Snapshot test_snapshot_mag_rtn.pkl ---
+Snapshot loaded.
+--- [Step 5] Calling plotbot for mag_rtn.bt (Snapshot Load) ---
+--- [Step 5a] plotbot call completed for mag_rtn.bt (Snapshot). Saving plot... ---
+Saved snapshot load plot to tests/test_logs/mag_rtn_bt_snapshot_load.png
+--- [Step 5b] Closed plot figure for mag_rtn.bt (Snapshot) ---
+--- [Step 6] Cleaning up test_snapshot_mag_rtn.pkl ---
+Snapshot file test_snapshot_mag_rtn.pkl not found for cleanup.
+=== [PASS] Testing Snapshot Save/Load for mag_rtn.bt ===
+PASSED--- [Fixture] Restoring config.data_server to 'dynamic' ---
+
+tests/test_snapshot_save_load.py::test_snapshot_save_load_per_type[mag_sc_4sa_bx] 
+--- [Fixture] Setting config.data_server to 'berkeley' (was 'dynamic') ---
+
+=== [START] Testing Snapshot Save/Load for mag_sc_4sa.bx ===
+--- [Step 1] Calling plotbot for mag_sc_4sa.bx (Standard Load) ---
+--- [Step 1a] plotbot call completed for mag_sc_4sa.bx. Saving plot... ---
+Saved standard load plot to tests/test_logs/mag_sc_4sa_bx_standard_load.png
+--- [Step 1b] Closed plot figure for mag_sc_4sa.bx (Standard) ---
+--- [Step 2] Saving Snapshot for mag_sc_4sa --- (test_snapshot_mag_sc_4sa.pkl)
+Saved snapshot.
+--- [Step 3] Clearing Data for mag_sc_4sa --- (mag_sc_4sa)
+Cleared raw_data for mag_sc_4sa
+--- [Step 4] Loading Snapshot test_snapshot_mag_sc_4sa.pkl ---
+Snapshot loaded.
+--- [Step 5] Calling plotbot for mag_sc_4sa.bx (Snapshot Load) ---
+--- [Step 5a] plotbot call completed for mag_sc_4sa.bx (Snapshot). Saving plot... ---
+Saved snapshot load plot to tests/test_logs/mag_sc_4sa_bx_snapshot_load.png
+--- [Step 5b] Closed plot figure for mag_sc_4sa.bx (Snapshot) ---
+--- [Step 6] Cleaning up test_snapshot_mag_sc_4sa.pkl ---
+Snapshot file test_snapshot_mag_sc_4sa.pkl not found for cleanup.
+=== [PASS] Testing Snapshot Save/Load for mag_sc_4sa.bx ===
+PASSED--- [Fixture] Restoring config.data_server to 'dynamic' ---
+
+tests/test_snapshot_save_load.py::test_snapshot_save_load_per_type[mag_sc_by] 

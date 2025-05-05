@@ -7,7 +7,7 @@ import cdflib # Needed for TT2000 conversion in calculate_variables
 
 # Import our custom managers
 from plotbot.print_manager import print_manager
-from plotbot.data_cubby import data_cubby
+# from plotbot.data_cubby import data_cubby # REMOVED
 from plotbot.plot_manager import plot_manager
 from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
 
@@ -65,9 +65,6 @@ class ham_class:
             self.calculate_variables(imported_data)
             self.set_ploptions()
             print_manager.status("Ham class: Successfully processed imported data.")
-
-        # Stash the instance in data_cubby
-        data_cubby.stash(self, class_name='ham')
 
     def update(self, imported_data):
         """Method to update class with new data."""
@@ -135,7 +132,14 @@ class ham_class:
             return None
 
     def __getattr__(self, name):
-        """Provide a helpful error message when an attribute is not found."""
+        # Allow direct access to dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            try:
+                return object.__getattribute__(self, name)
+            except AttributeError:
+                raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+        if 'raw_data' not in self.__dict__:
+            raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
         print_manager.debug(f'ham_class __getattr__ triggered for: {name}')
         available_attrs = [attr for attr in dir(self)
                            if isinstance(getattr(self, attr, None), plot_manager)
@@ -148,6 +152,10 @@ class ham_class:
         raise AttributeError(error_message)
 
     def __setattr__(self, name, value):
+        # Allow direct setting of dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            object.__setattr__(self, name, value)
+            return
         """Allow setting attributes directly."""
         super().__setattr__(name, value)
 
@@ -228,9 +236,6 @@ class ham_class:
                 self.raw_data[key] = None
             self.time = None
             self.datetime_array = None
-
-        # Stash instance after update
-        data_cubby.stash(self, class_name='ham')
 
     def _create_ham_scatter_ploptions(self, var_name, subclass_name, y_label, legend_label, color, marker_style=(5, 1), marker_size=20, alpha=0.2, y_limit=None):
         """Helper method for standard ham scatter plot options."""
@@ -488,6 +493,15 @@ class ham_class:
                 marker_style=(5, 1), marker_size=20, alpha=0.2 # Spec values
             )
         )
+
+    def restore_from_snapshot(self, snapshot_data):
+        """
+        Restore all relevant fields from a snapshot dictionary/object.
+        This is used to directly assign all attributes from a pickled object,
+        bypassing calculation.
+        """
+        for key, value in snapshot_data.__dict__.items():
+            setattr(self, key, value)
 
 # Initialize with no data - this creates the global singleton instance in data_cubby
 ham = ham_class(None)

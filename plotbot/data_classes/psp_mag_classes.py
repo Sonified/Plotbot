@@ -10,9 +10,23 @@ import logging
 
 # Import our custom managers (UPDATED PATHS)
 from plotbot.print_manager import print_manager
-from plotbot.data_cubby import data_cubby
+# from plotbot.data_cubby import data_cubby # REMOVED to break circular import
 from plotbot.plot_manager import plot_manager
 from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+
+def _format_setattr_debug(name, value):
+    """Helper function to create a concise debug string for __setattr__."""
+    MAX_LEN = 100 # Max length for string representation
+    msg = f"Setting attribute: {name}"
+    if isinstance(value, (np.ndarray, pd.Series, pd.DataFrame)):
+        dtype_str = f"dtype={getattr(value, 'dtype', 'N/A')}"
+        shape_str = f"shape={getattr(value, 'shape', 'N/A')}"
+        return f"{msg} (type={type(value).__name__}, {shape_str}, {dtype_str})"
+    else:
+        val_str = repr(value)
+        if len(val_str) > MAX_LEN:
+            val_str = val_str[:MAX_LEN] + '...'
+        return f"{msg} with value: {val_str}"
 
 # 🎉 Define the main class to calculate and store mag_rtn_4sa variables 🎉
 class mag_rtn_4sa_class:
@@ -39,9 +53,6 @@ class mag_rtn_4sa_class:
             self.calculate_variables(imported_data)
             self.set_ploptions()
             print_manager.status("Successfully calculated mag rtn 4sa variables.")
-
-        # Stash the instance in data_cubby for later retrieval / to avoid circular references
-        data_cubby.stash(self, class_name='mag_rtn_4sa')
     
     def update(self, imported_data): #This is function is the exact same across all classes :)
         """Method to update class with new data. 
@@ -81,10 +92,6 @@ class mag_rtn_4sa_class:
         
         print_manager.datacubby("=== End Update Debug ===\n")
         
-        # Store in data_cubby (original simple logic)
-        data_cubby.stash(self, class_name='mag_rtn_4sa')
-        print_manager.debug("Successfully updated and stored in data_cubby")
-        
     def get_subclass(self, subclass_name):  # Dynamic component retrieval method
         """Retrieve a specific component"""
         print_manager.debug(f"Getting subclass: {subclass_name}")  # Log which component is requested
@@ -97,22 +104,35 @@ class mag_rtn_4sa_class:
             print(f"Try one of these: {', '.join(self.raw_data.keys())}")  # Show available components
             return None  # Return None if not found
 
-    def __getattr__(self, name): # Prints a friendly error message if an attribute is not found
+    def __getattr__(self, name):
+        # Allow direct access to dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            try:
+                return object.__getattribute__(self, name)
+            except AttributeError:
+                # Re-raise AttributeError if the internal/dunder method truly doesn't exist
+                raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+        if 'raw_data' not in self.__dict__:
+            raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
         print_manager.debug('mag_rtn_4sa getattr helper!')
-        print_manager.variable_testing(f"__getattr__ called for mag_rtn_4sa.{name}")
         available_attrs = list(self.raw_data.keys()) if self.raw_data else []  # Get list of valid attributes from raw_data
         print(f"'{name}' is not a recognized attribute, friend!")                
         print(f"Try one of these: {', '.join(available_attrs)}") # Show list of valid attributes to use
     
-    def __setattr__(self, name, value): #⭐️ THIS IS NEW
-        """Handle attribute assignment with friendly error messages."""
+    def __setattr__(self, name, value):
+        # Allow direct setting of dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            object.__setattr__(self, name, value)
+            return
+
         # Allow setting known attributes
-        print_manager.debug(f"Setting attribute: {name} with value: {value}")
+        print_manager.debug(_format_setattr_debug(name, value)) # Use helper function
         if name in ['datetime', 'datetime_array', 'raw_data', 'time', 'field'] or name in self.raw_data:
             super().__setattr__(name, value)
         else:
             # Print friendly error message
-            print_manager.debug('mag_rtn setattr helper!')
+            print_manager.debug('mag_rtn_4sa setattr helper!')
             print(f"'{name}' is not a recognized attribute, friend!")
             available_attrs = list(self.raw_data.keys()) if self.raw_data else []
             print(f"Try one of these: {', '.join(available_attrs)}")
@@ -281,6 +301,15 @@ class mag_rtn_4sa_class:
             
         )
 
+    def restore_from_snapshot(self, snapshot_data):
+        """
+        Restore all relevant fields from a snapshot dictionary/object.
+        This is used to directly assign all attributes from a pickled object,
+        bypassing calculation.
+        """
+        for key, value in snapshot_data.__dict__.items():
+            setattr(self, key, value)
+
 mag_rtn_4sa = mag_rtn_4sa_class(None) #Initialize the class with no data
 print('initialized mag_rtn_4sa class')
 
@@ -310,9 +339,6 @@ class mag_rtn_class:
             self.calculate_variables(imported_data)
             self.set_ploptions()
             print_manager.status("Successfully calculated mag rtn variables.")
-
-        # Stash the instance in data_cubby for later retrieval / to avoid circular references
-        data_cubby.stash(self, class_name='mag_rtn')
     
     def update(self, imported_data): #This is function is the exact same across all classes :)
         """Method to update class with new data. 
@@ -351,7 +377,7 @@ class mag_rtn_class:
                 print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_ploption_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\n")
-    
+        
     def get_subclass(self, subclass_name):  # Dynamic component retrieval method
         """Retrieve a specific component"""
         print_manager.debug(f"Getting subclass: {subclass_name}")  # Log which component is requested
@@ -363,18 +389,29 @@ class mag_rtn_class:
             print(f"Try one of these: {', '.join(self.raw_data.keys())}")  # Show available components
             return None  # Return None if not found
 
-    def __getattr__(self, name): # Prints a friendly error message if an attribute is not found
+    def __getattr__(self, name):
+        # Allow direct access to dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            try:
+                return object.__getattribute__(self, name)
+            except AttributeError:
+                raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+        if 'raw_data' not in self.__dict__:
+            raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
         print_manager.debug('mag_rtn getattr helper!')
         available_attrs = list(self.raw_data.keys()) if self.raw_data else []  # Get list of valid attributes from raw_data
         print(f"'{name}' is not a recognized attribute, friend!")                
         print(f"Try one of these: {', '.join(available_attrs)}") # Show list of valid attributes to use
-        # raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
-        # return None
     
-    def __setattr__(self, name, value): #⭐️ THIS IS NEW
-        """Handle attribute assignment with friendly error messages."""
+    def __setattr__(self, name, value):
+        # Allow direct setting of dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            object.__setattr__(self, name, value)
+            return
+
         # Allow setting known attributes
-        print_manager.debug(f"Setting attribute: {name} with value: {value}")
+        print_manager.debug(_format_setattr_debug(name, value)) # Use helper function
         if name in ['datetime', 'datetime_array', 'raw_data', 'time', 'field'] or name in self.raw_data:
             super().__setattr__(name, value)
         else:
@@ -383,6 +420,8 @@ class mag_rtn_class:
             print(f"'{name}' is not a recognized attribute, friend!")
             available_attrs = list(self.raw_data.keys()) if self.raw_data else []
             print(f"Try one of these: {', '.join(available_attrs)}")
+            print_manager.variable_testing(f"Attempted to set unknown attribute: {name}")
+           
             # Do not set the attrib
 
     def calculate_variables(self, imported_data):
@@ -541,6 +580,15 @@ class mag_rtn_class:
             )
         )
 
+    def restore_from_snapshot(self, snapshot_data):
+        """
+        Restore all relevant fields from a snapshot dictionary/object.
+        This is used to directly assign all attributes from a pickled object,
+        bypassing calculation.
+        """
+        for key, value in snapshot_data.__dict__.items():
+            setattr(self, key, value)
+
 mag_rtn = mag_rtn_class(None) #Initialize the class with no data
 print('initialized mag_rtn class')
 
@@ -569,9 +617,6 @@ class mag_sc_4sa_class:
             self.calculate_variables(imported_data)
             self.set_ploptions()
             print_manager.status("Successfully calculated mag sc 4sa variables.")
-
-        # Stash the instance in data_cubby for later retrieval / to avoid circular references
-        data_cubby.stash(self, class_name='mag_sc_4sa')
     
     def update(self, imported_data): #This is function is the exact same across all classes :)
         """Method to update class with new data. 
@@ -622,16 +667,29 @@ class mag_sc_4sa_class:
             print(f"Try one of these: {', '.join(self.raw_data.keys())}")  # Show available components
             return None  # Return None if not found
 
-    def __getattr__(self, name): # Prints a friendly error message if an attribute is not found
+    def __getattr__(self, name):
+        # Allow direct access to dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            try:
+                return object.__getattribute__(self, name)
+            except AttributeError:
+                raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+        if 'raw_data' not in self.__dict__:
+            raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
         print_manager.debug('mag_sc_4sa getattr helper!')
         available_attrs = list(self.raw_data.keys()) if self.raw_data else []  # Get list of valid attributes from raw_data
         print(f"'{name}' is not a recognized attribute, friend!")                
         print(f"Try one of these: {', '.join(available_attrs)}") # Show list of valid attributes to use
     
     def __setattr__(self, name, value):
-        """Handle attribute assignment with friendly error messages."""
+        # Allow direct setting of dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            object.__setattr__(self, name, value)
+            return
+
         # Allow setting known attributes
-        print_manager.debug(f"Setting attribute: {name} with value: {value}")
+        print_manager.debug(_format_setattr_debug(name, value)) # Use helper function
         if name in ['datetime', 'datetime_array', 'raw_data', 'time', 'field'] or name in self.raw_data:
             super().__setattr__(name, value)
         else:
@@ -640,7 +698,7 @@ class mag_sc_4sa_class:
             print(f"'{name}' is not a recognized attribute, friend!")
             available_attrs = list(self.raw_data.keys()) if self.raw_data else []
             print(f"Try one of these: {', '.join(available_attrs)}")
-            # Do not set the attrib
+            print_manager.variable_testing(f"Attempted to set unknown attribute: {name}")
     
     def calculate_variables(self, imported_data):
         """Calculate and store MAG SC 4sa variables"""
@@ -797,6 +855,15 @@ class mag_sc_4sa_class:
             )
         )
 
+    def restore_from_snapshot(self, snapshot_data):
+        """
+        Restore all relevant fields from a snapshot dictionary/object.
+        This is used to directly assign all attributes from a pickled object,
+        bypassing calculation.
+        """
+        for key, value in snapshot_data.__dict__.items():
+            setattr(self, key, value)
+
 mag_sc_4sa = mag_sc_4sa_class(None) #Initialize the class with no data
 print('initialized mag_sc_4sa class')
 
@@ -825,9 +892,6 @@ class mag_sc_class:
             self.calculate_variables(imported_data)
             self.set_ploptions()
             print_manager.status("Successfully calculated mag sc variables.")
-
-        # Stash the instance in data_cubby for later retrieval / to avoid circular references
-        data_cubby.stash(self, class_name='mag_sc')
     
     #mag_sc_location
     def update(self, imported_data): #This is function is the exact same across all classes :)
@@ -879,16 +943,29 @@ class mag_sc_class:
             print(f"Try one of these: {', '.join(self.raw_data.keys())}")  # Show available components
             return None  # Return None if not found
 
-    def __getattr__(self, name): # Prints a friendly error message if an attribute is not found
+    def __getattr__(self, name):
+        # Allow direct access to dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            try:
+                return object.__getattribute__(self, name)
+            except AttributeError:
+                raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+        if 'raw_data' not in self.__dict__:
+            raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
         print_manager.debug('mag_sc getattr helper!')
         available_attrs = list(self.raw_data.keys()) if self.raw_data else []  # Get list of valid attributes from raw_data
         print(f"'{name}' is not a recognized attribute, friend!")                
         print(f"Try one of these: {', '.join(available_attrs)}") # Show list of valid attributes to use
     
     def __setattr__(self, name, value):
-        """Handle attribute assignment with friendly error messages."""
+        # Allow direct setting of dunder OR single underscore methods/attributes
+        if name.startswith('_'): # Check for either '__' or '_' start
+            object.__setattr__(self, name, value)
+            return
+
         # Allow setting known attributes
-        print_manager.debug(f"Setting attribute: {name} with value: {value}")
+        print_manager.debug(_format_setattr_debug(name, value)) # Use helper function
         if name in ['datetime', 'datetime_array', 'raw_data', 'time', 'field'] or name in self.raw_data:
             super().__setattr__(name, value)
         else:
@@ -897,33 +974,43 @@ class mag_sc_class:
             print(f"'{name}' is not a recognized attribute, friend!")
             available_attrs = list(self.raw_data.keys()) if self.raw_data else []
             print(f"Try one of these: {', '.join(available_attrs)}")
+            print_manager.variable_testing(f"Attempted to set unknown attribute: {name}")
+           
             # Do not set the attrib
     
     def calculate_variables(self, imported_data):
         """Calculate and store MAG SC variables"""
+        print_manager.debug(f"--- [mag_sc.calculate_variables] START ---") # ADDED
         # Store only TT2000 times as numpy array
         self.time = np.asarray(imported_data.times)
         self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time))
         
-        print_manager.debug("self.datetime_array type after conversion: {type(self.datetime_array)}")
-        print_manager.debug("First element type: {type(self.datetime_array[0])}")
+        print_manager.debug(f"--- [mag_sc.calculate_variables] Time array created (length: {len(self.datetime_array) if self.datetime_array is not None else 'None'}) ---") # ADDED
+        # print_manager.debug("self.datetime_array type after conversion: {type(self.datetime_array)}") # Original debug
+        # print_manager.debug("First element type: {type(self.datetime_array[0])}") # Original debug
         
         # Get field data as numpy array
+        print_manager.debug(f"--- [mag_sc.calculate_variables] Accessing field data 'psp_fld_l2_mag_SC' ---") # ADDED
         self.field = np.asarray(imported_data.data['psp_fld_l2_mag_SC'])
+        print_manager.debug(f"--- [mag_sc.calculate_variables] Field data shape: {self.field.shape if self.field is not None else 'None'} ---") # ADDED
         
         # Extract components and calculate derived quantities efficiently
+        print_manager.debug(f"--- [mag_sc.calculate_variables] Extracting components bx, by, bz ---") # ADDED
         bx = self.field[:, 0]
         by = self.field[:, 1]
         bz = self.field[:, 2]
         
         # Calculate magnitude using numpy operations
+        print_manager.debug(f"--- [mag_sc.calculate_variables] Calculating bmag ---") # ADDED
         bmag = np.sqrt(bx**2 + by**2 + bz**2)
         
         # Calculate magnetic pressure
+        print_manager.debug(f"--- [mag_sc.calculate_variables] Calculating pmag ---") # ADDED
         mu_0 = 4 * np.pi * 1e-7  # Permeability of free space
         pmag = (bmag**2) / (2 * mu_0) * 1e-9  # Convert to nPa
         
         # Store all data in raw_data dictionary
+        print_manager.debug(f"--- [mag_sc.calculate_variables] Storing data in raw_data ---") # ADDED
         self.raw_data = {
             'all': [bx, by, bz],
             'bx': bx,
@@ -933,10 +1020,11 @@ class mag_sc_class:
             'pmag': pmag
         }
 
-        print_manager.debug("\nDebug - Data Arrays:")
-        print_manager.debug("Time array shape: {self.time.shape}")
-        print_manager.debug(f"Field data shape: {self.field.shape}")
-        print_manager.debug(f"First TT2000 time: {self.time[0]}")
+        print_manager.debug(f"--- [mag_sc.calculate_variables] END ---") # ADDED
+        # print_manager.debug("\nDebug - Data Arrays:") # Original debug
+        # print_manager.debug("Time array shape: {self.time.shape}") # Original debug
+        # print_manager.debug(f"Field data shape: {self.field.shape}") # Original debug
+        # print_manager.debug(f"First TT2000 time: {self.time[0]}") # Original debug
     
     def set_ploptions(self):
         """Set up the plotting options for all magnetic field components."""
@@ -1053,6 +1141,15 @@ class mag_sc_class:
                 line_style='-'             # Line style
             )
         )
+
+    def restore_from_snapshot(self, snapshot_data):
+        """
+        Restore all relevant fields from a snapshot dictionary/object.
+        This is used to directly assign all attributes from a pickled object,
+        bypassing calculation.
+        """
+        for key, value in snapshot_data.__dict__.items():
+            setattr(self, key, value)
 
 mag_sc = mag_sc_class(None) #Initialize the class with no data
 print('initialized mag_sc class')

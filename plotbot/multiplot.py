@@ -3,7 +3,7 @@ from .data_cubby import data_cubby
 from .data_tracker import global_tracker  
 from .data_download_berkeley import download_berkeley_data
 from .data_import import import_data_function
-from .print_manager import print_manager
+from .print_manager import print_manager, format_datetime_for_log
 from .get_encounter import get_encounter_number
 from .plotbot_helpers import time_clip
 # Import specific functions from multiplot_helpers instead of using wildcard import
@@ -22,7 +22,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import os
-from PIL import Image
+from PIL import Image   
 import matplotlib.pyplot as mpl_plt
 import matplotlib.dates as mdates
 from matplotlib.ticker import FuncFormatter
@@ -314,6 +314,9 @@ def multiplot(plot_list, **kwargs):
             
             try:
                 # Use get_data to handle loading for all regular types (including FITS)
+                # <<< NEW DEBUG >>>
+                print_manager.debug(f"Loop 1, Panel {i+1} Pre-Grab: Checking var with class='{getattr(var, 'class_name', 'N/A')}', subclass='{getattr(var, 'subclass_name', 'N/A')}', ID={id(var)}")
+                # <<< END NEW DEBUG >>>
                 print_manager.custom_debug(f"Calling get_data for {var.class_name}.{var.subclass_name} for time range: {trange}")
                 print_manager.time_tracking(f"Panel {i+1} calling get_data for {var.class_name}.{var.subclass_name} with trange: {trange[0]} to {trange[1]}")
                 get_data(trange, var) # <<< USE CENTRAL get_data function >>>
@@ -327,6 +330,9 @@ def multiplot(plot_list, **kwargs):
                         # Update the plot_list with the potentially updated variable instance
                         plot_list[i] = (center_time, updated_var)
                         print_manager.custom_debug(f"✅ Refreshed variable reference in plot_list for {var.class_name}.{var.subclass_name}")
+                        # <<< NEW DEBUG >>>
+                        print_manager.debug(f"Loop 1, Panel {i+1}: Stored var ID in plot_list: {id(plot_list[i][1])}")
+                        # <<< END NEW DEBUG >>>
                         # Optional: Add check if data is now present
                         # has_data_after_get = hasattr(updated_var, 'datetime_array') and updated_var.datetime_array is not None and len(updated_var.datetime_array) > 0
                         # print_manager.custom_debug(f"  Variable has data after get_data: {has_data_after_get}")
@@ -404,10 +410,12 @@ def multiplot(plot_list, **kwargs):
     #==========================================================================
     # STEP 4: POPULATE PLOTS WITH DATA
     #==========================================================================
-    for i, (center_time, var) in enumerate(plot_list):
-        print_manager.custom_debug(f'Adding data to plot panel {i+1}/{n_panels}... \n')
+    for i, (center_time, var) in enumerate(plot_list): # <--- Loop 2 (Plotting)
+        # <<< MODIFIED DEBUG >>>
+        print_manager.custom_debug(f'Adding data to plot panel {i+1}/{n_panels}... Var ID from plot_list: {id(var)}\n')
+        # <<< END MODIFIED DEBUG >>>
         # Add diagnostic for HAM feature status
-        print_manager.status(f"Panel {i+1} - HAM feature status: hamify={options.hamify}, ham_var={options.ham_var is not None}")
+        print_manager.debug(f"Panel {i+1} - HAM feature status: hamify={options.hamify}, ham_var={options.ham_var is not None}")
         center_dt = pd.Timestamp(center_time)
         
         # Get encounter number automatically
@@ -466,6 +474,21 @@ def multiplot(plot_list, **kwargs):
                 indices = []
                 # CRITICAL FIX: More robust handling of empty datetime_array
                 if single_var.datetime_array is not None and len(single_var.datetime_array) > 0:
+                    # <<< ADDED DEBUG PRINTS >>>
+                    # print_manager.debug(f"Panel {i+1} pre-clip: var ID={id(single_var)}, Array len={len(single_var.datetime_array)}") # COMMENTED OUT
+                    try:
+                        # --- MODIFIED LINES START ---
+                        start_str = format_datetime_for_log(single_var.datetime_array[0])
+                        end_str = format_datetime_for_log(single_var.datetime_array[-1])
+                        # print_manager.debug(f"Panel {i+1} pre-clip: Var data range: {start_str} to {end_str}") # COMMENTED OUT
+                        formatted_trange_list = [format_datetime_for_log(t) for t in trange]
+                        # print_manager.debug(f"Panel {i+1} pre-clip: Requested trange: {formatted_trange_list[0]} to {formatted_trange_list[1]}") # COMMENTED OUT
+                        # --- MODIFIED LINES END ---
+                    except IndexError:
+                        # print_manager.debug(f"Panel {i+1} pre-clip: Var data range: INDEX ERROR (array likely empty despite len check?)") # COMMENTED OUT
+                        pass # Keep pass to avoid syntax error
+                    # print_manager.debug(f"Panel {i+1} pre-clip: Requested trange: {trange[0]} to {trange[1]}") # COMMENTED OUT
+                    # <<< END ADDED DEBUG PRINTS >>>
                     indices = time_clip(single_var.datetime_array, trange[0], trange[1])
                 else:
                     print_manager.warning(f"Empty datetime_array for panel {i+1} - cannot clip times")
@@ -641,6 +664,21 @@ def multiplot(plot_list, **kwargs):
             indices = []
             # CRITICAL FIX: More robust handling of empty datetime_array
             if var.datetime_array is not None and len(var.datetime_array) > 0:
+                # <<< ADDED DEBUG PRINTS >>>
+                # print_manager.debug(f"Panel {i+1} pre-clip: var ID={id(var)}, Array len={len(var.datetime_array)}") # COMMENTED OUT
+                try:
+                    # --- MODIFIED LINES START ---
+                    start_str = format_datetime_for_log(var.datetime_array[0])
+                    end_str = format_datetime_for_log(var.datetime_array[-1])
+                    # print_manager.debug(f"Panel {i+1} pre-clip: Var data range: {start_str} to {end_str}") # COMMENTED OUT
+                    formatted_trange_list = [format_datetime_for_log(t) for t in trange]
+                    # print_manager.debug(f"Panel {i+1} pre-clip: Requested trange: {formatted_trange_list[0]} to {formatted_trange_list[1]}") # COMMENTED OUT
+                    # --- MODIFIED LINES END ---
+                except IndexError:
+                    # print_manager.debug(f"Panel {i+1} pre-clip: Var data range: INDEX ERROR (array likely empty despite len check?)") # COMMENTED OUT
+                    pass # Keep pass to avoid syntax error
+                # print_manager.debug(f"Panel {i+1} pre-clip: Requested trange: {trange[0]} to {trange[1]}") # COMMENTED OUT
+                # <<< END ADDED DEBUG PRINTS >>>
                 indices = time_clip(var.datetime_array, trange[0], trange[1])
             else:
                 print_manager.warning(f"Empty datetime_array for panel {i+1} - cannot clip times")
@@ -825,22 +863,22 @@ def multiplot(plot_list, **kwargs):
                         apply_panel_color(axs[i], panel_color, options)
         
         # Add HAM data plotting on right axis (if enabled)
-        print_manager.status(f"Panel {i+1}: Checking HAM plotting conditions: hamify={options.hamify}, ham_var={options.ham_var is not None}, second_variable_on_right_axis={options.second_variable_on_right_axis}")
+        # print_manager.debug(f"Panel {i+1}: Checking HAM plotting conditions: hamify={options.hamify}, ham_var={options.ham_var is not None}, second_variable_on_right_axis={options.second_variable_on_right_axis}") # COMMENTED OUT
         if options.hamify and options.ham_var is not None and not options.second_variable_on_right_axis:
             # For each panel, load the correct HAM data for the time range
             ham_var = options.ham_var
             # Call get_data for this panel's time range
-            print_manager.status(f"Panel {i+1}: Calling get_data for HAM variable for trange {trange}")
+            print_manager.debug(f"Panel {i+1}: Calling get_data for HAM variable for trange {trange}")
             get_data(trange, ham_var)
             # Refresh the reference from data_cubby
             ham_class_instance = data_cubby.grab('ham')
             if ham_class_instance:
                 ham_var = ham_class_instance.get_subclass(getattr(options.ham_var, 'subclass_name', 'hamogram_30s'))
-                print_manager.status(f"Panel {i+1}: Refreshed HAM variable reference from data_cubby")
+                print_manager.debug(f"Panel {i+1}: Refreshed HAM variable reference from data_cubby")
             else:
                 print_manager.error(f"Panel {i+1}: Failed to get ham class from data_cubby")
             # Use ham_var for plotting below
-            print_manager.status(f"Panel {i+1}: HAM feature enabled, plotting {ham_var.subclass_name if hasattr(ham_var, 'subclass_name') else 'HAM variable'} on right axis")
+            print_manager.debug(f"Panel {i+1}: HAM feature enabled, plotting {ham_var.subclass_name if hasattr(ham_var, 'subclass_name') else 'HAM variable'} on right axis")
             if ham_var is not None and hasattr(ham_var, 'datetime_array') and ham_var.datetime_array is not None:
                 # Create a twin axis for the HAM data
                 ax2 = axs[i].twinx()
@@ -854,11 +892,11 @@ def multiplot(plot_list, **kwargs):
                     plot_color = ham_var.color
                     
                 # Get time-clipped indices
-                print_manager.status(f"Panel {i+1}: Attempting to time_clip HAM data with range: {trange[0]} to {trange[1]}")
-                print_manager.status(f"Panel {i+1}: HAM data range is {ham_var.datetime_array[0]} to {ham_var.datetime_array[-1]}")
+                print_manager.debug(f"Panel {i+1}: Attempting to time_clip HAM data with range: {trange[0]} to {trange[1]}")
+                print_manager.debug(f"Panel {i+1}: HAM data range is {ham_var.datetime_array[0]} to {ham_var.datetime_array[-1]}")
                 
                 ham_indices = time_clip(ham_var.datetime_array, trange[0], trange[1])
-                print_manager.status(f"Panel {i+1}: Found {len(ham_indices)} HAM data points in time range")
+                print_manager.debug(f"Panel {i+1}: Found {len(ham_indices)} HAM data points in time range")
                 
                 if len(ham_indices) > 0:
                     # Get x-axis data and handle positional mapping
@@ -867,10 +905,10 @@ def multiplot(plot_list, **kwargs):
                         lon_vals = positional_mapper.map_to_position(x_data, data_type)
                         if lon_vals is not None:
                             x_data = lon_vals
-                            print_manager.status(f"Panel {i+1}: Successfully mapped HAM data to {data_type} coordinates")
+                            print_manager.debug(f"Panel {i+1}: Successfully mapped HAM data to {data_type} coordinates")
                     
                     # Plot the HAM data
-                    print_manager.status(f"Panel {i+1}: Plotting HAM data on right axis")
+                    print_manager.debug(f"Panel {i+1}: Plotting HAM data on right axis")
                     ax2.plot(x_data, 
                             ham_var.data[ham_indices],
                             linewidth=ham_var.line_width,
@@ -878,15 +916,15 @@ def multiplot(plot_list, **kwargs):
                             label=ham_var.legend_label,
                             color=plot_color,
                             alpha=options.ham_opacity)
-                    print_manager.status(f"Panel {i+1}: Successfully plotted HAM data on right axis")
+                    print_manager.debug(f"Panel {i+1}: Successfully plotted HAM data on right axis")
                     
                     # Apply y-limits if specified
                     if hasattr(axis_options, 'r') and axis_options.r.y_limit is not None:
                         ax2.set_ylim(axis_options.r.y_limit)
-                        print_manager.status(f"Panel {i+1}: Applied right axis y-limits from axis_options: {axis_options.r.y_limit}")
+                        print_manager.debug(f"Panel {i+1}: Applied right axis y-limits from axis_options: {axis_options.r.y_limit}")
                     elif hasattr(ham_var, 'y_limit') and ham_var.y_limit:
                         ax2.set_ylim(ham_var.y_limit)
-                        print_manager.status(f"Panel {i+1}: Applied right axis y-limits from ham_var: {ham_var.y_limit}")
+                        print_manager.debug(f"Panel {i+1}: Applied right axis y-limits from ham_var: {ham_var.y_limit}")
                     
                     # --- NEW: Apply rainbow color to all right axis elements ---
                     if panel_color is not None:
@@ -928,7 +966,8 @@ def multiplot(plot_list, **kwargs):
                 elif ham_var.datetime_array is None:
                     print_manager.status(f"Panel {i+1}: ham_var.datetime_array is None")
         else:
-            print_manager.status(f"Panel {i+1}: Not plotting HAM data - conditions not met: hamify={options.hamify}, ham_var={options.ham_var is not None}, second_variable_on_right_axis={options.second_variable_on_right_axis}")
+            # print_manager.status(f"Panel {i+1}: Not plotting HAM data - conditions not met: hamify={options.hamify}, ham_var={options.ham_var is not None}, second_variable_on_right_axis={options.second_variable_on_right_axis}") # COMMENTED OUT
+            pass # Keep pass to avoid syntax error
         
         if axis_options.y_limit:
             # Determine the y_scale
@@ -987,9 +1026,9 @@ def multiplot(plot_list, **kwargs):
             print_manager.debug(f"Panel {i+1}: ylim after setting via var.y_limit: {axs[i].get_ylim()}")
         else:
             # Auto-scaling happens by default
-            print_manager.debug(f"Panel {i+1}: Using auto-scaling.")
+            # print_manager.debug(f"Panel {i+1}: Using auto-scaling.") # COMMENTED OUT
             current_ylim = axs[i].get_ylim()
-            print_manager.debug(f"Panel {i+1}: ylim after auto-scaling: {current_ylim}")
+            # print_manager.debug(f"Panel {i+1}: ylim after auto-scaling: {current_ylim}") # COMMENTED OUT
     
         axs[i].set_xlim(start_time, end_time)
     
@@ -1272,12 +1311,25 @@ def multiplot(plot_list, **kwargs):
         for ax in axs:
             if hasattr(ax, '_positional_data_range'):
                 min_val, max_val = ax._positional_data_range
-                all_mins.append(min_val)
-                all_maxs.append(max_val)
+                # Only include numeric values for positional axis scaling
+                if isinstance(min_val, (int, float, np.number)) and isinstance(max_val, (int, float, np.number)):
+                    all_mins.append(min_val)
+                    all_maxs.append(max_val)
+                else:
+                    print_manager.warning(f"Non-numeric values found in positional data range: {type(min_val)}, {type(max_val)}")
         
-        if all_mins and all_maxs:
-            global_min = min(all_mins)
-            global_max = max(all_maxs)
+        # --- Explicitly filter lists again to ensure only numerics remain ---
+        initial_min_count = len(all_mins)
+        numeric_mins = [m for m in all_mins if isinstance(m, (int, float, np.number))]
+        numeric_maxs = [m for m in all_maxs if isinstance(m, (int, float, np.number))]
+        
+        if len(numeric_mins) != initial_min_count:
+             print_manager.warning(f"Filtered out {initial_min_count - len(numeric_mins)} non-numeric values from positional range calculation. Check axis types.")
+
+        # Now use the filtered lists
+        if numeric_mins and numeric_maxs:
+            global_min = min(numeric_mins)
+            global_max = max(numeric_maxs)
             data_range = global_max - global_min
             padding = data_range * 0.05  # 5% padding
             global_min -= padding
@@ -1288,6 +1340,8 @@ def multiplot(plot_list, **kwargs):
                 ax.set_xlim(global_min, global_max)
             
             print_manager.debug(f"Applied common x-axis range to all panels: {global_min:.2f} to {global_max:.2f}")
+            
+    # --- Final plot adjustments (Labels, titles, legends, grid) ---
     
     # NEW: Apply dynamic x-axis tick coloring for all panels (changed from only bottom panel)
     if color_scheme:

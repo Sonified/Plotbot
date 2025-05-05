@@ -9,6 +9,7 @@ import inspect
 import datetime
 import os
 import logging
+import numpy as np # Need numpy for datetime_as_string
 
 # --- Custom Filter to Block Specific Pyspedas INFO Messages ---
 class PyspedasInfoFilter(logging.Filter):
@@ -31,6 +32,54 @@ class PyspedasInfoFilter(logging.Filter):
         # Allow all other messages to pass
         return not should_block
 # --- End Custom Filter ---
+
+def format_datetime_for_log(dt):
+    """Formats a datetime object (Python or numpy) for logging.
+    Removes microseconds if all zero, otherwise uses millisecond precision.
+    Returns the original input if formatting fails.
+    """
+    try:
+        # Handle numpy.datetime64
+        if isinstance(dt, np.datetime64):
+            # Convert to string with nanoseconds first to check for all zeros
+            # Use 's' unit to avoid auto-adding timezone if not present
+            dt_str_ns = np.datetime_as_string(dt, unit='ns') 
+            if dt_str_ns.endswith('000000000'): # Check for zero nanoseconds
+                 # Format without microseconds
+                 return np.datetime_as_string(dt, unit='s')
+            elif dt_str_ns.endswith('000'): # Check for zero microseconds
+                 # Format with millisecond precision
+                 return np.datetime_as_string(dt, unit='ms')
+            else: 
+                 # Keep microsecond precision if microseconds are non-zero
+                 return np.datetime_as_string(dt, unit='us')
+                 
+        # Handle Python datetime objects
+        elif isinstance(dt, datetime.datetime):
+            if dt.microsecond == 0:
+                return dt.strftime('%Y-%m-%dT%H:%M:%S')
+            else:
+                 # Format with millisecond precision
+                 return dt.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]
+                 
+        # Handle strings (assume already partially formatted)
+        elif isinstance(dt, str):
+             if dt.endswith('.000000'):
+                 return dt[:-7]
+             elif dt.endswith('.000'): # Also handle if already ms
+                 return dt[:-4] 
+             # Add more specific string checks if needed (e.g., for 'YYYY-MM-DD/HH:MM:SS.ffffff')
+             if '/' in dt and '.000000' in dt:
+                 return dt.replace('.000000', '')
+             return dt # Return string as is if no specific format matches
+             
+        # Return original object if type is not handled
+        return dt
+    except Exception as e:
+        # Fallback: return the original input if any error occurs
+        # Optionally log the error here if needed
+        # print(f"[DEBUG] Error formatting datetime {dt}: {e}") 
+        return dt
 
 class print_manager_class:
     """
@@ -106,6 +155,7 @@ class print_manager_class:
         self.warnings_enabled = False         # Show warning messages (enabled by default)
         self._pyspedas_verbose = False   # State variable for the pyspedas_verbose property
         self.pyspedas_filter_instance = None  # Instance of the PyspedasInfoFilter
+        self.data_snapshot_enabled = False # <<< ADDED: Flag for snapshot messages
         # print(f"[PM_DEBUG] __init__: Default _pyspedas_verbose = {self._pyspedas_verbose}") # Remove print
         
         # Print formatting prefixes
@@ -117,6 +167,7 @@ class print_manager_class:
         self.time_tracking_prefix = "[TIME] "
         self.test_prefix = "[TEST] "         # Test output prefix
         self.processing_prefix = "[PROCESS] "  # Processing status prefix
+        self.snapshot_prefix = "[SNAPSHOT] " # <<< ADDED: Prefix for snapshot messages
         
         # Severity levels
         self.level_critical = "[CRITICAL] "  # Critical errors/warnings
@@ -592,6 +643,24 @@ class print_manager_class:
         """Print Zarr integration messages (magenta)."""
         if self.__class__.ZARR_INTEGRATION:
             print(f"{print_manager_class.MAGENTA}[ZARR] {msg}{print_manager_class.RESET}")
+
+    def data_snapshot(self, msg):
+        """Print data snapshot loading/saving messages if enabled."""
+        if self.data_snapshot_enabled:
+            prefix = self.snapshot_prefix if self.category_prefix_enabled else ""
+            print(self._format_message(f"{prefix}{msg}"))
+
+    # <<< ADDED: Property for show_data_snapshot >>>
+    @property
+    def show_data_snapshot(self):
+        """Get the current state of data snapshot message display."""
+        return self.data_snapshot_enabled
+
+    @show_data_snapshot.setter
+    def show_data_snapshot(self, value):
+        """Set whether to show data snapshot loading/saving messages."""
+        self.data_snapshot_enabled = value
+    # <<< END ADDED Property >>>
 
 # Create a singleton instance
 print_manager = print_manager_class()

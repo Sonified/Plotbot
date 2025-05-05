@@ -1,0 +1,92 @@
+initialized server_access
+initialized global_tracker
+initialized ploptions
+initialized data_cubby
+initialized plot_manager
+initialized mag_rtn_4sa class
+initialized mag_rtn class
+initialized mag_sc_4sa class
+initialized mag_sc class
+initialized epad class
+initialized epad_hr class
+initialized proton class
+initialized proton_hr class
+initialized proton_fits class
+initialized ham_class
+🔉 initialized audifier
+
+Importing libraries, this may take a moment. Hold tight... 
+
+✅ Imported standard libraries and utilities.
+✅ Imported numpy, pandas, and scipy libraries.
+✅ Imported matplotlib libraries.
+✅ Imported cdflib, BeautifulSoup, requests, dateutil, and datetime libraries.
+
+🤖 Plotbot Initialized
+✨ Showdahodo initialized
+Positional Data Helper Initialized
+📈📉 Multiplot Initialized
+[94m   Version: 2025_05_04_v2.03[0m
+Commit: v2.03: Clone of f186bfc, follows an accidental github compression command that was not pushed, restoring balance in the universe
+
+[94m🤖 Plotbot Initialized[0m
+Test-only mode enabled
+============================= test session starts ==============================
+platform darwin -- Python 3.12.4, pytest-7.4.4, pluggy-1.5.0 -- /opt/anaconda3/envs/plotbot_env/bin/python3.12
+cachedir: .pytest_cache
+rootdir: /Users/robertalexander/GitHub/Plotbot
+configfile: pytest.ini
+collecting ... epad_strahl getattr helper!
+'_pytestfixturefunction' is not a recognized attribute, friend!
+Try one of these: strahl, centroids
+'_pytestfixturefunction' is not a recognized attribute, friend!
+Try one of these: strahl, centroids
+'_pytestfixturefunction' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+'_pytestfixturefunction' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+'_pytestfixturefunction' is not a recognized attribute, friend!
+Try one of these: all, bx, by, bz, bmag, pmag
+'_pytestfixturefunction' is not a recognized attribute, friend!
+Try one of these: all, bx, by, bz, bmag, pmag
+'_pytestfixturefunction' is not a recognized attribute, friend!
+Try one of these: vr, vt, vn, t_par, t_perp, anisotropy, v_alfven, beta_ppar, beta_pperp, pressure_ppar, pressure_pperp, energy_flux, theta_flux, phi_flux, v_sw, m_alfven, temperature, pressure, density, bmag
+'_pytestfixturefunction' is not a recognized attribute, friend!
+Try one of these: vr, vt, vn, t_par, t_perp, anisotropy, v_alfven, beta_ppar, beta_pperp, pressure_ppar, pressure_pperp, energy_flux, theta_flux, phi_flux, v_sw, m_alfven, temperature, pressure, density, bmag
+'__bases__' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+'__test__' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+'__bases__' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+'__test__' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+'__bases__' is not a recognized attribute, friend!
+Try one of these: all, bx, by, bz, bmag, pmag
+'__test__' is not a recognized attribute, friend!
+Try one of these: all, bx, by, bz, bmag, pmag
+'__bases__' is not a recognized attribute, friend!
+Try one of these: all, bx, by, bz, bmag, pmag
+'__test__' is not a recognized attribute, friend!
+Try one of these: all, bx, by, bz, bmag, pmag
+'__bases__' is not a recognized attribute, friend!
+Try one of these: vr, vt, vn, t_par, t_perp, anisotropy, v_alfven, beta_ppar, beta_pperp, pressure_ppar, pressure_pperp, energy_flux, theta_flux, phi_flux, v_sw, m_alfven, temperature, pressure, density, bmag
+'__test__' is not a recognized attribute, friend!
+Try one of these: vr, vt, vn, t_par, t_perp, anisotropy, v_alfven, beta_ppar, beta_pperp, pressure_ppar, pressure_pperp, energy_flux, theta_flux, phi_flux, v_sw, m_alfven, temperature, pressure, density, bmag
+'__bases__' is not a recognized attribute, friend!
+Try one of these: vr, vt, vn, t_par, t_perp, anisotropy, v_alfven, beta_ppar, beta_pperp, pressure_ppar, pressure_pperp, energy_flux, theta_flux, phi_flux, v_sw, m_alfven, temperature, pressure, density, bmag
+'__test__' is not a recognized attribute, friend!
+Try one of these: vr, vt, vn, t_par, t_perp, anisotropy, v_alfven, beta_ppar, beta_pperp, pressure_ppar, pressure_pperp, energy_flux, theta_flux, phi_flux, v_sw, m_alfven, temperature, pressure, density, bmag
+epad_strahl getattr helper!
+'__bases__' is not a recognized attribute, friend!
+Try one of these: strahl, centroids
+epad_strahl getattr helper!
+'__test__' is not a recognized attribute, friend!
+Try one of these: strahl, centroids
+'__bases__' is not a recognized attribute, friend!
+Try one of these: strahl, centroids
+'__test__' is not a recognized attribute, friend!
+Try one of these: strahl, centroids
+collected 11 items / 10 deselected / 1 selected
+
+tests/test_snapshot_save_load.py::test_snapshot_save_load_per_type[mag_sc_by] 

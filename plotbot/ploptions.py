@@ -30,6 +30,12 @@ class ploptions:
                  colorbar_limits=None,
                  additional_data=None,
                  colorbar_label=None,
+                 # Add common font size attributes explicitly
+                 title_fontsize=12,
+                 y_label_size=10,
+                 x_label_size=10,
+                 x_tick_label_size=8,
+                 y_tick_label_size=8,
                  **kwargs):
         
         self.data_type = data_type 
@@ -51,10 +57,18 @@ class ploptions:
         self.colorbar_limits = colorbar_limits
         self.additional_data = additional_data
         self.colorbar_label = colorbar_label
+        # Set the explicit font sizes
+        self.title_fontsize = title_fontsize
+        self.y_label_size = y_label_size
+        self.x_label_size = x_label_size
+        self.x_tick_label_size = x_tick_label_size
+        self.y_tick_label_size = y_tick_label_size
         
-        # Add any additional keyword arguments as attributes
+        # Add any *other* additional keyword arguments as attributes
         for key, value in kwargs.items():
-            setattr(self, key, value)
+            # Avoid overwriting explicitly defined attributes
+            if not hasattr(self, key):
+                setattr(self, key, value)
             
     # Add a property for datetime_array to safely handle it
     @property
