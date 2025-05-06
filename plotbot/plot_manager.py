@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 from .ploptions import ploptions
 from .print_manager import print_manager
 from .data_classes.custom_variables import custom_variable  # UPDATED PATH
-from . import data_cubby # Import the global data_cubby instance
 
 class plot_manager(np.ndarray):
     
@@ -569,6 +568,7 @@ class plot_manager(np.ndarray):
             (self_aligned, other_aligned, datetime_array)
             Aligned numpy arrays and the common datetime array
         """
+        from .data_cubby import data_cubby  # Moved import here to avoid circular import
         from .print_manager import print_manager
         from .data_classes.custom_variables import custom_variable
         

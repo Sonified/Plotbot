@@ -1994,19 +1994,36 @@ def multiplot(plot_list, **kwargs):
                  panel_start_dt = pd.Timestamp(panel_start_time)
                  panel_end_dt = pd.Timestamp(panel_end_time)
                  
+             # --- NEW: Enforce Naive Python Datetime Early ---
+             def to_naive_py_datetime(dt):
+                 # Converts pandas Timestamp or existing datetime to naive Python datetime
+                 if hasattr(dt, 'to_pydatetime'):
+                     dt = dt.to_pydatetime()
+                 return dt.replace(tzinfo=None) if hasattr(dt, 'tzinfo') and dt.tzinfo is not None else dt
+             panel_start_dt = to_naive_py_datetime(panel_start_dt)
+             panel_end_dt = to_naive_py_datetime(panel_end_dt)
+             center_dt_panel = to_naive_py_datetime(center_dt_panel)
+             print(f"[DEBUG] (Early Convert) panel_start_dt: {repr(panel_start_dt)} (type: {type(panel_start_dt)})")
+             print(f"[DEBUG] (Early Convert) panel_end_dt: {repr(panel_end_dt)} (type: {type(panel_end_dt)})")
+             print(f"[DEBUG] (Early Convert) center_dt_panel: {repr(center_dt_panel)} (type: {type(center_dt_panel)})")
+             # --- END NEW ---
+
+             # <<< REMOVED: Previous scattered timezone patches >>>
+
              current = panel_start_dt
              # Align ticks to the step interval relative to the center time
              # Find the first tick >= start_time that is on a step interval from center_time
-             time_diff_start = panel_start_dt - center_dt_panel
+             time_diff_start = panel_start_dt - center_dt_panel # Subtraction should now work
              steps_from_center = np.floor(time_diff_start / step_td)
              first_tick_dt = center_dt_panel + (steps_from_center * step_td)
              if first_tick_dt < panel_start_dt: # Ensure first tick is within bounds
                   first_tick_dt += step_td
              current = first_tick_dt
-                  
+
              ticks = []
              tick_labels = []
              while current <= panel_end_dt:
+                 # <<< REMOVED: Previous patch inside loop >>>
                  ticks.append(current)
                  time_from_center = (current - center_dt_panel)
                  if options.relative_time_step_units == 'days':
@@ -2020,7 +2037,7 @@ def multiplot(plot_list, **kwargs):
                  else:
                      print(f"Unrecognized time step unit: {options.relative_time_step_units}. Please use 'days', 'hours', 'minutes', or 'seconds'.")
                      return
-     
+
                  if abs(value_from_center) < 1e-9: # Check for near zero
                      label = "0"
                  else:
@@ -2147,123 +2164,35 @@ def multiplot(plot_list, **kwargs):
                   
                   ticks = []
                   while current <= panel_end_dt:
+                      # --- PATCH: Ensure current is a Python datetime.datetime ---
+                      print(f"[DEBUG] current tick type: {type(current)}")
+                      if isinstance(current, pd.Timestamp):
+                          current = current.to_pydatetime()
+                      # --- END PATCH ---
                       ticks.append(current)
+                      time_from_center = (current - center_dt_panel)
+                      if options.relative_time_step_units == 'days':
+                          value_from_center = time_from_center.total_seconds() / (3600 * 24)
+                      elif options.relative_time_step_units == 'hours':
+                          value_from_center = time_from_center.total_seconds() / 3600
+                      elif options.relative_time_step_units == 'minutes':
+                          value_from_center = time_from_center.total_seconds() / 60
+                      elif options.relative_time_step_units == 'seconds':
+                          value_from_center = time_from_center.total_seconds()
+                      else:
+                          print(f"Unrecognized time step unit: {options.relative_time_step_units}. Please use 'days', 'hours', 'minutes', or 'seconds'.")
+                          return
+
+                      if abs(value_from_center) < 1e-9: # Check for near zero
+                          label = "0"
+                      else:
+                          # Format to remove trailing .0 if it's an integer
+                          label = f"{value_from_center:.1f}".rstrip('0').rstrip('.') if '.' in f"{value_from_center:.1f}" else str(int(value_from_center))
+                      tick_labels.append(label)
                       current += step_td
                   ax.set_xticks(ticks)
-                  # Tick labels are set later based on single/multi axis mode
-                  
-    # ALWAYS enforce hiding tick labels for single-x-axis mode, regardless of axis type
-    # And apply final label visibility
-    print_manager.debug("Applying final tick label visibility based on single/multi axis mode.")
-    for i, ax in enumerate(axs):
-        if options.use_single_x_axis:
-            if i < n_panels - 1:
-                # Hide labels and ticks for non-bottom plots
-                ax.set_xticklabels([])
-                for tick in ax.get_xticklabels():
-                    tick.set_visible(False)
-                ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False) # Hide ticks too
-                # ax.set_xlabel('') # Already handled in mode-specific blocks
-            else:
-                # Ensure bottom plot ticks/labels are visible
-                # For relative time, we need to set the labels explicitly
-                if options.use_relative_time:
-                    # We need the tick_labels calculated earlier for relative time
-                    # It *should* be defined if we reached here with use_relative_time=True
-                    # Re-calculate here for safety, using the final axis limits
-                    step_td = pd.Timedelta(value=options.relative_time_step, unit=options.relative_time_step_units)
-                    center_dt_panel = pd.Timestamp(plot_list[i][0]) # Need panel center time
-                    panel_start_num, panel_end_num = ax.get_xlim() # Get final numeric limits
-                    try:
-                        panel_start_dt = mdates.num2date(panel_start_num)
-                        panel_end_dt = mdates.num2date(panel_end_num)
-                    except Exception as e:
-                        print_manager.warning(f"Could not convert final xlim back to dates for relative labels: {e}")
-                        panel_start_dt, panel_end_dt = None, None # Flag error
-
-                    relative_tick_labels = [] # Define the list specifically here
-                    if panel_start_dt and panel_end_dt:
-                        time_diff_start = panel_start_dt - center_dt_panel
-                        steps_from_center = np.floor(time_diff_start / step_td)
-                        first_tick_dt = center_dt_panel + (steps_from_center * step_td)
-                        if first_tick_dt < panel_start_dt: first_tick_dt += step_td
-                        current = first_tick_dt
-                        
-                        current_ticks = []
-                        while current <= panel_end_dt:
-                            current_ticks.append(current)
-                            time_from_center = (current - center_dt_panel)
-                            # Calculate value based on units
-                            if options.relative_time_step_units == 'days': value_from_center = time_from_center.total_seconds() / (3600 * 24)
-                            elif options.relative_time_step_units == 'hours': value_from_center = time_from_center.total_seconds() / 3600
-                            elif options.relative_time_step_units == 'minutes': value_from_center = time_from_center.total_seconds() / 60
-                            elif options.relative_time_step_units == 'seconds': value_from_center = time_from_center.total_seconds()
-                            else: value_from_center = 0 # Should not happen due to earlier check
-                            # Format label
-                            if abs(value_from_center) < 1e-9: label = "0"
-                            else: label = f"{value_from_center:.1f}".rstrip('0').rstrip('.') if '.' in f"{value_from_center:.1f}" else str(int(value_from_center))
-                            relative_tick_labels.append(label)
-                            current += step_td
-                        # Set the calculated labels for the bottom axis
-                        ax.set_xticks(current_ticks) # Ensure ticks match the labels we generated
-                        ax.set_xticklabels(relative_tick_labels)
-                        print_manager.debug(f"Applied final relative tick labels to bottom axis ({len(relative_tick_labels)} labels).")
-                    else:
-                         print_manager.warning("Could not set relative tick labels for bottom axis due to limit conversion error.")
-                         ax.tick_params(axis='x', which='both', bottom=True, top=False, labelbottom=True) # Ensure ticks/labels are generally visible
-                else:
-                     # For non-relative time, ensure ticks/labels are visible (formatter handles content)
-                     ax.tick_params(axis='x', which='both', bottom=True, top=False, labelbottom=True)
-                     # Make labels visible explicitly (sometimes needed after hiding)
-                     for tick in ax.get_xticklabels():
-                         tick.set_visible(True)
-                # ax.set_xlabel(...) # Already handled in mode-specific blocks
-        else: # Not using single_x_axis
-             # Ensure labels are visible for all axes
-             ax.tick_params(axis='x', which='both', bottom=True, top=False, labelbottom=True)
-             for tick in ax.get_xticklabels():
-                 tick.set_visible(True)
-             # For relative time, set the labels explicitly for each axis
-             if options.use_relative_time:
-                    # Re-calculate relative labels for this specific axis
-                    step_td = pd.Timedelta(value=options.relative_time_step, unit=options.relative_time_step_units)
-                    center_dt_panel = pd.Timestamp(plot_list[i][0]) # Need panel center time
-                    panel_start_num, panel_end_num = ax.get_xlim() # Get final numeric limits
-                    try:
-                        panel_start_dt = mdates.num2date(panel_start_num)
-                        panel_end_dt = mdates.num2date(panel_end_num)
-                    except Exception as e:
-                         print_manager.warning(f"Could not convert axis {i} xlim back to dates for relative labels: {e}")
-                         panel_start_dt, panel_end_dt = None, None
-                         
-                    relative_tick_labels = [] # Define list here
-                    if panel_start_dt and panel_end_dt:
-                        time_diff_start = panel_start_dt - center_dt_panel
-                        steps_from_center = np.floor(time_diff_start / step_td)
-                        first_tick_dt = center_dt_panel + (steps_from_center * step_td)
-                        if first_tick_dt < panel_start_dt: first_tick_dt += step_td
-                        current = first_tick_dt
-                        
-                        current_ticks = []
-                        while current <= panel_end_dt:
-                            current_ticks.append(current)
-                            time_from_center = (current - center_dt_panel)
-                            # Calculate value based on units
-                            if options.relative_time_step_units == 'days': value_from_center = time_from_center.total_seconds() / (3600 * 24)
-                            elif options.relative_time_step_units == 'hours': value_from_center = time_from_center.total_seconds() / 3600
-                            elif options.relative_time_step_units == 'minutes': value_from_center = time_from_center.total_seconds() / 60
-                            elif options.relative_time_step_units == 'seconds': value_from_center = time_from_center.total_seconds()
-                            else: value_from_center = 0
-                            # Format label
-                            if abs(value_from_center) < 1e-9: label = "0"
-                            else: label = f"{value_from_center:.1f}".rstrip('0').rstrip('.') if '.' in f"{value_from_center:.1f}" else str(int(value_from_center))
-                            relative_tick_labels.append(label)
-                            current += step_td
-                        ax.set_xticks(current_ticks) # Set ticks to match labels
-                        ax.set_xticklabels(relative_tick_labels) # Set labels for this axis
-                        print_manager.debug(f"Applied final relative tick labels to axis {i} ({len(relative_tick_labels)} labels).")
-                    else:
-                        print_manager.warning(f"Could not set relative tick labels for axis {i} due to limit conversion error.")
+                  print_manager.warning(f"Could not set relative tick labels for axis {i} due to limit conversion error.") 
+                  # ax.set_xlabel(...) # Already handled in mode-specific blocks
              # ax.set_xlabel(...) # Already handled in mode-specific blocks
     
     # --- Final plot adjustments (Labels, titles, legends, grid) ---

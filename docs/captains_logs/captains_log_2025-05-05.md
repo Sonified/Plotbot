@@ -102,3 +102,34 @@ Summary: Perihelion axis feature is now complete, fully matching Carrington long
 - Commit message: fix: core degrees from perihelion issue identified (v2.16)
 
 Summary: Fixed the root cause of the perihelion degree calculation error by correcting timestamp unit handling in the positional data mapper. 
+
+Here’s the general approach to time handling in Plotbot, based on the codebase:
+1. Parsing and Standardization
+All time parsing (in get_data, import_data_function, data_download_berkeley, data_download_helpers, data_tracker, etc.) uses dateutil.parser.parse and then .replace(tzinfo=timezone.utc) to ensure all times are timezone-aware and in UTC.
+When converting to numpy datetime64:
+.replace(tzinfo=None) is used to strip timezone info before converting to np.datetime64, since numpy datetimes are always naive (no timezone).
+Pandas to_datetime(..., utc=True) is used when reading from files, then sometimes .tz_localize(None) to make them naive for storage or comparison.
+2. Comparisons and Filtering
+When filtering arrays or comparing times:
+If the array is np.datetime64, the comparison is done with np.datetime64 versions of the start/end times (which are always naive).
+If the array is Python datetime and timezone-aware, the start/end times are also made UTC-aware.
+If the array is naive, the start/end times are made naive.
+3. Time Range Handling
+All time ranges (trange) are parsed to UTC-aware datetimes for logic, then stripped to naive for numpy storage.
+When passing times to plotting or math:
+If using numpy or pandas, times are usually naive.
+If using Python datetime, times are UTC-aware for logic, but may be made naive for compatibility.
+4. Helpers
+time_clip and similar helpers always parse input times as UTC-aware, then convert to np.datetime64 for comparison.
+str_to_datetime uses dateutil.parser.parse (returns naive or aware depending on input).
+5. Summary
+All time math and comparisons are done with either:
+Both sides UTC-aware, or
+Both sides naive (usually after stripping timezone for numpy/pandas).
+The only time you see tz-naive/tz-aware errors is when something slips through and isn’t standardized before math.
+Bottom line:
+Plotbot’s standard is:
+Parse as UTC-aware for logic.
+Strip to naive for numpy/pandas storage and math.
+Always match tz-awareness before comparing or subtracting.
+If you want a code snippet or want to see a specific function’s handling, let me know!
