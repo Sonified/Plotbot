@@ -69,3 +69,20 @@ Summary: Perihelion axis feature is now complete, fully matching Carrington long
 Summary: Resetting multiplot.py due to errors, fixing related utils/options, adding perihelion test, and beginning re-implementation of perihelion logic in multiplot.
 
 (Log remains open for further updates on 2025-05-05) 
+
+---
+
+## Debug & Fix: Perihelion Offset Diagnostic Test
+
+- **Issue:** The diagnostic test `tests/test_plot_perihelion_windows.py` produced confusing results (small non-zero offsets at perihelion, or a "wall of zeros") due to incorrect sampling logic.
+- **Fix:** Updated the test to correctly sample symmetrically around the *exact* perihelion time using `np.interp`. This ensures the degrees-from-perihelion value is precisely zero at the zero-hour offset.
+- **Documentation:** Updated `docs/implementation_plans/perihelion_axis_plan_v2.md` with a detailed explanation of the issue, the fix, and the final successful test output.
+
+## Push: v2.15
+
+- Version: 2025_05_05_v2.15
+- Commit message: ⭐ GLORY to PSP: We have Degrees From Perihelion! (v2.15)
+
+Summary: Perihelion axis feature is now complete, fully matching Carrington longitude axis formatting and behavior. All tests pass. See implementation plan and above for details.
+
+(Log remains open for further updates on 2025-05-05) 

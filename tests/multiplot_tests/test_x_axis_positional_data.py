@@ -34,24 +34,30 @@ class TestXAxisPositionalData(unittest.TestCase):
         self.assertTrue(self.mapper.data_loaded)
         self.assertIsNotNone(self.mapper.times_numeric)
         self.assertIsNotNone(self.mapper.longitude_values)
+        self.assertIsNotNone(self.mapper.latitude_values)
         
         # Check data structure
         self.assertIsInstance(self.mapper.times_numeric, np.ndarray)
         self.assertIsInstance(self.mapper.longitude_values, np.ndarray)
+        self.assertIsInstance(self.mapper.latitude_values, np.ndarray)
         
         # Verify we have a reasonable amount of data
         self.assertGreater(len(self.mapper.times_numeric), 0)
         self.assertEqual(len(self.mapper.times_numeric), len(self.mapper.longitude_values))
+        self.assertEqual(len(self.mapper.times_numeric), len(self.mapper.latitude_values))
         
         # Verify the data ranges are sensible for Carrington longitude (0-360)
         self.assertGreaterEqual(np.min(self.mapper.longitude_values), 0)
         self.assertLessEqual(np.max(self.mapper.longitude_values), 360)
+        self.assertGreaterEqual(np.min(self.mapper.latitude_values), -90, "Min Latitude should be >= -90")
+        self.assertLessEqual(np.max(self.mapper.latitude_values), 90, "Max Latitude should be <= 90")
     
     def test_positional_data_format(self):
         """Test the format of the raw positional data matches the expected format for processing"""
         # Check that the NPZ file has the expected keys
         self.assertIn('times', self.raw_positional_data)
         self.assertIn('carrington_lon', self.raw_positional_data)
+        self.assertIn('carrington_lat', self.raw_positional_data, "NPZ file should contain 'carrington_lat' key")
         
         # Test that times can be converted to datetime64
         times_raw = self.raw_positional_data['times']
@@ -65,6 +71,30 @@ class TestXAxisPositionalData(unittest.TestCase):
             self.assertTrue(np.issubdtype(numeric_times.dtype, np.floating))
         except Exception as e:
             self.fail(f"Failed to convert raw times to numeric format: {str(e)}")
+        
+        # Verify that the interpolated value is close to the actual value at that time
+        # This directly tests the interpolation accuracy
+        expected_longitude = self.mapper.longitude_values[len(self.mapper.times_numeric) // 2]
+        longitude = self.mapper.map_to_position(datetime_array_np[len(self.mapper.times_numeric) // 2], 'carrington_lon')
+        self.assertIsNotNone(longitude)
+        self.assertIsInstance(longitude, np.ndarray)
+        self.assertEqual(len(longitude), 1)
+        self.assertAlmostEqual(longitude[0], expected_longitude, delta=0.01,
+                             msg="Interpolation at exact datapoint should return original value")
+        
+        # Map the same timestamp to latitude
+        latitude = self.mapper.map_to_position(datetime_array_np[len(self.mapper.times_numeric) // 2], 'carrington_lat')
+        self.assertIsNotNone(latitude, "Latitude mapping should return a value")
+        self.assertIsInstance(latitude, np.ndarray, "Latitude should be a numpy array")
+        self.assertEqual(len(latitude), 1, "Latitude array should have length 1")
+        # Latitude should be in valid range [-90, 90]
+        self.assertGreaterEqual(latitude[0], -90, "Interpolated Latitude should be >= -90")
+        self.assertLessEqual(latitude[0], 90, "Interpolated Latitude should be <= 90")
+        # Verify accuracy against source data
+        if self.mapper.latitude_values is not None:
+            expected_latitude = self.mapper.latitude_values[len(self.mapper.times_numeric) // 2]
+            self.assertAlmostEqual(latitude[0], expected_latitude, delta=0.01,
+                                   msg="Latitude interpolation at exact datapoint should match original")
     
     def test_timestamp_interpolation(self):
         """Test the interpolation of timestamps to positions"""
@@ -481,6 +511,23 @@ class TestXAxisPositionalData(unittest.TestCase):
             # Restore original settings
             for key, value in original_settings.items():
                 setattr(plt.options, key, value)
+
+    def test_latitude_mapping_direct(self):
+        """Test direct mapping of a date array to latitudes."""
+        # Create a simple test date range
+        center_date = pd.to_datetime("2023-09-27 23:28:00.000")  # Enc 17 perihelion
+        test_dates = pd.date_range(center_date - pd.Timedelta(hours=6), center_date + pd.Timedelta(hours=6), periods=50)
+        date_array = test_dates.to_numpy()
+        
+        # Map to latitude
+        latitudes = self.mapper.map_to_position(date_array, 'carrington_lat')
+        
+        # Verify output format and range
+        self.assertIsNotNone(latitudes, "Latitude mapping should return an array")
+        self.assertIsInstance(latitudes, np.ndarray, "Latitude results should be a numpy array")
+        self.assertEqual(len(latitudes), len(date_array), "Output latitude array length should match input date array length")
+        self.assertTrue(np.all((latitudes >= -90) & (latitudes <= 90)), "All latitudes must be within [-90, 90]")
+        print(f"\nDirect Latitude Mapping Test: Mapped {len(date_array)} dates to latitudes ranging from {np.min(latitudes):.2f}° to {np.max(latitudes):.2f}°")
 
 if __name__ == '__main__':
     unittest.main()

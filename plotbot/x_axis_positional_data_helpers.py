@@ -122,10 +122,16 @@ class XAxisPositionalDataMapper:
             print_manager.warning(f"No {data_type} data available in the loaded positional data file.")
             return None
 
-        if not isinstance(datetime_array, np.ndarray):
-            print_manager.warning(f"Input to map_to_position must be a numpy array, got {type(datetime_array)}")
-            return None
-        
+        # Ensure input is always a numpy array, even if a single datetime64 is passed
+        if not isinstance(datetime_array, np.ndarray) or datetime_array.ndim == 0:
+             try:
+                 # Attempt to convert scalar or 0-dim array to 1-element array
+                 datetime_array = np.array([datetime_array])
+                 print_manager.debug(f"Converted scalar/0-dim input to 1-element array. New shape: {datetime_array.shape}")
+             except Exception as e:
+                 print_manager.warning(f"Could not convert input {type(datetime_array)} to a NumPy array: {e}")
+                 return None
+
         # Try to convert different datetime types to numpy.datetime64 if needed
         if not np.issubdtype(datetime_array.dtype, np.datetime64):
             print_manager.debug(f"Input array has dtype {datetime_array.dtype}, attempting to convert to datetime64")
@@ -161,6 +167,20 @@ class XAxisPositionalDataMapper:
                 print_manager.warning(f"Input time range extends outside reference positional data range.")
                 print_manager.warning(f"  Input range exceeds reference range by: {min_ref_time - min_time:.2f}s before, {max_time - max_ref_time:.2f}s after")
                 print_manager.warning(f"  Results will use extrapolation which may be inaccurate.")
+
+            # <<< NEW: Add detailed interpolation debug >>>
+            # Find indices of reference points bounding the first input time for context
+            if len(science_times_numeric) > 0:
+                query_time = science_times_numeric[0]
+                # Find where the query time would be inserted in the sorted reference times
+                insert_idx = np.searchsorted(self.times_numeric, query_time)
+                # Get indices around the insertion point (handle edges)
+                idx0 = max(0, insert_idx - 2)
+                idx1 = min(len(self.times_numeric) - 1, insert_idx + 2)
+                print_manager.debug(f"    Interpolation Context (around first query time {pd.to_datetime(query_time * 1e9)}):")
+                print_manager.debug(f"      Ref Times : {pd.to_datetime(self.times_numeric[idx0:idx1+1] * 1e9).values}")
+                print_manager.debug(f"      Ref Values ({data_type}): {positional_values[idx0:idx1+1]}")
+            # <<< END NEW DEBUG >>>
 
             # Interpolate positional values onto science timestamps
             interpolated_values = np.interp(

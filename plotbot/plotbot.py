@@ -26,5 +26,3 @@ __all__ = [
 
 # Display Plotbot banner with version and commit info
 print(colored("🤖 Plotbot Initialized", "blue"))
-print(f"   Version: {colored('2025_05_05_v2.14', 'yellow')}")
-print(f"   Commit: Docs: Update perihelion plan with known issues and debug steps (v2.14)")
