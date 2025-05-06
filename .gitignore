@@ -23,3 +23,9 @@ Jaye_Fits_Code/
 /data_cubby_zarr_testing/
 
 tests/multiplot_tests/output/data_snapshots/
+
+/dask/
+/tests/multiplot_tests/
+/tests/Images/
+
+/tests/test_logs/

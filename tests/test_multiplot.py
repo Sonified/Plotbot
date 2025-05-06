@@ -375,6 +375,7 @@ def test_options_reset():
                 plt.options.draw_vertical_line == default_draw_vertical,
                 f"draw_vertical_line should be reset to {default_draw_vertical}, got {plt.options.draw_vertical_line}")
 
+@pytest.mark.skip(reason="Skipping by user request: custom variable multiplot test")
 @pytest.mark.mission("Multiplot with Single Custom Variable")
 def test_multiplot_single_custom_variable(test_environment):
     """Test multiplot with a single custom variable"""
@@ -478,6 +479,7 @@ def test_multiplot_single_custom_variable(test_environment):
     except Exception as e:
         pytest.fail(f"Failed to create/update multiplot: {str(e)}")
 
+@pytest.mark.skip(reason="Skipping by user request: custom variable multiplot test")
 @pytest.mark.mission("Multiplot with Same-Rate Custom Variable")
 def test_multiplot_same_rate_custom(test_environment):
     """Test multiplot with a custom variable derived from same-rate sources"""
@@ -534,6 +536,7 @@ def test_multiplot_same_rate_custom(test_environment):
     except Exception as e:
         pytest.fail(f"Failed to create multiplot: {str(e)}")
 
+@pytest.mark.skip(reason="Skipping by user request: custom variable multiplot test")
 @pytest.mark.mission("Multiplot with Different-Rate Custom Variable")
 def test_multiplot_different_rate_custom(test_environment):
     """Test multiplot with a custom variable derived from different-rate sources"""
@@ -590,6 +593,7 @@ def test_multiplot_different_rate_custom(test_environment):
     except Exception as e:
         pytest.fail(f"Failed to create multiplot: {str(e)}")
 
+@pytest.mark.skip(reason="Skipping by user request: custom variable multiplot test")
 @pytest.mark.mission("Multiplot with Multiple Mixed Variables")
 def test_multiplot_multiple_variables(test_environment):
     """Test multiplot with multiple variables including custom operations"""
@@ -702,6 +706,7 @@ def test_multiplot_preexisting_variable(test_environment):
     except Exception as e:
         pytest.fail(f"Failed to create multiplot: {str(e)}")
 
+@pytest.mark.skip(reason="Skipping by user request: custom variable multiplot test")
 @pytest.mark.mission("Multiplot with Log Scale Custom Variable")
 def test_multiplot_log_scale_custom_variable(test_environment):
     """Test multiplot with a custom variable that uses log scale"""
@@ -817,6 +822,7 @@ def test_multiplot_log_scale_custom_variable(test_environment):
         # Any other exception is unexpected
         pytest.fail(f"Unexpected error during multiplot: {str(e)}")
 
+@pytest.mark.skip(reason="Skipping by user request: custom variable multiplot test")
 @pytest.mark.mission("Multiplot with Custom Variable Time Update")
 def test_multiplot_custom_variable_time_update(test_environment):
     """Test that multiplot properly updates custom variables when time ranges change"""
@@ -963,6 +969,7 @@ def test_multiplot_custom_variable_time_update(test_environment):
     except Exception as e:
         pytest.fail(f"Failed during multiplot custom variable update test: {str(e)}") 
 
+@pytest.mark.skip(reason="Skipping by user request: custom variable multiplot test")
 @pytest.mark.mission("Multiplot with Custom Variable Caching Test")
 def test_multiplot_custom_variable_caching():
     """Test multiplot behavior when plotting custom variables multiple times, relying on multiplot for data loading"""

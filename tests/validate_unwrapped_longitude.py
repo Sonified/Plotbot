@@ -21,9 +21,7 @@ def main():
     
     # Create mapper
     mapper = XAxisPositionalDataMapper(str(npz_path))
-    
-    print(f"Testing degrees from perihelion calculation for E21: {E21_PERIHELION}")
-    
+        
     # Convert perihelion time to datetime
     perihelion_dt = pd.to_datetime(E21_PERIHELION)
     perihelion_time_np = np.array([np.datetime64(perihelion_dt)])

@@ -1,11 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import numpy as np
 from plotbot.time_utils import str_to_datetime
 import pandas as pd
 from plotbot.print_manager import print_manager
 
 # Perihelion times dictionary (Encounter Number: Perihelion Time String)
-# Source: Examples_Multiplot.ipynb (as of 2025-05-05)
+# Source: Examples_Multiplot.ipynb (as of 2025-05-07 - User Provided)
 # Format: YYYY/MM/DD HH:MM:SS.ffffff
 PERIHELION_TIMES = {
     1: '2018/11/06 03:27:00.000', # Enc 1 
@@ -33,56 +33,80 @@ PERIHELION_TIMES = {
     23: '2025/03/22 22:42:00.000', # Enc 23 
 }
 
-def get_encounter_number(start_date):
+def get_encounter_number(date_str):
     """
-    Get the PSP encounter number based on the date.
-    
+    Determine the Parker Solar Probe (PSP) encounter number based on a given date.
+
+    This function takes a date string, converts it to a datetime object, and then 
+    compares it against predefined encounter start and end dates to identify 
+    which encounter the date falls into.
+
     Parameters
     ----------
-    start_date : str
-        Date string in format 'YYYY-MM-DD'
-        
+    date_str : str
+        A date string in the format 'YYYY-MM-DD'.
+
     Returns
     -------
-    str
-        Encounter number (e.g., 'E1', 'E2', etc.)
+    str or None
+        The encounter number (e.g., 'E1', 'E2', etc.) if the date falls within
+        a defined encounter period. Returns None if the date does not fall
+        within any defined encounter or if the input format is incorrect.
+        
+    Raises
+    ------
+    ValueError
+        If the input date_str is not in the expected 'YYYY-MM-DD' format.
     """
-    # Convert date string to datetime object
-    date = datetime.strptime(start_date, '%Y-%m-%d')
-    
-    # Define encounter dates
-    encounters = {
-        'E1': datetime(2018, 10, 31),
-        'E2': datetime(2019, 3, 30),
-        'E3': datetime(2019, 8, 27),
-        'E4': datetime(2020, 1, 23),
-        'E5': datetime(2020, 6, 7),
-        'E6': datetime(2020, 9, 27),
-        'E7': datetime(2021, 1, 17),
-        'E8': datetime(2021, 4, 29),
-        'E9': datetime(2021, 8, 9),
-        'E10': datetime(2021, 11, 21),
-        'E11': datetime(2022, 2, 25),
-        'E12': datetime(2022, 6, 1),
-        'E13': datetime(2022, 9, 6),
-        'E14': datetime(2023, 1, 1),
-        'E15': datetime(2023, 4, 10),
-        'E16': datetime(2023, 6, 17),
-        'E17': datetime(2023, 9, 27),
-        'E18': datetime(2024, 1, 4)
+    try:
+        # Convert input date string to datetime object for comparison
+        target_date = datetime.strptime(date_str, '%Y-%m-%d')
+    except ValueError:
+        print(f"Error: Invalid date format '{date_str}'. Please use 'YYYY-MM-DD'.")
+        return None
+
+    # Define encounter periods with start and end dates
+    encounters = { #expanded encounter list
+        'E1': ('2018-10-31', '2019-02-13'),
+        'E2': ('2019-02-14', '2019-06-01'),
+        'E3': ('2019-06-02', '2019-10-16'),
+        'E4': ('2019-10-17', '2020-03-10'),
+        'E5': ('2020-03-11', '2020-06-07'),
+        'E6': ('2020-06-08', '2020-10-09'),
+        'E7': ('2020-10-10', '2021-03-13'),
+        'E8': ('2021-03-14', '2021-05-17'),
+        'E9': ('2021-05-18', '2021-10-10'),
+        'E10': ('2021-10-11', '2021-12-19'),
+        'E11': ('2021-12-20', '2022-04-25'),
+        'E12': ('2022-04-26', '2022-07-12'),
+        'E13': ('2022-07-13', '2022-11-09'),
+        'E14': ('2022-11-10', '2022-12-27'),
+        'E15': ('2022-12-28', '2023-05-11'),
+        'E16': ('2023-05-12', '2023-08-16'),
+        'E17': ('2023-08-17', '2023-11-22'),
+        'E18': ('2023-11-23', '2024-02-23'),
+        'E19': ('2024-02-24', '2024-04-29'),
+        'E20': ('2024-04-30', '2024-08-14'),
+        'E21': ('2024-08-15', '2024-10-27'),
+        'E22': ('2024-10-28', '2025-02-07'),
+        'E23': ('2025-02-08', '2025-05-05'),
+        'E24': ('2025-05-06', '2025-08-01'),
+        'E25': ('2025-08-02', '2025-10-28'),
+        'E26': ('2025-10-29', '2026-01-12')
     }
     
-    # Find the closest encounter before the given date
-    closest_encounter = None
-    min_diff = float('inf')
-    
-    for encounter, encounter_date in encounters.items():
-        diff = (date - encounter_date).total_seconds()
-        if 0 <= diff < min_diff:
-            min_diff = diff
-            closest_encounter = encounter
+    # Iterate through encounters to find where the date falls
+    for encounter, (start_str, end_str) in encounters.items():
+        start_date = datetime.strptime(start_str, '%Y-%m-%d')
+        end_date = datetime.strptime(end_str, '%Y-%m-%d')
+        
+        # Check if the target date is within the encounter period
+        if start_date <= target_date <= end_date:
+            return encounter # Return the encounter number (e.g., 'E1')
             
-    return closest_encounter 
+    # If no encounter matches, return None
+    print(f"Date {date_str} does not fall within any defined encounter period.")
+    return None
 
 def print_memory_usage():
     """Prints the current memory usage of the process."""
@@ -93,42 +117,44 @@ def print_memory_usage():
     print(f"Current memory usage: {mem_info.rss / (1024 * 1024):.2f} MB")
 
 def get_perihelion_time(center_time):
-    # Validate the input center_time
+    """Finds the perihelion time closest to the given center_time."""
+    # Validate and convert input time to datetime object
     if isinstance(center_time, str):
-        center_dt = str_to_datetime(center_time) # Convert string to datetime
+        center_dt = str_to_datetime(center_time)
         if center_dt is None:
             print_manager.error(f"Invalid center_time format: {center_time}. Cannot determine perihelion.")
             return None
     elif isinstance(center_time, np.datetime64):
-        # Convert numpy datetime64 to Python datetime
         center_dt = pd.Timestamp(center_time).to_pydatetime()
     elif isinstance(center_time, datetime):
-        center_dt = center_time # Already a datetime object
+        center_dt = center_time
     else:
-        print_manager.error(f"Unsupported center_time type: {type(center_time)}. Expected string, datetime, or numpy.datetime64.")
+        print_manager.error(f"Unsupported center_time type: {type(center_time)}.")
         return None
 
-    # Get encounter number (adjusting logic if needed)
-    # Assuming get_encounter_number works with datetime objects or can be adapted
-    try:
-        # Need to handle potential timezone issues if center_dt is timezone-aware
-        # get_encounter_number expects YYYY-MM-DD string
-        center_date_str = center_dt.strftime('%Y-%m-%d') 
-        enc_num_str = get_encounter_number(center_date_str)
-        if enc_num_str:
-            # Extract numeric part (e.g., 'E17' -> 17)
-            enc_num = int(enc_num_str[1:]) 
-            peri_time = PERIHELION_TIMES.get(enc_num)
-            if peri_time:
-                 print_manager.debug(f"Found perihelion time {peri_time} for encounter {enc_num}")
-                 return peri_time
-            else:
-                 print_manager.warning(f"Perihelion time not defined for encounter {enc_num}.")
-                 return None
-        else:
-             print_manager.warning(f"Could not determine encounter number for date {center_date_str}.")
-             return None
-    except Exception as e:
-         print_manager.error(f"Error determining encounter or looking up perihelion time: {e}")
-         return None
+    # Find the closest perihelion time
+    closest_peri_time_str = None
+    min_time_diff = timedelta.max # Initialize with a very large difference
+
+    for enc_num, peri_time_str in PERIHELION_TIMES.items():
+        try:
+            peri_dt = datetime.strptime(peri_time_str, '%Y/%m/%d %H:%M:%S.%f')
+            # Calculate absolute difference
+            time_diff = abs(center_dt - peri_dt)
+            
+            if time_diff < min_time_diff:
+                min_time_diff = time_diff
+                closest_peri_time_str = peri_time_str
+                closest_enc_num = enc_num # Store the encounter number too
+                
+        except ValueError:
+            print_manager.warning(f"Could not parse perihelion time for Encounter {enc_num}: {peri_time_str}")
+            continue # Skip this entry if parsing fails
+
+    if closest_peri_time_str:
+        print_manager.debug(f"Closest perihelion to {center_dt} is E{closest_enc_num}: {closest_peri_time_str}")
+        return closest_peri_time_str
+    else:
+        print_manager.warning(f"Could not find any valid perihelion time near {center_dt}.")
+        return None
 

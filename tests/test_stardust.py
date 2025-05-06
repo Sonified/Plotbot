@@ -667,6 +667,7 @@ def test_stardust_sonify_valid_data(test_audifier): # Use the fixture from origi
 
 # --- Test Functions copied from test_custom_variables.py ---
 
+@pytest.mark.skip(reason="Skipping by user request: custom variable test (stardust)")
 @pytest.mark.mission("Stardust Test: Custom Variable Arithmetic")
 def test_stardust_custom_arithmetic(test_environment):
     """Test creating and plotting a simple arithmetic custom variable."""
@@ -704,6 +705,7 @@ def test_stardust_custom_arithmetic(test_environment):
 
     # plt.pause(0.5) # Display plot briefly - REMOVED FOR DEBUGGING
 
+@pytest.mark.skip(reason="Skipping by user request: custom variable test (stardust)")
 @pytest.mark.mission("Stardust Test: Custom Variable with Numpy")
 def test_stardust_custom_numpy(test_environment):
     """Test creating and plotting a custom variable using a numpy function."""

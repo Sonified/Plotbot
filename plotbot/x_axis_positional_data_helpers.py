@@ -155,11 +155,15 @@ class XAxisPositionalDataMapper:
             query_times_numeric = datetime_array.astype('datetime64[ns]').astype(np.int64) / 1e9
             
             # --- DEBUG: Print interpolation inputs ---
-            print_manager.debug(f"  [Mapper Debug] np.interp inputs:")
-            print_manager.debug(f"    Query Times (numeric SECONDS, first 5): {query_times_numeric[:5]}")
-            print_manager.debug(f"    Ref Times (numeric, first 5): {ref_times_numeric[:5]}")
-            print_manager.debug(f"    Ref Values ({data_type}, first 5): {positional_values[:5]}")
-            # --- END DEBUG ---
+            print_manager.debug(f"[Interp Debug] ref_times_numeric: dtype={ref_times_numeric.dtype}, min={ref_times_numeric.min()}, max={ref_times_numeric.max()}, sample={ref_times_numeric[:3]}")
+            print_manager.debug(f"[Interp Debug] query_times_numeric: dtype={query_times_numeric.dtype}, min={query_times_numeric.min()}, max={query_times_numeric.max()}, sample={query_times_numeric[:3]}")
+            # Print first and last reference/query times as dates
+            ref_first = pd.to_datetime(ref_times_numeric[0]*1e9)
+            ref_last = pd.to_datetime(ref_times_numeric[-1]*1e9)
+            query_first = pd.to_datetime(query_times_numeric[0]*1e9)
+            query_last = pd.to_datetime(query_times_numeric[-1]*1e9)
+            print_manager.debug(f"[Interp Debug] ref_times: {ref_first} to {ref_last}")
+            print_manager.debug(f"[Interp Debug] query_times: {query_first} to {query_last}")
             
             # --- SPECIAL HANDLING FOR CARRINGTON LONGITUDE (CIRCULAR ANGLE) ---
             # This prevents interpolation issues when crossing the 0°/360° boundary
@@ -231,7 +235,7 @@ class XAxisPositionalDataMapper:
                     positional_values.astype(np.float64),
                     left=np.nan, 
                     right=np.nan
-            )
+                )
 
             # --- DEBUG: Print interpolation output ---
             print_manager.debug(f"  [Mapper Debug] np.interp output (first 5): {interp_values[:5]}")

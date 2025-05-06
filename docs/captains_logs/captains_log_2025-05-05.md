@@ -172,3 +172,21 @@ If you want a code snippet or want to see a specific function's handling, let me
 - **Key Learning:** For circular quantities like longitude, unwrapping the angles before calculations is essential for proper numerical work. This is similar to how phase unwrapping works in signal processing.
 
 (Log remains open for further updates on 2025-05-05)
+
+---
+
+## Version Tag: v2.20
+Commit Message: fix: core degrees from perihelion issue identified and fixed (v2.20)
+
+Pushed all staged changes after updating version and commit message. See above for details on the bug and fix. Ready for next steps.
+
+---
+
+## Bug Fix: Correct `get_perihelion_time` Logic
+
+- **Issue Identified:** The `get_perihelion_time` function in `plotbot/utils.py` was incorrectly using logic based on `get_encounter_number` which finds the *last started* encounter, not the *closest* perihelion event in time. This caused `multiplot` to use the wrong perihelion reference (always E18) when calculating 'Degrees from Perihelion' for later encounters.
+- **Fix:** Rewritten `get_perihelion_time` to directly iterate through the `PERIHELION_TIMES` dictionary, calculate the absolute time difference between the input `center_time` and each listed perihelion, and return the time string corresponding to the minimum difference.
+- **Verification:** Debug prints confirmed the function now returns the correct perihelion time string for each panel in `multiplot`.
+- **Related:** Updated the outdated `get_encounter_number` function definition within `utils.py` to match the complete list (up to E26) found in `get_encounter.py` for consistency, although the fixed `get_perihelion_time` no longer relies on it.
+
+Pushed all staged changes after updating version and commit message. See above for details on the bug and fix. Ready for next steps.

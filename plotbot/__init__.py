@@ -161,8 +161,8 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vMajor.Minor (Minor increments by 0.01 usually)
-__version__ = "2025_05_05_v2.19"
-__commit_message__ = "fix: degrees from perihelion calculation at 0°/360° boundary (v2.19)"
+__version__ = "2025_05_05_v2.22"
+__commit_message__ = "Excited to share version 2.22 with the world!"
 
 # Print version information on import
 print(f"   Version: {__version__}")
