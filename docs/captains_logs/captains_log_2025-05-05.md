@@ -103,7 +103,7 @@ Summary: Perihelion axis feature is now complete, fully matching Carrington long
 
 Summary: Fixed the root cause of the perihelion degree calculation error by correcting timestamp unit handling in the positional data mapper. 
 
-Here’s the general approach to time handling in Plotbot, based on the codebase:
+Here's the general approach to time handling in Plotbot, based on the codebase:
 1. Parsing and Standardization
 All time parsing (in get_data, import_data_function, data_download_berkeley, data_download_helpers, data_tracker, etc.) uses dateutil.parser.parse and then .replace(tzinfo=timezone.utc) to ensure all times are timezone-aware and in UTC.
 When converting to numpy datetime64:
@@ -126,10 +126,27 @@ str_to_datetime uses dateutil.parser.parse (returns naive or aware depending on 
 All time math and comparisons are done with either:
 Both sides UTC-aware, or
 Both sides naive (usually after stripping timezone for numpy/pandas).
-The only time you see tz-naive/tz-aware errors is when something slips through and isn’t standardized before math.
+The only time you see tz-naive/tz-aware errors is when something slips through and isn't standardized before math.
 Bottom line:
-Plotbot’s standard is:
+Plotbot's standard is:
 Parse as UTC-aware for logic.
 Strip to naive for numpy/pandas storage and math.
 Always match tz-awareness before comparing or subtracting.
-If you want a code snippet or want to see a specific function’s handling, let me know!
+If you want a code snippet or want to see a specific function's handling, let me know!
+
+---
+
+## Debugging: Asymmetrical Degrees from Perihelion Plotting
+
+- **Investigation:** Debug logs revealed that some plots showed an asymmetrical range of degrees from perihelion (e.g., only negative degrees), even though the calculation logic was correct.
+- **Key Finding:** A fixed **time** window around perihelion (e.g., +/- 24 hours) doesn't necessarily correspond to a symmetrical range of **degrees** from perihelion. The spacecraft moves at varying speeds in terms of longitude, so a time window may contain more data points before or after perihelion.
+- **Analysis Results (from debug prints):**
+  - Panel 1 (E19): -180.00° to 180.00° (Good, full range)
+  - Panel 2 (E20): -155.68° to -27.55° (Skewed! Only negative degrees)
+  - Panel 3 (E21): -179.99° to 179.99° (Good, full range)
+  - Panel 4 (E22): -163.46° to -16.49° (Skewed! Only negative degrees)
+  - Panel 5 (E23): -180.00° to 179.98° (Good, full range)
+- **Solution:** Use the `degrees_from_perihelion_range` option to force a symmetrical degree range for the x-axis (e.g., `plt.options.degrees_from_perihelion_range = [-180, 180]`). This ensures all panels use the same scale centered around 0°, regardless of the actual data distribution.
+- **Documentation:** Added notes to the implementation plan explaining this behavior and recommended approach for centering plots.
+
+(Log remains open for further updates on 2025-05-05)

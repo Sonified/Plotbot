@@ -221,3 +221,30 @@ Debugging by comparing `debug_perihelion_mapping.py` (which uses the mapper) and
 *   **Confirmation:** Rerunning `tests/debug_perihelion_mapping.py` after applying this fix showed the correct interpolation results and the expected 'Degrees from Perihelion' range, consistent with the target logic in `test_plot_perihelion_windows.py`.
 
 **This fix to the mapper is expected to resolve the incorrect 'Degrees from Perihelion' axis values previously observed in `multiplot`.**
+
+**⭐ NEW: Appearance of Asymmetrical Plots (2025-05-07) ⭐**
+
+Debug logs from running multiplot with the fixed degree calculation logic revealed an important insight about the visual appearance of "Degrees from Perihelion" plots:
+
+**Finding:** A fixed **time** window around perihelion (e.g., +/- 24 hours) does not necessarily correspond to a symmetrical range of **degrees** from perihelion. The spacecraft moves at varying speeds in terms of Carrington longitude, so a fixed time window may contain a skewed distribution of longitudes.
+
+**Analysis of Debug Log Results:**
+```
+Panel 1 (E19): -180.00° to 180.00° (Good, full range)
+Panel 2 (E20): -155.68° to -27.55° (Skewed! Only negative degrees)
+Panel 3 (E21): -179.99° to 179.99° (Good, full range)
+Panel 4 (E22): -163.46° to -16.49° (Skewed! Only negative degrees)
+Panel 5 (E23): -180.00° to 179.98° (Good, full range)
+```
+
+Even though the calculation logic is correct (0° precisely at perihelion), the distribution of degrees within the plotted time window can be heavily skewed. Some encounters (E20, E22) show data only on the negative side of perihelion when using a fixed time window.
+
+**Solution:** Use the `degrees_from_perihelion_range` option to force a symmetrical degree range for the x-axis:
+
+```python
+plt.options.degrees_from_perihelion_range = [-180, 180]  # Or a smaller range like [-90, 90]
+```
+
+This ensures all panels use the same scale centered around 0°, regardless of the actual distribution of data within the time window.
+
+**Recommendation:** For scientific comparison between encounters, always use `degrees_from_perihelion_range` to ensure consistent axis scaling, particularly when creating multi-panel plots showing multiple encounters.
