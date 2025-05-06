@@ -716,16 +716,26 @@ class MultiplotOptions:
     @use_degrees_from_perihelion.setter
     def use_degrees_from_perihelion(self, value: bool):
         """Set whether to use degrees from perihelion for the x-axis."""
+        # Only proceed if the value is actually changing to avoid redundant operations
         if value != self.__dict__.get('use_degrees_from_perihelion', False):
+            self.__dict__['use_degrees_from_perihelion'] = value # Set the primary option first
             if value:
-                # If enabling this, disable conflicting modes
-                print_manager.status("Enabling degrees from perihelion axis. Disabling other positional/relative modes.")
+                print_manager.status("Enabling degrees from perihelion axis.")
+                # Disable other specific positional x-axis modes
                 self.__dict__['_x_axis_r_sun'] = False
                 self.__dict__['_x_axis_carrington_lon'] = False
                 self.__dict__['_x_axis_carrington_lat'] = False
+                
+                # IMPORTANT: DO NOT automatically disable _use_relative_time here.
+                # Let the user control if they want relative time in conjunction with degrees.
+                # The multiplot function's main logic will handle how these combine.
+                
+                # If enabling degrees, print a message if relative time is also active.
                 if self.__dict__.get('_use_relative_time', False):
-                    self.__dict__['_use_relative_time'] = False
-            self.__dict__['use_degrees_from_perihelion'] = value
+                    print_manager.status("Note: 'use_relative_time' is also active with 'degrees_from_perihelion'.")
+                
+            # else: # Optional: handle disabling use_degrees_from_perihelion
+            #     print_manager.status("Disabling degrees from perihelion axis.")
 
     @property
     def degrees_from_perihelion_range(self) -> Optional[Tuple[float, float]]:
