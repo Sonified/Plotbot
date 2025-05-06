@@ -157,7 +157,6 @@ if __name__ == "__main__":
     print_manager.show_status = True # Alias for show_variable_basic
     print("Enabled print_manager debug and status messages for this run.") # Print to console
     # <<< END NEW >>>
-
     try:
         test_perihelion_mapping_standalone()
     except Exception as e:
@@ -165,4 +164,4 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc() # Print traceback to console
 
-    print("Script finished. Output printed to console.") 
+    print("Script finished. Output printed to console.")

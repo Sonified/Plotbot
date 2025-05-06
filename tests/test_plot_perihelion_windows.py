@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pathlib
 from datetime import datetime, timedelta
+from plotbot.x_axis_positional_data_helpers import XAxisPositionalDataMapper
 
 PERIHELION_TIMES = {
     1: '2018/11/06 03:27:00.000', 2: '2019/04/04 22:39:00.000', 3: '2019/09/01 17:50:00.000',
@@ -23,52 +24,47 @@ def test_print_debug():
 def test_plot_perihelion_windows():
     npz_path = pathlib.Path(__file__).parent.parent / "support_data" / "trajectories" / "Parker_positional_data.npz"
     assert npz_path.exists(), f"NPZ file not found: {npz_path}"
+    mapper = XAxisPositionalDataMapper(str(npz_path))
     with np.load(npz_path) as data:
         times = pd.to_datetime(data['times'])
-        carr_lon = data['carrington_lon']
+        # carr_lon = data['carrington_lon']  # No longer needed directly
     
-    print("[DIAGNOSTIC] carrington_lon (entire NPZ):", flush=True)
-    print(f"  min: {np.min(carr_lon)}", flush=True)
-    print(f"  max: {np.max(carr_lon)}", flush=True)
-    
-    encounters = [17]
+    # Use E21 which crosses the 0°/360° boundary to properly test the fix
+    encounters = [21]
     fig, axes = plt.subplots(len(encounters), 1, figsize=(14, 4), sharex=False)
     
     hour_offsets = np.arange(-12, 13, 2)
     
     if len(encounters) == 1:
         axs = [axes]
-
+    
     for i, enc in enumerate(encounters):
         peri_time = pd.to_datetime(PERIHELION_TIMES[enc])
         print(f"\n================= E{enc} ({PERIHELION_TIMES[enc]}) =================", flush=True)
-        
         # Generate timestamps at perihelion ± multiples of 10 hours
         sample_times = [peri_time + pd.Timedelta(hours=dt) for dt in hour_offsets]
-        sample_times_numeric = [t.timestamp() for t in sample_times]
-        
-        # Interpolate longitude at each sample time
-        interp_lons = np.interp(sample_times_numeric, [t.timestamp() for t in times], carr_lon)
-        perihelion_lon = np.interp(peri_time.timestamp(), [t.timestamp() for t in times], carr_lon)
+        sample_times_np = np.array([np.datetime64(t) for t in sample_times])
+        peri_time_np = np.array([np.datetime64(peri_time)])
+        # Use the robust longitude mapping with unwrapping
+        interp_lons = mapper.map_to_position(sample_times_np, 'carrington_lon', unwrap_angles=True)
+        perihelion_lon = mapper.map_to_position(peri_time_np, 'carrington_lon', unwrap_angles=True)[0]
         deg_from_peri = interp_lons - perihelion_lon
-        deg_from_peri = np.mod(deg_from_peri + 180, 360) - 180
-        
+        # No need to wrap, since unwrapped is continuous and centered
         print(f"{'Offset (hr)':>12} | {'Timestamp':>24} | {'Longitude':>12} | {'Deg from Peri':>15}", flush=True)
         print("-"*70, flush=True)
         for dt, t, lon, deg in zip(hour_offsets, sample_times, interp_lons, deg_from_peri):
             print(f"{dt:12.1f} | {t} | {lon:12.4f} | {deg:15.4f}", flush=True)
-        
         # Plot
         ax = axs[i]
-        ax.plot(hour_offsets, deg_from_peri, marker='o', color='green', label='Deg from Perihelion')
+        ax.plot(hour_offsets, deg_from_peri, marker='o', color='green', label='Deg from Perihelion (unwrapped)')
         ax.axvline(0, color='r', linestyle='--', linewidth=1, label='Perihelion (0 hr)')
         ax.axhline(0, color='k', linestyle=':', linewidth=1)
         ax.set_xlabel('Hours from Perihelion', fontsize=13)
         ax.set_ylabel(f"E{enc}\n{PERIHELION_TIMES[enc]}", fontsize=11, rotation=0, labelpad=50, va='center')
-        ax.set_title(f"E{enc} - Degrees from Perihelion - {PERIHELION_TIMES[enc]}", fontsize=13)
+        ax.set_title(f"E{enc} - Degrees from Perihelion (Unwrapped) - {PERIHELION_TIMES[enc]}", fontsize=13)
         ax.grid(True)
         ax.legend(loc='upper right')
-    
+        
     axs[0].set_xlabel("Hours from Perihelion", fontsize=13)
     
     plt.tight_layout()

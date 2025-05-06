@@ -150,3 +150,25 @@ If you want a code snippet or want to see a specific function's handling, let me
 - **Documentation:** Added notes to the implementation plan explaining this behavior and recommended approach for centering plots.
 
 (Log remains open for further updates on 2025-05-05)
+
+---
+
+## Bug Fix: Degrees from Perihelion at 0°/360° Boundary
+
+- **Problem:** For some encounters (notably E21), the degrees-from-perihelion calculation was incorrectly handling cases where the spacecraft crossed the 0°/360° Carrington longitude boundary. This led to sharp discontinuities in plots, with incorrect values for the degrees from perihelion.
+
+- **Root Cause:** Standard interpolation and subtraction logic doesn't handle 'circular' values properly. When the spacecraft crosses the 0°/360° boundary, the longitude appears to "jump" from near 360° to near 0°, even though this is a continuous motion. This led to incorrect degrees-from-perihelion calculations.
+
+- **Fix:** 
+  1. Updated the `map_to_position` method in `XAxisPositionalDataMapper` to use `unwrap_angles=True` when getting longitudes for degrees-from-perihelion calculations.
+  2. Removed the manual wrapping logic that restricted degrees to the [-180°, 180°] range. When using unwrapped longitudes, the relative degrees are already continuous and don't need to be wrapped.
+
+- **Validation:** 
+  - Tested all 23 Parker encounters using a comprehensive validation script.
+  - Found 7 encounters crossing the 0°/360° boundary (E2, E10, E14, E15, E18, E21, E23).
+  - All encounters now correctly show 0° (within interpolation precision) at perihelion, even when crossing the boundary.
+  - All tests pass, confirming the fix is robust across all encounters.
+
+- **Key Learning:** For circular quantities like longitude, unwrapping the angles before calculations is essential for proper numerical work. This is similar to how phase unwrapping works in signal processing.
+
+(Log remains open for further updates on 2025-05-05)

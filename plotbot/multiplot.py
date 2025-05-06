@@ -838,47 +838,47 @@ def multiplot(plot_list, **kwargs):
                                 print_manager.debug(f"Panel {i+1} (Time Series): Calculating Degrees from Perihelion.")
                                 try:
                                     # 1. Map time slice to Carrington longitude
-                                    carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon')
-                                    
+                                    print("[DEBUG] time_slice type:", type(time_slice))
+                                    print("[DEBUG] time_slice dtype:", getattr(time_slice, 'dtype', 'N/A'))
+                                    print("[DEBUG] time_slice shape:", np.shape(time_slice))
+                                    print("[DEBUG] time_slice (first 5):", time_slice[:5])
+                                    print("[DEBUG] time_slice (last 5):", time_slice[-5:])
+                                    carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon', unwrap_angles=True)
+                                    print("[DEBUG] carrington_lons_slice type:", type(carrington_lons_slice))
+                                    print("[DEBUG] carrington_lons_slice dtype:", getattr(carrington_lons_slice, 'dtype', 'N/A'))
+                                    print("[DEBUG] carrington_lons_slice shape:", np.shape(carrington_lons_slice))
+                                    print("[DEBUG] carrington_lons_slice (first 5):", carrington_lons_slice[:5])
+                                    print("[DEBUG] carrington_lons_slice (last 5):", carrington_lons_slice[-5:])
                                     # 2. Map perihelion time to its longitude
-                                    # Convert string to datetime object first
                                     perihelion_dt = datetime.strptime(perihelion_time_str, '%Y/%m/%d %H:%M:%S.%f')
                                     perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
-                                    perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon')
+                                    perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon', unwrap_angles=True)
                                     
-                                    # Check if mapping was successful
                                     if carrington_lons_slice is not None and perihelion_lon_arr is not None and len(perihelion_lon_arr) > 0:
                                         perihelion_lon_val = perihelion_lon_arr[0]
-                                        print_manager.debug(f"  Perihelion Lon: {perihelion_lon_val:.2f}")
                                         
                                         # Create mask for valid longitude values in the slice
                                         valid_lon_mask = ~np.isnan(carrington_lons_slice)
                                         num_valid_lons = np.sum(valid_lon_mask)
-                                        print_manager.debug(f"  Found {num_valid_lons} valid longitudes in the time slice.")
                                         
                                         if num_valid_lons > 0:
                                             # Filter slice data based on valid longitudes
                                             carrington_lons_slice_valid = carrington_lons_slice[valid_lon_mask]
                                             data_slice_filtered_lon = data_slice[valid_lon_mask]
-                                            print_manager.debug(f"  Peri Lon Value: {perihelion_lon_val:.2f}") # DEBUG
-                                            print_manager.debug(f"  Carrington Lons Slice (Valid): Range {np.nanmin(carrington_lons_slice_valid):.2f} to {np.nanmax(carrington_lons_slice_valid):.2f}") # DEBUG
                                             
-                                            # 3. Calculate relative degrees using only valid longitudes
+                                            # 3. Calculate relative degrees
                                             relative_degrees = carrington_lons_slice_valid - perihelion_lon_val
                                             
-                                            # 4. Apply wrap-around
-                                            relative_degrees[relative_degrees > 180] -= 360
-                                            relative_degrees[relative_degrees <= -180] += 360
+                                            # 4. No wrap-around needed with unwrapped longitudes
+                                            # This fixes the 0°/360° boundary crossing issue
                                             
-                                            # 5. Set x_data for plotting
+                                            # 5. Set x_data & filtered data_slice
                                             x_data = relative_degrees
-                                            # 5b. Update data_slice to match the filtered x_data
                                             data_slice = data_slice_filtered_lon
                                             
-                                            # 6. Set panel flag
+                                            # 6. Set flags
                                             panel_actually_uses_degrees = True
                                             print_manager.debug(f"  Successfully calculated relative degrees. Range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
-                                            
                                             # 7. Store flag on axis
                                             axs[i]._panel_actually_used_degrees = True
                                             print_manager.debug(f"--> Stored _panel_actually_used_degrees=True on axis {i} (Time Series)")
@@ -892,7 +892,6 @@ def multiplot(plot_list, **kwargs):
                                         panel_actually_uses_degrees = False
                                         x_data = time_slice # Ensure fallback
                                         # data_slice remains the original full slice matching time_slice
-                                        
                                 except Exception as e:
                                     print_manager.error(f"Panel {i+1} (Time Series): Error during degrees from perihelion calculation: {e}")
                                     panel_actually_uses_degrees = False
@@ -922,6 +921,12 @@ def multiplot(plot_list, **kwargs):
                             # If not using positional axis at all, x_data and data_slice remain the initial time-based slices
 
                             # --- Plot using the determined x_data and potentially filtered data_slice --- 
+                            # <<< DEBUG PRINT: Verify x_data just before plotting >>>
+                            print(f"[DEBUG] Plotting Axis {i} (Time Series - Degrees Mode)")
+                            print(f"  x_data (first 5): {x_data[:5]}")
+                            print(f"  x_data (last 5): {x_data[-5:]}")
+                            print(f"  x_data range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
+                            # <<< END DEBUG >>>
                             axs[i].plot(x_data, 
                                         data_slice, # Use potentially filtered data_slice
                                         linewidth=options.magnetic_field_line_width if options.save_preset else var.line_width,
@@ -960,12 +965,12 @@ def multiplot(plot_list, **kwargs):
                                 print_manager.debug(f"Panel {i+1} (Scatter): Calculating Degrees from Perihelion.")
                                 try:
                                     # 1. Map time slice to Carrington longitude
-                                    carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon')
+                                    carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon', unwrap_angles=True)
                                     
                                     # 2. Map perihelion time to its longitude
                                     perihelion_dt = datetime.strptime(perihelion_time_str, '%Y/%m/%d %H:%M:%S.%f')
                                     perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
-                                    perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon')
+                                    perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon', unwrap_angles=True)
                                     
                                     if carrington_lons_slice is not None and perihelion_lon_arr is not None and len(perihelion_lon_arr) > 0:
                                         perihelion_lon_val = perihelion_lon_arr[0]
@@ -982,9 +987,8 @@ def multiplot(plot_list, **kwargs):
                                             # 3. Calculate relative degrees
                                             relative_degrees = carrington_lons_slice_valid - perihelion_lon_val
                                             
-                                            # 4. Apply wrap-around
-                                            relative_degrees[relative_degrees > 180] -= 360
-                                            relative_degrees[relative_degrees <= -180] += 360
+                                            # 4. No wrap-around needed with unwrapped longitudes
+                                            # This fixes the 0°/360° boundary crossing issue
                                             
                                             # 5. Set x_data & filtered data_slice
                                             x_data = relative_degrees
@@ -1023,6 +1027,12 @@ def multiplot(plot_list, **kwargs):
                                     x_data = time_slice
 
                             # --- Plot using the determined x_data and potentially filtered data_slice --- 
+                            # <<< DEBUG PRINT: Verify x_data just before plotting >>>
+                            print(f"[DEBUG] Plotting Axis {i} (Scatter - Degrees Mode)")
+                            print(f"  x_data (first 5): {x_data[:5]}")
+                            print(f"  x_data (last 5): {x_data[-5:]}")
+                            print(f"  x_data range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
+                            # <<< END DEBUG >>>
                             axs[i].scatter(x_data,
                                           data_slice, # Use filtered data_slice
                                           color=plot_color,
@@ -1069,12 +1079,12 @@ def multiplot(plot_list, **kwargs):
                                 print_manager.debug(f"Panel {i+1} (Spectral): Calculating Degrees from Perihelion.")
                                 try:
                                     # 1. Map time slice to Carrington longitude
-                                    carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon')
+                                    carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon', unwrap_angles=True)
                                     
                                     # 2. Map perihelion time to its longitude
                                     perihelion_dt = datetime.strptime(perihelion_time_str, '%Y/%m/%d %H:%M:%S.%f')
                                     perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
-                                    perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon')
+                                    perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon', unwrap_angles=True)
                                     
                                     if carrington_lons_slice is not None and perihelion_lon_arr is not None and len(perihelion_lon_arr) > 0:
                                         perihelion_lon_val = perihelion_lon_arr[0]
@@ -1092,9 +1102,8 @@ def multiplot(plot_list, **kwargs):
                                             # 3. Calculate relative degrees
                                             relative_degrees = carrington_lons_slice_valid - perihelion_lon_val
                                             
-                                            # 4. Apply wrap-around
-                                            relative_degrees[relative_degrees > 180] -= 360
-                                            relative_degrees[relative_degrees <= -180] += 360
+                                            # 4. No wrap-around needed with unwrapped longitudes
+                                            # This fixes the 0°/360° boundary crossing issue
                                             
                                             # 5. Set x_data & filtered data_slice
                                             x_data = relative_degrees
@@ -1185,12 +1194,12 @@ def multiplot(plot_list, **kwargs):
                             print_manager.debug(f"Panel {i+1} (Default): Calculating Degrees from Perihelion.")
                             try:
                                 # 1. Map time slice to Carrington longitude
-                                carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon')
+                                carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon', unwrap_angles=True)
                                 
                                 # 2. Map perihelion time to its longitude
                                 perihelion_dt = datetime.strptime(perihelion_time_str, '%Y/%m/%d %H:%M:%S.%f')
                                 perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
-                                perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon')
+                                perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon', unwrap_angles=True)
                                 
                                 if carrington_lons_slice is not None and perihelion_lon_arr is not None and len(perihelion_lon_arr) > 0:
                                     perihelion_lon_val = perihelion_lon_arr[0]
@@ -1207,9 +1216,8 @@ def multiplot(plot_list, **kwargs):
                                         # 3. Calculate relative degrees
                                         relative_degrees = carrington_lons_slice_valid - perihelion_lon_val
                                         
-                                        # 4. Apply wrap-around
-                                        relative_degrees[relative_degrees > 180] -= 360
-                                        relative_degrees[relative_degrees <= -180] += 360
+                                        # 4. No wrap-around needed with unwrapped longitudes
+                                        # This fixes the 0°/360° boundary crossing issue
                                         
                                         # 5. Set x_data & filtered data_slice
                                         x_data = relative_degrees
@@ -1249,6 +1257,12 @@ def multiplot(plot_list, **kwargs):
                         # --- END X-Data Calc --- 
                         
                         # --- Plot using potentially modified x_data and data_slice --- 
+                        # <<< DEBUG PRINT: Verify x_data just before plotting >>>
+                        print(f"[DEBUG] Plotting Axis {i} (Default - Degrees Mode)")
+                        print(f"  x_data (first 5): {x_data[:5]}")
+                        print(f"  x_data (last 5): {x_data[-5:]}")
+                        print(f"  x_data range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
+                        # <<< END DEBUG >>>
                         axs[i].plot(x_data, 
                                     data_slice, # Use potentially filtered data_slice
                                     linewidth=options.magnetic_field_line_width if options.save_preset else var.line_width,
@@ -1850,35 +1864,39 @@ def multiplot(plot_list, **kwargs):
             print_manager.debug(f"Axis {i}: Entering DEGREE formatting block ({current_axis_mode}).")
             
             # --- TICK LOCATOR --- 
-            tick_step = None
-            if current_axis_mode == 'degrees_from_perihelion' and hasattr(options, 'degrees_from_perihelion_tick_step') and options.degrees_from_perihelion_tick_step:
-                tick_step = options.degrees_from_perihelion_tick_step
-                print_manager.debug(f"  Using fixed tick step for degrees_from_perihelion: {tick_step}")
-            # Add elif for potential future fixed steps for lon/lat if needed
+            # <<< COMMENTING OUT EXPLICIT LOCATOR/FORMATTER >>>
+            # tick_step = None
+            # if current_axis_mode == 'degrees_from_perihelion' and hasattr(options, 'degrees_from_perihelion_tick_step') and options.degrees_from_perihelion_tick_step:
+            #     tick_step = options.degrees_from_perihelion_tick_step
+            #     print_manager.debug(f"  Using fixed tick step for degrees_from_perihelion: {tick_step}")
+            # # Add elif for potential future fixed steps for lon/lat if needed
             
-            if tick_step:
-                # Use FixedLocator if a specific step is provided
-                start_tick = np.ceil(ax.get_xlim()[0] / tick_step) * tick_step
-                end_tick = np.floor(ax.get_xlim()[1] / tick_step) * tick_step
-                ticks = np.arange(start_tick, end_tick + tick_step, tick_step)
-                ax.xaxis.set_major_locator(mticker.FixedLocator(ticks))
-                print_manager.debug(f"  Applied FixedLocator with step {tick_step}")
-            else:
-                # Default: Use MaxNLocator based on density
-                num_ticks = 5 * options.positional_tick_density
-                ax.xaxis.set_major_locator(mpl_plt.MaxNLocator(num_ticks))
-                print_manager.debug(f"  Applied MaxNLocator with ~{num_ticks} ticks (density={options.positional_tick_density}x)")
+            # if tick_step:
+            #     # Use FixedLocator if a specific step is provided
+            #     start_tick = np.ceil(ax.get_xlim()[0] / tick_step) * tick_step
+            #     end_tick = np.floor(ax.get_xlim()[1] / tick_step) * tick_step
+            #     ticks = np.arange(start_tick, end_tick + tick_step, tick_step)
+            #     ax.xaxis.set_major_locator(mticker.FixedLocator(ticks))
+            #     # print_manager.debug(f"  Applied FixedLocator with step {tick_step}") # <<< COMMENTED OUT
+            # else:
+            #     # Default: Use MaxNLocator based on density
+            #     num_ticks = 5 * options.positional_tick_density
+            #     ax.xaxis.set_major_locator(mpl_plt.MaxNLocator(num_ticks))
+            #     # print_manager.debug(f"  Applied MaxNLocator with ~{num_ticks} ticks (density={options.positional_tick_density}x)") # <<< COMMENTED OUT
+            print_manager.debug(f"  Letting Matplotlib handle default locator for {current_axis_mode}.")
 
             # --- TICK FORMATTER (Same for all degree types) --- 
-            def angle_formatter(x, pos):
-                # Ensure clean formatting, avoid unnecessary decimals like .0
-                if x == int(x):
-                    return f"{int(x)}°"
-                else:
-                    # Round to avoid excessive precision, e.g., 123.4567°
-                    return f"{x:.1f}°"
-            ax.xaxis.set_major_formatter(FuncFormatter(angle_formatter))
-            print_manager.debug(f"  Applied angle_formatter.")
+            # <<< COMMENTING OUT EXPLICIT FORMATTER >>>
+            # def angle_formatter(x, pos):
+            #     # Ensure clean formatting, avoid unnecessary decimals like .0
+            #     if x == int(x):
+            #         return f"{int(x)}°"
+            #     else:
+            #         # Round to avoid excessive precision, e.g., 123.4567°
+            #         return f"{x:.1f}°"
+            # ax.xaxis.set_major_formatter(FuncFormatter(angle_formatter))
+            # # print_manager.debug(f"  Applied angle_formatter.") # <<< COMMENTED OUT
+            print_manager.debug(f"  Letting Matplotlib handle default formatter for {current_axis_mode}.")
             
             # --- X-AXIS LIMITS --- 
             fixed_range = None
@@ -2009,7 +2027,7 @@ def multiplot(plot_list, **kwargs):
              # --- END NEW ---
 
              # <<< REMOVED: Previous scattered timezone patches >>>
-
+                 
              current = panel_start_dt
              # Align ticks to the step interval relative to the center time
              # Find the first tick >= start_time that is on a step interval from center_time
@@ -2019,7 +2037,7 @@ def multiplot(plot_list, **kwargs):
              if first_tick_dt < panel_start_dt: # Ensure first tick is within bounds
                   first_tick_dt += step_td
              current = first_tick_dt
-
+                  
              ticks = []
              tick_labels = []
              while current <= panel_end_dt:
@@ -2037,7 +2055,7 @@ def multiplot(plot_list, **kwargs):
                  else:
                      print(f"Unrecognized time step unit: {options.relative_time_step_units}. Please use 'days', 'hours', 'minutes', or 'seconds'.")
                      return
-
+     
                  if abs(value_from_center) < 1e-9: # Check for near zero
                      label = "0"
                  else:
@@ -2097,26 +2115,55 @@ def multiplot(plot_list, **kwargs):
                 if lines and len(lines) > 0:
                     x_data = lines[0].get_xdata()
                     if len(x_data) > 0:
+                        # --- PATCH: Ensure x_data is a numpy array before dtype check ---
+                        if not isinstance(x_data, np.ndarray):
+                            x_data = np.array(x_data)
+                        # --- END PATCH ---
                         # Ensure data is numeric before finding min/max
                         if np.issubdtype(x_data.dtype, np.number):
                             min_val, max_val = np.nanmin(x_data), np.nanmax(x_data)
+                            # <<< DEBUG PRINT >>>
+                            print_manager.debug(f"  [Common Range] Axis {i}: Found x_data (type: {x_data.dtype}), Min: {min_val:.2f}, Max: {max_val:.2f}")
+                            # <<< END DEBUG >>>
                             if np.isfinite(min_val) and np.isfinite(max_val):
                                 all_mins.append(min_val)
                                 all_maxs.append(max_val)
                         else:
-                            print_manager.warning(f"Axis data type is not numeric ({x_data.dtype}), cannot use for common range.")
+                            # <<< DEBUG PRINT >>>
+                            print_manager.warning(f"  [Common Range] Axis {i}: x_data type ({x_data.dtype}) is not numeric. Skipping for common range.")
+                            # <<< END DEBUG >>>
+            
+            # --- Explicitly filter lists again to ensure only numerics remain ---
+            initial_min_count = len(all_mins)
+            numeric_mins = [m for m in all_mins if isinstance(m, (int, float, np.number))]
+            numeric_maxs = [m for m in all_maxs if isinstance(m, (int, float, np.number))]
+            
+            if len(numeric_mins) != initial_min_count:
+                 print_manager.warning(f"Filtered out {initial_min_count - len(numeric_mins)} non-numeric values from positional range calculation. Check axis types.")
 
-            if all_mins and all_maxs:
-                global_min = min(all_mins)
-                global_max = max(all_maxs)
+            # Now use the filtered lists
+            if numeric_mins and numeric_maxs:
+                global_min = min(numeric_mins)
+                global_max = max(numeric_maxs)
+                # <<< DEBUG PRINT >>>
+                print_manager.debug(f"  [Common Range] Calculated Min/Max across panels: {global_min:.2f} to {global_max:.2f}")
+                # <<< END DEBUG >>>
                 data_range = global_max - global_min
                 padding = data_range * 0.05 if data_range > 0 else 0.1 # Add padding
                 global_min -= padding
                 global_max += padding
+                
+                # <<< DEBUG PRINT >>>
+                print_manager.debug(f"  [Common Range] Final Global Min/Max (with padding): {global_min:.2f} to {global_max:.2f}")
+                # <<< END DEBUG >>>
 
                 # Apply the global auto-scaled range to all axes
                 for ax in axs:
                     ax.set_xlim(global_min, global_max)
+                    # <<< DEBUG PRINT >>>
+                    final_xlim = ax.get_xlim()
+                    print_manager.debug(f"  [Common Range] Applied final xlim to Axis {i}: {final_xlim}")
+                    # <<< END DEBUG >>>
                 
                 print_manager.debug(f"Applied common AUTO-SCALED x-axis range to all panels ({current_axis_mode}): {global_min:.2f} to {global_max:.2f}")
                 common_range_applied = True
@@ -2164,34 +2211,34 @@ def multiplot(plot_list, **kwargs):
                   
                   ticks = []
                   while current <= panel_end_dt:
-                      # --- PATCH: Ensure current is a Python datetime.datetime ---
-                      print(f"[DEBUG] current tick type: {type(current)}")
-                      if isinstance(current, pd.Timestamp):
-                          current = current.to_pydatetime()
-                      # --- END PATCH ---
+                    # --- PATCH: Ensure current is a Python datetime.datetime ---
+                    print(f"[DEBUG] current tick type: {type(current)}")
+                    if isinstance(current, pd.Timestamp):
+                        current = current.to_pydatetime()
+                    # --- END PATCH ---
                       ticks.append(current)
-                      time_from_center = (current - center_dt_panel)
-                      if options.relative_time_step_units == 'days':
-                          value_from_center = time_from_center.total_seconds() / (3600 * 24)
-                      elif options.relative_time_step_units == 'hours':
-                          value_from_center = time_from_center.total_seconds() / 3600
-                      elif options.relative_time_step_units == 'minutes':
-                          value_from_center = time_from_center.total_seconds() / 60
-                      elif options.relative_time_step_units == 'seconds':
-                          value_from_center = time_from_center.total_seconds()
-                      else:
-                          print(f"Unrecognized time step unit: {options.relative_time_step_units}. Please use 'days', 'hours', 'minutes', or 'seconds'.")
-                          return
+                            time_from_center = (current - center_dt_panel)
+                    if options.relative_time_step_units == 'days':
+                        value_from_center = time_from_center.total_seconds() / (3600 * 24)
+                    elif options.relative_time_step_units == 'hours':
+                        value_from_center = time_from_center.total_seconds() / 3600
+                    elif options.relative_time_step_units == 'minutes':
+                        value_from_center = time_from_center.total_seconds() / 60
+                    elif options.relative_time_step_units == 'seconds':
+                        value_from_center = time_from_center.total_seconds()
+                    else:
+                        print(f"Unrecognized time step unit: {options.relative_time_step_units}. Please use 'days', 'hours', 'minutes', or 'seconds'.")
+                        return
 
-                      if abs(value_from_center) < 1e-9: # Check for near zero
-                          label = "0"
-                      else:
-                          # Format to remove trailing .0 if it's an integer
-                          label = f"{value_from_center:.1f}".rstrip('0').rstrip('.') if '.' in f"{value_from_center:.1f}" else str(int(value_from_center))
-                      tick_labels.append(label)
-                      current += step_td
-                  ax.set_xticks(ticks)
-                  print_manager.warning(f"Could not set relative tick labels for axis {i} due to limit conversion error.") 
+                if abs(value_from_center) < 1e-9: # Check for near zero
+                        label = "0"
+                    else:
+                        # Format to remove trailing .0 if it's an integer
+                    label = f"{value_from_center:.1f}".rstrip('0').rstrip('.') if '.' in f"{value_from_center:.1f}" else str(int(value_from_center))
+                    tick_labels.append(label)
+                    current += step_td
+                    ax.set_xticks(ticks)
+                        print_manager.warning(f"Could not set relative tick labels for axis {i} due to limit conversion error.")
                   # ax.set_xlabel(...) # Already handled in mode-specific blocks
              # ax.set_xlabel(...) # Already handled in mode-specific blocks
     

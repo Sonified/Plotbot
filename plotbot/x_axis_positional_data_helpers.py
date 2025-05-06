@@ -88,7 +88,7 @@ class XAxisPositionalDataMapper:
             self.data_loaded = False
             return False
 
-    def map_to_position(self, datetime_array, data_type='longitude'):
+    def map_to_position(self, datetime_array, data_type='longitude', unwrap_angles=False):
         """
         Maps an array of datetime objects (numpy.datetime64) to their
         corresponding positional values using interpolation.
@@ -96,6 +96,8 @@ class XAxisPositionalDataMapper:
         Args:
             datetime_array: NumPy array of numpy.datetime64 objects.
             data_type: Type of positional data to map to ('radial', 'longitude', or 'latitude')
+            unwrap_angles: If True, keep angular values unwrapped when crossing the 0°/360° boundary.
+                          For "degrees from perihelion" calculations, set this to True. Default: False.
 
         Returns:
             NumPy array of positional values, or None if mapping fails.
@@ -151,20 +153,86 @@ class XAxisPositionalDataMapper:
             # Ensure reference arrays are float64 for interpolation
             ref_times_numeric = self.times_numeric.astype(np.float64)
             query_times_numeric = datetime_array.astype('datetime64[ns]').astype(np.int64) / 1e9
+            
             # --- DEBUG: Print interpolation inputs ---
             print_manager.debug(f"  [Mapper Debug] np.interp inputs:")
             print_manager.debug(f"    Query Times (numeric SECONDS, first 5): {query_times_numeric[:5]}")
             print_manager.debug(f"    Ref Times (numeric, first 5): {ref_times_numeric[:5]}")
             print_manager.debug(f"    Ref Values ({data_type}, first 5): {positional_values[:5]}")
             # --- END DEBUG ---
+            
+            # --- SPECIAL HANDLING FOR CARRINGTON LONGITUDE (CIRCULAR ANGLE) ---
+            # This prevents interpolation issues when crossing the 0°/360° boundary
+            if data_type == 'carrington_lon':
+                # Make a copy of the original reference values
+                ref_values = positional_values.astype(np.float64).copy()
+                
+                # Check for 0°/360° boundary crossings in reference data
+                # Look for large jumps between adjacent points (greater than 180°)
+                jumps = np.abs(np.diff(ref_values))
+                
+                if np.any(jumps > 180):
+                    print_manager.debug("*** DETECTED 0°/360° BOUNDARY CROSSING IN LONGITUDE DATA ***")
+                    print_manager.debug(f"Found {np.sum(jumps > 180)} boundary crossings")
 
-            interp_values = np.interp(
-                query_times_numeric, 
-                ref_times_numeric, 
-                positional_values.astype(np.float64), # Ensure values are float too
-                left=np.nan, # Return NaN for times before the first reference time
-                right=np.nan # Return NaN for times after the last reference time
+                    # Need to "unwrap" the longitude to create a continuous sequence
+                    # This is similar to np.unwrap for phase angles, but customized for longitude
+                    unwrapped = np.zeros_like(ref_values)
+                    unwrapped[0] = ref_values[0]  # Start with first point
+                    offset = 0
+                    
+                    # Process each point, adjusting by 360° when a boundary is crossed
+                    for i in range(1, len(ref_values)):
+                        diff = ref_values[i] - ref_values[i-1]
+                        if diff > 180:  # Crossing from near 360° to near 0°
+                            offset -= 360
+                        elif diff < -180:  # Crossing from near 0° to near 360°
+                            offset += 360
+                        unwrapped[i] = ref_values[i] + offset
+                    
+                    # For debugging, show original vs unwrapped for sample points
+                    print_manager.debug("Unwrapping longitude data for interpolation:")
+                    n_sample = min(5, len(ref_values))
+                    print_manager.debug(f"  Original (first {n_sample}): {ref_values[:n_sample]}")
+                    print_manager.debug(f"  Unwrapped (first {n_sample}): {unwrapped[:n_sample]}")
+                    
+                    # Check if unwrapping makes sense by calculating max/min
+                    orig_range = np.max(ref_values) - np.min(ref_values)
+                    unwrap_range = np.max(unwrapped) - np.min(unwrapped)
+                    print_manager.debug(f"  Original range: {orig_range:.2f}°")
+                    print_manager.debug(f"  Unwrapped range: {unwrap_range:.2f}°")
+                    
+                    # Use unwrapped values for interpolation
+                    interp_values = np.interp(
+                        query_times_numeric, 
+                        ref_times_numeric, 
+                        unwrapped,  # Use unwrapped longitude for continuous interpolation
+                        left=np.nan, 
+                        right=np.nan
+                    )
+                    
+                    if not unwrap_angles:
+                        # Wrap back to [0, 360) range for regular longitude plotting
+                        interp_values = np.mod(interp_values, 360)
+                else:
+                    # No boundary crossing detected - use regular interpolation
+                    interp_values = np.interp(
+                        query_times_numeric, 
+                        ref_times_numeric, 
+                        ref_values,
+                        left=np.nan, 
+                        right=np.nan
+                    )
+            else:
+                # For non-angular data, use regular interpolation
+                interp_values = np.interp(
+                    query_times_numeric, 
+                    ref_times_numeric, 
+                    positional_values.astype(np.float64),
+                    left=np.nan, 
+                    right=np.nan
             )
+
             # --- DEBUG: Print interpolation output ---
             print_manager.debug(f"  [Mapper Debug] np.interp output (first 5): {interp_values[:5]}")
             # --- END DEBUG ---
