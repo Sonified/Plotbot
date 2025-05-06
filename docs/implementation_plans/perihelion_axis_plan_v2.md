@@ -196,3 +196,28 @@ tests/test_plot_perihelion_windows.py::test_plot_perihelion_windows [DIAGNOSTIC]
         50.0 | 2025-03-25 00:42:00 |     138.5449 |         85.4285
 ```
 This clarification resolves the primary remaining issue noted in the `Known Issues Requiring Debugging` section related to the perihelion offset.
+
+**NEW: Clarification on Debugging Test Scripts (2025-05-07)**
+
+Further review has clarified the role of the two primary test scripts used during debugging:
+
+1.  **`tests/test_plot_perihelion_windows.py`:** This script represents the **correct, desired implementation**. It accurately calculates 'Degrees from Perihelion' by interpolating longitude at the precise perihelion time and subtracting this from the interpolated longitude at various time offsets. Critically, it produces a result where the 0-hour offset corresponds exactly to 0 degrees, as shown in its console output. This script serves as the **target model** for the logic required within `multiplot.py`.
+
+2.  **`tests/debug_perihelion_mapping.py`:** This script was created specifically to **isolate and replicate the flawed logic** currently present within `multiplot.py`. It uses the `XAxisPositionalDataMapper` and calculation steps in a way that mirrors `multiplot`'s internal process. Its output (e.g., a range like -98.9° to -15.6° for E17 +/- 12h, *not* centered on 0°) demonstrates the **incorrect behavior** that needs to be fixed in `multiplot.py`. It is a diagnostic tool to study the *problem*, not the solution.
+
+Understanding this distinction is key: the goal is to modify `multiplot.py` so that its internal calculations produce results consistent with `test_plot_perihelion_windows.py`, not `debug_perihelion_mapping.py`.
+
+**⭐ ROOT CAUSE IDENTIFIED (2025-05-07) ⭐**
+
+Debugging by comparing `debug_perihelion_mapping.py` (which uses the mapper) and `test_plot_perihelion_windows.py` (which uses direct interpolation) revealed the core issue:
+
+*   **Timestamp Unit Mismatch:** The `XAxisPositionalDataMapper.map_to_position` function was passing timestamps to `np.interp` in different units. 
+    *   The *reference times* (loaded from the NPZ file) were correctly represented as **seconds** since the epoch.
+    *   However, the *query times* (passed in from `multiplot` or the debug script) were being converted to a float representation based on **nanoseconds** since the epoch.
+*   **Result:** This large difference in scale caused `np.interp` to treat all query times as being outside the bounds of the reference times, leading to `NaN` outputs or incorrect extrapolation, explaining the flawed degree calculations.
+
+*   **Fix:** The `XAxisPositionalDataMapper.map_to_position` function in `plotbot/x_axis_positional_data_helpers.py` was corrected to explicitly convert the input `datetime_array` (query times) from its `datetime64[ns]` representation to **seconds** since the epoch (by dividing the `int64` representation by `1e9`) before passing it to `np.interp`.
+
+*   **Confirmation:** Rerunning `tests/debug_perihelion_mapping.py` after applying this fix showed the correct interpolation results and the expected 'Degrees from Perihelion' range, consistent with the target logic in `test_plot_perihelion_windows.py`.
+
+**This fix to the mapper is expected to resolve the incorrect 'Degrees from Perihelion' axis values previously observed in `multiplot`.**

@@ -31,11 +31,14 @@ def test_plot_perihelion_windows():
     print(f"  min: {np.min(carr_lon)}", flush=True)
     print(f"  max: {np.max(carr_lon)}", flush=True)
     
-    encounters = [18, 19, 20, 21, 22, 23]
-    fig, axes = plt.subplots(len(encounters), 1, figsize=(14, 12), sharex=False)
+    encounters = [17]
+    fig, axes = plt.subplots(len(encounters), 1, figsize=(14, 4), sharex=False)
     
-    hour_offsets = np.arange(-50, 51, 10)  # -50, -40, ..., 0, ..., +40, +50
+    hour_offsets = np.arange(-12, 13, 2)
     
+    if len(encounters) == 1:
+        axs = [axes]
+
     for i, enc in enumerate(encounters):
         peri_time = pd.to_datetime(PERIHELION_TIMES[enc])
         print(f"\n================= E{enc} ({PERIHELION_TIMES[enc]}) =================", flush=True)
@@ -56,7 +59,7 @@ def test_plot_perihelion_windows():
             print(f"{dt:12.1f} | {t} | {lon:12.4f} | {deg:15.4f}", flush=True)
         
         # Plot
-        ax = axes[i]
+        ax = axs[i]
         ax.plot(hour_offsets, deg_from_peri, marker='o', color='green', label='Deg from Perihelion')
         ax.axvline(0, color='r', linestyle='--', linewidth=1, label='Perihelion (0 hr)')
         ax.axhline(0, color='k', linestyle=':', linewidth=1)
@@ -65,9 +68,8 @@ def test_plot_perihelion_windows():
         ax.set_title(f"E{enc} - Degrees from Perihelion - {PERIHELION_TIMES[enc]}", fontsize=13)
         ax.grid(True)
         ax.legend(loc='upper right')
-        
-        if i == len(encounters) - 1:
-            ax.set_xlabel("Time (UTC)", fontsize=13)
+    
+    axs[0].set_xlabel("Hours from Perihelion", fontsize=13)
     
     plt.tight_layout()
     

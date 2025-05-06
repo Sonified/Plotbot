@@ -102,6 +102,19 @@ def test_perihelion_mapping_standalone():
     relative_degrees[relative_degrees <= -180] += 360
     print_manager.debug(f"Applied wrap-around. Final Range: {np.min(relative_degrees):.2f}° to {np.max(relative_degrees):.2f}°")
 
+    # --- NEW: Print intermediate values ---
+    print_manager.status("\n--- Sampled Values (Time vs. Degrees from Perihelion) ---")
+    num_samples = 10
+    indices_to_sample = np.linspace(0, len(relative_degrees) - 1, num_samples, dtype=int)
+    print(f"{'Timestamp':<30} | {'Degrees from Peri':>15}")
+    print("-"*48)
+    for idx in indices_to_sample:
+        timestamp_str = pd.Timestamp(time_slice_np_valid[idx]).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] # Format timestamp
+        degrees_val = relative_degrees[idx]
+        print(f"{timestamp_str:<30} | {degrees_val:15.4f}°")
+    print("-"*48)
+    # --- END NEW SECTION ---
+
     # --- Create Dummy Y Data ---
     # Simple sine wave based on degrees for visualization
     y_data = np.sin(np.radians(relative_degrees)) * 5 
@@ -139,32 +152,17 @@ def test_perihelion_mapping_standalone():
     plt.close(fig) # Close plot to free memory
 
 if __name__ == "__main__":
-    # Define output file path
-    project_root = pathlib.Path(__file__).parent.parent
-    output_dir = project_root / "local_images"
-    output_dir.mkdir(exist_ok=True)
-    output_file_path = output_dir / "debug_perihelion_mapping_output.txt"
-
     # <<< NEW: Enable necessary print manager flags >>>
     print_manager.show_debug = True
     print_manager.show_status = True # Alias for show_variable_basic
     print("Enabled print_manager debug and status messages for this run.") # Print to console
     # <<< END NEW >>>
 
-    # Redirect stdout to the file
-    original_stdout = sys.stdout
-    with open(output_file_path, 'w') as f:
-        sys.stdout = f
-        try:
-            print(f"--- Output for debug_perihelion_mapping.py ---\n") # Add header to file
-            test_perihelion_mapping_standalone()
-            print(f"\n--- End of Output ---")
-        except Exception as e:
-            print(f"\n!!! AN ERROR OCCURRED: {e} !!!") # Log errors to file too
-            import traceback
-            traceback.print_exc(file=f)
-        finally:
-            # Restore stdout
-            sys.stdout = original_stdout
+    try:
+        test_perihelion_mapping_standalone()
+    except Exception as e:
+        print(f"\n!!! AN ERROR OCCURRED: {e} !!!") # Log errors to console
+        import traceback
+        traceback.print_exc() # Print traceback to console
 
-    print(f"Script finished. Output saved to: {output_file_path}") 
+    print("Script finished. Output printed to console.") 

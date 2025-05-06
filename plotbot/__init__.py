@@ -161,8 +161,8 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vMajor.Minor (Minor increments by 0.01 usually)
-__version__ = "2025_05_05_v2.15"
-__commit_message__ = "⭐ GLORY to PSP: We have Degrees From Perihelion! (v2.15)"
+__version__ = "2025_05_05_v2.16"
+__commit_message__ = "fix: core degrees from perihelion issue identified (v2.16)"
 
 # Print version information on import
 print(f"   Version: {__version__}")

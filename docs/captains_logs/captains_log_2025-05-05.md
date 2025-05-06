@@ -86,3 +86,19 @@ Summary: Resetting multiplot.py due to errors, fixing related utils/options, add
 Summary: Perihelion axis feature is now complete, fully matching Carrington longitude axis formatting and behavior. All tests pass. See implementation plan and above for details.
 
 (Log remains open for further updates on 2025-05-05) 
+
+---
+
+## Debug & Fix: Perihelion Calculation Root Cause
+
+- **Issue Identified:** The core reason for incorrect 'Degrees from Perihelion' values in `multiplot` was traced to a timestamp unit mismatch within `plotbot/x_axis_positional_data_helpers.py`. The `XAxisPositionalDataMapper.map_to_position` function was comparing query times (in nanoseconds) to reference times (in seconds) during interpolation.
+- **Fix:** Modified `XAxisPositionalDataMapper.map_to_position` to correctly convert query times to seconds before calling `np.interp`.
+- **Verification:** The fix was confirmed using `tests/debug_perihelion_mapping.py`, which now produces the correct, centered degree range.
+- **Documentation:** Updated `docs/implementation_plans/perihelion_axis_plan_v2.md` to document this root cause and fix.
+
+## Push: v2.16
+
+- Version: 2025_05_05_v2.16
+- Commit message: fix: core degrees from perihelion issue identified (v2.16)
+
+Summary: Fixed the root cause of the perihelion degree calculation error by correcting timestamp unit handling in the positional data mapper. 

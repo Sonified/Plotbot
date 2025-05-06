@@ -148,57 +148,29 @@ class XAxisPositionalDataMapper:
             return np.array([]) # Return empty array for empty input
 
         try:
-            # Convert input datetime array to numeric timestamps (seconds since epoch)
-            science_times_numeric = datetime_array.astype(np.int64) / 1e9
-            
-            # Add debugging information
-            min_time = np.min(science_times_numeric)
-            max_time = np.max(science_times_numeric)
-            min_ref_time = np.min(self.times_numeric)
-            max_ref_time = np.max(self.times_numeric)
-            
-            # Print time range info for debugging
-            print_manager.debug(f"Position mapping time ranges:")
-            print_manager.debug(f"  Input data: {pd.to_datetime(min_time * 1e9)} to {pd.to_datetime(max_time * 1e9)}")
-            print_manager.debug(f"  Reference data: {pd.to_datetime(min_ref_time * 1e9)} to {pd.to_datetime(max_ref_time * 1e9)}")
-            
-            # Check if the data is outside the reference range
-            if min_time < min_ref_time or max_time > max_ref_time:
-                print_manager.warning(f"Input time range extends outside reference positional data range.")
-                print_manager.warning(f"  Input range exceeds reference range by: {min_ref_time - min_time:.2f}s before, {max_time - max_ref_time:.2f}s after")
-                print_manager.warning(f"  Results will use extrapolation which may be inaccurate.")
+            # Ensure reference arrays are float64 for interpolation
+            ref_times_numeric = self.times_numeric.astype(np.float64)
+            query_times_numeric = datetime_array.astype('datetime64[ns]').astype(np.int64) / 1e9
+            # --- DEBUG: Print interpolation inputs ---
+            print_manager.debug(f"  [Mapper Debug] np.interp inputs:")
+            print_manager.debug(f"    Query Times (numeric SECONDS, first 5): {query_times_numeric[:5]}")
+            print_manager.debug(f"    Ref Times (numeric, first 5): {ref_times_numeric[:5]}")
+            print_manager.debug(f"    Ref Values ({data_type}, first 5): {positional_values[:5]}")
+            # --- END DEBUG ---
 
-            # <<< NEW: Add detailed interpolation debug >>>
-            # Find indices of reference points bounding the first input time for context
-            if len(science_times_numeric) > 0:
-                query_time = science_times_numeric[0]
-                # Find where the query time would be inserted in the sorted reference times
-                insert_idx = np.searchsorted(self.times_numeric, query_time)
-                # Get indices around the insertion point (handle edges)
-                idx0 = max(0, insert_idx - 2)
-                idx1 = min(len(self.times_numeric) - 1, insert_idx + 2)
-                print_manager.debug(f"    Interpolation Context (around first query time {pd.to_datetime(query_time * 1e9)}):")
-                print_manager.debug(f"      Ref Times : {pd.to_datetime(self.times_numeric[idx0:idx1+1] * 1e9).values}")
-                print_manager.debug(f"      Ref Values ({data_type}): {positional_values[idx0:idx1+1]}")
-            # <<< END NEW DEBUG >>>
-
-            # Interpolate positional values onto science timestamps
-            interpolated_values = np.interp(
-                science_times_numeric,
-                self.times_numeric, # Should be numeric (seconds since epoch)
-                positional_values
+            interp_values = np.interp(
+                query_times_numeric, 
+                ref_times_numeric, 
+                positional_values.astype(np.float64), # Ensure values are float too
+                left=np.nan, # Return NaN for times before the first reference time
+                right=np.nan # Return NaN for times after the last reference time
             )
-
-            # Add range output
-            print_manager.debug(f"{data_type.capitalize()} mapping output range: {np.min(interpolated_values):.2f}{data_units} to {np.max(interpolated_values):.2f}{data_units}")
-            
-            return interpolated_values
+            # --- DEBUG: Print interpolation output ---
+            print_manager.debug(f"  [Mapper Debug] np.interp output (first 5): {interp_values[:5]}")
+            # --- END DEBUG ---
+            return interp_values
         except Exception as e:
-            print_manager.warning(f"Failed to map datetimes to {data_type} during interpolation: {e}")
-            # Print diagnostic information
-            print_manager.debug(f"Input array shape: {datetime_array.shape}, dtype: {datetime_array.dtype}")
-            print_manager.debug(f"Reference time array shape: {self.times_numeric.shape}, dtype: {type(self.times_numeric)}")
-            print_manager.debug(f"Reference {data_type} array shape: {positional_values.shape}, dtype: {type(positional_values)}")
+            print_manager.error(f"Error during interpolation for {data_type}: {e}")
             return None
 
 print('Positional Data Helper Initialized')
