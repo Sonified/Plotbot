@@ -1,0 +1,34 @@
+[Metadata/trange]	0		trange = ['2023-09-28/06:39:00.000', '2023-09-28/06:40:10.000']
+[Metadata/Encountr]	0		E17
+[Metadata/Holes]	0		Holes Found: 12
+[Metadata/AvgWidth]	0		Avg Hole Width: 241.00
+[Metadata/AvgDepth]	0		Avg Hole Depth: 50.64%
+[Metadata/Duration]	0		Total Duration: 0:01:10
+[Metadata/Samples]	0		Total Samples: 20508
+[Metadata/InstrSR]	0		Instr Sampling Rate: 292.90 s/s
+
+
+MH 1 - 460 samples wide	901	1361	36.90% Drop
+MH_MIN 1	1209
+MH 2 - 579 samples wide	2104	2683	52.75% Drop
+MH_MIN 2	2371
+MH 3 - 704 samples wide	4258	4962	77.62% Drop
+MH_MIN 3	4721
+MH 4 - 399 samples wide	5003	5402	61.08% Drop
+MH_MIN 4	5293
+MH 5 - 455 samples wide	7841	8296	55.90% Drop
+MH_MIN 5	8104
+MH 6 - 278 samples wide	8466	8744	77.89% Drop
+MH_MIN 6	8588
+MH 7 - 605 samples wide	9243	9848	85.29% Drop
+MH_MIN 7	9590
+MH 8 - 585 samples wide	11345	11930	72.36% Drop
+MH_MIN 8	11641
+MH 9 - 690 samples wide	13608	14298	69.18% Drop
+MH_MIN 9	13867
+MH 10 - 561 samples wide	14639	15200	63.22% Drop
+MH_MIN 10	14981
+MH 11 - 669 samples wide	17236	17905	80.95% Drop
+MH_MIN 11	17677
+MH 12 - 529 samples wide	19097	19626	47.44% Drop
+MH_MIN 12	19465

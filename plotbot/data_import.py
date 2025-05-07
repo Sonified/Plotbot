@@ -90,6 +90,8 @@ DataObject = namedtuple('DataObject', ['times', 'data'])  # Define DataObject st
 
 def import_data_function(trange, data_type):
     """Import data function that reads CDF or calculates FITS CSV data within the specified time range."""
+    data_type_requested_at_start = data_type # Capture for final debug print
+    data_obj_to_return = None # Initialize a variable to hold the object to be returned
     
     print_manager.debug('Import data function called')
     
@@ -329,7 +331,35 @@ def import_data_function(trange, data_type):
         output_range_dt = cdflib.epochs.CDFepoch.to_datetime(times_sorted[[0, -1]])
         print_manager.time_output("import_data_function", output_range_dt.tolist())
 
-        return data_object
+        # === DIAGNOSTIC PRINT BEFORE RETURN ===
+        print_manager.debug(f"*** IMPORT_DATA_DEBUG (FITS Path) for data_type '{data_type}' (originally requested: '{data_type_requested_at_start}') ***")
+        if data_object is not None:
+            if hasattr(data_object, 'times') and data_object.times is not None:
+                print_manager.debug(f"    DataObject.times length: {len(data_object.times)}, dtype: {data_object.times.dtype if hasattr(data_object.times, 'dtype') else type(data_object.times)}")
+            else:
+                print_manager.debug(f"    DataObject.times is None or missing.")
+            
+            if hasattr(data_object, 'data') and isinstance(data_object.data, dict):
+                print_manager.debug(f"    DataObject.data keys: {list(data_object.data.keys())}")
+                # Specific check for mag_RTN if it was the initially requested type
+                if data_type_requested_at_start == 'mag_RTN': 
+                    expected_key = 'psp_fld_l2_mag_RTN'
+                    if expected_key in data_object.data:
+                        val = data_object.data[expected_key]
+                        val_type = type(val)
+                        val_shape = val.shape if hasattr(val, 'shape') else 'N/A'
+                        val_len = len(val) if hasattr(val, '__len__') else 'N/A' # Check for __len__ before calling len()
+                        print_manager.debug(f"        '{expected_key}' is PRESENT. Type: {val_type}, Shape: {val_shape}, Len: {val_len}")
+                    else:
+                        print_manager.debug(f"        '{expected_key}' is MISSING from data_object.data for mag_RTN request.")
+            else:
+                print_manager.debug(f"    DataObject.data is None or not a dict.")
+        else:
+            print_manager.debug(f"    data_object is None at final diagnostic print (FITS Path).")
+        # === END DIAGNOSTIC PRINT ===
+
+        data_obj_to_return = data_object # data_object is used in FITS path
+        return data_obj_to_return
 
     # --- Handle Hammerhead (ham) CSV Loading ---
     elif data_type == 'ham':
@@ -524,23 +554,58 @@ def import_data_function(trange, data_type):
             print_manager.time_output("import_data_function", output_range_dt.tolist())
         else:
              print_manager.time_output("import_data_function", "success - empty range") # Or error?
-        return data_obj
+
+        # === DIAGNOSTIC PRINT BEFORE RETURN ===
+        print_manager.debug(f"*** IMPORT_DATA_DEBUG (HAM Path) for data_type '{data_type}' (originally requested: '{data_type_requested_at_start}') ***")
+        if data_obj is not None: 
+            if hasattr(data_obj, 'times') and data_obj.times is not None:
+                print_manager.debug(f"    DataObject.times length: {len(data_obj.times)}, dtype: {data_obj.times.dtype if hasattr(data_obj.times, 'dtype') else type(data_obj.times)}")
+            else:
+                print_manager.debug(f"    DataObject.times is None or missing.")
+            if hasattr(data_obj, 'data') and isinstance(data_obj.data, dict):
+                print_manager.debug(f"    DataObject.data keys: {list(data_obj.data.keys())}")
+            else:
+                print_manager.debug(f"    DataObject.data is None or not a dict.")
+        else:
+            print_manager.debug(f"    data_obj is None at final diagnostic print (HAM Path).")
+        # === END DIAGNOSTIC PRINT ===
+
+        data_obj_to_return = data_obj # data_obj is used in HAM path
+        return data_obj_to_return
         
     else:
         # --- Existing CDF Processing Logic ---
+        print(f"*** IDF_DEBUG: Entered Standard CDF Processing for {data_type} ***")
         print_manager.debug(f"\n=== Starting import for {data_type} (CDF) ===")
 
         # Format dates for TT2000 conversion (needed for CDF processing)
-        start_tt2000 = cdflib.cdfepoch.compute_tt2000(
-            [start_time.year, start_time.month, start_time.day,
-             start_time.hour, start_time.minute, start_time.second,
-             int(start_time.microsecond/1000)]
-        )
-        end_tt2000 = cdflib.cdfepoch.compute_tt2000(
-            [end_time.year, end_time.month, end_time.day,
-             end_time.hour, end_time.minute, end_time.second,
-             int(end_time.microsecond/1000)]
-        )
+        try:
+            print(f"*** IDF_DEBUG: About to compute start_tt2000 for start_time: {start_time} ***")
+            start_tt2000 = cdflib.cdfepoch.compute_tt2000(
+                [start_time.year, start_time.month, start_time.day,
+                 start_time.hour, start_time.minute, start_time.second,
+                 int(start_time.microsecond/1000)]
+            )
+            print(f"*** IDF_DEBUG: Computed start_tt2000: {start_tt2000}. About to compute end_tt2000 for end_time: {end_time} ***")
+            end_tt2000 = cdflib.cdfepoch.compute_tt2000(
+                [end_time.year, end_time.month, end_time.day,
+                 end_time.hour, end_time.minute, end_time.second,
+                 int(end_time.microsecond/1000)]
+            )
+            print(f"*** IDF_DEBUG: Computed end_tt2000: {end_tt2000} ***")
+        except Exception as e_tt2000_conv:
+            print(f"*** IDF_DEBUG: ERROR during start/end TT2000 conversion for req range: {e_tt2000_conv} ***")
+            return None 
+
+        try:
+            # to_datetime returns a numpy array of datetime64 if input is scalar TT2000
+            start_tt2000_dt_val = cdflib.cdfepoch.to_datetime(start_tt2000)[0] 
+            end_tt2000_dt_val = cdflib.cdfepoch.to_datetime(end_tt2000)[0]
+            print_manager.debug(f"  Requested datetime range (from TT2000 conversion): {start_tt2000_dt_val} to {end_tt2000_dt_val}")
+        except Exception as e_to_datetime_conv:
+            print(f"*** IDF_DEBUG: ERROR converting TT2000 req range to datetime: {e_to_datetime_conv} ***")
+            print(f"      start_tt2000 was: {start_tt2000}, end_tt2000 was: {end_tt2000}")
+            return None
 
         variables = config.get('data_vars', [])     # Get list of variables to extract
 
@@ -577,18 +642,28 @@ def import_data_function(trange, data_type):
                         found_files.extend(matching)
 
             elif config['file_time_format'] == 'daily':
-                file_pattern = config['file_pattern_import'].format(
+                file_pattern_template = config['file_pattern_import']
+                file_pattern = file_pattern_template.format(
                     data_level=config['data_level'],
                     date_str=date_str
                 )
+                print_manager.debug(f"    Searching for DAILY pattern: '{file_pattern}' in dir: '{local_dir}'")
                 if os.path.exists(local_dir):
-                    pattern = file_pattern.replace('*', '.*') # Glob to regex
-                    regex = re.compile(pattern, re.IGNORECASE)
-                    matching = [os.path.join(local_dir, f) for f in os.listdir(local_dir) if regex.match(f)]
-                    found_files.extend(matching)
+                    # list_dir_files = os.listdir(local_dir) # Keep for debug if needed
+                    # print_manager.debug(f"      Files in dir: {list_dir_files[:10]} ... (total {len(list_dir_files)})") # ADDED - potentially long
+                    pattern_for_re = file_pattern.replace('*', '.*') # Glob to regex
+                    regex = re.compile(pattern_for_re, re.IGNORECASE)
+                    current_dir_matches = []
+                    for f_name in os.listdir(local_dir):
+                        if regex.match(f_name):
+                            current_dir_matches.append(os.path.join(local_dir, f_name))
+                            print_manager.debug(f"      MATCHED file: {f_name} with pattern {pattern_for_re}") # ADDED
+                    found_files.extend(current_dir_matches)
+                else:
+                    print_manager.debug(f"    Local directory does not exist: {local_dir}") # ADDED
 
         if not found_files:
-            print_manager.warning(f"No CDF data files found for {data_type} in the specified time range.")
+            print_manager.warning(f"No CDF data files found for {data_type} in the specified time range using root path {config.get('local_path')}. Searched for patterns like '{file_pattern if 'file_pattern' in locals() else 'N/A'}'.") # Enhanced warning
             print_manager.time_output("import_data_function", "no files found")
             return None
 
@@ -632,15 +707,29 @@ def import_data_function(trange, data_type):
                         continue
 
                     # Read only first and last time points for boundary check
-                    first_time_data = cdf_file.varget(time_var, startrec=0, endrec=0)           # Get first time point
-                    last_time_data = cdf_file.varget(time_var, startrec=n_records-1, endrec=n_records-1)  # Get last time point
-                    if first_time_data is None or last_time_data is None:
+                    first_time_data_tt2000 = cdf_file.varget(time_var, startrec=0, endrec=0)      
+                    last_time_data_tt2000 = cdf_file.varget(time_var, startrec=n_records-1, endrec=n_records-1)
+                    
+                    if first_time_data_tt2000 is None or last_time_data_tt2000 is None:
                         print_manager.warning(f"Could not read time boundaries for {os.path.basename(file_path)} - skipping")
                         continue
+                    
+                    # Ensure these are single values if varget returns array for single rec
+                    file_first_tt_val = first_time_data_tt2000[0] if hasattr(first_time_data_tt2000, '__getitem__') and len(first_time_data_tt2000) > 0 else first_time_data_tt2000
+                    file_last_tt_val = last_time_data_tt2000[0] if hasattr(last_time_data_tt2000, '__getitem__') and len(last_time_data_tt2000) > 0 else last_time_data_tt2000
 
-                    print_manager.debug(f"File time range (TT2000): {first_time_data[0]} to {last_time_data[0]}")
+                    # Corrected to_datetime calls without to_np and accessing the [0] element
+                    file_actual_start_dt_val = cdflib.cdfepoch.to_datetime(file_first_tt_val)[0] 
+                    file_actual_end_dt_val = cdflib.cdfepoch.to_datetime(file_last_tt_val)[0]
+                    print_manager.debug(f"  File actual TT2000 range: {file_first_tt_val} ({file_actual_start_dt_val}) to {file_last_tt_val} ({file_actual_end_dt_val})")
+
                     # Compare TT2000 times directly
-                    if last_time_data[0] < start_tt2000 or first_time_data[0] > end_tt2000:
+                    file_ends_before_req_starts = file_last_tt_val < start_tt2000
+                    file_starts_after_req_ends = file_first_tt_val > end_tt2000
+                    print_manager.debug(f"    Comparison: File ends before request starts? {file_ends_before_req_starts} (FileEnd: {file_last_tt_val} < ReqStart: {start_tt2000})")
+                    print_manager.debug(f"    Comparison: File starts after request ends? {file_starts_after_req_ends} (FileStart: {file_first_tt_val} > ReqEnd: {end_tt2000})")
+
+                    if file_ends_before_req_starts or file_starts_after_req_ends:
                         print_manager.debug("File outside requested time range - skipping")
                         continue
 
@@ -764,4 +853,50 @@ def import_data_function(trange, data_type):
         formatted_output_range = [format_datetime_for_log(t) for t in output_range]
         print_manager.time_output("import_data_function", formatted_output_range)
 
-        return data_object
+        # === DIAGNOSTIC PRINT BEFORE RETURN ===
+        print_manager.debug(f"*** IMPORT_DATA_DEBUG (CDF Path) for data_type '{data_type}' (originally requested: '{data_type_requested_at_start}') ***")
+        if data_object is not None:
+            print(f"    data_object ID: {id(data_object)}")
+            if hasattr(data_object, 'times') and data_object.times is not None:
+                print(f"    DataObject.times length: {len(data_object.times)}, dtype: {data_object.times.dtype if hasattr(data_object.times, 'dtype') else type(data_object.times)}")
+            else:
+                print(f"    DataObject.times is None or missing.")
+            
+            if hasattr(data_object, 'data') and isinstance(data_object.data, dict):
+                print(f"    data_object.data ID: {id(data_object.data)}")
+                print(f"    DataObject.data keys: {list(data_object.data.keys())}")
+                if data_type_requested_at_start == 'mag_RTN_4sa': # Adjusted for current test
+                    expected_key = 'psp_fld_l2_mag_RTN_4_Sa_per_Cyc'
+                    if expected_key in data_object.data:
+                        val = data_object.data[expected_key]
+                        val_type = type(val)
+                        val_shape = val.shape if hasattr(val, 'shape') else 'N/A'
+                        val_len = len(val) if hasattr(val, '__len__') else 'N/A'
+                        print(f"        '{expected_key}' is PRESENT. Type: {val_type}, Shape: {val_shape}, Len: {val_len}")
+                    else:
+                        print(f"        '{expected_key}' is MISSING from data_object.data for {data_type_requested_at_start} request.") # Adjusted
+            else:
+                print(f"    DataObject.data is None or not a dict.")
+        else:
+            print(f"    data_object is None at final diagnostic print (CDF Path).")
+        # === END DIAGNOSTIC PRINT ===
+
+        data_obj_to_return = data_object # data_object is used in CDF path
+        return data_obj_to_return
+
+    # Fallback for any paths that might have been missed, or error returns
+    # Ensure data_obj_to_return is what's being returned if it's not already handled above
+    if data_obj_to_return is None and 'data_object' in locals(): # if data_object was the intended return but not assigned to data_obj_to_return
+        data_obj_to_return = data_object
+    elif data_obj_to_return is None and 'data_obj' in locals(): # if data_obj was the intended return
+        data_obj_to_return = data_obj
+
+    # One final diagnostic print if not already handled by specific paths
+    # This is a safeguard, ideally the prints are closer to the actual return statements of each path.
+    # However, given the complexity, this ensures we see something.
+    # This specific print block might be redundant if all return paths are covered above.
+    # For now, let's remove it to avoid duplication and rely on the path-specific prints.
+
+    # If data_obj_to_return is still None here, it means an error path was taken that didn't assign to it.
+    # The function would return None in those cases based on existing logic (e.g., error in time parsing, no files found etc.)
+    return data_obj_to_return # This will be None if an error path already returned None

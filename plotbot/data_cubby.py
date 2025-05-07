@@ -7,6 +7,7 @@ from datetime import datetime
 import sys
 import inspect
 import copy
+import cdflib
 
 # --- Import Data Class Types for Mapping ---
 # Assuming these classes are defined elsewhere and accessible
@@ -515,18 +516,9 @@ class data_cubby:
             return variable
 
     @classmethod
-    def update_global_instance(cls, data_type_str, imported_data_obj: DataObject) -> bool:
-        """Updates the existing global instance for a data type with new data.
-        
-        Handles initial population and merging.
-        Args:
-            data_type_str (str): The string identifier (e.g., 'mag_rtn_4sa', 'spe_sf0_pad').
-            imported_data_obj (DataObject): Raw data object from import_data_function.
-            
-        Returns:
-            bool: True if update/merge was processed successfully, False otherwise.
-        """
-        print_manager.datacubby(f"\n=== Updating Global Instance: {data_type_str} ===")
+    def update_global_instance(cls, data_type_str, imported_data_obj: DataObject, is_segment_merge: bool = False) -> bool:
+        print(f"*** DATACUBBY_UPDATE DEBUG (Top): imported_data_obj ID: {id(imported_data_obj) if imported_data_obj is not None else 'None'}, .data ID: {id(imported_data_obj.data) if imported_data_obj is not None and hasattr(imported_data_obj, 'data') and imported_data_obj.data is not None else 'N/A'}, .data keys: {list(imported_data_obj.data.keys()) if imported_data_obj is not None and hasattr(imported_data_obj, 'data') and imported_data_obj.data is not None else 'N/A'} ***")
+        print_manager.datacubby(f"\n=== Updating Global Instance: {data_type_str} (is_segment_merge: {is_segment_merge}) ===")
 
         # 1. Find the target global instance
         global_instance = None
@@ -574,11 +566,18 @@ class data_cubby:
                              global_instance.datetime_array is not None and 
                              len(global_instance.datetime_array) > 0)
                              
-        # 3. Handle Empty Instance Case
-        if not has_existing_data:
-            print_manager.datacubby("Global instance is empty. Populating with new data...")
+        # 3. Handle Empty Instance Case OR if it's the first segment for a segment merge operation
+        if not has_existing_data or is_segment_merge:
+            if is_segment_merge and has_existing_data:
+                print_manager.datacubby(f"[CUBBY DEBUG] is_segment_merge is True, but instance for {data_type_str} already has data. Will overwrite with first segment via update().")
+            elif not has_existing_data:
+                print_manager.datacubby(f"Global instance for {data_type_str} is empty. Populating with new data via update()...")
+            else: # is_segment_merge is True and no existing data
+                print_manager.datacubby(f"Global instance for {data_type_str} is being initialized with the first segment via update()...")
+            
             if hasattr(global_instance, 'update'):
                 try:
+                    print(f"*** DATACUBBY_UPDATE DEBUG (Empty/Segment Path - Pre-update): imported_data_obj ID: {id(imported_data_obj)}, .data ID: {id(imported_data_obj.data) if hasattr(imported_data_obj, 'data') else 'N/A'}, .data keys: {list(imported_data_obj.data.keys()) if hasattr(imported_data_obj, 'data') else 'N/A'} ***")
                     global_instance.update(imported_data_obj)
                     print_manager.datacubby("✅ Instance updated successfully.")
                     print_manager.datacubby("=== End Global Instance Update ===\n")
@@ -609,7 +608,8 @@ class data_cubby:
                 temp_new_processed = CorrectClass(None) # Create empty instance
                 # We need to simulate the update process to get calculated vars
                 if hasattr(temp_new_processed, 'calculate_variables'):
-                     temp_new_processed.calculate_variables(imported_data_obj)
+                    print(f"*** DATACUBBY_UPDATE DEBUG (Merge Path - Pre-calc): imported_data_obj ID: {id(imported_data_obj)}, .data ID: {id(imported_data_obj.data) if hasattr(imported_data_obj, 'data') else 'N/A'}, .data keys: {list(imported_data_obj.data.keys()) if hasattr(imported_data_obj, 'data') else 'N/A'} ***")
+                    temp_new_processed.calculate_variables(imported_data_obj)
                 else:
                      print_manager.warning(f"Temp instance for {data_type_str} lacks 'calculate_variables'. Merge might be incomplete.")
                      # Attempt basic assignment if possible (might fail)
@@ -635,29 +635,74 @@ class data_cubby:
             
             # Update the global instance ONLY if merge returned new data
             if merged_times is not None and merged_raw_data is not None:
-                print_manager.datacubby("Merge successful. Updating global instance attributes...")
+                print_manager.debug("[CUBBY DEBUG] Merge successful. Attempting to update global instance attributes...")
                 try:
+                    # STEP 1: Assign core merged data
                     global_instance.datetime_array = merged_times
                     global_instance.raw_data = merged_raw_data
-                    # Update plot managers with new data references
+                    print(f"*** GOLD CUBBY ID:{id(global_instance)} *** STEP 1 DONE: Assigned merged datetime_array (len {len(global_instance.datetime_array) if global_instance.datetime_array is not None else 'None'}) and raw_data.")
+
+                    # STEP 2: Reconstruct .time from .datetime_array (CRITICAL)
+                    print(f"*** GOLD CUBBY ID:{id(global_instance)} *** PRE-TIME-RECONSTRUCTION:")
+                    print(f"    datetime_array len: {len(global_instance.datetime_array) if hasattr(global_instance, 'datetime_array') and global_instance.datetime_array is not None else 'None'}")
+                    print(f"    current time len: {len(global_instance.time) if hasattr(global_instance, 'time') and global_instance.time is not None else 'None'}")
+                    if global_instance.datetime_array is not None and len(global_instance.datetime_array) > 0:
+                        # OPTION: Convert to int64 directly from datetime64[ns] for self.time
+                        # This is NOT TT2000 after the first load, but ensures length consistency and is fast.
+                        print(f"*** GOLD CUBBY *** Converting merged datetime_array (len {len(global_instance.datetime_array)}) directly to int64 for .time attribute.")
+                        global_instance.time = global_instance.datetime_array.astype('datetime64[ns]').astype(np.int64)
+                        print(f"*** GOLD CUBBY ID:{id(global_instance)} *** POST-TIME-ASSIGNMENT (direct int64 cast):")
+                        print(f"    NEW time len: {len(global_instance.time) if global_instance.time is not None else 'None'}, shape: {global_instance.time.shape if hasattr(global_instance.time, 'shape') else 'N/A'}, dtype: {global_instance.time.dtype}")
+                    else:
+                        global_instance.time = np.array([], dtype=np.int64) # Ensure correct dtype for empty
+                        print(f"*** GOLD CUBBY ID:{id(global_instance)} *** datetime_array was empty or None, set time to empty int64 array.")
+
+                    # STEP 3: Reconstruct .field from .raw_data (CRITICAL)
+                    print(f"*** GOLD CUBBY ID:{id(global_instance)} *** PRE-FIELD-RECONSTRUCTION:")
+                    print(f"    current field shape: {global_instance.field.shape if hasattr(global_instance, 'field') and global_instance.field is not None else 'None'}")
+                    if hasattr(global_instance, 'raw_data') and global_instance.raw_data and hasattr(global_instance, 'datetime_array') and global_instance.datetime_array is not None:
+                        expected_len = len(global_instance.datetime_array)
+                        if ('br' in global_instance.raw_data and 'bt' in global_instance.raw_data and 'bn' in global_instance.raw_data and
+                            global_instance.raw_data['br'] is not None and global_instance.raw_data['bt'] is not None and global_instance.raw_data['bn'] is not None and
+                            len(global_instance.raw_data['br']) == expected_len and
+                            len(global_instance.raw_data['bt']) == expected_len and
+                            len(global_instance.raw_data['bn']) == expected_len):
+                            global_instance.field = np.column_stack((global_instance.raw_data['br'], global_instance.raw_data['bt'], global_instance.raw_data['bn']))
+                            print(f"    Reconstructed RTN field. New Shape: {global_instance.field.shape if global_instance.field is not None else 'None'}")
+                        elif ('bx' in global_instance.raw_data and 'by' in global_instance.raw_data and 'bz' in global_instance.raw_data and
+                              global_instance.raw_data['bx'] is not None and global_instance.raw_data['by'] is not None and global_instance.raw_data['bz'] is not None and
+                              len(global_instance.raw_data['bx']) == expected_len and
+                              len(global_instance.raw_data['by']) == expected_len and
+                              len(global_instance.raw_data['bz']) == expected_len):
+                            global_instance.field = np.column_stack((global_instance.raw_data['bx'], global_instance.raw_data['by'], global_instance.raw_data['bz']))
+                            print(f"    Reconstructed SC field. New Shape: {global_instance.field.shape if global_instance.field is not None else 'None'}")
+                        else:
+                            print(f"    Field components in raw_data missing, None, or length mismatch with datetime_array (expected {expected_len}). Setting field to None.")
+                            global_instance.field = None
+                    else:
+                        print(f"    No raw_data or datetime_array on global_instance to reconstruct field from. Setting field to None.")
+                        global_instance.field = None
+                    print(f"*** GOLD CUBBY ID:{id(global_instance)} *** POST-FIELD-RECONSTRUCTION:")
+                    print(f"    FINAL field shape: {global_instance.field.shape if global_instance.field is not None else 'None'}")
+
+                    # STEP 4: NOW call set_ploptions, as the instance should be internally consistent
                     if hasattr(global_instance, 'set_ploptions'):
-                        print_manager.datacubby("Calling set_ploptions() on global instance...")
+                        print(f"  *** GOLD CUBBY ID:{id(global_instance)} *** Calling set_ploptions() on now-consistent global instance...")
                         global_instance.set_ploptions()
                     else:
                          print_manager.warning(f"Global instance for {data_type_str} has no set_ploptions(). Plot managers might be stale.")
-                    print_manager.datacubby("✅ Global instance updated with merged data.")
-                    print_manager.datacubby("=== End Global Instance Update ===\n")
-                    return True # Return True because data was successfully merged and assigned
+                    
+                    print(f"*** GOLD CUBBY ID:{id(global_instance)} *** Global instance fully updated and ploptions set.")
+                    return True
                 except Exception as e:
-                     print_manager.error(f"UPDATE GLOBAL ERROR - Failed to assign merged data to global instance: {e}")
+                     # Using f-string for direct print of error
+                     print(f"*** GOLD CUBBY ID:{id(global_instance)} *** UPDATE GLOBAL ERROR - Failed during critical update steps for {data_type_str} global instance: {e}")
                      import traceback
-                     print_manager.error(traceback.format_exc())
-                     print_manager.datacubby("=== End Global Instance Update ===\n")
-                     return False # Return False on assignment error
+                     # Using f-string for direct print of traceback
+                     print(f"*** GOLD CUBBY TRACEBACK ***\n{traceback.format_exc()}")
+                     return False
             else:
-                print_manager.datacubby("Merge not required or failed. Global instance remains unchanged.")
-                print_manager.datacubby("=== End Global Instance Update ===\n")
-                # Return False because no data was merged/assigned to the global instance
+                print(f"*** GOLD CUBBY ID:{id(global_instance)} *** Merge not required or _merge_arrays returned None. Global instance remains unchanged from this merge op.")
                 return False
 
 class Variable:

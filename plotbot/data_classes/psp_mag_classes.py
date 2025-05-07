@@ -32,6 +32,11 @@ def _format_setattr_debug(name, value):
 class mag_rtn_4sa_class:
     def __init__(self, imported_data):
         # Initialize attributes
+        # These are fundamental identifiers for Plotbot
+        object.__setattr__(self, 'class_name', 'mag_rtn_4sa') 
+        object.__setattr__(self, 'data_type', 'mag_RTN_4sa') # Changed to uppercase RTN to match psp_data_types.py
+        # subclass_name is typically for components like .br, .bt, not the main class instance itself initially
+        object.__setattr__(self, 'subclass_name', None) 
         object.__setattr__(self, 'raw_data', {
             'all': None,
             'br': None,
@@ -43,6 +48,7 @@ class mag_rtn_4sa_class:
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
 
+        print(f"*** MAG_CLASS_INIT (mag_rtn_4sa_class) ID:{id(self)}: imported_data ID: {id(imported_data) if imported_data is not None else 'None'}. ***")
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
             self.set_ploptions()
@@ -54,11 +60,8 @@ class mag_rtn_4sa_class:
             self.set_ploptions()
             print_manager.status("Successfully calculated mag rtn 4sa variables.")
     
-    def update(self, imported_data): #This is function is the exact same across all classes :)
-        """Method to update class with new data. 
-        NOTE: This function updates the class with newly imported data. We need to use the data_cubby
-        as a registry to store class instances in order to avoid circular references that would occur
-        if the class stored itself as an attribute and tried to reference itself directly. The code breaks without the cubby!"""
+    def update(self, imported_data):
+        print(f"*** MAG_CLASS_UPDATE (mag_rtn_4sa_class) ID:{id(self)}: imported_data ID: {id(imported_data) if imported_data is not None else 'None'}, .data ID: {id(imported_data.data) if imported_data is not None and hasattr(imported_data, 'data') and imported_data.data is not None else 'N/A'}. Keys: {list(imported_data.data.keys()) if imported_data is not None and hasattr(imported_data, 'data') and imported_data.data is not None else 'N/A'} ***")
         if imported_data is None:                                                # Exit if no new data
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
             return
@@ -140,7 +143,11 @@ class mag_rtn_4sa_class:
            
             # Do not set the attrib
     def calculate_variables(self, imported_data):
-        """Calculate the magnetic field components and derived quantities."""
+        print(f"*** MAG_CLASS_CALCVARS (mag_rtn_4sa_class) ID:{id(self)}: imported_data ID: {id(imported_data) if imported_data is not None else 'None'}, .data ID: {id(imported_data.data) if imported_data is not None and hasattr(imported_data, 'data') and imported_data.data is not None else 'N/A'} ***")
+        if hasattr(imported_data, 'data') and isinstance(imported_data.data, dict):
+            print(f"    Available keys in imported_data.data for CALCVARS: {list(imported_data.data.keys())}")
+        else:
+            print(f"    CALCVARS: imported_data.data is missing or not a dict.")
         # Store only TT2000 times as numpy array
         self.time = np.asarray(imported_data.times)
         self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time))        
@@ -318,6 +325,9 @@ print('initialized mag_rtn_4sa class')
 class mag_rtn_class:
     def __init__(self, imported_data):
         # First, set up the basic attributes without triggering __setattr__ checks
+        object.__setattr__(self, 'class_name', 'mag_rtn')      # Internal Plotbot class identifier
+        object.__setattr__(self, 'data_type', 'mag_RTN')      # Key for psp_data_types.data_types
+        object.__setattr__(self, 'subclass_name', None)         # For the main class instance
         object.__setattr__(self, 'raw_data', {
             'all': None,
             'br': None,
@@ -579,6 +589,77 @@ class mag_rtn_class:
                 line_style='-'             # Line style
             )
         )
+
+    def ensure_internal_consistency(self):
+        """Ensures .time and .field are consistent with .datetime_array and .raw_data."""
+        print(f"*** GOLD ENSURE ID:{id(self)} *** Called for {self.class_name}.{self.subclass_name if self.subclass_name else 'MAIN'}.")
+        original_time_len = len(self.time) if hasattr(self, 'time') and self.time is not None and hasattr(self.time, '__len__') else 'None_or_NoLen'
+        original_dt_len = len(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else 'None_or_NoLen'
+        original_field_shape = self.field.shape if hasattr(self, 'field') and self.field is not None and hasattr(self.field, 'shape') else 'None_or_NoShape'
+        
+        print(f"    PRE-CHECK - datetime_array len: {original_dt_len}")
+        print(f"    PRE-CHECK - time len: {original_time_len}")
+        print(f"    PRE-CHECK - field shape: {original_field_shape}")
+        
+        changed_time = False
+        changed_field = False
+
+        if hasattr(self, 'datetime_array') and self.datetime_array is not None and \
+           hasattr(self, 'raw_data') and self.raw_data:
+
+            if len(self.datetime_array) > 0:
+                # Direct cast for .time consistency
+                new_time_array = self.datetime_array.astype('datetime64[ns]').astype(np.int64)
+                if not hasattr(self, 'time') or self.time is None or not np.array_equal(self.time, new_time_array):
+                    self.time = new_time_array
+                    print(f"    [ENSURE_CONSISTENCY] Updated self.time via direct int64 cast. New len: {len(self.time)}")
+                    changed_time = True
+            elif not hasattr(self, 'time') or self.time is None or (hasattr(self.time, '__len__') and len(self.time) != 0):
+                self.time = np.array([], dtype=np.int64)
+                print(f"    [ENSURE_CONSISTENCY] Set self.time to empty int64 array (datetime_array was empty).")
+                changed_time = True
+
+            expected_len = len(self.datetime_array)
+            if ('br' in self.raw_data and self.raw_data['br'] is not None and
+                'bt' in self.raw_data and self.raw_data['bt'] is not None and
+                'bn' in self.raw_data and self.raw_data['bn'] is not None and
+                len(self.raw_data['br']) == expected_len and
+                len(self.raw_data['bt']) == expected_len and
+                len(self.raw_data['bn']) == expected_len):
+                new_field = np.column_stack((self.raw_data['br'], self.raw_data['bt'], self.raw_data['bn']))
+                if not hasattr(self, 'field') or self.field is None or not np.array_equal(self.field, new_field):
+                    self.field = new_field
+                    print(f"    Updated self.field from RTN components. New shape: {self.field.shape}")
+                    changed_field = True
+            else:
+                if not (hasattr(self, 'field') and self.field is None and expected_len == 0):
+                    if hasattr(self, 'field') and self.field is not None:
+                         print(f"    Nullifying self.field. Reason: RTN components in raw_data missing, None, or inconsistent lengths (expected {expected_len}).")
+                         self.field = None
+                         changed_field = True
+                    elif not hasattr(self, 'field') and expected_len > 0: 
+                         print(f"    Setting self.field to None. Reason: RTN components in raw_data missing, None, or inconsistent lengths (expected {expected_len}).")
+                         self.field = None
+                         changed_field = True
+            
+            if (changed_time or changed_field) and hasattr(self, 'set_ploptions'):
+                print(f"    Calling self.set_ploptions() due to consistency updates (time changed: {changed_time}, field changed: {changed_field}).")
+                self.set_ploptions()
+        else:
+            print(f"    Skipping consistency check (datetime_array or raw_data missing/None).")
+        
+        final_time_len = len(self.time) if hasattr(self, 'time') and self.time is not None and hasattr(self.time, '__len__') else 'None_or_NoLen'
+        final_dt_len = len(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else 'None_or_NoLen'
+        final_field_shape = self.field.shape if hasattr(self, 'field') and self.field is not None and hasattr(self.field, 'shape') else 'None_or_NoShape'
+
+        if changed_time or changed_field:
+            print(f"*** GOLD ENSURE ID:{id(self)} *** CHANGES WERE MADE.")
+            print(f"    POST-FIX - datetime_array len: {final_dt_len}")
+            print(f"    POST-FIX - time len: {final_time_len}")
+            print(f"    POST-FIX - field shape: {final_field_shape}")
+        else:
+            print(f"*** GOLD ENSURE ID:{id(self)} *** NO CHANGES MADE by this method. Dt: {final_dt_len}, Time: {final_time_len}, Field: {final_field_shape}")
+        print(f"*** GOLD ENSURE ID:{id(self)} *** Finished for {self.class_name}.{self.subclass_name if self.subclass_name else 'MAIN'}.")
 
     def restore_from_snapshot(self, snapshot_data):
         """
@@ -980,14 +1061,15 @@ class mag_sc_class:
     
     def calculate_variables(self, imported_data):
         """Calculate and store MAG SC variables"""
-        print_manager.debug(f"--- [mag_sc.calculate_variables] START ---") # ADDED
+        print_manager.debug(f"[mag_sc.calculate_variables ID:{id(self)}] Entered.")
+        print_manager.debug(f"  imported_data.times len: {len(imported_data.times) if hasattr(imported_data, 'times') else 'N/A'}")
+        print_manager.debug(f"  imported_data.data keys: {list(imported_data.data.keys()) if hasattr(imported_data, 'data') else 'N/A'}")
+
         # Store only TT2000 times as numpy array
         self.time = np.asarray(imported_data.times)
+        print_manager.debug(f"  Assigned self.time, len: {len(self.time)}")
         self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time))
-        
-        print_manager.debug(f"--- [mag_sc.calculate_variables] Time array created (length: {len(self.datetime_array) if self.datetime_array is not None else 'None'}) ---") # ADDED
-        # print_manager.debug("self.datetime_array type after conversion: {type(self.datetime_array)}") # Original debug
-        # print_manager.debug("First element type: {type(self.datetime_array[0])}") # Original debug
+        print_manager.debug(f"  Assigned self.datetime_array, len: {len(self.datetime_array)}")
         
         # Get field data as numpy array
         print_manager.debug(f"--- [mag_sc.calculate_variables] Accessing field data 'psp_fld_l2_mag_SC' ---") # ADDED
@@ -1001,16 +1083,16 @@ class mag_sc_class:
         bz = self.field[:, 2]
         
         # Calculate magnitude using numpy operations
-        print_manager.debug(f"--- [mag_sc.calculate_variables] Calculating bmag ---") # ADDED
+        print_manager.debug(f"--- [mag_sc.calculate_variables] Calculating bmag ---")
         bmag = np.sqrt(bx**2 + by**2 + bz**2)
         
         # Calculate magnetic pressure
-        print_manager.debug(f"--- [mag_sc.calculate_variables] Calculating pmag ---") # ADDED
+        print_manager.debug(f"--- [mag_sc.calculate_variables] Calculating pmag ---")
         mu_0 = 4 * np.pi * 1e-7  # Permeability of free space
         pmag = (bmag**2) / (2 * mu_0) * 1e-9  # Convert to nPa
         
         # Store all data in raw_data dictionary
-        print_manager.debug(f"--- [mag_sc.calculate_variables] Storing data in raw_data ---") # ADDED
+        print_manager.debug(f"--- [mag_sc.calculate_variables] Storing data in raw_data ---")
         self.raw_data = {
             'all': [bx, by, bz],
             'bx': bx,
@@ -1028,6 +1110,12 @@ class mag_sc_class:
     
     def set_ploptions(self):
         """Set up the plotting options for all magnetic field components."""
+        print_manager.debug(f"[mag_sc.set_ploptions ID:{id(self)}] Entered. self.datetime_array len: {len(self.datetime_array) if self.datetime_array is not None else 'None'}")
+        if self.raw_data and self.raw_data.get('br') is not None:
+             print_manager.debug(f"  self.raw_data['br'] len: {len(self.raw_data['br'])}")
+        else:
+             print_manager.debug(f"  self.raw_data['br'] is None or self.raw_data is None for set_ploptions")
+        # Initialize each component with plot_manager (Copied from previous state)
         self.all = plot_manager(
             [self.raw_data['bx'], self.raw_data['by'], self.raw_data['bz']],
             plot_options=ploptions(

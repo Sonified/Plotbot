@@ -1,0 +1,1 @@
+# This file makes Python treat the 'magnetic_hole_finder' directory as a package. 
