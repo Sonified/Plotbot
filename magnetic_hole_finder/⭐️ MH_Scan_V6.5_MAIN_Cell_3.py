@@ -1,3 +1,6 @@
+# IGNORE THIS CODE. THE CURRENT WORKING CODE IS IN THE ROOT DIRECTORY IN A JUPYTER NOTEBOOK
+# 😊
+
 # ✨✨✨ShInY NeW wOrKiG cOdE cOdE✨✨✨ 
 global save_dir
 

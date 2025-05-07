@@ -161,8 +161,8 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vMajor.Minor (Minor increments by 0.01 usually)
-__version__ = "2025_05_06_v2.24"
-__commit_message__ = "Refactor: Improve DataCubby and data class consistency for multi-trange ops (v2.24)"
+__version__ = "2025_05_07_v2.25"
+__commit_message__ = "Fix: Update data consistency verification in tests to handle 'all' component structure correctly (v2.25)"
 
 # Print version information on import
 print(f"   Version: {__version__}")

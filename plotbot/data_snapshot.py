@@ -355,8 +355,10 @@ def save_data_snapshot(filename: Optional[str] = None,
     Parameters
     ----------
     filename : str or 'auto', optional
-        Desired filename (without extension or path), or 'auto' to generate.
-        Defaults to timestamped filename if None.
+        Desired filename (CAN include .pkl or compression extension, these will be handled).
+        If 'auto' or None, a timestamped filename is generated.
+        Path component: if filename includes 'data_snapshots/', it's used as is (minus extension for re-adding).
+        Otherwise, it's treated as a base name to be placed in 'data_snapshots/'.
     classes : list of Plotbot data class instances, optional
         Specific global Plotbot class instances (e.g., [plotbot.mag_rtn, plotbot.proton]) to save.
         If None or empty, attempts to save all from data_cubby (behavior might need refinement for this case).
@@ -392,17 +394,17 @@ def save_data_snapshot(filename: Optional[str] = None,
     # --- INPUT VALIDATION --- 
     if trange_list and not classes:
         pm.error("[SNAPSHOT SAVE] 'trange_list' was provided, but no 'classes' were specified to populate. Cannot proceed.")
-        return None
+        return False
     # If classes is None or empty, and no trange_list to imply specific classes that will be populated.
     if not classes and not trange_list: # If no classes AND no trange_list to populate them, then nothing to do.
         pm.warning("[SNAPSHOT SAVE] No 'classes' specified and no 'trange_list' to populate. Nothing to save.")
-        return None 
+        return False 
     if classes and not all(isinstance(c, object) for c in classes): # Basic check that classes are objects
         pm.error("[SNAPSHOT SAVE] 'classes' must be a list of Plotbot class instances. Cannot proceed.")
-        return None
+        return False
     if trange_list and not all(isinstance(tr, list) and len(tr) == 2 and all(isinstance(s, str) for s in tr) for tr in trange_list):
         pm.error("[SNAPSHOT SAVE] 'trange_list' must be a list of tranges (each trange being a list of two strings). Cannot proceed.")
-        return None
+        return False
 
     # --- Optional: Populate data --- 
     if trange_list and classes: # This outer check ensures both are provided and non-empty
@@ -437,7 +439,7 @@ def save_data_snapshot(filename: Optional[str] = None,
     if not effective_classes_to_save:
         # This case should ideally be caught by earlier validation if classes was None and trange_list was also None.
         pm.warning("[SNAPSHOT SAVE] No effective classes to process for snapshot after population/initial checks. Nothing to save.")
-        return None
+        return False
 
     # --- Build the initial data_snapshot from effective_classes_to_save ---
     data_snapshot = {} 
@@ -562,35 +564,62 @@ def save_data_snapshot(filename: Optional[str] = None,
     else:
         output_dir = "data_snapshots"
         os.makedirs(output_dir, exist_ok=True)
-        _base_filename = filename 
-        if _base_filename == 'auto' or _base_filename is None:
-            _timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            _vars_str = 'data' 
-            # Use final_loaded_classes_details for more accurate naming if it was populated
-            if final_loaded_classes_details:
-                 _vars_str = '+'.join(sorted(list(set(type(inst).__name__ for name, inst in final_loaded_classes_details))))
-            elif classes: # Fallback to input classes if final_loaded_classes_details is empty but classes were given
-                 _vars_str = '+'.join(sorted(list(set(type(inst).__name__ for inst in classes))))
-            _base_filename = f"snapshot_{_timestamp}_{_vars_str}"
         
-        # Add compression extension
+        # Determine the base name (without extension) and the directory to save in.
+        _name_to_use_for_file = ""
+        _dir_to_save_in = output_dir
+
+        if filename == 'auto' or filename is None:
+            _timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            _vars_str = 'data'
+            if final_loaded_classes_details: # Preferred source for naming
+                 _vars_str = '+'.join(sorted(list(set(type(inst).__name__ for name, inst in final_loaded_classes_details))))
+            elif classes: # Fallback
+                 _vars_str = '+'.join(sorted(list(set(type(inst).__name__ for inst in classes))))
+            _name_to_use_for_file = f"snapshot_{_timestamp}_{_vars_str}"
+            # _dir_to_save_in is already output_dir
+        elif filename.startswith(output_dir + os.sep):
+            # Filename already contains "data_snapshots/" prefix.
+            _dir_to_save_in = os.path.dirname(filename) # This should effectively be output_dir or a subdir within it
+            _name_to_use_for_file = os.path.basename(filename)
+        else:
+            # Filename is just a base name, or a name with extension.
+            _name_to_use_for_file = filename
+            # _dir_to_save_in is already output_dir
+
+        # Strip known extensions from _name_to_use_for_file to get a clean base.
+        # Handles .pkl, .pkl.gz, .pkl.bz2, .pkl.xz
+        for ext_to_strip in [".pkl.gz", ".pkl.bz2", ".pkl.xz", ".pkl"]:
+            if _name_to_use_for_file.lower().endswith(ext_to_strip):
+                _name_to_use_for_file = _name_to_use_for_file[:-len(ext_to_strip)]
+                break
+        
+        # _name_to_use_for_file is now the clean base name.
+        # _dir_to_save_in is the directory (e.g., "data_snapshots")
+
+        # Add compression extension (this part of logic was mostly fine)
         compression_ext_map = {"gzip": ".pkl.gz", "bz2": ".pkl.bz2", "lzma": ".pkl.xz", "none": ".pkl"}
         selected_compression_format = compression.lower()
         if selected_compression_format not in ["low", "medium", "high"] and selected_compression_format not in compression_ext_map:
             pm.warning(f"[SNAPSHOT SAVE] Unknown compression format '{compression}'. Using no compression.")
             selected_compression_format = "none"
 
-        # Map friendly names to actual formats and levels
         actual_compression_format = selected_compression_format
-        compress_level = None # For gzip/bz2
-        lzma_preset = None    # For lzma
+        compress_level = None 
+        lzma_preset = None    
 
         if selected_compression_format == "low": actual_compression_format = "gzip"; compress_level = 1
         elif selected_compression_format == "medium": actual_compression_format = "gzip"; compress_level = 5
-        elif selected_compression_format == "high": actual_compression_format = "lzma"; lzma_preset = 9 # LZMA preset for high
+        elif selected_compression_format == "high": actual_compression_format = "lzma"; lzma_preset = 9
         
-        _final_filename_ext = compression_ext_map.get(actual_compression_format, ".pkl")
-        final_filepath = os.path.join(output_dir, _base_filename + _final_filename_ext)
+        _final_filename_ext_to_add = compression_ext_map.get(actual_compression_format, ".pkl")
+        
+        final_filepath = os.path.join(_dir_to_save_in, _name_to_use_for_file + _final_filename_ext_to_add)
+        # Example: path = "data_snapshots", name = "my_snap", ext = ".pkl.gz" -> "data_snapshots/my_snap.pkl.gz"
+        # Example: path = "data_snapshots", name from input "data_snapshots/test_advanced_snapshot_mag_rtn_4sa" (after stripping), ext = ".pkl"
+        #          _dir_to_save_in becomes "data_snapshots"
+        #          _name_to_use_for_file becomes "test_advanced_snapshot_mag_rtn_4sa"
+        #          final_filepath = "data_snapshots/test_advanced_snapshot_mag_rtn_4sa.pkl" - CORRECT!
 
         try:
             if actual_compression_format == "gzip":
@@ -612,47 +641,44 @@ def save_data_snapshot(filename: Optional[str] = None,
         except Exception as e_pickle:
             pm.error(f"[SNAPSHOT SAVE] Error during pickling process: {e_pickle}")
             final_filepath = None 
+            return False
     
+    # --- Explicit check if file exists after trying to save ---
+    if final_filepath and not os.path.exists(final_filepath):
+        pm.error(f"[SNAPSHOT SAVE CRITICAL] File was supposed to be saved to {final_filepath} but it does NOT exist on disk immediately after saving!")
+        # Even if we thought it was a success, if the file isn't there, it's a failure.
+        return False 
+
     # --- Final Status Print --- 
     if final_filepath:
         pm.status(f"✅ SNAPSHOT CREATED: {final_filepath}") # Unified success message
         # Add more details from your original summary if desired, e.g., number of classes/tranges
         if classes: pm.status(f"   Included data for types: {[type(inst).__name__ for inst in classes]}")
         if trange_list: pm.status(f"   Processed {len(trange_list)} time range(s).")
+        return True # Return True if final_filepath is not None
     else:
         pm.error("⚠️ SNAPSHOT CREATION FAILED or nothing to save (check logs above for specific errors).") # Unified failure message
-    
-    return final_filepath
+        return False # Return False if final_filepath is None
 
 def load_data_snapshot(filename, classes=None, merge_segments=True):
-    """
-    Load data from a previously saved snapshot file.
-    Assumes file is in 'data_snapshots/' unless an absolute path is given.
-
-    Parameters
-    ----------
-    filename : str
-        Filename (potentially without path) or full path to the pickle file.
-    classes : list, class object, or None
-        Specific class object(s) to load. If None, loads all classes in the file.
-    merge_segments : bool, optional
-        Whether to automatically merge segments of the same class. Default is True.
-    """
-    pm = print_manager # Alias for convenience
+    print("DEBUG_LOAD_SNAPSHOT: Entered function load_data_snapshot") # DBG
+    pm = print_manager
     # --- Adjust filename to check data_snapshots/ directory ---
     if not os.path.isabs(filename) and not filename.startswith('data_snapshots/'):
         filepath = os.path.join('data_snapshots', filename)
         if not os.path.exists(filepath) and os.path.exists(filename):
-             filepath = filename # Use original if found in root and not in data_snapshots
+             filepath = filename
              print_manager.warning(f"Snapshot found in root ({filename}), not in data_snapshots/. Using root path.")
         elif not os.path.exists(filepath):
              print_manager.error(f"Snapshot file not found in data_snapshots/ or root: {filename}")
-             return None
+             print("DEBUG_LOAD_SNAPSHOT: Returning False - file not found in data_snapshots/ or root") # DBG
+             return False
     else:
-        filepath = filename # Use provided path (absolute or already includes dir)
+        filepath = filename
         if not os.path.exists(filepath):
              print_manager.error(f"Snapshot file not found: {filepath}")
-             return None
+             print("DEBUG_LOAD_SNAPSHOT: Returning False - file not found (abs path check)") # DBG
+             return False
     # --- End path adjustment ---
 
     print_manager.data_snapshot(f"Starting load from {filepath}")
@@ -1022,11 +1048,14 @@ def load_data_snapshot(filename, classes=None, merge_segments=True):
 
     except FileNotFoundError:
         print_manager.error(f"Snapshot file not found: {filepath}")
-        return False # Explicitly return False on FileNotFoundError
+        print("DEBUG_LOAD_SNAPSHOT: Returning False - FileNotFoundError exception") # DBG
+        return False
     except Exception as e:
         print_manager.error(f"Error loading snapshot: {e}")
         import traceback
         print_manager.error(traceback.format_exc())
-        return False # Explicitly return False on other exceptions
+        print("DEBUG_LOAD_SNAPSHOT: Returning False - Generic Exception") # DBG
+        return False
 
-    return True # Return True on successful completion
+    print("DEBUG_LOAD_SNAPSHOT: Returning True - Successful completion") # DBG
+    return True

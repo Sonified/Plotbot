@@ -29,3 +29,14 @@ tests/multiplot_tests/output/data_snapshots/
 /tests/Images/
 
 /tests/test_logs/
+
+# Cache for magnetic hole finder
+magnetic_hole_finder/pickle_cache/
+
+# General output directory for Magnetic Hole Finder scans
+MH_Scan_Output/
+# Specific output directory within the magnetic_hole_finder module if used differently
+magnetic_hole_finder/MH_Scan_Output/
+
+# Specific large data files to ignore
+magnetic_hole_finder/high_res_mag_data.pkl

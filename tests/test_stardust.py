@@ -879,5 +879,14 @@ def test_stardust_spdf_download_with_cleanup():
 
     print_manager.show_debug = False # Disable debug after test
 
-# === End SPDF Download Test ===
+# Ensure any necessary cleanup of plotbot module state if tests modify it globally
+@pytest.fixture(scope="module", autouse=True)
+def cleanup_plotbot_module_state():
+    # This is a good place for any teardown that needs to happen once per module
+    # For example, resetting configuration that might have been changed by tests
+    yield
+    print_manager.show_debug = False # Reset to default
+    # Potentially reset plotbot.config settings changed by tests if not handled by other fixtures
+    # Example: plotbot.config.data_server = 'default_value'
+    plt.close('all') # Final cleanup of any stray plots
 

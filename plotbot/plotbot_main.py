@@ -78,11 +78,11 @@ def plotbot(trange, *args):
         end_time = dateutil_parse(trange[1]).replace(tzinfo=timezone.utc)
     except Exception as e:
         print(f"Oops! 🤗 Could not parse time range strings: {trange}. Error: {e}")
-        sys.exit("Plotbot stopped due to invalid time range format")
+        return False
 
     if start_time >= end_time:    # Validate time range order
         print(f"Oops! 🤗 Start time ({trange[0]}) must be before end time ({trange[1]})")
-        sys.exit("Plotbot stopped due to invalid time range")
+        return False
 
     # Validate argument pairs
     if len(args) % 2 != 0:
@@ -93,7 +93,7 @@ def plotbot(trange, *args):
         print("        data2, 2,")
         print("        data3, '2r')")  # Show that right axis is possible
         print("\nCheck your arguments and try again!")
-        sys.exit("Plotbot stopped due to invalid argument pairs")  # Hard exit the program
+        return False
         
     # Additional validation for data types
     for i in range(0, len(args), 2):
@@ -103,13 +103,13 @@ def plotbot(trange, *args):
             print("Each even-numbered argument must be an axis specification (number or string).")
             print("Note: 1 for left axis, '1r' for right axis")
             print("A well-structured example: plotbot(trange, mag_rtn_4sa.br, 1, mag_rtn_4sa.bt, 2, mag_rtn_4sa.bn, '2r')")
-            sys.exit("Plotbot stopped due to invalid argument pairs")
+            return False
             
         if not (isinstance(args[i+1], (int, str))):
             print(f"\nOops! 🤗 Axis specification at position {i+2} must be a number or string.")
             print("Note: 1 for left axis, '1r' for right axis")
             print("A well-structured example: plotbot(trange, mag_rtn_4sa.br, 1, mag_rtn_4sa.bt, 2, mag_rtn_4sa.bn, '2r')")
-            sys.exit("Plotbot stopped due to invalid argument pairs")
+            return False
 
     #====================================================================
     # INITIALIZE DATA STRUCTURES
@@ -634,5 +634,6 @@ def plotbot(trange, *args):
             print_manager.warning(f"Could not parse date from trange[0] ('{trange[0]}') for annotation: {e}")
 
     plt.show()                                                    # Display the complete figure
+    return True
 
 print('\n🤖 Plotbot Initialized')

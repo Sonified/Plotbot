@@ -317,6 +317,76 @@ class mag_rtn_4sa_class:
         for key, value in snapshot_data.__dict__.items():
             setattr(self, key, value)
 
+    def ensure_internal_consistency(self):
+        """Ensures .time and .field are consistent with .datetime_array and .raw_data."""
+        print(f"*** GOLD ENSURE ID:{id(self)} *** Called for {self.class_name}.{self.subclass_name if self.subclass_name else 'MAIN'}.")
+        original_time_len = len(self.time) if hasattr(self, 'time') and self.time is not None and hasattr(self.time, '__len__') else 'None_or_NoLen'
+        original_dt_len = len(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else 'None_or_NoLen'
+        original_field_shape = self.field.shape if hasattr(self, 'field') and self.field is not None and hasattr(self.field, 'shape') else 'None_or_NoShape'
+        
+        print(f"    PRE-CHECK - datetime_array len: {original_dt_len}")
+        print(f"    PRE-CHECK - time len: {original_time_len}")
+        print(f"    PRE-CHECK - field shape: {original_field_shape}")
+        
+        changed_time = False
+        changed_field = False
+
+        if hasattr(self, 'datetime_array') and self.datetime_array is not None and \
+           hasattr(self, 'raw_data') and self.raw_data:
+
+            if len(self.datetime_array) > 0:
+                new_time_array = self.datetime_array.astype('datetime64[ns]').astype(np.int64)
+                if not hasattr(self, 'time') or self.time is None or not np.array_equal(self.time, new_time_array):
+                    self.time = new_time_array
+                    print(f"    [ENSURE_CONSISTENCY] Updated self.time via direct int64 cast. New len: {len(self.time)}")
+                    changed_time = True
+            elif not hasattr(self, 'time') or self.time is None or (hasattr(self.time, '__len__') and len(self.time) != 0):
+                self.time = np.array([], dtype=np.int64)
+                print(f"    [ENSURE_CONSISTENCY] Set self.time to empty int64 array (datetime_array was empty).")
+                changed_time = True
+
+            expected_len = len(self.datetime_array)
+            if ('br' in self.raw_data and self.raw_data['br'] is not None and
+                'bt' in self.raw_data and self.raw_data['bt'] is not None and
+                'bn' in self.raw_data and self.raw_data['bn'] is not None and
+                len(self.raw_data['br']) == expected_len and
+                len(self.raw_data['bt']) == expected_len and
+                len(self.raw_data['bn']) == expected_len):
+                new_field = np.column_stack((self.raw_data['br'], self.raw_data['bt'], self.raw_data['bn']))
+                if not hasattr(self, 'field') or self.field is None or not np.array_equal(self.field, new_field):
+                    self.field = new_field
+                    print(f"    Updated self.field from RTN components. New shape: {self.field.shape}")
+                    changed_field = True
+            else:
+                if not (hasattr(self, 'field') and self.field is None and expected_len == 0):
+                    if hasattr(self, 'field') and self.field is not None:
+                         print(f"    Nullifying self.field. Reason: RTN components in raw_data missing, None, or inconsistent lengths (expected {expected_len}).")
+                         self.field = None
+                         changed_field = True
+                    elif not hasattr(self, 'field') and expected_len > 0: 
+                         print(f"    Setting self.field to None. Reason: RTN components in raw_data missing, None, or inconsistent lengths (expected {expected_len}).")
+                         self.field = None
+                         changed_field = True
+            
+            if (changed_time or changed_field) and hasattr(self, 'set_ploptions'):
+                print(f"    Calling self.set_ploptions() due to consistency updates (time changed: {changed_time}, field changed: {changed_field}).")
+                self.set_ploptions()
+        else:
+            print(f"    Skipping consistency check (datetime_array or raw_data missing/None).")
+        
+        final_time_len = len(self.time) if hasattr(self, 'time') and self.time is not None and hasattr(self.time, '__len__') else 'None_or_NoLen'
+        final_dt_len = len(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else 'None_or_NoLen'
+        final_field_shape = self.field.shape if hasattr(self, 'field') and self.field is not None and hasattr(self.field, 'shape') else 'None_or_NoShape'
+
+        if changed_time or changed_field:
+            print(f"*** GOLD ENSURE ID:{id(self)} *** CHANGES WERE MADE.")
+            print(f"    POST-FIX - datetime_array len: {final_dt_len}")
+            print(f"    POST-FIX - time len: {final_time_len}")
+            print(f"    POST-FIX - field shape: {final_field_shape}")
+        else:
+            print(f"*** GOLD ENSURE ID:{id(self)} *** NO CHANGES MADE by this method. Dt: {final_dt_len}, Time: {final_time_len}, Field: {final_field_shape}")
+        print(f"*** GOLD ENSURE ID:{id(self)} *** Finished for {self.class_name}.{self.subclass_name if self.subclass_name else 'MAIN'}.")
+
 mag_rtn_4sa = mag_rtn_4sa_class(None) #Initialize the class with no data
 print('initialized mag_rtn_4sa class')
 
@@ -608,7 +678,6 @@ class mag_rtn_class:
            hasattr(self, 'raw_data') and self.raw_data:
 
             if len(self.datetime_array) > 0:
-                # Direct cast for .time consistency
                 new_time_array = self.datetime_array.astype('datetime64[ns]').astype(np.int64)
                 if not hasattr(self, 'time') or self.time is None or not np.array_equal(self.time, new_time_array):
                     self.time = new_time_array
@@ -928,7 +997,7 @@ class mag_sc_4sa_class:
                 datetime_array=self.datetime_array,# Time data
                 y_label='Magnetic\nPressure\n(nPa)', # Y-axis label
                 legend_label='$P_{mag}$',   # Legend text
-                color='darkred',           # Plot color
+                color='navy',              # Plot color
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=1,              # Line width
@@ -944,6 +1013,76 @@ class mag_sc_4sa_class:
         """
         for key, value in snapshot_data.__dict__.items():
             setattr(self, key, value)
+
+    def ensure_internal_consistency(self):
+        """Ensures .time and .field are consistent with .datetime_array and .raw_data."""
+        print(f"*** GOLD ENSURE ID:{id(self)} *** Called for {self.class_name}.{self.subclass_name if self.subclass_name else 'MAIN'}.")
+        original_time_len = len(self.time) if hasattr(self, 'time') and self.time is not None and hasattr(self.time, '__len__') else 'None_or_NoLen'
+        original_dt_len = len(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else 'None_or_NoLen'
+        original_field_shape = self.field.shape if hasattr(self, 'field') and self.field is not None and hasattr(self.field, 'shape') else 'None_or_NoShape'
+        
+        print(f"    PRE-CHECK - datetime_array len: {original_dt_len}")
+        print(f"    PRE-CHECK - time len: {original_time_len}")
+        print(f"    PRE-CHECK - field shape: {original_field_shape}")
+        
+        changed_time = False
+        changed_field = False
+
+        if hasattr(self, 'datetime_array') and self.datetime_array is not None and \
+           hasattr(self, 'raw_data') and self.raw_data:
+
+            if len(self.datetime_array) > 0:
+                new_time_array = self.datetime_array.astype('datetime64[ns]').astype(np.int64)
+                if not hasattr(self, 'time') or self.time is None or not np.array_equal(self.time, new_time_array):
+                    self.time = new_time_array
+                    print(f"    [ENSURE_CONSISTENCY] Updated self.time via direct int64 cast. New len: {len(self.time)}")
+                    changed_time = True
+            elif not hasattr(self, 'time') or self.time is None or (hasattr(self.time, '__len__') and len(self.time) != 0):
+                self.time = np.array([], dtype=np.int64)
+                print(f"    [ENSURE_CONSISTENCY] Set self.time to empty int64 array (datetime_array was empty).")
+                changed_time = True
+
+            expected_len = len(self.datetime_array)
+            if ('bx' in self.raw_data and self.raw_data['bx'] is not None and
+                'by' in self.raw_data and self.raw_data['by'] is not None and
+                'bz' in self.raw_data and self.raw_data['bz'] is not None and
+                len(self.raw_data['bx']) == expected_len and
+                len(self.raw_data['by']) == expected_len and
+                len(self.raw_data['bz']) == expected_len):
+                new_field = np.column_stack((self.raw_data['bx'], self.raw_data['by'], self.raw_data['bz']))
+                if not hasattr(self, 'field') or self.field is None or not np.array_equal(self.field, new_field):
+                    self.field = new_field
+                    print(f"    Updated self.field from SC components. New shape: {self.field.shape}")
+                    changed_field = True
+            else:
+                if not (hasattr(self, 'field') and self.field is None and expected_len == 0):
+                    if hasattr(self, 'field') and self.field is not None:
+                         print(f"    Nullifying self.field. Reason: SC components in raw_data missing, None, or inconsistent lengths (expected {expected_len}).")
+                         self.field = None
+                         changed_field = True
+                    elif not hasattr(self, 'field') and expected_len > 0: 
+                         print(f"    Setting self.field to None. Reason: SC components in raw_data missing, None, or inconsistent lengths (expected {expected_len}).")
+                         self.field = None
+                         changed_field = True
+            
+            if (changed_time or changed_field) and hasattr(self, 'set_ploptions'):
+                print(f"    Calling self.set_ploptions() due to consistency updates (time changed: {changed_time}, field changed: {changed_field}).")
+                self.set_ploptions()
+        else:
+            print(f"    Skipping consistency check (datetime_array or raw_data missing/None).")
+        
+        final_time_len = len(self.time) if hasattr(self, 'time') and self.time is not None and hasattr(self.time, '__len__') else 'None_or_NoLen'
+        final_dt_len = len(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else 'None_or_NoLen'
+        final_field_shape = self.field.shape if hasattr(self, 'field') and self.field is not None and hasattr(self.field, 'shape') else 'None_or_NoShape'
+
+        if changed_time or changed_field:
+            print(f"*** GOLD ENSURE ID:{id(self)} *** CHANGES WERE MADE.")
+            print(f"    POST-FIX - datetime_array len: {final_dt_len}")
+            print(f"    POST-FIX - time len: {final_time_len}")
+            print(f"    POST-FIX - field shape: {final_field_shape}")
+        else:
+            print(f"*** GOLD ENSURE ID:{id(self)} *** NO CHANGES MADE by this method. Dt: {final_dt_len}, Time: {final_time_len}, Field: {final_field_shape}")
+        print(f"*** GOLD ENSURE ID:{id(self)} *** Finished for {self.class_name}.{self.subclass_name if self.subclass_name else 'MAIN'}.")
 
 mag_sc_4sa = mag_sc_4sa_class(None) #Initialize the class with no data
 print('initialized mag_sc_4sa class')
@@ -1238,6 +1377,76 @@ class mag_sc_class:
         """
         for key, value in snapshot_data.__dict__.items():
             setattr(self, key, value)
+
+    def ensure_internal_consistency(self):
+        """Ensures .time and .field are consistent with .datetime_array and .raw_data."""
+        print(f"*** GOLD ENSURE ID:{id(self)} *** Called for {self.class_name}.{self.subclass_name if self.subclass_name else 'MAIN'}.")
+        original_time_len = len(self.time) if hasattr(self, 'time') and self.time is not None and hasattr(self.time, '__len__') else 'None_or_NoLen'
+        original_dt_len = len(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else 'None_or_NoLen'
+        original_field_shape = self.field.shape if hasattr(self, 'field') and self.field is not None and hasattr(self.field, 'shape') else 'None_or_NoShape'
+        
+        print(f"    PRE-CHECK - datetime_array len: {original_dt_len}")
+        print(f"    PRE-CHECK - time len: {original_time_len}")
+        print(f"    PRE-CHECK - field shape: {original_field_shape}")
+        
+        changed_time = False
+        changed_field = False
+
+        if hasattr(self, 'datetime_array') and self.datetime_array is not None and \
+           hasattr(self, 'raw_data') and self.raw_data:
+
+            if len(self.datetime_array) > 0:
+                new_time_array = self.datetime_array.astype('datetime64[ns]').astype(np.int64)
+                if not hasattr(self, 'time') or self.time is None or not np.array_equal(self.time, new_time_array):
+                    self.time = new_time_array
+                    print(f"    [ENSURE_CONSISTENCY] Updated self.time via direct int64 cast. New len: {len(self.time)}")
+                    changed_time = True
+            elif not hasattr(self, 'time') or self.time is None or (hasattr(self.time, '__len__') and len(self.time) != 0):
+                self.time = np.array([], dtype=np.int64)
+                print(f"    [ENSURE_CONSISTENCY] Set self.time to empty int64 array (datetime_array was empty).")
+                changed_time = True
+
+            expected_len = len(self.datetime_array)
+            if ('bx' in self.raw_data and self.raw_data['bx'] is not None and
+                'by' in self.raw_data and self.raw_data['by'] is not None and
+                'bz' in self.raw_data and self.raw_data['bz'] is not None and
+                len(self.raw_data['bx']) == expected_len and
+                len(self.raw_data['by']) == expected_len and
+                len(self.raw_data['bz']) == expected_len):
+                new_field = np.column_stack((self.raw_data['bx'], self.raw_data['by'], self.raw_data['bz']))
+                if not hasattr(self, 'field') or self.field is None or not np.array_equal(self.field, new_field):
+                    self.field = new_field
+                    print(f"    Updated self.field from SC components. New shape: {self.field.shape}")
+                    changed_field = True
+            else:
+                if not (hasattr(self, 'field') and self.field is None and expected_len == 0):
+                    if hasattr(self, 'field') and self.field is not None:
+                         print(f"    Nullifying self.field. Reason: SC components in raw_data missing, None, or inconsistent lengths (expected {expected_len}).")
+                         self.field = None
+                         changed_field = True
+                    elif not hasattr(self, 'field') and expected_len > 0: 
+                         print(f"    Setting self.field to None. Reason: SC components in raw_data missing, None, or inconsistent lengths (expected {expected_len}).")
+                         self.field = None
+                         changed_field = True
+            
+            if (changed_time or changed_field) and hasattr(self, 'set_ploptions'):
+                print(f"    Calling self.set_ploptions() due to consistency updates (time changed: {changed_time}, field changed: {changed_field}).")
+                self.set_ploptions()
+        else:
+            print(f"    Skipping consistency check (datetime_array or raw_data missing/None).")
+        
+        final_time_len = len(self.time) if hasattr(self, 'time') and self.time is not None and hasattr(self.time, '__len__') else 'None_or_NoLen'
+        final_dt_len = len(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else 'None_or_NoLen'
+        final_field_shape = self.field.shape if hasattr(self, 'field') and self.field is not None and hasattr(self.field, 'shape') else 'None_or_NoShape'
+
+        if changed_time or changed_field:
+            print(f"*** GOLD ENSURE ID:{id(self)} *** CHANGES WERE MADE.")
+            print(f"    POST-FIX - datetime_array len: {final_dt_len}")
+            print(f"    POST-FIX - time len: {final_time_len}")
+            print(f"    POST-FIX - field shape: {final_field_shape}")
+        else:
+            print(f"*** GOLD ENSURE ID:{id(self)} *** NO CHANGES MADE by this method. Dt: {final_dt_len}, Time: {final_time_len}, Field: {final_field_shape}")
+        print(f"*** GOLD ENSURE ID:{id(self)} *** Finished for {self.class_name}.{self.subclass_name if self.subclass_name else 'MAIN'}.")
 
 mag_sc = mag_sc_class(None) #Initialize the class with no data
 print('initialized mag_sc class')
