@@ -236,3 +236,15 @@ After implementing this fix, all 6 previously failing tests now pass successfull
 3. We've now established a solid foundation for testing data classes, snapshots, and the DataCubby system
 
 *(Log remains open for further updates on 2025-05-06)* 
+
+---
+## Push: v2.25
+
+- **Version Tag:** `2025_05_07_v2.25`
+- **Commit Message:** `Fix: Update data consistency verification in tests to handle 'all' component structure correctly (v2.25)`
+- **Branch:** `data_cubby_refactor` (set upstream to origin)
+- **Git Hash:** (copied to clipboard)
+
+Summary: This push finalizes the fix for data consistency verification in the test framework, ensuring the 'all' component is handled according to its intended structure. All core pipeline tests now pass. The branch was pushed to origin and the hash copied for reference.
+
+LOG CLOSED
