@@ -172,22 +172,28 @@ def efficient_moving_average(times, data, window_size_seconds, sampling_rate, me
     # Calculate window size in number of samples
     # Ensure that window_size_samples is at least 1 for pd.rolling if min_periods is 1
     calculated_raw_samples = window_size_seconds * sampling_rate
-    window_size_samples_for_rolling = max(1, int(round(calculated_raw_samples))) # Round before int, ensure at least 1
+    window_size_samples = max(1, int(round(calculated_raw_samples))) # Round before int, ensure at least 1
 
-    print(f"EFFICIENT_MOVING_AVG_DEBUG: window_sec={window_size_seconds}, sr={sampling_rate:.2f}, raw_samples_calc={calculated_raw_samples:.2f}, rolling_window_arg={window_size_samples_for_rolling}")
+    # Debug output to understand values
+    print(f"EFFICIENT_MOVING_AVG_DEBUG: window_sec={window_size_seconds}, sr={sampling_rate:.2f}, raw_samples_calc={calculated_raw_samples:.2f}, rolling_window_arg={window_size_samples}")
 
-    if len(data) < window_size_samples_for_rolling:
-        print_manager.warning(f"Data length ({len(data)}) is less than rolling window size ({window_size_samples_for_rolling}). Result may be all NaNs or affect edge cases.")
+    if len(data) < window_size_samples:
+        print(f"Warning: Data length ({len(data)}) is less than rolling window size ({window_size_samples}). Result may be all NaNs or affect edge cases.")
         # Pandas rolling with min_periods=1 will handle this by producing what it can.
 
-    # Use rolling to apply the smoothing
+    half_window_size = window_size_samples // 2
+
+    # print(f"Calculating {window_size_seconds}-second moving average with window size: {window_size_samples} samples")
+
+    # Use rolling to apply the smoothing - ensure window is at least 1
     try:
-        smoothed_data = pd.Series(data).rolling(window=window_size_samples_for_rolling, center=True, min_periods=1).mean().to_numpy()
+        smoothed_data = pd.Series(data).rolling(window=window_size_samples, center=True, min_periods=1).mean().to_numpy()
     except ValueError as ve:
-        print_manager.error(f"ValueError in pd.Series.rolling: {ve}")
-        print_manager.error(f"  Inputs were: data len={len(data)}, window={window_size_samples_for_rolling}, center=True, min_periods=1")
-        # Depending on desired behavior, could return original data or NaNs
-        return np.full_like(data, np.nan, dtype=np.float64) # Return NaNs on error
+        print(f"Error in pd.Series.rolling: {ve}")
+        print(f"  Inputs were: data len={len(data)}, window={window_size_samples}, center=True, min_periods=1")
+        # Fallback to using a window of 1 with warning
+        print(f"  Falling back to minimum window size of 1")
+        smoothed_data = pd.Series(data).rolling(window=1, center=True, min_periods=1).mean().to_numpy()
 
     # Apply the mean threshold multiplier
     smoothed_data = smoothed_data * mean_threshold

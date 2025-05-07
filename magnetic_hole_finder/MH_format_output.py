@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import numpy as np
 import importlib
+from dateutil.parser import parse as dateutil_parse
 
 from .data_management import *
 from .data_audification import *
@@ -32,7 +33,7 @@ def output_magnetic_holes(magnetic_holes,
         sub_save_dir = setup_output_directory(trange, save_dir)
 
         # Determine the encounter number using the get_encounter_number function
-        start_date = trange[0].split('/')[0]  # Extract the date part from trange[0]
+        start_date = trange[0].split(' ')[0] if ' ' in trange[0] else trange[0].split('/')[0]  # Extract the date part from trange[0]
         encounter_number = get_encounter_number(start_date)
 
         # Add metadata to the izotope_output
@@ -61,10 +62,15 @@ def output_magnetic_holes(magnetic_holes,
         ])
 
         # Calculate duration and add to metadata
-        start_time = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f' if '.' in trange[0] else '%Y-%m-%d/%H:%M:%S')
-        end_time = datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f' if '.' in trange[1] else '%Y-%m-%d/%H:%M:%S')
-        duration = end_time - start_time
-        izotope_output.append(f"[Metadata/Duration]\t0\t\tTotal Duration: {duration}")
+        # Use dateutil.parser.parse to handle both space and slash-separated formats flexibly
+        try:
+            start_time = dateutil_parse(trange[0])
+            end_time = dateutil_parse(trange[1])
+            duration = end_time - start_time
+            izotope_output.append(f"[Metadata/Duration]\t0\t\tTotal Duration: {duration}")
+        except Exception as e:
+            print(f"Warning: Error parsing time range for duration calculation: {e}")
+            izotope_output.append(f"[Metadata/Duration]\t0\t\tTotal Duration: CALCULATION_ERROR")
 
         # Add total samples and sampling rate to metadata
         total_samples = len(bmag)
@@ -136,23 +142,35 @@ def output_magnetic_holes(magnetic_holes,
         show_directory_button(save_dir)
 
 def generate_marker_file_name(trange, version):
-    start_datetime_str, stop_datetime_str = convert_time_range_to_str(trange[0], trange[1])
-    start_date, start_time = format_time(start_datetime_str)
-    stop_date, stop_time = format_time(stop_datetime_str)
-
-    encounter_number = get_encounter_number(start_date)
-
-    # Adjust for day-crossing in the file naming
-    if start_date == stop_date:
-        stop_time_formatted = stop_time
-    else:
-        if start_date[:4] == stop_date[:4]:  # Same year
-            stop_time_formatted = f"{stop_date[5:]}_{stop_time}"
+    # Use dateutil.parser to handle different time formats
+    try:
+        start_time_dt = dateutil_parse(trange[0])
+        end_time_dt = dateutil_parse(trange[1])
+        
+        # Convert to standard format for further processing
+        start_datetime_str = start_time_dt.strftime('%Y_%m_%d_%Hh_%Mm_%Ss')
+        stop_datetime_str = end_time_dt.strftime('%Y_%m_%d_%Hh_%Mm_%Ss')
+        
+        start_date, start_time = format_time(start_datetime_str)
+        stop_date, stop_time = format_time(stop_datetime_str)
+        
+        encounter_number = get_encounter_number(start_date)
+        
+        # Adjust for day-crossing in the file naming
+        if start_date == stop_date:
+            stop_time_formatted = stop_time
         else:
-            stop_time_formatted = f"{stop_date}_{stop_time}"
-
-    file_name = f"PSP_MH_Marker_Set_{encounter_number}_{start_date}_{start_time}_to_{stop_time_formatted}_V{version}.txt"
-    return file_name
+            if start_date[:4] == stop_date[:4]:  # Same year
+                stop_time_formatted = f"{stop_date[5:]}_{stop_time}"
+            else:
+                stop_time_formatted = f"{stop_date}_{stop_time}"
+                
+        file_name = f"PSP_MH_Marker_Set_{encounter_number}_{start_date}_{start_time}_to_{stop_time_formatted}_V{version}.txt"
+        return file_name
+    except Exception as e:
+        print(f"Error in generate_marker_file_name: {e}")
+        # Fall back to a basic name if parsing fails
+        return f"PSP_MH_Marker_Set_E00_{trange[0].replace('/', '_').replace(' ', '_')}_to_{trange[1].replace('/', '_').replace(' ', '_')}_V{version}.txt"
 
 current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 print(f'{current_time} - 🙂 MH Outputs are happy!')

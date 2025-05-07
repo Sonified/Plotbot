@@ -1,0 +1,1189 @@
+initialized server_access
+initialized global_tracker
+initialized ploptions
+initialized plot_manager
+*** MAG_CLASS_INIT (mag_rtn_4sa_class) ID:5880258416: imported_data ID: None. ***
+initialized mag_rtn_4sa class
+initialized mag_rtn class
+initialized mag_sc_4sa class
+initialized mag_sc class
+initialized epad class
+initialized epad_hr class
+initialized proton class
+initialized proton_hr class
+initialized data_cubby
+initialized proton_fits class
+initialized ham_class
+🔉 initialized audifier
+
+Importing libraries, this may take a moment. Hold tight... 
+
+✅ Imported standard libraries and utilities.
+✅ Imported numpy, pandas, and scipy libraries.
+✅ Imported matplotlib libraries.
+✅ Imported cdflib, BeautifulSoup, requests, dateutil, and datetime libraries.
+
+🤖 Plotbot Initialized
+✨ Showdahodo initialized
+Positional Data Helper Initialized
+📈📉 Multiplot Initialized
+   Version: 2025_05_07_v2.25
+Commit: Fix: Update data consistency verification in tests to handle 'all' component structure correctly (v2.25)
+
+[94m🤖 Plotbot Initialized[0m
+Test-only mode enabled
+============================= test session starts ==============================
+platform darwin -- Python 3.12.4, pytest-7.4.4, pluggy-1.5.0 -- /opt/anaconda3/envs/plotbot_env/bin/python3.12
+cachedir: .pytest_cache
+rootdir: /Users/robertalexander/GitHub/Plotbot
+configfile: pytest.ini
+collecting ... collected 3 items
+
+tests/core/test_data_merging.py::test_partial_overlap_merge 🔵 PHASE 0: Resetting and verifying mag_rtn_4sa is empty
+*** MAG_CLASS_INIT (mag_rtn_4sa_class) ID:6334718336: imported_data ID: None. ***
+Setting attribute: all (type=plot_manager, shape=(3,), dtype=object)
+Setting attribute: br (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bt (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bn (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bmag (type=plot_manager, shape=(), dtype=object)
+Setting attribute: pmag (type=plot_manager, shape=(), dtype=object)
+No data provided; initialized with empty attributes.
+[CUBBY] 
+=== Stashing Debug (INSIDE DATA CUBBY)===
+[CUBBY] STASH CALLER: /Users/robertalexander/GitHub/Plotbot/tests/utils/test_helpers.py:570
+[CUBBY] Stashing with identifier: mag_rtn_4sa
+[CUBBY] STASH TYPE CHECK - Object type: <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] STASH INPUT - No datetime_array attribute found
+[CUBBY] STASH INPUT - raw_data keys: dict_keys(['all', 'br', 'bt', 'bn', 'bmag', 'pmag'])
+[CUBBY] STASH INPUT - raw_data[all] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[br] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[bt] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[bn] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[bmag] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[pmag] type: <class 'NoneType'>
+[CUBBY] STASH MERGE CHECK - Looking for existing object with class_name: mag_rtn_4sa
+[CUBBY] STASH MERGE CHECK - Found existing object of type: <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] STASH MERGE CHECK - No existing datetime_array found
+[CUBBY] STASH MERGE - One or both datetime_arrays are None, skipping merge
+[CUBBY] STASH STORE - Stored in class_registry: mag_rtn_4sa
+[CUBBY] STASH OUTPUT - Stored object type: <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] === End Stashing Debug (LEAVING DATA CUBBY)===
+
+🔵 PHASE 0: Verifying instance state: pb.mag_rtn_4sa (post-reset) (ID: 6334718336)
+mag_rtn_4sa getattr helper!
+'time' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+mag_rtn_4sa getattr helper!
+'field' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+🔵 PHASE 1: Loading initial data (['2021-10-26 02:05:00', '2021-10-26 02:15:00']) and saving snapshot
+--- [plotbot] STARTING PHASE 2: Load Standard Data ---
+--- [plotbot] Calling get_data for data_type: 'mag_RTN_4sa' ---
+[GET_DATA PRE-LOOP] required_data_types set: set()
+--- [plotbot] Returned from get_data for data_type: 'mag_RTN_4sa'. Result type: <class 'NoneType'> ---
+--- [plotbot] FINISHED PHASE 2: Load Standard Data ---
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:252
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - No datetime_array attribute found
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all: type=NoneType, shape=N/A | br: type=NoneType, shape=N/A | bt: type=NoneType, shape=N/A | bn: type=NoneType, shape=N/A | bmag: type=NoneType, shape=N/A | pmag: type=NoneType, shape=N/A
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+[GET_DATA PRE-LOOP] required_data_types set: {'mag_RTN_4sa'}
+🛰️ mag_RTN_4sa - acquiring variables: br
+[GET_DATA IN-LOOP] Current data_type from set: 'mag_RTN_4sa' (Type: <class 'str'>)
+Processing Data Type: mag_RTN_4sa...
+[GET_DATA_CONFIG_CHECK] Attempting to get config for data_type FROM LOOP VAR: 'mag_RTN_4sa'
+[GET_DATA_CONFIG_CHECK] Available keys in psp_data_types: ['mag_RTN', 'mag_RTN_4sa', 'mag_SC', 'mag_SC_4sa', 'spe_sf0_pad', 'spe_af0_pad', 'spi_sf00_l3_mom', 'spi_af00_L3_mom', 'sf00_fits', 'sf01_fits', 'ham']
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/get_data.py:258
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - No datetime_array attribute found
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all: type=NoneType, shape=N/A | br: type=NoneType, shape=N/A | bt: type=NoneType, shape=N/A | bn: type=NoneType, shape=N/A | bmag: type=NoneType, shape=N/A | pmag: type=NoneType, shape=N/A
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+[Tracker Check] Checking calculated for mag_rtn_4sa with requested range: 2021-10-26 02:05:00+00:00 to 2021-10-26 02:15:00+00:00
+[Tracker Check] No stored ranges found for key: mag_rtn_4sa
+[Tracker Check] Action IS needed for mag_rtn_4sa.
+Tracker indicates calculation needed for mag_rtn_4sa (using original type mag_RTN_4sa). Proceeding...
+Server mode for mag_RTN_4sa: dynamic
+Attempting SPDF download (dynamic mode) for mag_RTN_4sa...
+Attempting SPDF download for mag_RTN_4sa in range ['2021-10-26 02:05:00', '2021-10-26 02:15:00']
+Checking for Berkeley/SPDF case conflicts before SPDF download for mag_RTN_4sa...
+Attempting SPDF check/download (no_update=False) for mag_rtn_4_sa_per_cyc...
+mag_RTN_4sa - Import/Refresh required
+Import data function called
+Input trange: ['2021-10-26 02:05:00', '2021-10-26 02:15:00']
+
+Importing data for UTC time range: ['2021-10-26 02:05:00', '2021-10-26 02:15:00']
+*** IDF_DEBUG: Entered Standard CDF Processing for mag_RTN_4sa ***
+
+=== Starting import for mag_RTN_4sa (CDF) ===
+*** IDF_DEBUG: About to compute start_tt2000 for start_time: 2021-10-26 02:05:00+00:00 ***
+*** IDF_DEBUG: Computed start_tt2000: 688485969184000000. About to compute end_tt2000 for end_time: 2021-10-26 02:15:00+00:00 ***
+*** IDF_DEBUG: Computed end_tt2000: 688486569184000000 ***
+  Requested datetime range (from TT2000 conversion): 2021-10-26T02:05:00.000000000 to 2021-10-26T02:15:00.000000000
+daterange called with start_date=2021-10-26 02:05:00+00:00, end_date=2021-10-26 02:15:00+00:00
+End date has time component, using full day: 2021-10-26
+Converted start_date to date: 2021-10-26
+Will generate 1 dates
+Yielding date: 2021-10-26
+    Searching for DAILY pattern: 'psp_fld_l2_mag_RTN_4_Sa_per_Cyc_20211026_v*.cdf' in dir: 'psp_data/fields/l2/mag_rtn_4_per_cycle/2021'
+      MATCHED file: psp_fld_l2_mag_rtn_4_sa_per_cyc_20211026_v02.cdf with pattern psp_fld_l2_mag_RTN_4_Sa_per_Cyc_20211026_v.*.cdf
+Found 1 unique CDF files to process.
+
+Processing CDF file: psp_data/fields/l2/mag_rtn_4_per_cycle/2021/psp_fld_l2_mag_rtn_4_sa_per_cyc_20211026_v02.cdf
+Successfully opened CDF file
+Using time variable: epoch_mag_RTN_4_Sa_per_Cyc
+  File actual TT2000 range: 688483027378124800 (2021-10-26T01:15:58.194124800) to 688564869167567488 (2021-10-26T23:59:59.983567488)
+    Comparison: File ends before request starts? False (FileEnd: 688564869167567488 < ReqStart: 688485969184000000)
+    Comparison: File starts after request ends? False (FileStart: 688483027378124800 > ReqEnd: 688486569184000000)
+Reading full time data array...
+Read 252629 time points
+Time indices: 13467 to 16214
+Extracted 2747 time points within requested range
+
+Reading variable: psp_fld_l2_mag_RTN_4_Sa_per_Cyc
+Raw data shape: (2747, 3)
+Successfully stored data slice for psp_fld_l2_mag_RTN_4_Sa_per_Cyc
+
+Concatenating CDF data...
+  Concatenated psp_fld_l2_mag_RTN_4_Sa_per_Cyc (Shape: (2747, 3))
+
+Total CDF data points after concatenation: 2747
+*** IMPORT_DATA_DEBUG (CDF Path) for data_type 'mag_RTN_4sa' (originally requested: 'mag_RTN_4sa') ***
+    data_object ID: 6334870976
+    DataObject.times length: 2747, dtype: int64
+    data_object.data ID: 6334862592
+    DataObject.data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc']
+        'psp_fld_l2_mag_RTN_4_Sa_per_Cyc' is PRESENT. Type: <class 'numpy.ndarray'>, Shape: (2747, 3), Len: 2747
+*** GET_DATA DEBUG: data_obj from import_data_function ID: 6334870976, data_obj.data ID: 6334862592, data_obj.data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+*** DATACUBBY_UPDATE DEBUG (Top): imported_data_obj ID: 6334870976, .data ID: 6334862592, .data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+[CUBBY] 
+=== Updating Global Instance: mag_rtn_4sa (is_segment_merge: False) ===
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/data_cubby.py:528
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - No datetime_array attribute found
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all: type=NoneType, shape=N/A | br: type=NoneType, shape=N/A | bt: type=NoneType, shape=N/A | bn: type=NoneType, shape=N/A | bmag: type=NoneType, shape=N/A | pmag: type=NoneType, shape=N/A
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+[CUBBY] Found target global instance: mag_rtn_4sa_class (ID: 6334718336) to update for data_type 'mag_rtn_4sa'
+[CUBBY] Global instance for mag_rtn_4sa is empty. Populating with new data via update()...
+*** DATACUBBY_UPDATE DEBUG (Empty/Segment Path - Pre-update): imported_data_obj ID: 6334870976, .data ID: 6334862592, .data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+*** MAG_CLASS_UPDATE (mag_rtn_4sa_class) ID:6334718336: imported_data ID: 6334870976, .data ID: 6334862592. Keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+[CUBBY] 
+=== Update Debug ===
+[CUBBY] Starting mag_rtn_4sa_class update...
+[CUBBY] Stored all state: {}
+[CUBBY] Stored br state: {}
+[CUBBY] Stored bt state: {}
+[CUBBY] Stored bn state: {}
+[CUBBY] Stored bmag state: {}
+[CUBBY] Stored pmag state: {}
+*** MAG_CLASS_CALCVARS (mag_rtn_4sa_class) ID:6334718336: imported_data ID: 6334870976, .data ID: 6334862592 ***
+    Available keys in imported_data.data for CALCVARS: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc']
+Setting attribute: time (type=ndarray, shape=(2747,), dtype=int64)
+Setting attribute: datetime_array (type=ndarray, shape=(2747,), dtype=datetime64[ns])
+self.datetime_array type after conversion: {type(self.datetime_array)}
+First element type: {type(self.datetime_array[0])}
+Setting attribute: field (type=ndarray, shape=(2747, 3), dtype=float32)
+Setting attribute: raw_data with value: {'all': [array([6.660448 , 6.9128456, 6.792362 , ..., 7.3435388, 7.3377633,
+       7.402945 ], dtype...
+
+Debug - Data Arrays:
+Time array shape: {self.time.shape}
+Field data shape: (2747, 3)
+First TT2000 time: 688485969282162432
+Setting attribute: all (type=plot_manager, shape=(3, 2747), dtype=float32)
+Setting attribute: br (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: bt (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: bn (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: bmag (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: pmag (type=plot_manager, shape=(2747,), dtype=float32)
+[CUBBY] Restoring saved state...
+[CUBBY] Restored all state: {}
+[CUBBY] Restored br state: {}
+[CUBBY] Restored bt state: {}
+[CUBBY] Restored bn state: {}
+[CUBBY] Restored bmag state: {}
+[CUBBY] Restored pmag state: {}
+[CUBBY] === End Update Debug ===
+
+[CUBBY] ✅ Instance updated successfully.
+[CUBBY] === End Global Instance Update ===
+
+[GET_DATA_POST_CUBBY] Instance 'mag_rtn_4sa' (ID: 6334718336):
+    datetime_array len: 2747
+    time (TT2000) len: 2747
+    field shape: (2747, 3)
+    raw_data['all'] (list) comp0 len: 2747
+    raw_data['br'] len: 2747
+    raw_data['bt'] len: 2747
+    raw_data['bn'] len: 2747
+    raw_data['bmag'] len: 2747
+    raw_data['pmag'] len: 2747
+Updated and merged ranges for mag_rtn_4sa: [(datetime.datetime(2021, 10, 26, 2, 5, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 10, 26, 2, 15, tzinfo=datetime.timezone.utc))]
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:271
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(2747,), range=2021-10-26T02:05:00.098162 to 2021-10-26T02:14:59.970828
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all(list): len=3, elem_shape=(2747,) | br: type=ndarray, shape=(2747,) | bt: type=ndarray, shape=(2747,) | bn: type=ndarray, shape=(2747,) | bmag: type=ndarray, shape=(2747,) | pmag: type=ndarray, shape=(2747,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+
+DEBUG:
+var: [6.660448  6.9128456 6.792362  ... 7.3435388 7.3377633 7.402945 ]
+var type: <class 'plotbot.plot_manager.plot_manager'>
+var.datetime_array type: <class 'numpy.ndarray'>
+First element type: <class 'numpy.datetime64'>
+First element: 2021-10-26T02:05:00.098162432
+Time range: 2021-10-26T02:05:00.098162432 to 2021-10-26T02:14:59.970828928
+var.data type: <class 'numpy.ndarray'>
+var.data shape: (2747,)
+
+Variable verification for mag_rtn_4sa.br:
+Plot attributes example:
+- Color: forestgreen
+- Y-label: B (nT)
+- Legend: $B_R$
+Setting title from plt.options: Partial Overlap Merge - Initial Data
+🔵 PHASE 0: Verifying instance state: pb.mag_rtn_4sa after initial load for merge test (ID: 6334718336)
+Data presence for pb.mag_rtn_4sa after initial load for merge test - PASSED: pb.mag_rtn_4sa after initial load for merge test has 2747 data points.
+Internal consistency for pb.mag_rtn_4sa after initial load for merge test - PASSED: Internally consistent with 2747 data points and all checks passed.
+*** GOLD ENSURE ID:6334718336 *** Called for mag_rtn_4sa.MAIN.
+    PRE-CHECK - datetime_array len: 2747
+    PRE-CHECK - time len: 2747
+    PRE-CHECK - field shape: (2747, 3)
+Setting attribute: time (type=ndarray, shape=(2747,), dtype=int64)
+    [ENSURE_CONSISTENCY] Updated self.time via direct int64 cast. New len: 2747
+    Calling self.set_ploptions() due to consistency updates (time changed: True, field changed: False).
+Setting attribute: all (type=plot_manager, shape=(3, 2747), dtype=float32)
+Setting attribute: br (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: bt (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: bn (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: bmag (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: pmag (type=plot_manager, shape=(2747,), dtype=float32)
+*** GOLD ENSURE ID:6334718336 *** CHANGES WERE MADE.
+    POST-FIX - datetime_array len: 2747
+    POST-FIX - time len: 2747
+    POST-FIX - field shape: (2747, 3)
+*** GOLD ENSURE ID:6334718336 *** Finished for mag_rtn_4sa.MAIN.
+[GOLD_SNAPSHOT_PRE_SEGMENT ID:6334718336] About to process instance for key 'mag_RTN_4sa' (Type: mag_rtn_4sa_class)
+    datetime_array len: 2747
+    time len: 2747
+    field shape: (2747, 3)
+🔵 PHASE 2: Resetting instance, loading snapshot, and requesting overlapping range
+🔵 PHASE 0: Resetting and verifying mag_rtn_4sa is empty
+*** MAG_CLASS_INIT (mag_rtn_4sa_class) ID:6328539552: imported_data ID: None. ***
+Setting attribute: all (type=plot_manager, shape=(3,), dtype=object)
+Setting attribute: br (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bt (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bn (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bmag (type=plot_manager, shape=(), dtype=object)
+Setting attribute: pmag (type=plot_manager, shape=(), dtype=object)
+No data provided; initialized with empty attributes.
+[CUBBY] 
+=== Stashing Debug (INSIDE DATA CUBBY)===
+[CUBBY] STASH CALLER: /Users/robertalexander/GitHub/Plotbot/tests/utils/test_helpers.py:570
+[CUBBY] Stashing with identifier: mag_rtn_4sa
+[CUBBY] STASH TYPE CHECK - Object type: <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] STASH INPUT - No datetime_array attribute found
+[CUBBY] STASH INPUT - raw_data keys: dict_keys(['all', 'br', 'bt', 'bn', 'bmag', 'pmag'])
+[CUBBY] STASH INPUT - raw_data[all] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[br] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[bt] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[bn] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[bmag] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[pmag] type: <class 'NoneType'>
+[CUBBY] STASH MERGE CHECK - Looking for existing object with class_name: mag_rtn_4sa
+[CUBBY] STASH MERGE CHECK - Found existing object of type: <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] STASH MERGE CHECK - Existing datetime_array type: <class 'numpy.ndarray'>
+[CUBBY] STASH MERGE CHECK - Existing datetime_array element type: <class 'numpy.datetime64'>
+[CUBBY] STASH MERGE CHECK - Existing datetime_array shape: (2747,)
+[CUBBY] STASH MERGE CHECK - Existing datetime_array range: 2021-10-26T02:05:00.098162432 to 2021-10-26T02:14:59.970828928
+[CUBBY] STASH MERGE - One or both datetime_arrays are None, skipping merge
+[CUBBY] STASH STORE - Stored in class_registry: mag_rtn_4sa
+[CUBBY] STASH OUTPUT - Stored object type: <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] === End Stashing Debug (LEAVING DATA CUBBY)===
+
+🔵 PHASE 0: Verifying instance state: pb.mag_rtn_4sa (post-reset) (ID: 6328539552)
+mag_rtn_4sa getattr helper!
+'time' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+mag_rtn_4sa getattr helper!
+'field' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+DEBUG_LOAD_SNAPSHOT: Entered function load_data_snapshot
+Starting load from data_snapshots/test_partial_merge_snapshot_mag_rtn_4sa.pkl
+Detected compression extension: .pkl
+Using no compression
+Data snapshot loaded from file. Keys: ['mag_RTN_4sa']
+Filtering snapshot based on requested classes: ['mag_RTN_4sa']
+Processed target data_type strings for filtering: ['mag_RTN_4sa']
+Filtered snapshot keys based on 'classes' argument: ['mag_RTN_4sa']
+Class names after conversion: ['mag_RTN_4sa']
+Filtered keys: ['mag_RTN_4sa']
+Processing regular class: mag_RTN_4sa from snapshot (type: <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>)
+[CUBBY] 
+=== Retrieving mag_RTN_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/data_snapshot.py:863
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - No datetime_array attribute found
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all: type=NoneType, shape=N/A | br: type=NoneType, shape=N/A | bt: type=NoneType, shape=N/A | bn: type=NoneType, shape=N/A | bmag: type=NoneType, shape=N/A | pmag: type=NoneType, shape=N/A
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Setting attribute: class_name with value: 'mag_rtn_4sa'
+mag_rtn_4sa setattr helper!
+'class_name' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+Setting attribute: data_type with value: 'mag_RTN_4sa'
+mag_rtn_4sa setattr helper!
+'data_type' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+Setting attribute: subclass_name with value: None
+mag_rtn_4sa setattr helper!
+'subclass_name' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+Setting attribute: raw_data with value: {'all': [array([6.660448 , 6.9128456, 6.792362 , ..., 7.3435388, 7.3377633,
+       7.402945 ], dtype...
+Setting attribute: datetime with value: []
+Setting attribute: datetime_array (type=ndarray, shape=(2747,), dtype=datetime64[ns])
+Setting attribute: all (type=plot_manager, shape=(3, 2747), dtype=float32)
+Setting attribute: br (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: bt (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: bn (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: bmag (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: pmag (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: time (type=ndarray, shape=(2747,), dtype=int64)
+Setting attribute: field (type=ndarray, shape=(2747, 3), dtype=float32)
+  Restored mag_RTN_4sa using restore_from_snapshot.
+*** GOLD ENSURE ID:6328539552 *** Called for mag_rtn_4sa.MAIN.
+    PRE-CHECK - datetime_array len: 2747
+    PRE-CHECK - time len: 2747
+    PRE-CHECK - field shape: (2747, 3)
+*** GOLD ENSURE ID:6328539552 *** NO CHANGES MADE by this method. Dt: 2747, Time: 2747, Field: (2747, 3)
+*** GOLD ENSURE ID:6328539552 *** Finished for mag_rtn_4sa.MAIN.
+Setting attribute: all (type=plot_manager, shape=(3, 2747), dtype=float32)
+Setting attribute: br (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: bt (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: bn (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: bmag (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: pmag (type=plot_manager, shape=(2747,), dtype=float32)
+Updating DataTracker with loaded time ranges...
+   LOAD_SNAPSHOT_DEBUG: restored_ranges is EMPTY before updating tracker.
+DEBUG_LOAD_SNAPSHOT: Returning True - Successful completion
+🔵 PHASE 0: Verifying instance state: pb.mag_rtn_4sa after loading snapshot (ID: 6328539552)
+Data presence for pb.mag_rtn_4sa after loading snapshot - PASSED: pb.mag_rtn_4sa after loading snapshot has 2747 data points.
+Internal consistency for pb.mag_rtn_4sa after loading snapshot - PASSED: Internally consistent with 2747 data points and all checks passed.
+🔵 PHASE 3: Requesting partially overlapping range: ['2021-10-26 02:00:00', '2021-10-26 02:10:00']
+--- [plotbot] STARTING PHASE 2: Load Standard Data ---
+--- [plotbot] Calling get_data for data_type: 'mag_RTN_4sa' ---
+[GET_DATA PRE-LOOP] required_data_types set: set()
+--- [plotbot] Returned from get_data for data_type: 'mag_RTN_4sa'. Result type: <class 'NoneType'> ---
+--- [plotbot] FINISHED PHASE 2: Load Standard Data ---
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:252
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(2747,), range=2021-10-26T02:05:00.098162 to 2021-10-26T02:14:59.970828
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all(list): len=3, elem_shape=(2747,) | br: type=ndarray, shape=(2747,) | bt: type=ndarray, shape=(2747,) | bn: type=ndarray, shape=(2747,) | bmag: type=ndarray, shape=(2747,) | pmag: type=ndarray, shape=(2747,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+[GET_DATA PRE-LOOP] required_data_types set: {'mag_RTN_4sa'}
+🛰️ mag_RTN_4sa - acquiring variables: br
+[GET_DATA IN-LOOP] Current data_type from set: 'mag_RTN_4sa' (Type: <class 'str'>)
+Processing Data Type: mag_RTN_4sa...
+[GET_DATA_CONFIG_CHECK] Attempting to get config for data_type FROM LOOP VAR: 'mag_RTN_4sa'
+[GET_DATA_CONFIG_CHECK] Available keys in psp_data_types: ['mag_RTN', 'mag_RTN_4sa', 'mag_SC', 'mag_SC_4sa', 'spe_sf0_pad', 'spe_af0_pad', 'spi_sf00_l3_mom', 'spi_af00_L3_mom', 'sf00_fits', 'sf01_fits', 'ham']
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/get_data.py:258
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(2747,), range=2021-10-26T02:05:00.098162 to 2021-10-26T02:14:59.970828
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all(list): len=3, elem_shape=(2747,) | br: type=ndarray, shape=(2747,) | bt: type=ndarray, shape=(2747,) | bn: type=ndarray, shape=(2747,) | bmag: type=ndarray, shape=(2747,) | pmag: type=ndarray, shape=(2747,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+[Tracker Check] Checking calculated for mag_rtn_4sa with requested range: 2021-10-26 02:00:00+00:00 to 2021-10-26 02:10:00+00:00
+[Tracker Check] Found stored ranges for mag_rtn_4sa: [(datetime.datetime(2021, 10, 26, 2, 5, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 10, 26, 2, 15, tzinfo=datetime.timezone.utc))]
+[Tracker Check]  Comparing with stored range #0: 2021-10-26 02:05:00+00:00 to 2021-10-26 02:15:00+00:00
+[Tracker Check]    Is contained (w/ 0:00:05 tolerance)? False (Start: False, End: True)
+[Tracker Check] No single stored range contains the requested range (within tolerance) for mag_rtn_4sa.
+[Tracker Check] Action IS needed for mag_rtn_4sa.
+Tracker indicates calculation needed for mag_rtn_4sa (using original type mag_RTN_4sa). Proceeding...
+Server mode for mag_RTN_4sa: dynamic
+Attempting SPDF download (dynamic mode) for mag_RTN_4sa...
+Attempting SPDF download for mag_RTN_4sa in range ['2021-10-26 02:00:00', '2021-10-26 02:10:00']
+Checking for Berkeley/SPDF case conflicts before SPDF download for mag_RTN_4sa...
+Attempting SPDF check/download (no_update=False) for mag_rtn_4_sa_per_cyc...
+mag_RTN_4sa - Import/Refresh required
+Import data function called
+Input trange: ['2021-10-26 02:00:00', '2021-10-26 02:10:00']
+
+Importing data for UTC time range: ['2021-10-26 02:00:00', '2021-10-26 02:10:00']
+*** IDF_DEBUG: Entered Standard CDF Processing for mag_RTN_4sa ***
+
+=== Starting import for mag_RTN_4sa (CDF) ===
+*** IDF_DEBUG: About to compute start_tt2000 for start_time: 2021-10-26 02:00:00+00:00 ***
+*** IDF_DEBUG: Computed start_tt2000: 688485669184000000. About to compute end_tt2000 for end_time: 2021-10-26 02:10:00+00:00 ***
+*** IDF_DEBUG: Computed end_tt2000: 688486269184000000 ***
+  Requested datetime range (from TT2000 conversion): 2021-10-26T02:00:00.000000000 to 2021-10-26T02:10:00.000000000
+daterange called with start_date=2021-10-26 02:00:00+00:00, end_date=2021-10-26 02:10:00+00:00
+End date has time component, using full day: 2021-10-26
+Converted start_date to date: 2021-10-26
+Will generate 1 dates
+Yielding date: 2021-10-26
+    Searching for DAILY pattern: 'psp_fld_l2_mag_RTN_4_Sa_per_Cyc_20211026_v*.cdf' in dir: 'psp_data/fields/l2/mag_rtn_4_per_cycle/2021'
+      MATCHED file: psp_fld_l2_mag_rtn_4_sa_per_cyc_20211026_v02.cdf with pattern psp_fld_l2_mag_RTN_4_Sa_per_Cyc_20211026_v.*.cdf
+Found 1 unique CDF files to process.
+
+Processing CDF file: psp_data/fields/l2/mag_rtn_4_per_cycle/2021/psp_fld_l2_mag_rtn_4_sa_per_cyc_20211026_v02.cdf
+Successfully opened CDF file
+Using time variable: epoch_mag_RTN_4_Sa_per_Cyc
+  File actual TT2000 range: 688483027378124800 (2021-10-26T01:15:58.194124800) to 688564869167567488 (2021-10-26T23:59:59.983567488)
+    Comparison: File ends before request starts? False (FileEnd: 688564869167567488 < ReqStart: 688485669184000000)
+    Comparison: File starts after request ends? False (FileStart: 688483027378124800 > ReqEnd: 688486269184000000)
+Reading full time data array...
+Read 252629 time points
+Time indices: 12094 to 14840
+Extracted 2746 time points within requested range
+
+Reading variable: psp_fld_l2_mag_RTN_4_Sa_per_Cyc
+Raw data shape: (2746, 3)
+Successfully stored data slice for psp_fld_l2_mag_RTN_4_Sa_per_Cyc
+
+Concatenating CDF data...
+  Concatenated psp_fld_l2_mag_RTN_4_Sa_per_Cyc (Shape: (2746, 3))
+
+Total CDF data points after concatenation: 2746
+*** IMPORT_DATA_DEBUG (CDF Path) for data_type 'mag_RTN_4sa' (originally requested: 'mag_RTN_4sa') ***
+    data_object ID: 6334902656
+    DataObject.times length: 2746, dtype: int64
+    data_object.data ID: 6335022720
+    DataObject.data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc']
+        'psp_fld_l2_mag_RTN_4_Sa_per_Cyc' is PRESENT. Type: <class 'numpy.ndarray'>, Shape: (2746, 3), Len: 2746
+*** GET_DATA DEBUG: data_obj from import_data_function ID: 6334902656, data_obj.data ID: 6335022720, data_obj.data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+*** DATACUBBY_UPDATE DEBUG (Top): imported_data_obj ID: 6334902656, .data ID: 6335022720, .data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+[CUBBY] 
+=== Updating Global Instance: mag_rtn_4sa (is_segment_merge: False) ===
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/data_cubby.py:528
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(2747,), range=2021-10-26T02:05:00.098162 to 2021-10-26T02:14:59.970828
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all(list): len=3, elem_shape=(2747,) | br: type=ndarray, shape=(2747,) | bt: type=ndarray, shape=(2747,) | bn: type=ndarray, shape=(2747,) | bmag: type=ndarray, shape=(2747,) | pmag: type=ndarray, shape=(2747,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+[CUBBY] Found target global instance: mag_rtn_4sa_class (ID: 6328539552) to update for data_type 'mag_rtn_4sa'
+[CUBBY] Global instance has existing data. Attempting merge...
+[CUBBY] Processing new imported data into temporary instance...
+*** MAG_CLASS_INIT (mag_rtn_4sa_class) ID:6334725872: imported_data ID: None. ***
+Setting attribute: all (type=plot_manager, shape=(3,), dtype=object)
+Setting attribute: br (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bt (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bn (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bmag (type=plot_manager, shape=(), dtype=object)
+Setting attribute: pmag (type=plot_manager, shape=(), dtype=object)
+No data provided; initialized with empty attributes.
+*** DATACUBBY_UPDATE DEBUG (Merge Path - Pre-calc): imported_data_obj ID: 6334902656, .data ID: 6335022720, .data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+*** MAG_CLASS_CALCVARS (mag_rtn_4sa_class) ID:6334725872: imported_data ID: 6334902656, .data ID: 6335022720 ***
+    Available keys in imported_data.data for CALCVARS: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc']
+Setting attribute: time (type=ndarray, shape=(2746,), dtype=int64)
+Setting attribute: datetime_array (type=ndarray, shape=(2746,), dtype=datetime64[ns])
+self.datetime_array type after conversion: {type(self.datetime_array)}
+First element type: {type(self.datetime_array[0])}
+Setting attribute: field (type=ndarray, shape=(2746, 3), dtype=float32)
+Setting attribute: raw_data with value: {'all': [array([7.518761 , 7.2044215, 7.365159 , ..., 6.884807 , 6.9130335,
+       6.925231 ], dtype...
+
+Debug - Data Arrays:
+Time array shape: {self.time.shape}
+Field data shape: (2746, 3)
+First TT2000 time: 688485669345978880
+[CUBBY] ✅ New data processed.
+[CUBBY] Calling _merge_arrays...
+[CUBBY] 
+=== Array Merge Debug ===
+[CUBBY] MERGE ARRAYS RANGES - Existing Bounds: 2021-10-26T02:05:00.098162 to 2021-10-26T02:14:59.970828
+[CUBBY] MERGE ARRAYS RANGES - New:           2021-10-26T02:00:00.161978 to 2021-10-26T02:09:59.816192
+[CUBBY] MERGE ARRAYS ACTION - New unique timestamps found. Performing merge...
+[CUBBY] MERGE ARRAYS SUCCESS - Merge complete.
+[CUBBY] === End Array Merge Debug ===
+
+[CUBBY DEBUG] Merge successful. Attempting to update global instance attributes...
+Setting attribute: datetime_array (type=ndarray, shape=(4120,), dtype=datetime64[ns])
+Setting attribute: raw_data with value: {'pmag': array([0.03122876, 0.02859963, 0.02986936, ..., 0.03244344, 0.03219366,
+       0.03311228],...
+*** GOLD CUBBY ID:6328539552 *** STEP 1 DONE: Assigned merged datetime_array (len 4120) and raw_data.
+*** GOLD CUBBY ID:6328539552 *** PRE-TIME-RECONSTRUCTION:
+    datetime_array len: 4120
+    current time len: 2747
+*** GOLD CUBBY *** Converting merged datetime_array (len 4120) directly to int64 for .time attribute.
+Setting attribute: time (type=ndarray, shape=(4120,), dtype=int64)
+*** GOLD CUBBY ID:6328539552 *** POST-TIME-ASSIGNMENT (direct int64 cast):
+    NEW time len: 4120, shape: (4120,), dtype: int64
+*** GOLD CUBBY ID:6328539552 *** PRE-FIELD-RECONSTRUCTION:
+    current field shape: (2747, 3)
+Setting attribute: field (type=ndarray, shape=(4120, 3), dtype=float32)
+    Reconstructed RTN field. New Shape: (4120, 3)
+*** GOLD CUBBY ID:6328539552 *** POST-FIELD-RECONSTRUCTION:
+    FINAL field shape: (4120, 3)
+  *** GOLD CUBBY ID:6328539552 *** Calling set_ploptions() on now-consistent global instance...
+Setting attribute: all (type=plot_manager, shape=(3, 4120), dtype=float32)
+Setting attribute: br (type=plot_manager, shape=(4120,), dtype=float32)
+Setting attribute: bt (type=plot_manager, shape=(4120,), dtype=float32)
+Setting attribute: bn (type=plot_manager, shape=(4120,), dtype=float32)
+Setting attribute: bmag (type=plot_manager, shape=(4120,), dtype=float32)
+Setting attribute: pmag (type=plot_manager, shape=(4120,), dtype=float32)
+*** GOLD CUBBY ID:6328539552 *** Global instance fully updated and ploptions set.
+[GET_DATA_POST_CUBBY] Instance 'mag_rtn_4sa' (ID: 6328539552):
+    datetime_array len: 4120
+    time (TT2000) len: 4120
+    field shape: (4120, 3)
+    raw_data['pmag'] len: 4120
+    raw_data['bmag'] len: 4120
+    raw_data['bt'] len: 4120
+    raw_data['br'] len: 4120
+    raw_data['bn'] len: 4120
+    raw_data['all'] (list) comp0 len: 4120
+Updated and merged ranges for mag_rtn_4sa: [(datetime.datetime(2021, 10, 26, 2, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 10, 26, 2, 15, tzinfo=datetime.timezone.utc))]
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:271
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(4120,), range=2021-10-26T02:00:00.161978 to 2021-10-26T02:14:59.970828
+[CUBBY] GRAB OUTPUT - raw_data keys=['pmag', 'bmag', 'bt', 'br', 'bn', 'all'] | pmag: type=ndarray, shape=(4120,) | bmag: type=ndarray, shape=(4120,) | bt: type=ndarray, shape=(4120,) | br: type=ndarray, shape=(4120,) | bn: type=ndarray, shape=(4120,) | all(list): len=3, elem_shape=(4120,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+
+DEBUG:
+var: [7.518761  7.2044215 7.365159  ... 7.3435388 7.3377633 7.402945 ]
+var type: <class 'plotbot.plot_manager.plot_manager'>
+var.datetime_array type: <class 'numpy.ndarray'>
+First element type: <class 'numpy.datetime64'>
+First element: 2021-10-26T02:00:00.161978880
+Time range: 2021-10-26T02:00:00.161978880 to 2021-10-26T02:14:59.970828928
+var.data type: <class 'numpy.ndarray'>
+var.data shape: (4120,)
+
+Variable verification for mag_rtn_4sa.br:
+Plot attributes example:
+- Color: forestgreen
+- Y-label: B (nT)
+- Legend: $B_R$
+Setting title from plt.options: Partial Overlap Merge - After Merge
+Plotbot call for overlapping range - PASSED: Plotting overlapping range should succeed.
+🔵 PHASE 4: Verifying merged data state
+🔵 PHASE 0: Verifying instance state: pb.mag_rtn_4sa after merge (ID: 6328539552)
+Data presence for pb.mag_rtn_4sa after merge - PASSED: pb.mag_rtn_4sa after merge has 4120 data points.
+Internal consistency for pb.mag_rtn_4sa after merge - PASSED: Internally consistent with 4120 data points and all checks passed.
+Instance state after merge - PASSED: Data should be merged to cover ['2021-10-26 02:00:00', '2021-10-26 02:15:00'].
+🔵 PHASE 5: Detailed verification of merge results
+Merged data points increased - PASSED: Merged data should have more points than before (4120 vs 2747).
+Merged min time correct - PASSED: Merged min time (2021-10-26T02:00:00.161978880) should be near expected (2021-10-26T02:00:00.000000000).
+Merged max time correct - PASSED: Merged max time (2021-10-26T02:14:59.970828928) should be near expected (2021-10-26T02:15:00.000000000).
+DataCubby state post-merge - PASSED: DataCubby state should be correct. 
+Global Tracker state post-merge - PASSED: Global Tracker state should be correct. 
+PASSED
+tests/core/test_data_merging.py::test_plotbot_calls_with_overlapping_time_ranges 🔵 PHASE 0: Resetting and verifying mag_rtn_4sa is empty
+*** MAG_CLASS_INIT (mag_rtn_4sa_class) ID:6334721984: imported_data ID: None. ***
+Setting attribute: all (type=plot_manager, shape=(3,), dtype=object)
+Setting attribute: br (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bt (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bn (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bmag (type=plot_manager, shape=(), dtype=object)
+Setting attribute: pmag (type=plot_manager, shape=(), dtype=object)
+No data provided; initialized with empty attributes.
+[CUBBY] 
+=== Stashing Debug (INSIDE DATA CUBBY)===
+[CUBBY] STASH CALLER: /Users/robertalexander/GitHub/Plotbot/tests/utils/test_helpers.py:570
+[CUBBY] Stashing with identifier: mag_rtn_4sa
+[CUBBY] STASH TYPE CHECK - Object type: <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] STASH INPUT - No datetime_array attribute found
+[CUBBY] STASH INPUT - raw_data keys: dict_keys(['all', 'br', 'bt', 'bn', 'bmag', 'pmag'])
+[CUBBY] STASH INPUT - raw_data[all] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[br] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[bt] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[bn] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[bmag] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[pmag] type: <class 'NoneType'>
+[CUBBY] STASH MERGE CHECK - Looking for existing object with class_name: mag_rtn_4sa
+[CUBBY] STASH MERGE CHECK - Found existing object of type: <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] STASH MERGE CHECK - Existing datetime_array type: <class 'numpy.ndarray'>
+[CUBBY] STASH MERGE CHECK - Existing datetime_array element type: <class 'numpy.datetime64'>
+[CUBBY] STASH MERGE CHECK - Existing datetime_array shape: (4120,)
+[CUBBY] STASH MERGE CHECK - Existing datetime_array range: 2021-10-26T02:00:00.161978880 to 2021-10-26T02:14:59.970828928
+[CUBBY] STASH MERGE - One or both datetime_arrays are None, skipping merge
+[CUBBY] STASH STORE - Stored in class_registry: mag_rtn_4sa
+[CUBBY] STASH OUTPUT - Stored object type: <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] === End Stashing Debug (LEAVING DATA CUBBY)===
+
+🔵 PHASE 0: Verifying instance state: pb.mag_rtn_4sa (post-reset) (ID: 6334721984)
+mag_rtn_4sa getattr helper!
+'time' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+mag_rtn_4sa getattr helper!
+'field' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+🔵 PHASE 1: First plotbot call for TRANGE_A: ['2021-10-26 03:00:00', '2021-10-26 03:10:00']
+--- [plotbot] STARTING PHASE 2: Load Standard Data ---
+--- [plotbot] Calling get_data for data_type: 'mag_RTN_4sa' ---
+[GET_DATA PRE-LOOP] required_data_types set: set()
+--- [plotbot] Returned from get_data for data_type: 'mag_RTN_4sa'. Result type: <class 'NoneType'> ---
+--- [plotbot] FINISHED PHASE 2: Load Standard Data ---
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:252
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - No datetime_array attribute found
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all: type=NoneType, shape=N/A | br: type=NoneType, shape=N/A | bt: type=NoneType, shape=N/A | bn: type=NoneType, shape=N/A | bmag: type=NoneType, shape=N/A | pmag: type=NoneType, shape=N/A
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+[GET_DATA PRE-LOOP] required_data_types set: {'mag_RTN_4sa'}
+🛰️ mag_RTN_4sa - acquiring variables: br
+[GET_DATA IN-LOOP] Current data_type from set: 'mag_RTN_4sa' (Type: <class 'str'>)
+Processing Data Type: mag_RTN_4sa...
+[GET_DATA_CONFIG_CHECK] Attempting to get config for data_type FROM LOOP VAR: 'mag_RTN_4sa'
+[GET_DATA_CONFIG_CHECK] Available keys in psp_data_types: ['mag_RTN', 'mag_RTN_4sa', 'mag_SC', 'mag_SC_4sa', 'spe_sf0_pad', 'spe_af0_pad', 'spi_sf00_l3_mom', 'spi_af00_L3_mom', 'sf00_fits', 'sf01_fits', 'ham']
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/get_data.py:258
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - No datetime_array attribute found
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all: type=NoneType, shape=N/A | br: type=NoneType, shape=N/A | bt: type=NoneType, shape=N/A | bn: type=NoneType, shape=N/A | bmag: type=NoneType, shape=N/A | pmag: type=NoneType, shape=N/A
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+[Tracker Check] Checking calculated for mag_rtn_4sa with requested range: 2021-10-26 03:00:00+00:00 to 2021-10-26 03:10:00+00:00
+[Tracker Check] Found stored ranges for mag_rtn_4sa: [(datetime.datetime(2021, 10, 26, 2, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 10, 26, 2, 15, tzinfo=datetime.timezone.utc))]
+[Tracker Check]  Comparing with stored range #0: 2021-10-26 02:00:00+00:00 to 2021-10-26 02:15:00+00:00
+[Tracker Check]    Is contained (w/ 0:00:05 tolerance)? False (Start: True, End: False)
+[Tracker Check] No single stored range contains the requested range (within tolerance) for mag_rtn_4sa.
+[Tracker Check] Action IS needed for mag_rtn_4sa.
+Tracker indicates calculation needed for mag_rtn_4sa (using original type mag_RTN_4sa). Proceeding...
+Server mode for mag_RTN_4sa: dynamic
+Attempting SPDF download (dynamic mode) for mag_RTN_4sa...
+Attempting SPDF download for mag_RTN_4sa in range ['2021-10-26 03:00:00', '2021-10-26 03:10:00']
+Checking for Berkeley/SPDF case conflicts before SPDF download for mag_RTN_4sa...
+Attempting SPDF check/download (no_update=False) for mag_rtn_4_sa_per_cyc...
+mag_RTN_4sa - Import/Refresh required
+Import data function called
+Input trange: ['2021-10-26 03:00:00', '2021-10-26 03:10:00']
+
+Importing data for UTC time range: ['2021-10-26 03:00:00', '2021-10-26 03:10:00']
+*** IDF_DEBUG: Entered Standard CDF Processing for mag_RTN_4sa ***
+
+=== Starting import for mag_RTN_4sa (CDF) ===
+*** IDF_DEBUG: About to compute start_tt2000 for start_time: 2021-10-26 03:00:00+00:00 ***
+*** IDF_DEBUG: Computed start_tt2000: 688489269184000000. About to compute end_tt2000 for end_time: 2021-10-26 03:10:00+00:00 ***
+*** IDF_DEBUG: Computed end_tt2000: 688489869184000000 ***
+  Requested datetime range (from TT2000 conversion): 2021-10-26T03:00:00.000000000 to 2021-10-26T03:10:00.000000000
+daterange called with start_date=2021-10-26 03:00:00+00:00, end_date=2021-10-26 03:10:00+00:00
+End date has time component, using full day: 2021-10-26
+Converted start_date to date: 2021-10-26
+Will generate 1 dates
+Yielding date: 2021-10-26
+    Searching for DAILY pattern: 'psp_fld_l2_mag_RTN_4_Sa_per_Cyc_20211026_v*.cdf' in dir: 'psp_data/fields/l2/mag_rtn_4_per_cycle/2021'
+      MATCHED file: psp_fld_l2_mag_rtn_4_sa_per_cyc_20211026_v02.cdf with pattern psp_fld_l2_mag_RTN_4_Sa_per_Cyc_20211026_v.*.cdf
+Found 1 unique CDF files to process.
+
+Processing CDF file: psp_data/fields/l2/mag_rtn_4_per_cycle/2021/psp_fld_l2_mag_rtn_4_sa_per_cyc_20211026_v02.cdf
+Successfully opened CDF file
+Using time variable: epoch_mag_RTN_4_Sa_per_Cyc
+  File actual TT2000 range: 688483027378124800 (2021-10-26T01:15:58.194124800) to 688564869167567488 (2021-10-26T23:59:59.983567488)
+    Comparison: File ends before request starts? False (FileEnd: 688564869167567488 < ReqStart: 688489269184000000)
+    Comparison: File starts after request ends? False (FileStart: 688483027378124800 > ReqEnd: 688489869184000000)
+Reading full time data array...
+Read 252629 time points
+Time indices: 28573 to 31320
+Extracted 2747 time points within requested range
+
+Reading variable: psp_fld_l2_mag_RTN_4_Sa_per_Cyc
+Raw data shape: (2747, 3)
+Successfully stored data slice for psp_fld_l2_mag_RTN_4_Sa_per_Cyc
+
+Concatenating CDF data...
+  Concatenated psp_fld_l2_mag_RTN_4_Sa_per_Cyc (Shape: (2747, 3))
+
+Total CDF data points after concatenation: 2747
+*** IMPORT_DATA_DEBUG (CDF Path) for data_type 'mag_RTN_4sa' (originally requested: 'mag_RTN_4sa') ***
+    data_object ID: 6335889088
+    DataObject.times length: 2747, dtype: int64
+    data_object.data ID: 6335978752
+    DataObject.data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc']
+        'psp_fld_l2_mag_RTN_4_Sa_per_Cyc' is PRESENT. Type: <class 'numpy.ndarray'>, Shape: (2747, 3), Len: 2747
+*** GET_DATA DEBUG: data_obj from import_data_function ID: 6335889088, data_obj.data ID: 6335978752, data_obj.data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+*** DATACUBBY_UPDATE DEBUG (Top): imported_data_obj ID: 6335889088, .data ID: 6335978752, .data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+[CUBBY] 
+=== Updating Global Instance: mag_rtn_4sa (is_segment_merge: False) ===
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/data_cubby.py:528
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - No datetime_array attribute found
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all: type=NoneType, shape=N/A | br: type=NoneType, shape=N/A | bt: type=NoneType, shape=N/A | bn: type=NoneType, shape=N/A | bmag: type=NoneType, shape=N/A | pmag: type=NoneType, shape=N/A
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+[CUBBY] Found target global instance: mag_rtn_4sa_class (ID: 6334721984) to update for data_type 'mag_rtn_4sa'
+[CUBBY] Global instance for mag_rtn_4sa is empty. Populating with new data via update()...
+*** DATACUBBY_UPDATE DEBUG (Empty/Segment Path - Pre-update): imported_data_obj ID: 6335889088, .data ID: 6335978752, .data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+*** MAG_CLASS_UPDATE (mag_rtn_4sa_class) ID:6334721984: imported_data ID: 6335889088, .data ID: 6335978752. Keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+[CUBBY] 
+=== Update Debug ===
+[CUBBY] Starting mag_rtn_4sa_class update...
+[CUBBY] Stored all state: {}
+[CUBBY] Stored br state: {}
+[CUBBY] Stored bt state: {}
+[CUBBY] Stored bn state: {}
+[CUBBY] Stored bmag state: {}
+[CUBBY] Stored pmag state: {}
+*** MAG_CLASS_CALCVARS (mag_rtn_4sa_class) ID:6334721984: imported_data ID: 6335889088, .data ID: 6335978752 ***
+    Available keys in imported_data.data for CALCVARS: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc']
+Setting attribute: time (type=ndarray, shape=(2747,), dtype=int64)
+Setting attribute: datetime_array (type=ndarray, shape=(2747,), dtype=datetime64[ns])
+self.datetime_array type after conversion: {type(self.datetime_array)}
+First element type: {type(self.datetime_array[0])}
+Setting attribute: field (type=ndarray, shape=(2747, 3), dtype=float32)
+Setting attribute: raw_data with value: {'all': [array([5.6259456, 5.464085 , 5.4425206, ..., 4.0313706, 4.0959716,
+       4.3335996], dtype...
+
+Debug - Data Arrays:
+Time array shape: {self.time.shape}
+Field data shape: (2747, 3)
+First TT2000 time: 688489269239780736
+Setting attribute: all (type=plot_manager, shape=(3, 2747), dtype=float32)
+Setting attribute: br (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: bt (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: bn (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: bmag (type=plot_manager, shape=(2747,), dtype=float32)
+Setting attribute: pmag (type=plot_manager, shape=(2747,), dtype=float32)
+[CUBBY] Restoring saved state...
+[CUBBY] Restored all state: {}
+[CUBBY] Restored br state: {}
+[CUBBY] Restored bt state: {}
+[CUBBY] Restored bn state: {}
+[CUBBY] Restored bmag state: {}
+[CUBBY] Restored pmag state: {}
+[CUBBY] === End Update Debug ===
+
+[CUBBY] ✅ Instance updated successfully.
+[CUBBY] === End Global Instance Update ===
+
+[GET_DATA_POST_CUBBY] Instance 'mag_rtn_4sa' (ID: 6334721984):
+    datetime_array len: 2747
+    time (TT2000) len: 2747
+    field shape: (2747, 3)
+    raw_data['all'] (list) comp0 len: 2747
+    raw_data['br'] len: 2747
+    raw_data['bt'] len: 2747
+    raw_data['bn'] len: 2747
+    raw_data['bmag'] len: 2747
+    raw_data['pmag'] len: 2747
+Updated and merged ranges for mag_rtn_4sa: [(datetime.datetime(2021, 10, 26, 2, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 10, 26, 2, 15, tzinfo=datetime.timezone.utc)), (datetime.datetime(2021, 10, 26, 3, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 10, 26, 3, 10, tzinfo=datetime.timezone.utc))]
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:271
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(2747,), range=2021-10-26T03:00:00.055780 to 2021-10-26T03:09:59.929
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all(list): len=3, elem_shape=(2747,) | br: type=ndarray, shape=(2747,) | bt: type=ndarray, shape=(2747,) | bn: type=ndarray, shape=(2747,) | bmag: type=ndarray, shape=(2747,) | pmag: type=ndarray, shape=(2747,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+
+DEBUG:
+var: [5.6259456 5.464085  5.4425206 ... 4.0313706 4.0959716 4.3335996]
+var type: <class 'plotbot.plot_manager.plot_manager'>
+var.datetime_array type: <class 'numpy.ndarray'>
+First element type: <class 'numpy.datetime64'>
+First element: 2021-10-26T03:00:00.055780736
+Time range: 2021-10-26T03:00:00.055780736 to 2021-10-26T03:09:59.929424000
+var.data type: <class 'numpy.ndarray'>
+var.data shape: (2747,)
+
+Variable verification for mag_rtn_4sa.br:
+Plot attributes example:
+- Color: forestgreen
+- Y-label: B (nT)
+- Legend: $B_R$
+Setting title from plt.options: Plotbot Merge Test - Call A
+Plotbot call for ['2021-10-26 03:00:00', '2021-10-26 03:10:00'] - PASSED: Initial plotbot call should succeed.
+🔵 PHASE 0: Verifying instance state: pb.mag_rtn_4sa after TRANGE_A (ID: 6334721984)
+Data presence for pb.mag_rtn_4sa after TRANGE_A - PASSED: pb.mag_rtn_4sa after TRANGE_A has 2747 data points.
+Internal consistency for pb.mag_rtn_4sa after TRANGE_A - PASSED: Internally consistent with 2747 data points and all checks passed.
+🔵 PHASE 2: Second plotbot call for TRANGE_B (overlapping): ['2021-10-26 03:05:00', '2021-10-26 03:15:00']
+--- [plotbot] STARTING PHASE 2: Load Standard Data ---
+--- [plotbot] Calling get_data for data_type: 'mag_RTN_4sa' ---
+[GET_DATA PRE-LOOP] required_data_types set: set()
+--- [plotbot] Returned from get_data for data_type: 'mag_RTN_4sa'. Result type: <class 'NoneType'> ---
+--- [plotbot] FINISHED PHASE 2: Load Standard Data ---
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:252
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(2747,), range=2021-10-26T03:00:00.055780 to 2021-10-26T03:09:59.929
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all(list): len=3, elem_shape=(2747,) | br: type=ndarray, shape=(2747,) | bt: type=ndarray, shape=(2747,) | bn: type=ndarray, shape=(2747,) | bmag: type=ndarray, shape=(2747,) | pmag: type=ndarray, shape=(2747,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+[GET_DATA PRE-LOOP] required_data_types set: {'mag_RTN_4sa'}
+🛰️ mag_RTN_4sa - acquiring variables: br
+[GET_DATA IN-LOOP] Current data_type from set: 'mag_RTN_4sa' (Type: <class 'str'>)
+Processing Data Type: mag_RTN_4sa...
+[GET_DATA_CONFIG_CHECK] Attempting to get config for data_type FROM LOOP VAR: 'mag_RTN_4sa'
+[GET_DATA_CONFIG_CHECK] Available keys in psp_data_types: ['mag_RTN', 'mag_RTN_4sa', 'mag_SC', 'mag_SC_4sa', 'spe_sf0_pad', 'spe_af0_pad', 'spi_sf00_l3_mom', 'spi_af00_L3_mom', 'sf00_fits', 'sf01_fits', 'ham']
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/get_data.py:258
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(2747,), range=2021-10-26T03:00:00.055780 to 2021-10-26T03:09:59.929
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all(list): len=3, elem_shape=(2747,) | br: type=ndarray, shape=(2747,) | bt: type=ndarray, shape=(2747,) | bn: type=ndarray, shape=(2747,) | bmag: type=ndarray, shape=(2747,) | pmag: type=ndarray, shape=(2747,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+[Tracker Check] Checking calculated for mag_rtn_4sa with requested range: 2021-10-26 03:05:00+00:00 to 2021-10-26 03:15:00+00:00
+[Tracker Check] Found stored ranges for mag_rtn_4sa: [(datetime.datetime(2021, 10, 26, 2, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 10, 26, 2, 15, tzinfo=datetime.timezone.utc)), (datetime.datetime(2021, 10, 26, 3, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 10, 26, 3, 10, tzinfo=datetime.timezone.utc))]
+[Tracker Check]  Comparing with stored range #0: 2021-10-26 02:00:00+00:00 to 2021-10-26 02:15:00+00:00
+[Tracker Check]    Is contained (w/ 0:00:05 tolerance)? False (Start: True, End: False)
+[Tracker Check]  Comparing with stored range #1: 2021-10-26 03:00:00+00:00 to 2021-10-26 03:10:00+00:00
+[Tracker Check]    Is contained (w/ 0:00:05 tolerance)? False (Start: True, End: False)
+[Tracker Check] No single stored range contains the requested range (within tolerance) for mag_rtn_4sa.
+[Tracker Check] Action IS needed for mag_rtn_4sa.
+Tracker indicates calculation needed for mag_rtn_4sa (using original type mag_RTN_4sa). Proceeding...
+Server mode for mag_RTN_4sa: dynamic
+Attempting SPDF download (dynamic mode) for mag_RTN_4sa...
+Attempting SPDF download for mag_RTN_4sa in range ['2021-10-26 03:05:00', '2021-10-26 03:15:00']
+Checking for Berkeley/SPDF case conflicts before SPDF download for mag_RTN_4sa...
+Attempting SPDF check/download (no_update=False) for mag_rtn_4_sa_per_cyc...
+mag_RTN_4sa - Import/Refresh required
+Import data function called
+Input trange: ['2021-10-26 03:05:00', '2021-10-26 03:15:00']
+
+Importing data for UTC time range: ['2021-10-26 03:05:00', '2021-10-26 03:15:00']
+*** IDF_DEBUG: Entered Standard CDF Processing for mag_RTN_4sa ***
+
+=== Starting import for mag_RTN_4sa (CDF) ===
+*** IDF_DEBUG: About to compute start_tt2000 for start_time: 2021-10-26 03:05:00+00:00 ***
+*** IDF_DEBUG: Computed start_tt2000: 688489569184000000. About to compute end_tt2000 for end_time: 2021-10-26 03:15:00+00:00 ***
+*** IDF_DEBUG: Computed end_tt2000: 688490169184000000 ***
+  Requested datetime range (from TT2000 conversion): 2021-10-26T03:05:00.000000000 to 2021-10-26T03:15:00.000000000
+daterange called with start_date=2021-10-26 03:05:00+00:00, end_date=2021-10-26 03:15:00+00:00
+End date has time component, using full day: 2021-10-26
+Converted start_date to date: 2021-10-26
+Will generate 1 dates
+Yielding date: 2021-10-26
+    Searching for DAILY pattern: 'psp_fld_l2_mag_RTN_4_Sa_per_Cyc_20211026_v*.cdf' in dir: 'psp_data/fields/l2/mag_rtn_4_per_cycle/2021'
+      MATCHED file: psp_fld_l2_mag_rtn_4_sa_per_cyc_20211026_v02.cdf with pattern psp_fld_l2_mag_RTN_4_Sa_per_Cyc_20211026_v.*.cdf
+Found 1 unique CDF files to process.
+
+Processing CDF file: psp_data/fields/l2/mag_rtn_4_per_cycle/2021/psp_fld_l2_mag_rtn_4_sa_per_cyc_20211026_v02.cdf
+Successfully opened CDF file
+Using time variable: epoch_mag_RTN_4_Sa_per_Cyc
+  File actual TT2000 range: 688483027378124800 (2021-10-26T01:15:58.194124800) to 688564869167567488 (2021-10-26T23:59:59.983567488)
+    Comparison: File ends before request starts? False (FileEnd: 688564869167567488 < ReqStart: 688489569184000000)
+    Comparison: File starts after request ends? False (FileStart: 688483027378124800 > ReqEnd: 688490169184000000)
+Reading full time data array...
+Read 252629 time points
+Time indices: 29947 to 32693
+Extracted 2746 time points within requested range
+
+Reading variable: psp_fld_l2_mag_RTN_4_Sa_per_Cyc
+Raw data shape: (2746, 3)
+Successfully stored data slice for psp_fld_l2_mag_RTN_4_Sa_per_Cyc
+
+Concatenating CDF data...
+  Concatenated psp_fld_l2_mag_RTN_4_Sa_per_Cyc (Shape: (2746, 3))
+
+Total CDF data points after concatenation: 2746
+*** IMPORT_DATA_DEBUG (CDF Path) for data_type 'mag_RTN_4sa' (originally requested: 'mag_RTN_4sa') ***
+    data_object ID: 6336356032
+    DataObject.times length: 2746, dtype: int64
+    data_object.data ID: 12901387456
+    DataObject.data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc']
+        'psp_fld_l2_mag_RTN_4_Sa_per_Cyc' is PRESENT. Type: <class 'numpy.ndarray'>, Shape: (2746, 3), Len: 2746
+*** GET_DATA DEBUG: data_obj from import_data_function ID: 6336356032, data_obj.data ID: 12901387456, data_obj.data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+*** DATACUBBY_UPDATE DEBUG (Top): imported_data_obj ID: 6336356032, .data ID: 12901387456, .data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+[CUBBY] 
+=== Updating Global Instance: mag_rtn_4sa (is_segment_merge: False) ===
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/data_cubby.py:528
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(2747,), range=2021-10-26T03:00:00.055780 to 2021-10-26T03:09:59.929
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all(list): len=3, elem_shape=(2747,) | br: type=ndarray, shape=(2747,) | bt: type=ndarray, shape=(2747,) | bn: type=ndarray, shape=(2747,) | bmag: type=ndarray, shape=(2747,) | pmag: type=ndarray, shape=(2747,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+[CUBBY] Found target global instance: mag_rtn_4sa_class (ID: 6334721984) to update for data_type 'mag_rtn_4sa'
+[CUBBY] Global instance has existing data. Attempting merge...
+[CUBBY] Processing new imported data into temporary instance...
+*** MAG_CLASS_INIT (mag_rtn_4sa_class) ID:12901323776: imported_data ID: None. ***
+Setting attribute: all (type=plot_manager, shape=(3,), dtype=object)
+Setting attribute: br (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bt (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bn (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bmag (type=plot_manager, shape=(), dtype=object)
+Setting attribute: pmag (type=plot_manager, shape=(), dtype=object)
+No data provided; initialized with empty attributes.
+*** DATACUBBY_UPDATE DEBUG (Merge Path - Pre-calc): imported_data_obj ID: 6336356032, .data ID: 12901387456, .data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+*** MAG_CLASS_CALCVARS (mag_rtn_4sa_class) ID:12901323776: imported_data ID: 6336356032, .data ID: 12901387456 ***
+    Available keys in imported_data.data for CALCVARS: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc']
+Setting attribute: time (type=ndarray, shape=(2746,), dtype=int64)
+Setting attribute: datetime_array (type=ndarray, shape=(2746,), dtype=datetime64[ns])
+self.datetime_array type after conversion: {type(self.datetime_array)}
+First element type: {type(self.datetime_array[0])}
+Setting attribute: field (type=ndarray, shape=(2746, 3), dtype=float32)
+Setting attribute: raw_data with value: {'all': [array([3.1351707, 3.2147548, 3.055907 , ..., 6.219298 , 6.281141 ,
+       6.280917 ], dtype...
+
+Debug - Data Arrays:
+Time array shape: {self.time.shape}
+Field data shape: (2746, 3)
+First TT2000 time: 688489569395206144
+[CUBBY] ✅ New data processed.
+[CUBBY] Calling _merge_arrays...
+[CUBBY] 
+=== Array Merge Debug ===
+[CUBBY] MERGE ARRAYS RANGES - Existing Bounds: 2021-10-26T03:00:00.055780 to 2021-10-26T03:09:59.929
+[CUBBY] MERGE ARRAYS RANGES - New:           2021-10-26T03:05:00.211206 to 2021-10-26T03:14:59.866395
+[CUBBY] MERGE ARRAYS ACTION - New unique timestamps found. Performing merge...
+[CUBBY] MERGE ARRAYS SUCCESS - Merge complete.
+[CUBBY] === End Array Merge Debug ===
+
+[CUBBY DEBUG] Merge successful. Attempting to update global instance attributes...
+Setting attribute: datetime_array (type=ndarray, shape=(4120,), dtype=datetime64[ns])
+Setting attribute: raw_data with value: {'pmag': array([0.02652056, 0.025694  , 0.02573837, ..., 0.02923756, 0.02902735,
+       0.02893062],...
+*** GOLD CUBBY ID:6334721984 *** STEP 1 DONE: Assigned merged datetime_array (len 4120) and raw_data.
+*** GOLD CUBBY ID:6334721984 *** PRE-TIME-RECONSTRUCTION:
+    datetime_array len: 4120
+    current time len: 2747
+*** GOLD CUBBY *** Converting merged datetime_array (len 4120) directly to int64 for .time attribute.
+Setting attribute: time (type=ndarray, shape=(4120,), dtype=int64)
+*** GOLD CUBBY ID:6334721984 *** POST-TIME-ASSIGNMENT (direct int64 cast):
+    NEW time len: 4120, shape: (4120,), dtype: int64
+*** GOLD CUBBY ID:6334721984 *** PRE-FIELD-RECONSTRUCTION:
+    current field shape: (2747, 3)
+Setting attribute: field (type=ndarray, shape=(4120, 3), dtype=float32)
+    Reconstructed RTN field. New Shape: (4120, 3)
+*** GOLD CUBBY ID:6334721984 *** POST-FIELD-RECONSTRUCTION:
+    FINAL field shape: (4120, 3)
+  *** GOLD CUBBY ID:6334721984 *** Calling set_ploptions() on now-consistent global instance...
+Setting attribute: all (type=plot_manager, shape=(3, 4120), dtype=float32)
+Setting attribute: br (type=plot_manager, shape=(4120,), dtype=float32)
+Setting attribute: bt (type=plot_manager, shape=(4120,), dtype=float32)
+Setting attribute: bn (type=plot_manager, shape=(4120,), dtype=float32)
+Setting attribute: bmag (type=plot_manager, shape=(4120,), dtype=float32)
+Setting attribute: pmag (type=plot_manager, shape=(4120,), dtype=float32)
+*** GOLD CUBBY ID:6334721984 *** Global instance fully updated and ploptions set.
+[GET_DATA_POST_CUBBY] Instance 'mag_rtn_4sa' (ID: 6334721984):
+    datetime_array len: 4120
+    time (TT2000) len: 4120
+    field shape: (4120, 3)
+    raw_data['pmag'] len: 4120
+    raw_data['bmag'] len: 4120
+    raw_data['bt'] len: 4120
+    raw_data['br'] len: 4120
+    raw_data['bn'] len: 4120
+    raw_data['all'] (list) comp0 len: 4120
+Updated and merged ranges for mag_rtn_4sa: [(datetime.datetime(2021, 10, 26, 2, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 10, 26, 2, 15, tzinfo=datetime.timezone.utc)), (datetime.datetime(2021, 10, 26, 3, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 10, 26, 3, 15, tzinfo=datetime.timezone.utc))]
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:271
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(4120,), range=2021-10-26T03:00:00.055780 to 2021-10-26T03:14:59.866395
+[CUBBY] GRAB OUTPUT - raw_data keys=['pmag', 'bmag', 'bt', 'br', 'bn', 'all'] | pmag: type=ndarray, shape=(4120,) | bmag: type=ndarray, shape=(4120,) | bt: type=ndarray, shape=(4120,) | br: type=ndarray, shape=(4120,) | bn: type=ndarray, shape=(4120,) | all(list): len=3, elem_shape=(4120,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+
+DEBUG:
+var: [5.6259456 5.464085  5.4425206 ... 6.219298  6.281141  6.280917 ]
+var type: <class 'plotbot.plot_manager.plot_manager'>
+var.datetime_array type: <class 'numpy.ndarray'>
+First element type: <class 'numpy.datetime64'>
+First element: 2021-10-26T03:00:00.055780736
+Time range: 2021-10-26T03:00:00.055780736 to 2021-10-26T03:14:59.866395776
+var.data type: <class 'numpy.ndarray'>
+var.data shape: (4120,)
+
+Variable verification for mag_rtn_4sa.br:
+Plot attributes example:
+- Color: forestgreen
+- Y-label: B (nT)
+- Legend: $B_R$
+Setting title from plt.options: Plotbot Merge Test - Call B (Overlapping)
+Plotbot call for ['2021-10-26 03:05:00', '2021-10-26 03:15:00'] - PASSED: Second (overlapping) plotbot call should succeed.
+🔵 PHASE 0: Verifying instance state: pb.mag_rtn_4sa after TRANGE_B (merged A+B) (ID: 6334721984)
+Data presence for pb.mag_rtn_4sa after TRANGE_B (merged A+B) - PASSED: pb.mag_rtn_4sa after TRANGE_B (merged A+B) has 4120 data points.
+Internal consistency for pb.mag_rtn_4sa after TRANGE_B (merged A+B) - PASSED: Internally consistent with 4120 data points and all checks passed.
+Data points after TRANGE_B merge - PASSED: Expected more data points after merge (A: 2747, A+B: 4120). This check assumes TRANGE_B adds new data.
+🔵 PHASE 3: Third plotbot call for TRANGE_C (contained): ['2021-10-26 03:02:00', '2021-10-26 03:08:00']
+--- [plotbot] STARTING PHASE 2: Load Standard Data ---
+--- [plotbot] Calling get_data for data_type: 'mag_RTN_4sa' ---
+[GET_DATA PRE-LOOP] required_data_types set: set()
+--- [plotbot] Returned from get_data for data_type: 'mag_RTN_4sa'. Result type: <class 'NoneType'> ---
+--- [plotbot] FINISHED PHASE 2: Load Standard Data ---
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:252
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(4120,), range=2021-10-26T03:00:00.055780 to 2021-10-26T03:14:59.866395
+[CUBBY] GRAB OUTPUT - raw_data keys=['pmag', 'bmag', 'bt', 'br', 'bn', 'all'] | pmag: type=ndarray, shape=(4120,) | bmag: type=ndarray, shape=(4120,) | bt: type=ndarray, shape=(4120,) | br: type=ndarray, shape=(4120,) | bn: type=ndarray, shape=(4120,) | all(list): len=3, elem_shape=(4120,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+[GET_DATA PRE-LOOP] required_data_types set: {'mag_RTN_4sa'}
+🛰️ mag_RTN_4sa - acquiring variables: br
+[GET_DATA IN-LOOP] Current data_type from set: 'mag_RTN_4sa' (Type: <class 'str'>)
+Processing Data Type: mag_RTN_4sa...
+[GET_DATA_CONFIG_CHECK] Attempting to get config for data_type FROM LOOP VAR: 'mag_RTN_4sa'
+[GET_DATA_CONFIG_CHECK] Available keys in psp_data_types: ['mag_RTN', 'mag_RTN_4sa', 'mag_SC', 'mag_SC_4sa', 'spe_sf0_pad', 'spe_af0_pad', 'spi_sf00_l3_mom', 'spi_af00_L3_mom', 'sf00_fits', 'sf01_fits', 'ham']
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/get_data.py:258
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(4120,), range=2021-10-26T03:00:00.055780 to 2021-10-26T03:14:59.866395
+[CUBBY] GRAB OUTPUT - raw_data keys=['pmag', 'bmag', 'bt', 'br', 'bn', 'all'] | pmag: type=ndarray, shape=(4120,) | bmag: type=ndarray, shape=(4120,) | bt: type=ndarray, shape=(4120,) | br: type=ndarray, shape=(4120,) | bn: type=ndarray, shape=(4120,) | all(list): len=3, elem_shape=(4120,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+[Tracker Check] Checking calculated for mag_rtn_4sa with requested range: 2021-10-26 03:02:00+00:00 to 2021-10-26 03:08:00+00:00
+[Tracker Check] Found stored ranges for mag_rtn_4sa: [(datetime.datetime(2021, 10, 26, 2, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 10, 26, 2, 15, tzinfo=datetime.timezone.utc)), (datetime.datetime(2021, 10, 26, 3, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 10, 26, 3, 15, tzinfo=datetime.timezone.utc))]
+[Tracker Check]  Comparing with stored range #0: 2021-10-26 02:00:00+00:00 to 2021-10-26 02:15:00+00:00
+[Tracker Check]    Is contained (w/ 0:00:05 tolerance)? False (Start: True, End: False)
+[Tracker Check]  Comparing with stored range #1: 2021-10-26 03:00:00+00:00 to 2021-10-26 03:15:00+00:00
+[Tracker Check]    Is contained (w/ 0:00:05 tolerance)? True (Start: True, End: True)
+[Tracker Check]  Found containing range (within tolerance). Action NOT needed.
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:271
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(4120,), range=2021-10-26T03:00:00.055780 to 2021-10-26T03:14:59.866395
+[CUBBY] GRAB OUTPUT - raw_data keys=['pmag', 'bmag', 'bt', 'br', 'bn', 'all'] | pmag: type=ndarray, shape=(4120,) | bmag: type=ndarray, shape=(4120,) | bt: type=ndarray, shape=(4120,) | br: type=ndarray, shape=(4120,) | bn: type=ndarray, shape=(4120,) | all(list): len=3, elem_shape=(4120,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+
+DEBUG:
+var: [5.6259456 5.464085  5.4425206 ... 6.219298  6.281141  6.280917 ]
+var type: <class 'plotbot.plot_manager.plot_manager'>
+var.datetime_array type: <class 'numpy.ndarray'>
+First element type: <class 'numpy.datetime64'>
+First element: 2021-10-26T03:00:00.055780736
+Time range: 2021-10-26T03:00:00.055780736 to 2021-10-26T03:14:59.866395776
+var.data type: <class 'numpy.ndarray'>
+var.data shape: (4120,)
+
+Variable verification for mag_rtn_4sa.br:
+Plot attributes example:
+- Color: forestgreen
+- Y-label: B (nT)
+- Legend: $B_R$
+Setting title from plt.options: Plotbot Merge Test - Call C (Contained)
+Plotbot call for ['2021-10-26 03:02:00', '2021-10-26 03:08:00'] - PASSED: Third (contained) plotbot call should succeed.
+🔵 PHASE 0: Verifying instance state: pb.mag_rtn_4sa after TRANGE_C (still merged A+B) (ID: 6334721984)
+Data presence for pb.mag_rtn_4sa after TRANGE_C (still merged A+B) - PASSED: pb.mag_rtn_4sa after TRANGE_C (still merged A+B) has 4120 data points.
+Internal consistency for pb.mag_rtn_4sa after TRANGE_C (still merged A+B) - PASSED: Internally consistent with 4120 data points and all checks passed.
+Data points after TRANGE_C (contained call) - PASSED: Expected same number of data points as after A+B merge (A+B: 4120, A+B+C: 4120).
+DataCubby state post all plotbot merges - PASSED: DataCubby state should be correct. 
+Global Tracker state post all plotbot merges - PASSED: Global Tracker state should be correct. 
+--- [plotbot] STARTING PHASE 2: Load Standard Data ---
+--- [plotbot] Calling get_data for data_type: 'mag_RTN_4sa' ---
+[GET_DATA PRE-LOOP] required_data_types set: set()
+--- [plotbot] Returned from get_data for data_type: 'mag_RTN_4sa'. Result type: <class 'NoneType'> ---
+--- [plotbot] FINISHED PHASE 2: Load Standard Data ---
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:252
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(4120,), range=2021-10-26T03:00:00.055780 to 2021-10-26T03:14:59.866395
+[CUBBY] GRAB OUTPUT - raw_data keys=['pmag', 'bmag', 'bt', 'br', 'bn', 'all'] | pmag: type=ndarray, shape=(4120,) | bmag: type=ndarray, shape=(4120,) | bt: type=ndarray, shape=(4120,) | br: type=ndarray, shape=(4120,) | bn: type=ndarray, shape=(4120,) | all(list): len=3, elem_shape=(4120,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+[GET_DATA PRE-LOOP] required_data_types set: {'mag_RTN_4sa'}
+🛰️ mag_RTN_4sa - acquiring variables: br
+[GET_DATA IN-LOOP] Current data_type from set: 'mag_RTN_4sa' (Type: <class 'str'>)
+Processing Data Type: mag_RTN_4sa...
+[GET_DATA_CONFIG_CHECK] Attempting to get config for data_type FROM LOOP VAR: 'mag_RTN_4sa'
+[GET_DATA_CONFIG_CHECK] Available keys in psp_data_types: ['mag_RTN', 'mag_RTN_4sa', 'mag_SC', 'mag_SC_4sa', 'spe_sf0_pad', 'spe_af0_pad', 'spi_sf00_l3_mom', 'spi_af00_L3_mom', 'sf00_fits', 'sf01_fits', 'ham']
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/get_data.py:258
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(4120,), range=2021-10-26T03:00:00.055780 to 2021-10-26T03:14:59.866395
+[CUBBY] GRAB OUTPUT - raw_data keys=['pmag', 'bmag', 'bt', 'br', 'bn', 'all'] | pmag: type=ndarray, shape=(4120,) | bmag: type=ndarray, shape=(4120,) | bt: type=ndarray, shape=(4120,) | br: type=ndarray, shape=(4120,) | bn: type=ndarray, shape=(4120,) | all(list): len=3, elem_shape=(4120,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+[Tracker Check] Checking calculated for mag_rtn_4sa with requested range: 2021-10-26 03:00:00+00:00 to 2021-10-26 03:15:00+00:00
+[Tracker Check] Found stored ranges for mag_rtn_4sa: [(datetime.datetime(2021, 10, 26, 2, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 10, 26, 2, 15, tzinfo=datetime.timezone.utc)), (datetime.datetime(2021, 10, 26, 3, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 10, 26, 3, 15, tzinfo=datetime.timezone.utc))]
+[Tracker Check]  Comparing with stored range #0: 2021-10-26 02:00:00+00:00 to 2021-10-26 02:15:00+00:00
+[Tracker Check]    Is contained (w/ 0:00:05 tolerance)? False (Start: True, End: False)
+[Tracker Check]  Comparing with stored range #1: 2021-10-26 03:00:00+00:00 to 2021-10-26 03:15:00+00:00
+[Tracker Check]    Is contained (w/ 0:00:05 tolerance)? True (Start: True, End: True)
+[Tracker Check]  Found containing range (within tolerance). Action NOT needed.
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:271
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(4120,), range=2021-10-26T03:00:00.055780 to 2021-10-26T03:14:59.866395
+[CUBBY] GRAB OUTPUT - raw_data keys=['pmag', 'bmag', 'bt', 'br', 'bn', 'all'] | pmag: type=ndarray, shape=(4120,) | bmag: type=ndarray, shape=(4120,) | bt: type=ndarray, shape=(4120,) | br: type=ndarray, shape=(4120,) | bn: type=ndarray, shape=(4120,) | all(list): len=3, elem_shape=(4120,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+
+DEBUG:
+var: [5.6259456 5.464085  5.4425206 ... 6.219298  6.281141  6.280917 ]
+var type: <class 'plotbot.plot_manager.plot_manager'>
+var.datetime_array type: <class 'numpy.ndarray'>
+First element type: <class 'numpy.datetime64'>
+First element: 2021-10-26T03:00:00.055780736
+Time range: 2021-10-26T03:00:00.055780736 to 2021-10-26T03:14:59.866395776
+var.data type: <class 'numpy.ndarray'>
+var.data shape: (4120,)
+
+Variable verification for mag_rtn_4sa.br:
+Plot attributes example:
+- Color: forestgreen
+- Y-label: B (nT)
+- Legend: $B_R$
+Setting title from plt.options: Plotbot Merge Test - Final Result (A+B+C)
+PASSED
+tests/core/test_data_merging.py::test_merge_arrays_directly 🔵 PHASE 1: Creating test data for direct merge test
+🔵 PHASE 2: Calling _merge_arrays directly
+[CUBBY] 
+=== Array Merge Debug ===
+[CUBBY] MERGE ARRAYS RANGES - Existing Bounds: 2021-10-26T02:05:00 to 2021-10-26T02:15:00
+[CUBBY] MERGE ARRAYS RANGES - New:           2021-10-26T02:00:00 to 2021-10-26T02:10:00
+[CUBBY] MERGE ARRAYS ACTION - New unique timestamps found. Performing merge...
+[CUBBY] MERGE ARRAYS SUCCESS - Merge complete.
+[CUBBY] === End Array Merge Debug ===
+
+🔵 PHASE 3: Verifying merge results
+Merged times are sorted - PASSED: Merged datetime array should be sorted.
+Merged times are unique - PASSED: Merged datetime array should have no duplicates.
+Merged min time correct - PASSED: Merged min time (2021-10-26T02:00:00.000000000) should be <= min of time2 (2021-10-26T02:00:00.000000000).
+Merged max time correct - PASSED: Merged max time (2021-10-26T02:15:00.000000000) should be >= max of time1 (2021-10-26T02:15:00.000000000).
+PASSED
+
+============================== 3 passed in 16.28s ==============================

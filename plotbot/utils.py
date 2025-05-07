@@ -158,3 +158,31 @@ def get_perihelion_time(center_time):
         print_manager.warning(f"Could not find any valid perihelion time near {center_dt}.")
         return None
 
+# Mapping of source data types to Plotbot classes
+source_data_type_to_plotbot_class = {
+    "mag_RTN": "mag_rtn_class",
+    "mag_RTN_4sa": "mag_rtn_4sa_class",
+    "mag_SC": "mag_sc_class",
+    "mag_SC_4sa": "mag_sc_4sa_class",
+    "spe_sf0_pad": "epad_strahl_class",
+    "spe_af0_pad": "epad_strahl_high_res_class",
+    "spi_sf00_l3_mom": "proton_class",
+    "spi_af00_L3_mom": "proton_hr_class",
+    "sf00_fits": "proton_fits_class",
+    "sf01_fits": "proton_fits_class",
+    "ham": "ham_class",
+}
+
+# Mapping of Plotbot classes to source data types
+class_to_plotbot_data_type = {
+    "mag_rtn_class": ["mag_RTN"],
+    "mag_rtn_4sa_class": ["mag_RTN_4sa"],
+    "mag_sc_class": ["mag_SC"],
+    "mag_sc_4sa_class": ["mag_SC_4sa"],
+    "epad_strahl_class": ["spe_sf0_pad"],
+    "epad_strahl_high_res_class": ["spe_af0_pad"],
+    "proton_class": ["spi_sf00_l3_mom"],
+    "proton_hr_class": ["spi_af00_L3_mom"],
+    "proton_fits_class": ["sf00_fits", "sf01_fits"],
+    "ham_class": ["ham"],
+}

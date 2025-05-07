@@ -1,0 +1,1396 @@
+initialized server_access
+initialized global_tracker
+initialized ploptions
+initialized plot_manager
+*** MAG_CLASS_INIT (mag_rtn_4sa_class) ID:5608825360: imported_data ID: None. ***
+initialized mag_rtn_4sa class
+initialized mag_rtn class
+initialized mag_sc_4sa class
+initialized mag_sc class
+initialized epad class
+initialized epad_hr class
+initialized proton class
+initialized proton_hr class
+initialized data_cubby
+initialized proton_fits class
+initialized ham_class
+🔉 initialized audifier
+
+Importing libraries, this may take a moment. Hold tight... 
+
+✅ Imported standard libraries and utilities.
+✅ Imported numpy, pandas, and scipy libraries.
+✅ Imported matplotlib libraries.
+✅ Imported cdflib, BeautifulSoup, requests, dateutil, and datetime libraries.
+
+🤖 Plotbot Initialized
+✨ Showdahodo initialized
+Positional Data Helper Initialized
+📈📉 Multiplot Initialized
+   Version: 2025_05_07_v2.25
+Commit: Fix: Update data consistency verification in tests to handle 'all' component structure correctly (v2.25)
+
+[94m🤖 Plotbot Initialized[0m
+Test-only mode enabled
+============================= test session starts ==============================
+platform darwin -- Python 3.12.4, pytest-7.4.4, pluggy-1.5.0 -- /opt/anaconda3/envs/plotbot_env/bin/python3.12
+cachedir: .pytest_cache
+rootdir: /Users/robertalexander/GitHub/Plotbot
+configfile: pytest.ini
+collecting ... collected 2 items
+
+tests/core/test_data_loading.py::test_initial_data_load 🔵 PHASE 0: Resetting and verifying mag_rtn_4sa is empty
+*** MAG_CLASS_INIT (mag_rtn_4sa_class) ID:6321084736: imported_data ID: None. ***
+Setting attribute: all (type=plot_manager, shape=(3,), dtype=object)
+Setting attribute: br (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bt (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bn (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bmag (type=plot_manager, shape=(), dtype=object)
+Setting attribute: pmag (type=plot_manager, shape=(), dtype=object)
+No data provided; initialized with empty attributes.
+[CUBBY] 
+=== Stashing Debug (INSIDE DATA CUBBY)===
+[CUBBY] STASH CALLER: /Users/robertalexander/GitHub/Plotbot/tests/utils/test_helpers.py:570
+[CUBBY] Stashing with identifier: mag_rtn_4sa
+[CUBBY] STASH TYPE CHECK - Object type: <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] STASH INPUT - No datetime_array attribute found
+[CUBBY] STASH INPUT - raw_data keys: dict_keys(['all', 'br', 'bt', 'bn', 'bmag', 'pmag'])
+[CUBBY] STASH INPUT - raw_data[all] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[br] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[bt] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[bn] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[bmag] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[pmag] type: <class 'NoneType'>
+[CUBBY] STASH MERGE CHECK - Looking for existing object with class_name: mag_rtn_4sa
+[CUBBY] STASH MERGE CHECK - Found existing object of type: <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] STASH MERGE CHECK - No existing datetime_array found
+[CUBBY] STASH MERGE - One or both datetime_arrays are None, skipping merge
+[CUBBY] STASH STORE - Stored in class_registry: mag_rtn_4sa
+[CUBBY] STASH OUTPUT - Stored object type: <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] === End Stashing Debug (LEAVING DATA CUBBY)===
+
+🔵 PHASE 0: Verifying instance state: pb.mag_rtn_4sa (post-reset) (ID: 6321084736)
+mag_rtn_4sa getattr helper!
+'time' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+mag_rtn_4sa getattr helper!
+'field' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+🔵 PHASE 1: Setting plot options for initial load
+🔵 PHASE 2: Calling plotbot for ['2021-10-26 02:00:00', '2021-10-26 02:10:00'] with mag_rtn_4sa.br on panel 1
+--- [plotbot] STARTING PHASE 2: Load Standard Data ---
+--- [plotbot] Calling get_data for data_type: 'mag_RTN_4sa' ---
+[GET_DATA PRE-LOOP] required_data_types set: set()
+--- [plotbot] Returned from get_data for data_type: 'mag_RTN_4sa'. Result type: <class 'NoneType'> ---
+--- [plotbot] FINISHED PHASE 2: Load Standard Data ---
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:252
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - No datetime_array attribute found
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all: type=NoneType, shape=N/A | br: type=NoneType, shape=N/A | bt: type=NoneType, shape=N/A | bn: type=NoneType, shape=N/A | bmag: type=NoneType, shape=N/A | pmag: type=NoneType, shape=N/A
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+[GET_DATA PRE-LOOP] required_data_types set: {'mag_RTN_4sa'}
+🛰️ mag_RTN_4sa - acquiring variables: br
+[GET_DATA IN-LOOP] Current data_type from set: 'mag_RTN_4sa' (Type: <class 'str'>)
+Processing Data Type: mag_RTN_4sa...
+[GET_DATA_CONFIG_CHECK] Attempting to get config for data_type FROM LOOP VAR: 'mag_RTN_4sa'
+[GET_DATA_CONFIG_CHECK] Available keys in psp_data_types: ['mag_RTN', 'mag_RTN_4sa', 'mag_SC', 'mag_SC_4sa', 'spe_sf0_pad', 'spe_af0_pad', 'spi_sf00_l3_mom', 'spi_af00_L3_mom', 'sf00_fits', 'sf01_fits', 'ham']
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/get_data.py:258
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - No datetime_array attribute found
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all: type=NoneType, shape=N/A | br: type=NoneType, shape=N/A | bt: type=NoneType, shape=N/A | bn: type=NoneType, shape=N/A | bmag: type=NoneType, shape=N/A | pmag: type=NoneType, shape=N/A
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+[Tracker Check] Checking calculated for mag_rtn_4sa with requested range: 2021-10-26 02:00:00+00:00 to 2021-10-26 02:10:00+00:00
+[Tracker Check] No stored ranges found for key: mag_rtn_4sa
+[Tracker Check] Action IS needed for mag_rtn_4sa.
+Tracker indicates calculation needed for mag_rtn_4sa (using original type mag_RTN_4sa). Proceeding...
+Server mode for mag_RTN_4sa: dynamic
+Attempting SPDF download (dynamic mode) for mag_RTN_4sa...
+Attempting SPDF download for mag_RTN_4sa in range ['2021-10-26 02:00:00', '2021-10-26 02:10:00']
+Checking for Berkeley/SPDF case conflicts before SPDF download for mag_RTN_4sa...
+Attempting SPDF check/download (no_update=False) for mag_rtn_4_sa_per_cyc...
+mag_RTN_4sa - Import/Refresh required
+Import data function called
+Input trange: ['2021-10-26 02:00:00', '2021-10-26 02:10:00']
+
+Importing data for UTC time range: ['2021-10-26 02:00:00', '2021-10-26 02:10:00']
+*** IDF_DEBUG: Entered Standard CDF Processing for mag_RTN_4sa ***
+
+=== Starting import for mag_RTN_4sa (CDF) ===
+*** IDF_DEBUG: About to compute start_tt2000 for start_time: 2021-10-26 02:00:00+00:00 ***
+*** IDF_DEBUG: Computed start_tt2000: 688485669184000000. About to compute end_tt2000 for end_time: 2021-10-26 02:10:00+00:00 ***
+*** IDF_DEBUG: Computed end_tt2000: 688486269184000000 ***
+  Requested datetime range (from TT2000 conversion): 2021-10-26T02:00:00.000000000 to 2021-10-26T02:10:00.000000000
+daterange called with start_date=2021-10-26 02:00:00+00:00, end_date=2021-10-26 02:10:00+00:00
+End date has time component, using full day: 2021-10-26
+Converted start_date to date: 2021-10-26
+Will generate 1 dates
+Yielding date: 2021-10-26
+    Searching for DAILY pattern: 'psp_fld_l2_mag_RTN_4_Sa_per_Cyc_20211026_v*.cdf' in dir: 'psp_data/fields/l2/mag_rtn_4_per_cycle/2021'
+      MATCHED file: psp_fld_l2_mag_rtn_4_sa_per_cyc_20211026_v02.cdf with pattern psp_fld_l2_mag_RTN_4_Sa_per_Cyc_20211026_v.*.cdf
+Found 1 unique CDF files to process.
+
+Processing CDF file: psp_data/fields/l2/mag_rtn_4_per_cycle/2021/psp_fld_l2_mag_rtn_4_sa_per_cyc_20211026_v02.cdf
+Successfully opened CDF file
+Using time variable: epoch_mag_RTN_4_Sa_per_Cyc
+  File actual TT2000 range: 688483027378124800 (2021-10-26T01:15:58.194124800) to 688564869167567488 (2021-10-26T23:59:59.983567488)
+    Comparison: File ends before request starts? False (FileEnd: 688564869167567488 < ReqStart: 688485669184000000)
+    Comparison: File starts after request ends? False (FileStart: 688483027378124800 > ReqEnd: 688486269184000000)
+Reading full time data array...
+Read 252629 time points
+Time indices: 12094 to 14840
+Extracted 2746 time points within requested range
+
+Reading variable: psp_fld_l2_mag_RTN_4_Sa_per_Cyc
+Raw data shape: (2746, 3)
+Successfully stored data slice for psp_fld_l2_mag_RTN_4_Sa_per_Cyc
+
+Concatenating CDF data...
+  Concatenated psp_fld_l2_mag_RTN_4_Sa_per_Cyc (Shape: (2746, 3))
+
+Total CDF data points after concatenation: 2746
+*** IMPORT_DATA_DEBUG (CDF Path) for data_type 'mag_RTN_4sa' (originally requested: 'mag_RTN_4sa') ***
+    data_object ID: 6305448064
+    DataObject.times length: 2746, dtype: int64
+    data_object.data ID: 6319887168
+    DataObject.data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc']
+        'psp_fld_l2_mag_RTN_4_Sa_per_Cyc' is PRESENT. Type: <class 'numpy.ndarray'>, Shape: (2746, 3), Len: 2746
+*** GET_DATA DEBUG: data_obj from import_data_function ID: 6305448064, data_obj.data ID: 6319887168, data_obj.data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+*** DATACUBBY_UPDATE DEBUG (Top): imported_data_obj ID: 6305448064, .data ID: 6319887168, .data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+[CUBBY] 
+=== Updating Global Instance: mag_rtn_4sa (is_segment_merge: False) ===
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/data_cubby.py:528
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - No datetime_array attribute found
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all: type=NoneType, shape=N/A | br: type=NoneType, shape=N/A | bt: type=NoneType, shape=N/A | bn: type=NoneType, shape=N/A | bmag: type=NoneType, shape=N/A | pmag: type=NoneType, shape=N/A
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+[CUBBY] Found target global instance: mag_rtn_4sa_class (ID: 6321084736) to update for data_type 'mag_rtn_4sa'
+[CUBBY] Global instance for mag_rtn_4sa is empty. Populating with new data via update()...
+*** DATACUBBY_UPDATE DEBUG (Empty/Segment Path - Pre-update): imported_data_obj ID: 6305448064, .data ID: 6319887168, .data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+*** MAG_CLASS_UPDATE (mag_rtn_4sa_class) ID:6321084736: imported_data ID: 6305448064, .data ID: 6319887168. Keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+[CUBBY] 
+=== Update Debug ===
+[CUBBY] Starting mag_rtn_4sa_class update...
+[CUBBY] Stored all state: {}
+[CUBBY] Stored br state: {}
+[CUBBY] Stored bt state: {}
+[CUBBY] Stored bn state: {}
+[CUBBY] Stored bmag state: {}
+[CUBBY] Stored pmag state: {}
+*** MAG_CLASS_CALCVARS (mag_rtn_4sa_class) ID:6321084736: imported_data ID: 6305448064, .data ID: 6319887168 ***
+    Available keys in imported_data.data for CALCVARS: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc']
+Setting attribute: time (type=ndarray, shape=(2746,), dtype=int64)
+Setting attribute: datetime_array (type=ndarray, shape=(2746,), dtype=datetime64[ns])
+self.datetime_array type after conversion: {type(self.datetime_array)}
+First element type: {type(self.datetime_array[0])}
+Setting attribute: field (type=ndarray, shape=(2746, 3), dtype=float32)
+Setting attribute: raw_data with value: {'all': [array([7.518761 , 7.2044215, 7.365159 , ..., 6.884807 , 6.9130335,
+       6.925231 ], dtype...
+
+Debug - Data Arrays:
+Time array shape: {self.time.shape}
+Field data shape: (2746, 3)
+First TT2000 time: 688485669345978880
+Setting attribute: all (type=plot_manager, shape=(3, 2746), dtype=float32)
+Setting attribute: br (type=plot_manager, shape=(2746,), dtype=float32)
+Setting attribute: bt (type=plot_manager, shape=(2746,), dtype=float32)
+Setting attribute: bn (type=plot_manager, shape=(2746,), dtype=float32)
+Setting attribute: bmag (type=plot_manager, shape=(2746,), dtype=float32)
+Setting attribute: pmag (type=plot_manager, shape=(2746,), dtype=float32)
+[CUBBY] Restoring saved state...
+[CUBBY] Restored all state: {}
+[CUBBY] Restored br state: {}
+[CUBBY] Restored bt state: {}
+[CUBBY] Restored bn state: {}
+[CUBBY] Restored bmag state: {}
+[CUBBY] Restored pmag state: {}
+[CUBBY] === End Update Debug ===
+
+[CUBBY] ✅ Instance updated successfully.
+[CUBBY] === End Global Instance Update ===
+
+[GET_DATA_POST_CUBBY] Instance 'mag_rtn_4sa' (ID: 6321084736):
+    datetime_array len: 2746
+    time (TT2000) len: 2746
+    field shape: (2746, 3)
+    raw_data['all'] (list) comp0 len: 2746
+    raw_data['br'] len: 2746
+    raw_data['bt'] len: 2746
+    raw_data['bn'] len: 2746
+    raw_data['bmag'] len: 2746
+    raw_data['pmag'] len: 2746
+Updated and merged ranges for mag_rtn_4sa: [(datetime.datetime(2021, 10, 26, 2, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 10, 26, 2, 10, tzinfo=datetime.timezone.utc))]
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:271
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(2746,), range=2021-10-26T02:00:00.161978 to 2021-10-26T02:09:59.816192
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all(list): len=3, elem_shape=(2746,) | br: type=ndarray, shape=(2746,) | bt: type=ndarray, shape=(2746,) | bn: type=ndarray, shape=(2746,) | bmag: type=ndarray, shape=(2746,) | pmag: type=ndarray, shape=(2746,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+
+DEBUG:
+var: [7.518761  7.2044215 7.365159  ... 6.884807  6.9130335 6.925231 ]
+var type: <class 'plotbot.plot_manager.plot_manager'>
+var.datetime_array type: <class 'numpy.ndarray'>
+First element type: <class 'numpy.datetime64'>
+First element: 2021-10-26T02:00:00.161978880
+Time range: 2021-10-26T02:00:00.161978880 to 2021-10-26T02:09:59.816192384
+var.data type: <class 'numpy.ndarray'>
+var.data shape: (2746,)
+
+Variable verification for mag_rtn_4sa.br:
+Plot attributes example:
+- Color: forestgreen
+- Y-label: B (nT)
+- Legend: $B_R$
+Setting title from plt.options: Initial Data Load and Plot
+Plotbot call successful - PASSED: plotbot() should return True on success.
+🔵 PHASE 3: Verifying instance state for pb.mag_rtn_4sa after initial load
+🔵 PHASE 0: Verifying instance state: pb.mag_rtn_4sa (ID: 6321084736)
+Data presence for pb.mag_rtn_4sa - PASSED: pb.mag_rtn_4sa has 2746 data points.
+Internal consistency for pb.mag_rtn_4sa - PASSED: Internally consistent with 2746 data points and all checks passed.
+Instance state verification (detailed) - PASSED: Instance data should be loaded and internally consistent.
+🔵 PHASE 4: Verifying DataCubby state for mag_rtn_4sa
+DataCubby state verification - PASSED: DataCubby state should be correct. 
+🔵 PHASE 5: Verifying Global Tracker state for mag_rtn_4sa
+Global Tracker state verification - PASSED: Global Tracker state should be correct. 
+PASSED
+tests/core/test_data_loading.py::test_cached_data_retrieval 🔵 PHASE 0: Resetting and verifying mag_rtn_4sa is empty
+*** MAG_CLASS_INIT (mag_rtn_4sa_class) ID:13039869808: imported_data ID: None. ***
+Setting attribute: all (type=plot_manager, shape=(3,), dtype=object)
+Setting attribute: br (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bt (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bn (type=plot_manager, shape=(), dtype=object)
+Setting attribute: bmag (type=plot_manager, shape=(), dtype=object)
+Setting attribute: pmag (type=plot_manager, shape=(), dtype=object)
+No data provided; initialized with empty attributes.
+[CUBBY] 
+=== Stashing Debug (INSIDE DATA CUBBY)===
+[CUBBY] STASH CALLER: /Users/robertalexander/GitHub/Plotbot/tests/utils/test_helpers.py:570
+[CUBBY] Stashing with identifier: mag_rtn_4sa
+[CUBBY] STASH TYPE CHECK - Object type: <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] STASH INPUT - No datetime_array attribute found
+[CUBBY] STASH INPUT - raw_data keys: dict_keys(['all', 'br', 'bt', 'bn', 'bmag', 'pmag'])
+[CUBBY] STASH INPUT - raw_data[all] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[br] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[bt] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[bn] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[bmag] type: <class 'NoneType'>
+[CUBBY] STASH INPUT - raw_data[pmag] type: <class 'NoneType'>
+[CUBBY] STASH MERGE CHECK - Looking for existing object with class_name: mag_rtn_4sa
+[CUBBY] STASH MERGE CHECK - Found existing object of type: <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] STASH MERGE CHECK - Existing datetime_array type: <class 'numpy.ndarray'>
+[CUBBY] STASH MERGE CHECK - Existing datetime_array element type: <class 'numpy.datetime64'>
+[CUBBY] STASH MERGE CHECK - Existing datetime_array shape: (2746,)
+[CUBBY] STASH MERGE CHECK - Existing datetime_array range: 2021-10-26T02:00:00.161978880 to 2021-10-26T02:09:59.816192384
+[CUBBY] STASH MERGE - One or both datetime_arrays are None, skipping merge
+[CUBBY] STASH STORE - Stored in class_registry: mag_rtn_4sa
+[CUBBY] STASH OUTPUT - Stored object type: <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] === End Stashing Debug (LEAVING DATA CUBBY)===
+
+🔵 PHASE 0: Verifying instance state: pb.mag_rtn_4sa (post-reset) (ID: 13039869808)
+mag_rtn_4sa getattr helper!
+'time' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+mag_rtn_4sa getattr helper!
+'field' is not a recognized attribute, friend!
+Try one of these: all, br, bt, bn, bmag, pmag
+Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+🔵 PHASE 1: Setting plot options for cached data test
+🔵 PHASE 2: First plotbot call to populate cache for ['2021-10-26 02:00:00', '2021-10-26 02:10:00'] with mag_rtn_4sa.br
+--- [plotbot] STARTING PHASE 2: Load Standard Data ---
+--- [plotbot] Calling get_data for data_type: 'mag_RTN_4sa' ---
+[GET_DATA PRE-LOOP] required_data_types set: set()
+--- [plotbot] Returned from get_data for data_type: 'mag_RTN_4sa'. Result type: <class 'NoneType'> ---
+--- [plotbot] FINISHED PHASE 2: Load Standard Data ---
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:252
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - No datetime_array attribute found
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all: type=NoneType, shape=N/A | br: type=NoneType, shape=N/A | bt: type=NoneType, shape=N/A | bn: type=NoneType, shape=N/A | bmag: type=NoneType, shape=N/A | pmag: type=NoneType, shape=N/A
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+[GET_DATA PRE-LOOP] required_data_types set: {'mag_RTN_4sa'}
+🛰️ mag_RTN_4sa - acquiring variables: br
+[GET_DATA IN-LOOP] Current data_type from set: 'mag_RTN_4sa' (Type: <class 'str'>)
+Processing Data Type: mag_RTN_4sa...
+[GET_DATA_CONFIG_CHECK] Attempting to get config for data_type FROM LOOP VAR: 'mag_RTN_4sa'
+[GET_DATA_CONFIG_CHECK] Available keys in psp_data_types: ['mag_RTN', 'mag_RTN_4sa', 'mag_SC', 'mag_SC_4sa', 'spe_sf0_pad', 'spe_af0_pad', 'spi_sf00_l3_mom', 'spi_af00_L3_mom', 'sf00_fits', 'sf01_fits', 'ham']
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/get_data.py:258
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - No datetime_array attribute found
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all: type=NoneType, shape=N/A | br: type=NoneType, shape=N/A | bt: type=NoneType, shape=N/A | bn: type=NoneType, shape=N/A | bmag: type=NoneType, shape=N/A | pmag: type=NoneType, shape=N/A
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+[Tracker Check] Checking calculated for mag_rtn_4sa with requested range: 2021-10-26 02:00:00+00:00 to 2021-10-26 02:10:00+00:00
+[Tracker Check] No stored ranges found for key: mag_rtn_4sa
+[Tracker Check] Action IS needed for mag_rtn_4sa.
+Tracker indicates calculation needed for mag_rtn_4sa (using original type mag_RTN_4sa). Proceeding...
+Server mode for mag_RTN_4sa: dynamic
+Attempting SPDF download (dynamic mode) for mag_RTN_4sa...
+Attempting SPDF download for mag_RTN_4sa in range ['2021-10-26 02:00:00', '2021-10-26 02:10:00']
+Checking for Berkeley/SPDF case conflicts before SPDF download for mag_RTN_4sa...
+Attempting SPDF check/download (no_update=False) for mag_rtn_4_sa_per_cyc...
+mag_RTN_4sa - Import/Refresh required
+Import data function called
+Input trange: ['2021-10-26 02:00:00', '2021-10-26 02:10:00']
+
+Importing data for UTC time range: ['2021-10-26 02:00:00', '2021-10-26 02:10:00']
+*** IDF_DEBUG: Entered Standard CDF Processing for mag_RTN_4sa ***
+
+=== Starting import for mag_RTN_4sa (CDF) ===
+*** IDF_DEBUG: About to compute start_tt2000 for start_time: 2021-10-26 02:00:00+00:00 ***
+*** IDF_DEBUG: Computed start_tt2000: 688485669184000000. About to compute end_tt2000 for end_time: 2021-10-26 02:10:00+00:00 ***
+*** IDF_DEBUG: Computed end_tt2000: 688486269184000000 ***
+  Requested datetime range (from TT2000 conversion): 2021-10-26T02:00:00.000000000 to 2021-10-26T02:10:00.000000000
+daterange called with start_date=2021-10-26 02:00:00+00:00, end_date=2021-10-26 02:10:00+00:00
+End date has time component, using full day: 2021-10-26
+Converted start_date to date: 2021-10-26
+Will generate 1 dates
+Yielding date: 2021-10-26
+    Searching for DAILY pattern: 'psp_fld_l2_mag_RTN_4_Sa_per_Cyc_20211026_v*.cdf' in dir: 'psp_data/fields/l2/mag_rtn_4_per_cycle/2021'
+      MATCHED file: psp_fld_l2_mag_rtn_4_sa_per_cyc_20211026_v02.cdf with pattern psp_fld_l2_mag_RTN_4_Sa_per_Cyc_20211026_v.*.cdf
+Found 1 unique CDF files to process.
+
+Processing CDF file: psp_data/fields/l2/mag_rtn_4_per_cycle/2021/psp_fld_l2_mag_rtn_4_sa_per_cyc_20211026_v02.cdf
+Successfully opened CDF file
+Using time variable: epoch_mag_RTN_4_Sa_per_Cyc
+  File actual TT2000 range: 688483027378124800 (2021-10-26T01:15:58.194124800) to 688564869167567488 (2021-10-26T23:59:59.983567488)
+    Comparison: File ends before request starts? False (FileEnd: 688564869167567488 < ReqStart: 688485669184000000)
+    Comparison: File starts after request ends? False (FileStart: 688483027378124800 > ReqEnd: 688486269184000000)
+Reading full time data array...
+Read 252629 time points
+Time indices: 12094 to 14840
+Extracted 2746 time points within requested range
+
+Reading variable: psp_fld_l2_mag_RTN_4_Sa_per_Cyc
+Raw data shape: (2746, 3)
+Successfully stored data slice for psp_fld_l2_mag_RTN_4_Sa_per_Cyc
+
+Concatenating CDF data...
+  Concatenated psp_fld_l2_mag_RTN_4_Sa_per_Cyc (Shape: (2746, 3))
+
+Total CDF data points after concatenation: 2746
+*** IMPORT_DATA_DEBUG (CDF Path) for data_type 'mag_RTN_4sa' (originally requested: 'mag_RTN_4sa') ***
+    data_object ID: 6290451008
+    DataObject.times length: 2746, dtype: int64
+    data_object.data ID: 6321232256
+    DataObject.data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc']
+        'psp_fld_l2_mag_RTN_4_Sa_per_Cyc' is PRESENT. Type: <class 'numpy.ndarray'>, Shape: (2746, 3), Len: 2746
+*** GET_DATA DEBUG: data_obj from import_data_function ID: 6290451008, data_obj.data ID: 6321232256, data_obj.data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+*** DATACUBBY_UPDATE DEBUG (Top): imported_data_obj ID: 6290451008, .data ID: 6321232256, .data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+[CUBBY] 
+=== Updating Global Instance: mag_rtn_4sa (is_segment_merge: False) ===
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/data_cubby.py:528
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - No datetime_array attribute found
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all: type=NoneType, shape=N/A | br: type=NoneType, shape=N/A | bt: type=NoneType, shape=N/A | bn: type=NoneType, shape=N/A | bmag: type=NoneType, shape=N/A | pmag: type=NoneType, shape=N/A
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+[CUBBY] Found target global instance: mag_rtn_4sa_class (ID: 13039869808) to update for data_type 'mag_rtn_4sa'
+[CUBBY] Global instance for mag_rtn_4sa is empty. Populating with new data via update()...
+*** DATACUBBY_UPDATE DEBUG (Empty/Segment Path - Pre-update): imported_data_obj ID: 6290451008, .data ID: 6321232256, .data keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+*** MAG_CLASS_UPDATE (mag_rtn_4sa_class) ID:13039869808: imported_data ID: 6290451008, .data ID: 6321232256. Keys: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'] ***
+[CUBBY] 
+=== Update Debug ===
+[CUBBY] Starting mag_rtn_4sa_class update...
+[CUBBY] Stored all state: {}
+[CUBBY] Stored br state: {}
+[CUBBY] Stored bt state: {}
+[CUBBY] Stored bn state: {}
+[CUBBY] Stored bmag state: {}
+[CUBBY] Stored pmag state: {}
+*** MAG_CLASS_CALCVARS (mag_rtn_4sa_class) ID:13039869808: imported_data ID: 6290451008, .data ID: 6321232256 ***
+    Available keys in imported_data.data for CALCVARS: ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc']
+Setting attribute: time (type=ndarray, shape=(2746,), dtype=int64)
+Setting attribute: datetime_array (type=ndarray, shape=(2746,), dtype=datetime64[ns])
+self.datetime_array type after conversion: {type(self.datetime_array)}
+First element type: {type(self.datetime_array[0])}
+Setting attribute: field (type=ndarray, shape=(2746, 3), dtype=float32)
+Setting attribute: raw_data with value: {'all': [array([7.518761 , 7.2044215, 7.365159 , ..., 6.884807 , 6.9130335,
+       6.925231 ], dtype...
+
+Debug - Data Arrays:
+Time array shape: {self.time.shape}
+Field data shape: (2746, 3)
+First TT2000 time: 688485669345978880
+Setting attribute: all (type=plot_manager, shape=(3, 2746), dtype=float32)
+Setting attribute: br (type=plot_manager, shape=(2746,), dtype=float32)
+Setting attribute: bt (type=plot_manager, shape=(2746,), dtype=float32)
+Setting attribute: bn (type=plot_manager, shape=(2746,), dtype=float32)
+Setting attribute: bmag (type=plot_manager, shape=(2746,), dtype=float32)
+Setting attribute: pmag (type=plot_manager, shape=(2746,), dtype=float32)
+[CUBBY] Restoring saved state...
+[CUBBY] Restored all state: {}
+[CUBBY] Restored br state: {}
+[CUBBY] Restored bt state: {}
+[CUBBY] Restored bn state: {}
+[CUBBY] Restored bmag state: {}
+[CUBBY] Restored pmag state: {}
+[CUBBY] === End Update Debug ===
+
+[CUBBY] ✅ Instance updated successfully.
+[CUBBY] === End Global Instance Update ===
+
+[GET_DATA_POST_CUBBY] Instance 'mag_rtn_4sa' (ID: 13039869808):
+    datetime_array len: 2746
+    time (TT2000) len: 2746
+    field shape: (2746, 3)
+    raw_data['all'] (list) comp0 len: 2746
+    raw_data['br'] len: 2746
+    raw_data['bt'] len: 2746
+    raw_data['bn'] len: 2746
+    raw_data['bmag'] len: 2746
+    raw_data['pmag'] len: 2746
+Updated and merged ranges for mag_rtn_4sa: [(datetime.datetime(2021, 10, 26, 2, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 10, 26, 2, 10, tzinfo=datetime.timezone.utc))]
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:271
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(2746,), range=2021-10-26T02:00:00.161978 to 2021-10-26T02:09:59.816192
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all(list): len=3, elem_shape=(2746,) | br: type=ndarray, shape=(2746,) | bt: type=ndarray, shape=(2746,) | bn: type=ndarray, shape=(2746,) | bmag: type=ndarray, shape=(2746,) | pmag: type=ndarray, shape=(2746,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+
+DEBUG:
+var: [7.518761  7.2044215 7.365159  ... 6.884807  6.9130335 6.925231 ]
+var type: <class 'plotbot.plot_manager.plot_manager'>
+var.datetime_array type: <class 'numpy.ndarray'>
+First element type: <class 'numpy.datetime64'>
+First element: 2021-10-26T02:00:00.161978880
+Time range: 2021-10-26T02:00:00.161978880 to 2021-10-26T02:09:59.816192384
+var.data type: <class 'numpy.ndarray'>
+var.data shape: (2746,)
+
+Variable verification for mag_rtn_4sa.br:
+Plot attributes example:
+- Color: forestgreen
+- Y-label: B (nT)
+- Legend: $B_R$
+Setting title from plt.options: Cached Data Retrieval - Initial Load
+🔵 PHASE 0: Verifying instance state: pb.mag_rtn_4sa after initial load for cache test (ID: 13039869808)
+Data presence for pb.mag_rtn_4sa after initial load for cache test - PASSED: pb.mag_rtn_4sa after initial load for cache test has 2746 data points.
+Internal consistency for pb.mag_rtn_4sa after initial load for cache test - PASSED: Internally consistent with 2746 data points and all checks passed.
+🔵 PHASE 3: Second plotbot call (should use cache) for ['2021-10-26 02:00:00', '2021-10-26 02:10:00'] with mag_rtn_4sa.br
+--- [plotbot] STARTING PHASE 2: Load Standard Data ---
+--- [plotbot] Calling get_data for data_type: 'mag_RTN_4sa' ---
+[GET_DATA PRE-LOOP] required_data_types set: set()
+--- [plotbot] Returned from get_data for data_type: 'mag_RTN_4sa'. Result type: <class 'NoneType'> ---
+--- [plotbot] FINISHED PHASE 2: Load Standard Data ---
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:252
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(2746,), range=2021-10-26T02:00:00.161978 to 2021-10-26T02:09:59.816192
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all(list): len=3, elem_shape=(2746,) | br: type=ndarray, shape=(2746,) | bt: type=ndarray, shape=(2746,) | bn: type=ndarray, shape=(2746,) | bmag: type=ndarray, shape=(2746,) | pmag: type=ndarray, shape=(2746,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+[GET_DATA PRE-LOOP] required_data_types set: {'mag_RTN_4sa'}
+🛰️ mag_RTN_4sa - acquiring variables: br
+[GET_DATA IN-LOOP] Current data_type from set: 'mag_RTN_4sa' (Type: <class 'str'>)
+Processing Data Type: mag_RTN_4sa...
+[GET_DATA_CONFIG_CHECK] Attempting to get config for data_type FROM LOOP VAR: 'mag_RTN_4sa'
+[GET_DATA_CONFIG_CHECK] Available keys in psp_data_types: ['mag_RTN', 'mag_RTN_4sa', 'mag_SC', 'mag_SC_4sa', 'spe_sf0_pad', 'spe_af0_pad', 'spi_sf00_l3_mom', 'spi_af00_L3_mom', 'sf00_fits', 'sf01_fits', 'ham']
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/get_data.py:258
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(2746,), range=2021-10-26T02:00:00.161978 to 2021-10-26T02:09:59.816192
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all(list): len=3, elem_shape=(2746,) | br: type=ndarray, shape=(2746,) | bt: type=ndarray, shape=(2746,) | bn: type=ndarray, shape=(2746,) | bmag: type=ndarray, shape=(2746,) | pmag: type=ndarray, shape=(2746,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+[Tracker Check] Checking calculated for mag_rtn_4sa with requested range: 2021-10-26 02:00:00+00:00 to 2021-10-26 02:10:00+00:00
+[Tracker Check] Found stored ranges for mag_rtn_4sa: [(datetime.datetime(2021, 10, 26, 2, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 10, 26, 2, 10, tzinfo=datetime.timezone.utc))]
+[Tracker Check]  Comparing with stored range #0: 2021-10-26 02:00:00+00:00 to 2021-10-26 02:10:00+00:00
+[Tracker Check]    Is contained (w/ 0:00:05 tolerance)? True (Start: True, End: True)
+[Tracker Check]  Found containing range (within tolerance). Action NOT needed.
+[CUBBY] 
+=== Retrieving mag_rtn_4sa from data_cubby ===
+[CUBBY] GRAB CALLER: /Users/robertalexander/GitHub/Plotbot/plotbot/plotbot_main.py:271
+[CUBBY] GRAB SUCCESS - Retrieved mag_rtn_4sa with type <class 'plotbot.data_classes.psp_mag_classes.mag_rtn_4sa_class'>
+[CUBBY] GRAB OUTPUT - datetime_array type=ndarray, elem_type=datetime64, shape=(2746,), range=2021-10-26T02:00:00.161978 to 2021-10-26T02:09:59.816192
+[CUBBY] GRAB OUTPUT - raw_data keys=['all', 'br', 'bt', 'bn', 'bmag', 'pmag'] | all(list): len=3, elem_shape=(2746,) | br: type=ndarray, shape=(2746,) | bt: type=ndarray, shape=(2746,) | bn: type=ndarray, shape=(2746,) | bmag: type=ndarray, shape=(2746,) | pmag: type=ndarray, shape=(2746,)
+[CUBBY] === End Retrieval Debug (LEAVING DATA CUBBY)===
+
+Getting subclass: br
+Returning br component
+
+DEBUG:
+var: [7.518761  7.2044215 7.365159  ... 6.884807  6.9130335 6.925231 ]
+var type: <class 'plotbot.plot_manager.plot_manager'>
+var.datetime_array type: <class 'numpy.ndarray'>
+First element type: <class 'numpy.datetime64'>
+First element: 2021-10-26T02:00:00.161978880
+Time range: 2021-10-26T02:00:00.161978880 to 2021-10-26T02:09:59.816192384
+var.data type: <class 'numpy.ndarray'>
+var.data shape: (2746,)
+
+Variable verification for mag_rtn_4sa.br:
+Plot attributes example:
+- Color: forestgreen
+- Y-label: B (nT)
+- Legend: $B_R$
+Setting title from plt.options: Cached Data Retrieval - Verified Cached Plot
+Cached plotbot call successful - PASSED: plotbot() using cache should return True.
+🔵 PHASE 4: Verifying instance state for mag_rtn_4sa remains consistent after cached call
+🔵 PHASE 0: Verifying instance state: pb.mag_rtn_4sa after cached call (ID: 13039869808)
+Data presence for pb.mag_rtn_4sa after cached call - PASSED: pb.mag_rtn_4sa after cached call has 2746 data points.
+Internal consistency for pb.mag_rtn_4sa after cached call - PASSED: Internally consistent with 2746 data points and all checks passed.
+Instance state verification after cached call - PASSED: Instance data should remain consistent after cached call.
+🔵 PHASE 5: Verifying cache was used (no redundant processing)
+Cache was used (tracker and cubby state consistent) - PASSED: Second call should use cached data. No redundant processing detected.
+PASSED
+
+============================== 2 passed in 8.64s ===============================
+07-May-25 02:47:01: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 02:47:07: Data presence for pb.mag_rtn_4sa after initial load for merge test - PASSED: pb.mag_rtn_4sa after initial load for merge test has 2747 data points.
+07-May-25 02:47:07: Internal consistency for pb.mag_rtn_4sa after initial load for merge test - PASSED: Internally consistent with 2747 data points and all checks passed.
+07-May-25 02:47:07: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 02:47:07: Data presence for pb.mag_rtn_4sa after loading snapshot - PASSED: pb.mag_rtn_4sa after loading snapshot has 2747 data points.
+07-May-25 02:47:07: Internal consistency for pb.mag_rtn_4sa after loading snapshot - PASSED: Internally consistent with 2747 data points and all checks passed.
+07-May-25 02:47:10: Plotbot call for overlapping range - PASSED: Plotting overlapping range should succeed.
+07-May-25 02:47:10: Data presence for pb.mag_rtn_4sa after merge - PASSED: pb.mag_rtn_4sa after merge has 4120 data points.
+07-May-25 02:47:10: Internal consistency for pb.mag_rtn_4sa after merge - PASSED: Internally consistent with 4120 data points and all checks passed.
+07-May-25 02:47:10: Instance state after merge - PASSED: Data should be merged to cover ['2021-10-26 02:00:00', '2021-10-26 02:15:00'].
+07-May-25 02:47:10: Merged data points increased - PASSED: Merged data should have more points than before (4120 vs 2747).
+07-May-25 02:47:10: Merged min time correct - PASSED: Merged min time (2021-10-26T02:00:00.161978880) should be near expected (2021-10-26T02:00:00.000000000).
+07-May-25 02:47:10: Merged max time correct - PASSED: Merged max time (2021-10-26T02:14:59.970828928) should be near expected (2021-10-26T02:15:00.000000000).
+07-May-25 02:47:10: DataCubby state post-merge - PASSED: DataCubby state should be correct. 
+07-May-25 02:47:10: Global Tracker state post-merge - PASSED: Global Tracker state should be correct. 
+07-May-25 02:47:10: Merged times are sorted - PASSED: Merged datetime array should be sorted.
+07-May-25 02:47:10: Merged times are unique - PASSED: Merged datetime array should have no duplicates.
+07-May-25 02:47:10: Merged min time correct - PASSED: Merged min time (2021-10-26T02:00:00.000000000) should be <= min of time2 (2021-10-26T02:00:00.000000000).
+07-May-25 02:47:10: Merged max time correct - PASSED: Merged max time (2021-10-26T02:15:00.000000000) should be >= max of time1 (2021-10-26T02:15:00.000000000).
+07-May-25 02:47:42: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 02:47:44: Data presence for pb.mag_rtn_4sa after initial load for merge test - PASSED: pb.mag_rtn_4sa after initial load for merge test has 2747 data points.
+07-May-25 02:47:44: Internal consistency for pb.mag_rtn_4sa after initial load for merge test - PASSED: Internally consistent with 2747 data points and all checks passed.
+07-May-25 02:47:44: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 02:47:44: Data presence for pb.mag_rtn_4sa after loading snapshot - PASSED: pb.mag_rtn_4sa after loading snapshot has 2747 data points.
+07-May-25 02:47:44: Internal consistency for pb.mag_rtn_4sa after loading snapshot - PASSED: Internally consistent with 2747 data points and all checks passed.
+07-May-25 02:47:46: Plotbot call for overlapping range - PASSED: Plotting overlapping range should succeed.
+07-May-25 02:47:46: Data presence for pb.mag_rtn_4sa after merge - PASSED: pb.mag_rtn_4sa after merge has 4120 data points.
+07-May-25 02:47:46: Internal consistency for pb.mag_rtn_4sa after merge - PASSED: Internally consistent with 4120 data points and all checks passed.
+07-May-25 02:47:46: Instance state after merge - PASSED: Data should be merged to cover ['2021-10-26 02:00:00', '2021-10-26 02:15:00'].
+07-May-25 02:47:46: Merged data points increased - PASSED: Merged data should have more points than before (4120 vs 2747).
+07-May-25 02:47:46: Merged min time correct - PASSED: Merged min time (2021-10-26T02:00:00.161978880) should be near expected (2021-10-26T02:00:00.000000000).
+07-May-25 02:47:46: Merged max time correct - PASSED: Merged max time (2021-10-26T02:14:59.970828928) should be near expected (2021-10-26T02:15:00.000000000).
+07-May-25 02:47:46: DataCubby state post-merge - PASSED: DataCubby state should be correct. 
+07-May-25 02:47:46: Global Tracker state post-merge - PASSED: Global Tracker state should be correct. 
+07-May-25 02:47:46: Merged times are sorted - PASSED: Merged datetime array should be sorted.
+07-May-25 02:47:46: Merged times are unique - PASSED: Merged datetime array should have no duplicates.
+07-May-25 02:47:46: Merged min time correct - PASSED: Merged min time (2021-10-26T02:00:00.000000000) should be <= min of time2 (2021-10-26T02:00:00.000000000).
+07-May-25 02:47:46: Merged max time correct - PASSED: Merged max time (2021-10-26T02:15:00.000000000) should be >= max of time1 (2021-10-26T02:15:00.000000000).
+07-May-25 02:53:03: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 02:53:07: Data presence for pb.mag_rtn_4sa after initial load for merge test - PASSED: pb.mag_rtn_4sa after initial load for merge test has 2747 data points.
+07-May-25 02:53:07: Internal consistency for pb.mag_rtn_4sa after initial load for merge test - PASSED: Internally consistent with 2747 data points and all checks passed.
+07-May-25 02:53:07: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 02:53:07: Data presence for pb.mag_rtn_4sa after loading snapshot - PASSED: pb.mag_rtn_4sa after loading snapshot has 2747 data points.
+07-May-25 02:53:07: Internal consistency for pb.mag_rtn_4sa after loading snapshot - PASSED: Internally consistent with 2747 data points and all checks passed.
+07-May-25 02:53:09: Plotbot call for overlapping range - PASSED: Plotting overlapping range should succeed.
+07-May-25 02:53:09: Data presence for pb.mag_rtn_4sa after merge - PASSED: pb.mag_rtn_4sa after merge has 4120 data points.
+07-May-25 02:53:09: Internal consistency for pb.mag_rtn_4sa after merge - PASSED: Internally consistent with 4120 data points and all checks passed.
+07-May-25 02:53:09: Instance state after merge - PASSED: Data should be merged to cover ['2021-10-26 02:00:00', '2021-10-26 02:15:00'].
+07-May-25 02:53:09: Merged data points increased - PASSED: Merged data should have more points than before (4120 vs 2747).
+07-May-25 02:53:09: Merged min time correct - PASSED: Merged min time (2021-10-26T02:00:00.161978880) should be near expected (2021-10-26T02:00:00.000000000).
+07-May-25 02:53:09: Merged max time correct - PASSED: Merged max time (2021-10-26T02:14:59.970828928) should be near expected (2021-10-26T02:15:00.000000000).
+07-May-25 02:53:09: DataCubby state post-merge - PASSED: DataCubby state should be correct. 
+07-May-25 02:53:09: Global Tracker state post-merge - PASSED: Global Tracker state should be correct. 
+07-May-25 02:53:09: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 02:53:13: Plotbot call for ['2021-10-26 03:00:00', '2021-10-26 03:10:00'] - PASSED: Initial plotbot call should succeed.
+07-May-25 02:53:13: Data presence for pb.mag_rtn_4sa after TRANGE_A - PASSED: pb.mag_rtn_4sa after TRANGE_A has 2747 data points.
+07-May-25 02:53:13: Internal consistency for pb.mag_rtn_4sa after TRANGE_A - PASSED: Internally consistent with 2747 data points and all checks passed.
+07-May-25 02:53:14: Plotbot call for ['2021-10-26 03:05:00', '2021-10-26 03:15:00'] - PASSED: Second (overlapping) plotbot call should succeed.
+07-May-25 02:53:14: Data presence for pb.mag_rtn_4sa after TRANGE_B (merged A+B) - PASSED: pb.mag_rtn_4sa after TRANGE_B (merged A+B) has 4120 data points.
+07-May-25 02:53:14: Internal consistency for pb.mag_rtn_4sa after TRANGE_B (merged A+B) - PASSED: Internally consistent with 4120 data points and all checks passed.
+07-May-25 02:53:14: Data points after TRANGE_B merge - PASSED: Expected more data points after merge (A: 2747, A+B: 4120). This check assumes TRANGE_B adds new data.
+07-May-25 02:53:17: Plotbot call for ['2021-10-26 03:02:00', '2021-10-26 03:08:00'] - PASSED: Third (contained) plotbot call should succeed.
+07-May-25 02:53:17: Data presence for pb.mag_rtn_4sa after TRANGE_C (still merged A+B) - PASSED: pb.mag_rtn_4sa after TRANGE_C (still merged A+B) has 4120 data points.
+07-May-25 02:53:17: Internal consistency for pb.mag_rtn_4sa after TRANGE_C (still merged A+B) - PASSED: Internally consistent with 4120 data points and all checks passed.
+07-May-25 02:53:17: Data points after TRANGE_C (contained call) - PASSED: Expected same number of data points as after A+B merge (A+B: 4120, A+B+C: 4120).
+07-May-25 02:53:17: DataCubby state post all plotbot merges - PASSED: DataCubby state should be correct. 
+07-May-25 02:53:17: Global Tracker state post all plotbot merges - PASSED: Global Tracker state should be correct. 
+07-May-25 02:53:19: Merged times are sorted - PASSED: Merged datetime array should be sorted.
+07-May-25 02:53:19: Merged times are unique - PASSED: Merged datetime array should have no duplicates.
+07-May-25 02:53:19: Merged min time correct - PASSED: Merged min time (2021-10-26T02:00:00.000000000) should be <= min of time2 (2021-10-26T02:00:00.000000000).
+07-May-25 02:53:19: Merged max time correct - PASSED: Merged max time (2021-10-26T02:15:00.000000000) should be >= max of time1 (2021-10-26T02:15:00.000000000).
+07-May-25 02:57:33: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 02:57:39: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 02:57:39: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 02:57:39: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 02:57:39: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 02:57:39: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 02:57:39: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 02:57:39: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 02:57:39: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 02:57:39: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 02:57:39: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 02:57:39: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 02:57:39: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 02:57:39: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 02:57:39: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 02:57:39: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 02:57:42: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 02:57:42: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 02:57:42: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 02:57:42: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 02:57:42: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 02:57:43: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 02:57:43: Data presence for pb.mag_rtn_4sa (post-advanced-save, populated) - PASSED: pb.mag_rtn_4sa (post-advanced-save, populated) has 2746 data points.
+07-May-25 02:57:43: Internal consistency for pb.mag_rtn_4sa (post-advanced-save, populated) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 02:57:43: Instance state after population in save (detailed) - PASSED: Instance should be populated for all specified tranges and be internally consistent.
+07-May-25 02:57:43: Advanced snapshot file data_snapshots/test_advanced_snapshot_mag_rtn_4sa.pkl created - PASSED: Main advanced snapshot file should exist.
+07-May-25 02:57:43: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 02:57:43: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 02:57:43: Advanced snapshot load operation - PASSED: load_data_snapshot for advanced snapshot should return True.
+07-May-25 02:57:43: Data presence for pb.mag_rtn_4sa (post-advanced-load) - PASSED: pb.mag_rtn_4sa (post-advanced-load) has 2746 data points.
+07-May-25 02:57:43: Internal consistency for pb.mag_rtn_4sa (post-advanced-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 02:57:43: Instance state after advanced load (detailed) - PASSED: Data from all segments should be properly merged and instance internally consistent.
+07-May-25 02:57:43: DataCubby state post-advanced-load - PASSED: DataCubby state should be correct. 
+07-May-25 02:57:46: Plotbot call with data from advanced snapshot - PASSED: Plotting sub-range from advanced snapshot should succeed.
+07-May-25 03:06:06: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:06:10: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 03:06:10: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:06:10: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 03:06:10: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 03:06:10: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 03:06:10: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:06:10: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 03:06:10: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:06:10: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:06:10: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 03:06:10: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 03:06:10: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:06:10: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 03:06:10: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 03:06:10: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 03:06:11: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 03:06:11: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 03:06:11: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:06:11: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 03:06:11: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:06:12: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 03:06:12: Data presence for pb.mag_rtn_4sa (post-advanced-save, populated) - PASSED: pb.mag_rtn_4sa (post-advanced-save, populated) has 2746 data points.
+07-May-25 03:06:12: Internal consistency for pb.mag_rtn_4sa (post-advanced-save, populated) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 03:12:39: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:12:42: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 03:12:42: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:12:42: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 03:12:42: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 03:12:42: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 03:12:42: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:12:42: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 03:12:42: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:12:42: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:12:42: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 03:12:42: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 03:12:42: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:12:42: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 03:12:42: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 03:12:42: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 03:12:43: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 03:12:43: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 03:12:43: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:12:43: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 03:12:43: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:12:44: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 03:12:44: Data presence for pb.mag_rtn_4sa (post-advanced-save, populated) - PASSED: pb.mag_rtn_4sa (post-advanced-save, populated) has 2746 data points.
+07-May-25 03:12:44: Internal consistency for pb.mag_rtn_4sa (post-advanced-save, populated) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 03:14:26: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:14:54: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 03:14:54: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:14:54: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 03:14:54: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 03:14:54: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 03:14:54: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:14:54: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 03:14:54: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:14:54: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:14:54: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 03:14:54: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 03:14:54: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:14:54: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 03:14:54: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 03:14:54: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 03:15:05: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 03:15:05: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 03:15:05: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:15:05: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 03:15:05: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:15:06: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 03:15:06: Data presence for pb.mag_rtn_4sa (post-advanced-save, populated) - PASSED: pb.mag_rtn_4sa (post-advanced-save, populated) has 2746 data points.
+07-May-25 03:15:06: Internal consistency for pb.mag_rtn_4sa (post-advanced-save, populated) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 03:18:07: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:18:10: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 03:18:10: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:18:10: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 03:18:10: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 03:18:10: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 03:18:10: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:18:10: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 03:18:10: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:18:10: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:18:10: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 03:18:10: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 03:18:10: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:18:10: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 03:18:10: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 03:18:10: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 03:18:11: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 03:18:11: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 03:18:11: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:18:11: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 03:18:11: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:18:12: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 03:18:12: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 03:18:12: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 03:22:11: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:22:14: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 03:22:14: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:22:14: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 03:22:14: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 03:22:14: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 03:22:14: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:22:14: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 03:22:14: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:22:14: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:22:14: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 03:22:14: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 03:22:14: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:22:14: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 03:22:14: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 03:22:14: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 03:22:15: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 03:22:15: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 03:22:15: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:22:15: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 03:22:15: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:22:16: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 03:22:16: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 03:22:16: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 03:23:59: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:24:41: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:24:58: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 03:24:58: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:24:58: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 03:24:58: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 03:24:58: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 03:24:58: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:24:58: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 03:24:58: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:24:58: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:24:58: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 03:24:58: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 03:24:58: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:24:58: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 03:24:58: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 03:24:58: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 03:24:59: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 03:24:59: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 03:24:59: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:24:59: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 03:24:59: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:24:59: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 03:24:59: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 03:24:59: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 03:26:30: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:26:34: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 03:26:34: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:26:34: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 03:26:34: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 03:26:34: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 03:26:34: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:26:34: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 03:26:34: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:26:34: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:26:34: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 03:26:34: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 03:26:34: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:26:34: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 03:26:34: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 03:26:34: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 03:26:35: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 03:26:35: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 03:26:35: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:26:35: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 03:26:35: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:26:35: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 03:27:15: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:27:19: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 03:27:19: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:27:19: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 03:27:19: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 03:27:19: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 03:27:19: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:27:19: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 03:27:19: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:27:19: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:27:19: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 03:27:19: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 03:27:19: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:27:19: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 03:27:19: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 03:27:19: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 03:27:19: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 03:27:19: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 03:27:19: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:27:19: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 03:27:19: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:27:20: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 03:27:20: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 03:27:20: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 03:32:17: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:32:21: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 03:32:21: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:32:21: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 03:32:21: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 03:32:21: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 03:32:21: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:32:21: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 03:32:21: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:32:21: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:32:21: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 03:32:21: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 03:32:21: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:32:21: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 03:32:21: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 03:32:21: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 03:32:22: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 03:32:22: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 03:32:22: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:32:22: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 03:32:22: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:32:22: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 03:32:22: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 03:32:22: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 03:40:23: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:40:26: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 03:40:26: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:40:26: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 03:40:26: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 03:40:26: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 03:40:26: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:40:26: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 03:40:26: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:40:26: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:40:26: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 03:40:26: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 03:40:26: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:40:26: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 03:40:26: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 03:40:26: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 03:40:27: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 03:40:27: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 03:40:27: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:40:27: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 03:40:27: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:40:28: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 03:40:28: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 03:40:28: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 03:41:54: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:41:57: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 03:41:57: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:41:57: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 03:41:57: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 03:41:57: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 03:41:57: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:41:57: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 03:41:57: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:41:57: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:41:57: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 03:41:57: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 03:41:57: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:41:57: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 03:41:57: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 03:41:57: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 03:41:58: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 03:41:58: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 03:41:58: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:41:58: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 03:41:58: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:41:59: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 03:41:59: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 03:41:59: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 03:43:25: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:46:17: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:46:18: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 03:46:18: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:46:18: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 03:46:18: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 03:46:18: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 03:46:18: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:46:18: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 03:46:18: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:46:18: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:46:18: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 03:46:18: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 03:46:18: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:46:18: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 03:46:18: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 03:46:18: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 03:50:39: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:50:40: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 03:50:40: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:50:40: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 03:50:40: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 03:50:40: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 03:50:40: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:50:40: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 03:50:40: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:50:40: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:50:40: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 03:50:40: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 03:50:40: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:50:40: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 03:50:40: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 03:50:40: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 03:50:43: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 03:50:43: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 03:50:43: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:50:43: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 03:50:43: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:50:43: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 03:50:43: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 03:50:43: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 03:54:40: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:54:41: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 03:54:41: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:54:41: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 03:54:41: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 03:54:41: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 03:54:41: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:54:41: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 03:54:41: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:54:41: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:54:41: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 03:54:41: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 03:54:41: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:54:41: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 03:54:41: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 03:54:41: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 03:54:41: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 03:54:41: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 03:54:41: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 03:54:41: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 03:54:41: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 03:54:41: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 03:54:41: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 03:54:41: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 04:20:49: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:20:50: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 04:20:50: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:20:50: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 04:20:50: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 04:20:50: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 04:20:50: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:20:50: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 04:20:50: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:20:50: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:20:50: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 04:20:50: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 04:20:50: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:20:50: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 04:20:50: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 04:20:50: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 04:20:50: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 04:20:50: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 04:20:50: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:20:50: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 04:20:50: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:20:50: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 04:20:50: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 04:20:50: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 04:22:13: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:22:14: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 04:22:14: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:22:14: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 04:22:14: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 04:22:14: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 04:22:14: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:22:14: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 04:22:14: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:22:14: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:22:14: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 04:22:14: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 04:22:14: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:22:14: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 04:22:14: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 04:22:14: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 04:22:14: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 04:22:14: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 04:22:14: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:22:14: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 04:22:14: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:22:14: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 04:22:14: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 04:22:15: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 04:23:39: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:23:40: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 04:23:40: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:23:40: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 04:23:40: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 04:23:40: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 04:23:40: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:23:40: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 04:23:40: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:23:40: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:23:40: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 04:23:40: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 04:23:40: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:23:40: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 04:23:40: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 04:23:40: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 04:23:40: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 04:23:40: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 04:23:40: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:23:40: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 04:23:40: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:23:40: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 04:23:40: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 04:23:41: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 04:29:50: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:29:51: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 04:29:51: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:29:51: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 04:29:51: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 04:29:51: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 04:29:51: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:29:51: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 04:29:51: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:29:51: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:29:51: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 04:29:51: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 04:29:51: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:29:51: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 04:29:51: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 04:29:51: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 04:29:51: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 04:29:51: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 04:29:51: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:29:51: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 04:29:51: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:29:52: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 04:29:52: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 04:29:52: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 04:31:40: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:31:42: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 04:31:42: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 5492 data points.
+07-May-25 04:31:42: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: Internally consistent with 5492 data points and all checks passed.
+07-May-25 04:31:42: Instance state after population in save (detailed) - PASSED: Instance (from cubby) should be populated for all specified tranges and be internally consistent.
+07-May-25 04:31:42: Advanced snapshot file data_snapshots/test_advanced_snapshot_mag_rtn_4sa.pkl created - PASSED: Main advanced snapshot file should exist.
+07-May-25 04:31:53: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:31:54: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 04:31:54: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:31:54: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 04:31:54: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 04:31:54: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 04:31:54: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:31:54: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 04:31:54: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:31:54: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:31:54: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 04:31:54: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 04:31:54: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:31:54: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 04:31:54: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 04:31:54: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 04:31:54: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 04:31:54: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 04:31:54: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:31:54: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 04:31:54: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:31:55: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 04:31:55: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 04:31:55: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 04:39:48: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:39:50: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 04:39:50: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 5492 data points.
+07-May-25 04:39:50: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: Internally consistent with 5492 data points and all checks passed.
+07-May-25 04:39:50: Instance state after population in save (detailed) - PASSED: Instance (from cubby) should be populated for all specified tranges and be internally consistent.
+07-May-25 04:39:50: Advanced snapshot file data_snapshots/test_advanced_snapshot_mag_rtn_4sa.pkl created - PASSED: Main advanced snapshot file should exist.
+07-May-25 04:39:54: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:39:56: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 04:39:56: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 5492 data points.
+07-May-25 04:39:56: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: Internally consistent with 5492 data points and all checks passed.
+07-May-25 04:39:56: Instance state after population in save (detailed) - PASSED: Instance (from cubby) should be populated for all specified tranges and be internally consistent.
+07-May-25 04:39:56: Advanced snapshot file data_snapshots/test_advanced_snapshot_mag_rtn_4sa.pkl created - PASSED: Main advanced snapshot file should exist.
+07-May-25 04:40:01: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:40:02: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 04:40:02: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:40:02: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 04:40:02: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 04:40:02: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 04:40:02: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:40:02: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 04:40:02: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:40:02: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:40:02: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 04:40:02: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 04:40:02: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:40:02: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 04:40:02: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 04:40:02: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 04:40:02: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 04:40:02: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 04:40:02: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:40:02: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 04:40:02: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:40:03: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 04:40:03: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 04:40:03: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 04:43:39: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:44:12: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:44:14: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 04:44:14: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 5492 data points.
+07-May-25 04:44:14: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: Internally consistent with 5492 data points and all checks passed.
+07-May-25 04:44:14: Instance state after population in save (detailed) - PASSED: Instance (from cubby) should be populated for all specified tranges and be internally consistent.
+07-May-25 04:44:14: Advanced snapshot file data_snapshots/test_advanced_snapshot_mag_rtn_4sa.pkl created - PASSED: Main advanced snapshot file should exist.
+07-May-25 04:44:24: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:44:25: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 04:44:25: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:44:25: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 04:44:25: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 04:44:25: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 04:44:25: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:44:25: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 04:44:25: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:44:25: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:44:25: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 04:44:25: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 04:44:25: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:44:25: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 04:44:25: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 04:44:25: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 04:44:25: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 04:44:25: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 04:44:25: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:44:25: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 04:44:25: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:44:26: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 04:44:26: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 04:44:26: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 04:45:37: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:45:39: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 04:45:39: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 5492 data points.
+07-May-25 04:45:39: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: Internally consistent with 5492 data points and all checks passed.
+07-May-25 04:45:39: Instance state after population in save (detailed) - PASSED: Instance (from cubby) should be populated for all specified tranges and be internally consistent.
+07-May-25 04:45:39: Advanced snapshot file data_snapshots/test_advanced_snapshot_mag_rtn_4sa.pkl created - PASSED: Main advanced snapshot file should exist.
+07-May-25 04:45:48: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:45:49: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 04:45:49: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:45:49: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 04:45:49: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 04:45:49: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 04:45:49: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:45:49: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 04:45:49: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:45:49: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:45:49: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 04:45:49: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 04:45:49: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:45:49: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 04:45:49: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 04:45:49: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 04:45:49: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 04:45:49: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 04:45:49: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:45:49: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 04:45:49: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:45:50: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 04:45:50: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 04:45:50: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 04:46:56: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:46:56: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 04:46:56: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:46:56: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 04:46:56: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 04:46:56: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 04:46:56: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:46:56: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 04:46:56: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:46:56: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:46:56: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 04:46:56: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 04:46:56: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:46:56: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 04:46:56: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 04:46:56: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 04:46:57: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 04:46:57: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 04:46:57: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:46:57: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 04:46:57: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:46:57: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 04:46:57: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 04:46:57: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 04:47:52: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:47:53: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 04:47:53: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:47:53: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 04:47:53: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 04:47:53: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 04:47:53: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:47:53: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 04:47:53: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:47:53: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:47:53: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 04:47:53: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 04:47:53: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:47:53: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 04:47:53: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 04:47:53: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 04:47:53: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 04:47:53: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 04:47:53: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 04:47:53: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 04:47:53: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 04:47:54: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 04:47:54: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 04:47:54: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 05:11:25: /opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/numpy/core/fromnumeric.py:3504: RuntimeWarning: Mean of empty slice.
+  return _methods._mean(a, axis=axis, dtype=dtype,
+
+07-May-25 05:12:48: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 05:12:49: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 05:12:49: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 05:12:49: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 05:12:49: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 05:12:49: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 05:12:49: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 05:12:49: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 05:12:49: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 05:12:49: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 05:12:49: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 05:12:49: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 05:12:49: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 05:12:49: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 05:12:49: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 05:12:49: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 05:12:49: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 05:12:49: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 05:12:49: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 05:12:49: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 05:12:49: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 05:12:50: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 05:12:50: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 05:12:50: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 05:13:13: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 05:13:14: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 05:13:14: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 05:13:14: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 05:13:14: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 05:13:14: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 05:13:14: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 05:13:14: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 05:13:14: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 05:13:14: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 05:13:14: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 05:13:14: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 05:13:14: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 05:13:14: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 05:13:14: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 05:13:14: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 05:13:14: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 05:13:14: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 05:13:14: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 05:13:14: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 05:13:14: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 05:13:15: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 05:13:15: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 05:13:15: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 05:15:00: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 05:15:00: Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+07-May-25 05:15:00: Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 05:15:00: Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+07-May-25 05:15:00: Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+07-May-25 05:15:00: Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+07-May-25 05:15:00: Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 05:15:00: Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+07-May-25 05:15:00: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 05:15:00: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 05:15:00: Snapshot load operation - PASSED: load_data_snapshot should return True.
+07-May-25 05:15:00: Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+07-May-25 05:15:00: Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 05:15:00: Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+07-May-25 05:15:00: DataCubby state post-load - PASSED: DataCubby state should be correct. 
+07-May-25 05:15:00: Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+07-May-25 05:15:00: Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+07-May-25 05:15:00: Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+07-May-25 05:15:00: Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+07-May-25 05:15:00: Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+07-May-25 05:15:00: Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+07-May-25 05:15:01: Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+07-May-25 05:15:01: Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+07-May-25 05:15:01: Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).
+07-May-25 06:10:57: /Users/robertalexander/GitHub/Plotbot/plotbot/showda_holes.py:372: UserWarning: Discarding nonzero nanoseconds in conversion.
+  current_dt_time = current_pd_time.to_pydatetime() # Convert to standard datetime for comparison
+
+07-May-25 06:15:24: /Users/robertalexander/GitHub/Plotbot/plotbot/showda_holes.py:374: UserWarning: Discarding nonzero nanoseconds in conversion.
+  current_dt_time = current_pd_time.to_pydatetime() # Convert to standard datetime for comparison
+
+07-May-25 06:15:35: /Users/robertalexander/GitHub/Plotbot/plotbot/showda_holes.py:374: UserWarning: Discarding nonzero nanoseconds in conversion.
+  current_dt_time = current_pd_time.to_pydatetime() # Convert to standard datetime for comparison
+
+07-May-25 06:16:11: /Users/robertalexander/GitHub/Plotbot/plotbot/showda_holes.py:374: UserWarning: Discarding nonzero nanoseconds in conversion.
+  current_dt_time = current_pd_time.to_pydatetime() # Convert to standard datetime for comparison
+
+07-May-25 06:16:19: /Users/robertalexander/GitHub/Plotbot/plotbot/showda_holes.py:374: UserWarning: Discarding nonzero nanoseconds in conversion.
+  current_dt_time = current_pd_time.to_pydatetime() # Convert to standard datetime for comparison
+
+07-May-25 06:16:25: /Users/robertalexander/GitHub/Plotbot/plotbot/showda_holes.py:374: UserWarning: Discarding nonzero nanoseconds in conversion.
+  current_dt_time = current_pd_time.to_pydatetime() # Convert to standard datetime for comparison
+
+07-May-25 06:16:53: /Users/robertalexander/GitHub/Plotbot/plotbot/showda_holes.py:374: UserWarning: Discarding nonzero nanoseconds in conversion.
+  current_dt_time = current_pd_time.to_pydatetime() # Convert to standard datetime for comparison
+
+07-May-25 06:17:26: /Users/robertalexander/GitHub/Plotbot/plotbot/showda_holes.py:374: UserWarning: Discarding nonzero nanoseconds in conversion.
+  current_dt_time = current_pd_time.to_pydatetime() # Convert to standard datetime for comparison
+
+07-May-25 06:20:18: /Users/robertalexander/GitHub/Plotbot/plotbot/showda_holes.py:374: UserWarning: Discarding nonzero nanoseconds in conversion.
+  current_dt_time = current_pd_time.to_pydatetime() # Convert to standard datetime for comparison
+
+07-May-25 06:20:32: /Users/robertalexander/GitHub/Plotbot/plotbot/showda_holes.py:374: UserWarning: Discarding nonzero nanoseconds in conversion.
+  current_dt_time = current_pd_time.to_pydatetime() # Convert to standard datetime for comparison
+
+07-May-25 06:20:59: /Users/robertalexander/GitHub/Plotbot/plotbot/showda_holes.py:374: UserWarning: Discarding nonzero nanoseconds in conversion.
+  current_dt_time = current_pd_time.to_pydatetime() # Convert to standard datetime for comparison
+
+07-May-25 06:21:21: /Users/robertalexander/GitHub/Plotbot/plotbot/showda_holes.py:374: UserWarning: Discarding nonzero nanoseconds in conversion.
+  current_dt_time = current_pd_time.to_pydatetime() # Convert to standard datetime for comparison
+
+07-May-25 07:35:21: /opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/numpy/core/fromnumeric.py:3504: RuntimeWarning: Mean of empty slice.
+  return _methods._mean(a, axis=axis, dtype=dtype,
+
+07-May-25 07:36:17: /opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/numpy/core/fromnumeric.py:3504: RuntimeWarning: Mean of empty slice.
+  return _methods._mean(a, axis=axis, dtype=dtype,
+
+07-May-25 07:57:34: /opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/numpy/core/fromnumeric.py:3504: RuntimeWarning: Mean of empty slice.
+  return _methods._mean(a, axis=axis, dtype=dtype,
+
+07-May-25 08:19:46: /opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/numpy/core/fromnumeric.py:3504: RuntimeWarning: Mean of empty slice.
+  return _methods._mean(a, axis=axis, dtype=dtype,
+

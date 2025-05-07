@@ -1,0 +1,24 @@
+INFO     root:test_pilot.py:93 Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+INFO     root:test_pilot.py:93 Data presence for pb.mag_rtn_4sa (pre-save) - PASSED: pb.mag_rtn_4sa (pre-save) has 2746 data points.
+INFO     root:test_pilot.py:93 Internal consistency for pb.mag_rtn_4sa (pre-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+INFO     root:test_pilot.py:93 Snapshot save operation - PASSED: save_data_snapshot should return True on success.
+INFO     root:test_pilot.py:93 Snapshot file data_snapshots/test_simple_snapshot_mag_rtn_4sa.pkl created - PASSED: Snapshot file should exist after saving.
+INFO     root:test_pilot.py:93 Data presence for pb.mag_rtn_4sa (post-save) - PASSED: pb.mag_rtn_4sa (post-save) has 2746 data points.
+INFO     root:test_pilot.py:93 Internal consistency for pb.mag_rtn_4sa (post-save) - PASSED: Internally consistent with 2746 data points and all checks passed.
+INFO     root:test_pilot.py:93 Instance state post-save (detailed) - PASSED: Instance data should remain consistent and valid after save operation.
+INFO     root:test_pilot.py:93 Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+INFO     root:test_pilot.py:93 Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+INFO     root:test_pilot.py:93 Snapshot load operation - PASSED: load_data_snapshot should return True.
+INFO     root:test_pilot.py:93 Data presence for pb.mag_rtn_4sa (post-load) - PASSED: pb.mag_rtn_4sa (post-load) has 2746 data points.
+INFO     root:test_pilot.py:93 Internal consistency for pb.mag_rtn_4sa (post-load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+INFO     root:test_pilot.py:93 Instance state after load (detailed) - PASSED: Data from snapshot should be loaded, and instance internally consistent.
+INFO     root:test_pilot.py:93 DataCubby state post-load - PASSED: DataCubby state should be correct. 
+INFO     root:test_pilot.py:93 Global Tracker state post-load - PASSED: Global Tracker state should be correct. 
+INFO     root:test_pilot.py:93 Plotbot call with loaded data - PASSED: Plotting loaded data should succeed.
+INFO     root:test_pilot.py:93 Data presence for pb.mag_rtn_4sa (post-plot, after load) - PASSED: pb.mag_rtn_4sa (post-plot, after load) has 2746 data points.
+INFO     root:test_pilot.py:93 Internal consistency for pb.mag_rtn_4sa (post-plot, after load) - PASSED: Internally consistent with 2746 data points and all checks passed.
+INFO     root:test_pilot.py:93 Final instance state after plotting loaded data - PASSED: Instance should remain consistent after plotting snapshot data.
+INFO     root:test_pilot.py:93 Empty state for pb.mag_rtn_4sa (post-reset) - PASSED: Instance is consistently empty, as expected.
+INFO     root:test_pilot.py:93 Advanced snapshot save operation - PASSED: save_data_snapshot should return True.
+INFO     root:test_pilot.py:93 Data presence for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - PASSED: pb.mag_rtn_4sa (from cubby after save_data_snapshot) has 2746 data points.
+ERROR    root:test_pilot.py:95 Internal consistency for pb.mag_rtn_4sa (from cubby after save_data_snapshot) - FAILED: Instance has inconsistencies: datetime_array overall span issue: actual_min_time 2021-10-26T02:15:00.189282304 vs expected_min 2021-10-26T02:00:00.000000000 (expected [2021-10-26T02:00:00.000000000, 2021-10-26T02:25:00.000000000]).

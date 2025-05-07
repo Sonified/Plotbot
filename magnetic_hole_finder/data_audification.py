@@ -34,28 +34,30 @@ from datetime import datetime, timedelta
 from tkinter import Tk, filedialog
 import pickle #for saving data locally
 import time
+from dateutil.parser import parse as dateutil_parse
 
 # IPython Widgets
 import ipywidgets as widgets
 from IPython.display import display
 
+# Import print_manager directly
+from plotbot import print_manager
 
-# Function to convert a date to the desired format, now including milliseconds
+# Initialize print_manager settings (optional, can be configured elsewhere)
+print_manager.show_error = True
+
+# Function to convert a date to the desired format
 def convert_to_trange_format(date_str):
+    """Converts a flexible date string to 'YYYY-MM-DD/HH:MM:SS.sss' format."""
     try:
-        # Try to parse the date assuming it has microseconds (up to milliseconds precision)
-        date_obj = datetime.strptime(date_str, '%Y-%m-%d/%H:%M:%S.%f')
-    except ValueError:
-        # If the microsecond format fails, try without microseconds
-        try:
-            date_obj = datetime.strptime(date_str, '%Y-%m-%d/%H:%M:%S')
-        except ValueError:
-            # Handle any other date string formats here if needed
-            raise ValueError(f"time data {date_str} does not match any expected format")
-
-    return date_obj.strftime('%Y-%m-%d/%H:%M:%S.%f')[:-3]  # Return string with milliseconds
-
-
+        # Use dateutil.parser.parse for flexible parsing
+        date_obj = dateutil_parse(date_str)
+    except Exception as e:
+        # If parsing fails, raise a ValueError with a more informative message
+        raise ValueError(f"time data '{date_str}' does not match any expected format and could not be parsed by dateutil.parser. Error: {e}") from e
+    
+    # Ensure the output is always in the 'YYYY-MM-DD/HH:MM:SS.sss' format
+    return date_obj.strftime('%Y-%m-%d/%H:%M:%S.%f')[:-3]
 
 def audify_high_res_mag_data_without_plot(rangeStart, rangeStop, save_dir, fsAud, sub_save_dir):
     global trange, trange_start, trange_stop

@@ -1,4 +1,13 @@
 # test_pilot.py - Space-themed pytest framework for Plotbot
+import logging
+
+# Set up logging (if not already set by test file)
+logging.basicConfig(
+    filename="tests/core/logs/test_data_loading.txt",  # Default; can be overridden by test file
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 try:
     import pytest
     import time
@@ -80,9 +89,13 @@ try:
 
     def system_check(name, condition, message):
         """Check a system condition"""
-        if not condition:
+        if condition:
+            logging.info(f"{name} - PASSED: {message}")
+        else:
+            logging.error(f"{name} - FAILED: {message}")
             print(colored(f"🔴 FAILURE: {message}", "red"))
             assert condition, message
+        print(f"{name} - {'PASSED' if condition else 'FAILED'}: {message}")
         return True
 
     # Function to run tests in Jupyter notebooks

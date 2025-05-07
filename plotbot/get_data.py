@@ -14,7 +14,7 @@ from .data_cubby import data_cubby
 from .data_download_berkeley import download_berkeley_data
 from .data_download_pyspedas import download_spdf_data
 import plotbot
-from .data_import import import_data_function
+from .data_import import import_data_function, DataObject
 from .data_classes.psp_data_types import data_types
 from .data_classes.psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
 from .data_classes.psp_electron_classes import epad, epad_hr
@@ -76,6 +76,19 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
     # Skip refresh check after loading from pickle
     get_data(trange, pb.proton_fits.abs_qz_p, skip_refresh_check=True)
     """
+    pm = print_manager # Local alias
+    # STRATEGIC PRINT GET_DATA_ENTRY
+    if variables:
+        first_var_spec = variables[0]
+        # Check if it's one of our data class instances (has class_name and datetime_array)
+        if hasattr(first_var_spec, 'class_name') and hasattr(first_var_spec, 'data_type') and hasattr(first_var_spec, 'datetime_array'):
+            dt_len_entry = len(first_var_spec.datetime_array) if first_var_spec.datetime_array is not None else "None"
+            min_dt_entry = first_var_spec.datetime_array[0] if dt_len_entry not in ["None", 0] else "N/A"
+            max_dt_entry = first_var_spec.datetime_array[-1] if dt_len_entry not in ["None", 0] else "N/A"
+            pm.debug(f"[GET_DATA_ENTRY] Instance {getattr(first_var_spec, 'data_type', 'N/A')} (ID: {id(first_var_spec)}) passed in. Len: {dt_len_entry}, Min: {min_dt_entry}, Max: {max_dt_entry}")
+        elif isinstance(first_var_spec, str): # It's a data_type string
+            pm.debug(f"[GET_DATA_ENTRY] Called with data_type string: {first_var_spec}")
+
     # Validate time range and ensure UTC timezone
     try:
         # Use dateutil.parser.parse instead of strptime - much more flexible!

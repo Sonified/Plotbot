@@ -69,7 +69,7 @@ class mag_rtn_4sa_class:
         print_manager.datacubby("\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
         
-        # Store current state before update (including any modified ploptions)
+        # Store current state before update (including any modified ploptions) ⭐️THIS print can go inside the data cubby
         current_state = {}
         for subclass_name in self.raw_data.keys():                             # Use keys()
             if hasattr(self, subclass_name):
@@ -143,6 +143,9 @@ class mag_rtn_4sa_class:
            
             # Do not set the attrib
     def calculate_variables(self, imported_data):
+        # STRATEGIC PRINT I
+        print_manager.debug(f"[MAG_CLASS_DEBUG I] calculate_variables called for instance ID: {id(self)}")
+
         print(f"*** MAG_CLASS_CALCVARS (mag_rtn_4sa_class) ID:{id(self)}: imported_data ID: {id(imported_data) if imported_data is not None else 'None'}, .data ID: {id(imported_data.data) if imported_data is not None and hasattr(imported_data, 'data') and imported_data.data is not None else 'N/A'} ***")
         if hasattr(imported_data, 'data') and isinstance(imported_data.data, dict):
             print(f"    Available keys in imported_data.data for CALCVARS: {list(imported_data.data.keys())}")
@@ -152,6 +155,10 @@ class mag_rtn_4sa_class:
         self.time = np.asarray(imported_data.times)
         self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time))        
         
+        # STRATEGIC PRINT J
+        dt_len_in_calc_vars = len(self.datetime_array) if self.datetime_array is not None else "None"
+        print_manager.debug(f"[MAG_CLASS_DEBUG J] Instance ID: {id(self)} AFTER self.datetime_array assignment in calculate_variables. Length: {dt_len_in_calc_vars}")
+
         print_manager.debug("self.datetime_array type after conversion: {type(self.datetime_array)}")
         print_manager.debug("First element type: {type(self.datetime_array[0])}")
         
@@ -190,6 +197,10 @@ class mag_rtn_4sa_class:
     
     def set_ploptions(self):
         """Create plot managers for each component with default options"""
+        # STRATEGIC PRINT K
+        dt_len_in_set_ploptions = len(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else "None_or_NoAttr"
+        print_manager.debug(f"[MAG_CLASS_DEBUG K] set_ploptions called for instance ID: {id(self)}. self.datetime_array len: {dt_len_in_set_ploptions}")
+
         print_manager.variable_testing(f"Setting up plot options for mag_rtn_4sa variables")
         
         self.all = plot_manager(

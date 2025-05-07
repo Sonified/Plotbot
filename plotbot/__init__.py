@@ -118,6 +118,9 @@ from .multiplot_options import MultiplotOptions
 from .get_data import get_data
 from . import data_snapshot  # Import data_snapshot
 
+# --- Import the function from showda_holes.py ---
+from .showda_holes import showda_holes
+
 # --- CLASS_NAME_MAPPING for test utilities and data integrity checks ---
 CLASS_NAME_MAPPING = {
     'mag_rtn_4sa': {
@@ -210,7 +213,8 @@ __all__ = [
     'time_clip',      # ADDED time_clip helper function
     'config',         # ADDED config to __all__
     'data_snapshot',  # Add data_snapshot to __all__
-    'CLASS_NAME_MAPPING'  # Add CLASS_NAME_MAPPING to __all__
+    'CLASS_NAME_MAPPING',  # Add CLASS_NAME_MAPPING to __all__
+    'showda_holes'      # Add showda_holes to __all__
 ]
 
 # Colors for printing
@@ -220,8 +224,8 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vMajor.Minor (Minor increments by 0.01 usually)
-__version__ = "2025_05_07_v2.26"
-__commit_message__ = "Fix: Multiple time range support in save_data_snapshot function (v2.26)"
+__version__ = "2025_05_07_v2.27"
+__commit_message__ = "Docs: Log snapshot notes & tag Parker Four presentation version (v2.27)"
 
 # Print version information on import
 print(f"   Version: {__version__}")
