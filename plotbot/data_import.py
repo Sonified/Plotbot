@@ -559,13 +559,13 @@ def import_data_function(trange, data_type):
         print_manager.debug(f"*** IMPORT_DATA_DEBUG (HAM Path) for data_type '{data_type}' (originally requested: '{data_type_requested_at_start}') ***")
         if data_obj is not None: 
             if hasattr(data_obj, 'times') and data_obj.times is not None:
-                print_manager.debug(f"    DataObject.times length: {len(data_obj.times)}, dtype: {data_obj.times.dtype if hasattr(data_obj.times, 'dtype') else type(data_obj.times)}")
+                print_manager.time_output("import_data_function", f"    DataObject.times length: {len(data_obj.times)}, dtype: {data_obj.times.dtype if hasattr(data_obj.times, 'dtype') else type(data_obj.times)}")
             else:
-                print_manager.debug(f"    DataObject.times is None or missing.")
+                print_manager.time_output("import_data_function", f"    DataObject.times is None or missing.")
             if hasattr(data_obj, 'data') and isinstance(data_obj.data, dict):
-                print_manager.debug(f"    DataObject.data keys: {list(data_obj.data.keys())}")
+                print_manager.time_output("import_data_function", f"    DataObject.data keys: {list(data_obj.data.keys())}")
             else:
-                print_manager.debug(f"    DataObject.data is None or not a dict.")
+                print_manager.time_output("import_data_function", f"    DataObject.data is None or not a dict.")
         else:
             print_manager.debug(f"    data_obj is None at final diagnostic print (HAM Path).")
         # === END DIAGNOSTIC PRINT ===
@@ -576,25 +576,25 @@ def import_data_function(trange, data_type):
     else:
         # --- Existing CDF Processing Logic ---
         print(f"*** IDF_DEBUG: Entered Standard CDF Processing for {data_type} ***")
-        print_manager.debug(f"\n=== Starting import for {data_type} (CDF) ===")
+        print_manager.time_output("import_data_function", f"\n=== Starting import for {data_type} (CDF) ===")
 
         # Format dates for TT2000 conversion (needed for CDF processing)
         try:
-            print(f"*** IDF_DEBUG: About to compute start_tt2000 for start_time: {start_time} ***")
+            print_manager.time_output("import_data_function", f"*** IDF_DEBUG: About to compute start_tt2000 for start_time: {start_time} ***")
             start_tt2000 = cdflib.cdfepoch.compute_tt2000(
                 [start_time.year, start_time.month, start_time.day,
                  start_time.hour, start_time.minute, start_time.second,
                  int(start_time.microsecond/1000)]
             )
-            print(f"*** IDF_DEBUG: Computed start_tt2000: {start_tt2000}. About to compute end_tt2000 for end_time: {end_time} ***")
+            print_manager.time_output("import_data_function", f"*** IDF_DEBUG: Computed start_tt2000: {start_tt2000}. About to compute end_tt2000 for end_time: {end_time} ***")
             end_tt2000 = cdflib.cdfepoch.compute_tt2000(
                 [end_time.year, end_time.month, end_time.day,
                  end_time.hour, end_time.minute, end_time.second,
                  int(end_time.microsecond/1000)]
             )
-            print(f"*** IDF_DEBUG: Computed end_tt2000: {end_tt2000} ***")
+            print_manager.time_output("import_data_function", f"*** IDF_DEBUG: Computed end_tt2000: {end_tt2000} ***")
         except Exception as e_tt2000_conv:
-            print(f"*** IDF_DEBUG: ERROR during start/end TT2000 conversion for req range: {e_tt2000_conv} ***")
+            print_manager.time_output("import_data_function", f"*** IDF_DEBUG: ERROR during start/end TT2000 conversion for req range: {e_tt2000_conv} ***")
             return None 
 
         try:
@@ -603,8 +603,8 @@ def import_data_function(trange, data_type):
             end_tt2000_dt_val = cdflib.cdfepoch.to_datetime(end_tt2000)[0]
             print_manager.debug(f"  Requested datetime range (from TT2000 conversion): {start_tt2000_dt_val} to {end_tt2000_dt_val}")
         except Exception as e_to_datetime_conv:
-            print(f"*** IDF_DEBUG: ERROR converting TT2000 req range to datetime: {e_to_datetime_conv} ***")
-            print(f"      start_tt2000 was: {start_tt2000}, end_tt2000 was: {end_tt2000}")
+            print_manager.time_output("import_data_function", f"*** IDF_DEBUG: ERROR converting TT2000 req range to datetime: {e_to_datetime_conv} ***")
+            print_manager.time_output("import_data_function", f"      start_tt2000 was: {start_tt2000}, end_tt2000 was: {end_tt2000}")
             return None
 
         variables = config.get('data_vars', [])     # Get list of variables to extract

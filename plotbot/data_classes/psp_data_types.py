@@ -80,7 +80,7 @@ data_types = {
         'data_vars': [
             'VEL_RTN_SUN', 'DENS', 'TEMP', 'MAGF_INST', 'T_TENSOR_INST',
             'EFLUX_VS_ENERGY', 'EFLUX_VS_THETA', 'EFLUX_VS_PHI',
-            'ENERGY_VALS', 'THETA_VALS', 'PHI_VALS'
+            'ENERGY_VALS', 'THETA_VALS', 'PHI_VALS', 'SUN_DIST'
         ],
     },
     'spi_af00_L3_mom': {  # High-resolution proton data
@@ -139,3 +139,14 @@ data_types = {
         ]
     }
 }
+
+# Increment this version number each time significant changes are pushed.
+# Example: __version__ = "YYYY_MM_DD_vX.XX"
+__version__ = "2025_05_12_v2.29"
+
+# This commit message will be used in the git commit and the console log.
+commit_message = "Add SUN_DIST to spi_sf00_l3_mom data_vars"
+
+# Print version information on import
+print(f"Plotbot Version: {__version__}")
+print(f"Commit Message: {commit_message}")

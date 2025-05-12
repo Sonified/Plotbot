@@ -1,8 +1,11 @@
+# magnetic_hole_finder/magnetic_hole_finder_core.py
+
 import numpy as np
 import pandas as pd
 from datetime import datetime
 import json # For saving settings to JSON
 import os   # For path joining
+import re   # For regular expressions
 
 # Imports from your existing magnetic_hole_finder package
 from .asymmetry_calc import process_asymmetry 
@@ -295,6 +298,20 @@ def detect_magnetic_holes_and_generate_outputs(trange, base_save_dir: str, setti
     hole_counter_core.clear()
 
     print(f"Starting analysis for trange: {trange}. Download_only mode: {settings.download_only}")
+    
+    # NEW CODE: Clean up the base_save_dir to ensure no duplication
+    # Check if we're reusing a path that already contains encounter-specific information
+    # Look for encounter pattern like "/E15/E15_PSP_FIELDS_YYYY-MM-DD"
+    encounter_pattern = r'/E\d+\/E\d+_PSP_FIELDS_\d{4}-\d{2}-\d{2}'
+    if re.search(encounter_pattern, base_save_dir):
+        # Extract the base part before encounter info
+        base_parts = base_save_dir.split('/E')
+        if len(base_parts) > 1:
+            # Take just the first part (the real base directory)
+            clean_base_dir = base_parts[0]
+            print(f"⚠️ Detected reused path. Cleaning base_save_dir from: {base_save_dir} to: {clean_base_dir}")
+            base_save_dir = clean_base_dir
+    
     # 1. Setup output directory for this specific run
     sub_save_dir = setup_output_directory(trange, base_save_dir)
     print(f"✅ Outputs for this run will be saved in: {sub_save_dir}")

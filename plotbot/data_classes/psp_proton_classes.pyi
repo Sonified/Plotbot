@@ -52,6 +52,7 @@ class proton_class:
     pressure: plot_manager
     density: plot_manager
     bmag: plot_manager
+    sun_dist_rsun: plot_manager
     # Add centroids if they are assigned plot_managers
     # centroids_spi_nrg: plot_manager 
     # centroids_spi_theta: plot_manager

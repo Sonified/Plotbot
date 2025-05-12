@@ -35,7 +35,8 @@ class proton_class:
             'temperature': None,
             'pressure': None,
             'density': None,
-            'bmag': None
+            'bmag': None,
+            'sun_dist_rsun': None
         })
         object.__setattr__(self, 'datetime_array', None)
         object.__setattr__(self, 'times_mesh', [])
@@ -149,7 +150,7 @@ class proton_class:
 
         # Allow setting known attributes
         print_manager.debug(f"Setting attribute: {name} with value: {value}")
-        if name in ['datetime_array', 'raw_data', 'time', 'field', 'mag_field', 'temp_tensor', 'energy_flux', 'theta_flux', 'phi_flux', 'energy_vals', 'theta_vals', 'phi_vals', 'times_mesh', 'times_mesh_angle'] or name in self.raw_data:
+        if name in ['datetime_array', 'raw_data', 'time', 'field', 'mag_field', 'temp_tensor', 'energy_flux', 'theta_flux', 'phi_flux', 'energy_vals', 'theta_vals', 'phi_vals', 'times_mesh', 'times_mesh_angle', 'data_type'] or name in self.raw_data:
             super().__setattr__(name, value)
         else:
             # Print friendly error message
@@ -197,6 +198,10 @@ class proton_class:
         pressure_ppar = 1.602E-4 * density * t_par
         pressure_pperp = 1.602E-4 * density * t_perp
         pressure_total = 1.602E-4 * temperature * density
+
+        # Distance from sun - Added from Jaye's version
+        sun_dist_km = imported_data.data['SUN_DIST']
+        sun_dist_rsun = sun_dist_km / 695700.0 # Conversion factor for solar radii
 
         # Get energy flux data
         eflux_v_energy = imported_data.data['EFLUX_VS_ENERGY']
@@ -256,7 +261,8 @@ class proton_class:
             'temperature': temperature,
             'pressure': pressure_total,
             'density': density,
-            'bmag': b_mag
+            'bmag': b_mag,
+            'sun_dist_rsun': sun_dist_rsun
         }
 
     def _calculate_temperature_anisotropy(self):
@@ -695,6 +701,26 @@ class proton_class:
             )
         )
 
+        # Added Sun Distance variable
+        self.sun_dist_rsun = plot_manager(
+            self.raw_data['sun_dist_rsun'],
+            plot_options=ploptions(
+                data_type='spi_sf00_l3_mom',
+                var_name='sun_dist_rsun',
+                class_name='proton',
+                subclass_name='sun_dist_rsun',
+                plot_type='time_series',
+                datetime_array=self.datetime_array,
+                y_label='Sun Distance \n ($R_s$)', # Using solar radii units
+                legend_label='$R_s$',
+                color='goldenrod', # Distinct color for sun distance
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+
     def restore_from_snapshot(self, snapshot_data):
         """
         Restore all relevant fields from a snapshot dictionary/object.
@@ -845,7 +871,7 @@ class proton_hr_class:
 
         # Allow setting known attributes
         print_manager.debug(f"Setting attribute: {name} with value: {value}")
-        if name in ['datetime_array', 'raw_data', 'time', 'field', 'mag_field', 'temp_tensor', 'energy_flux', 'theta_flux', 'phi_flux', 'energy_vals', 'theta_vals', 'phi_vals', 'times_mesh', 'times_mesh_angle', 'data'] or name in self.raw_data:
+        if name in ['datetime_array', 'raw_data', 'time', 'field', 'mag_field', 'temp_tensor', 'energy_flux', 'theta_flux', 'phi_flux', 'energy_vals', 'theta_vals', 'phi_vals', 'times_mesh', 'times_mesh_angle', 'data', 'data_type'] or name in self.raw_data:
             super().__setattr__(name, value)
         else:
             # Print friendly error message
@@ -853,8 +879,7 @@ class proton_hr_class:
             print(f"'{name}' is not a recognized attribute, friend!")
             available_attrs = list(self.raw_data.keys()) if self.raw_data else []
             print(f"Try one of these: {', '.join(available_attrs)}")
-            # Do not set the attrib
-    
+
     def calculate_variables(self, imported_data):
         """Calculate the high-resolution proton parameters and derived quantities."""
         # Extract time and field data
@@ -1000,7 +1025,7 @@ class proton_hr_class:
                 line_style='-'
             )
         )
-    
+        
         self.t_perp = plot_manager(
             self.raw_data['t_perp'],
             plot_options=ploptions(

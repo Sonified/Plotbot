@@ -14,4 +14,12 @@
 - **Version Tag:** `2025_05_12_v2.28`
 - **Commit Message:** `Fix: Correctly slice cached data in magnetic hole finder (v2.28)`
 - **Branch:** `data_cubby_refactor` (Assuming this is the current branch)
-- **Summary:** Pushed fix for magnetic hole finder issue where cached data wasn't being sliced correctly to the requested `trange`. The code now returns only the relevant time slice, whether data is cached or freshly downloaded. 
+- **Summary:** Pushed fix for magnetic hole finder issue where cached data wasn't being sliced correctly to the requested `trange`. The code now returns only the relevant time slice, whether data is cached or freshly downloaded.
+
+## Push: v2.29
+
+- **Version Tag:** `2025_05_12_v2.29`
+- **Commit Message:** `Add SUN_DIST to spi_sf00_l3_mom data_vars (v2.29)`
+- **Summary:** Added `SUN_DIST` to the `data_vars` list for the `spi_sf00_l3_mom` data type in `plotbot/data_classes/psp_data_types.py`.
+
+*(Log remains open for further updates on 2025-05-12)* 
