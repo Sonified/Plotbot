@@ -22,4 +22,10 @@
 - **Commit Message:** `Add SUN_DIST to spi_sf00_l3_mom data_vars (v2.29)`
 - **Summary:** Added `SUN_DIST` to the `data_vars` list for the `spi_sf00_l3_mom` data type in `plotbot/data_classes/psp_data_types.py`.
 
+## Push: v2.30
+
+- **Version Tag:** `2025_05_12_v2.30`
+- **Commit Message:** `Standardize plotbot.ipynb (v2.30)`
+- **Summary:** Pushed updates to `plotbot.ipynb` for standardization.
+
 *(Log remains open for further updates on 2025-05-12)* 

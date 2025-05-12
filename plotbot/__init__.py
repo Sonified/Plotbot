@@ -224,10 +224,10 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vMajor.Minor (Minor increments by 0.01 usually)
-__version__ = "2025_05_12_v2.29"
+__version__ = "2025_05_12_v2.30"
 
 # This commit message will be used in the git commit and the console log.
-__commit_message__ = "Add SUN_DIST to spi_sf00_l3_mom data_vars (v2.29)"
+__commit_message__ = "Standardize plotbot.ipynb (v2.30)"
 
 # Print version information on import
 print(f"   Version: {__version__}")
