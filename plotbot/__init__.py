@@ -224,8 +224,8 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vMajor.Minor (Minor increments by 0.01 usually)
-__version__ = "2025_05_07_v2.27"
-__commit_message__ = "Docs: Log snapshot notes & tag Parker Four presentation version (v2.27)"
+__version__ = "2025_05_12_v2.28"
+__commit_message__ = "Fix: Correctly slice cached data in magnetic hole finder (v2.28)"
 
 # Print version information on import
 print(f"   Version: {__version__}")

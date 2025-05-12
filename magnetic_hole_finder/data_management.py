@@ -109,42 +109,39 @@ def download_and_prepare_high_res_mag_data(trange):
         else:
             pm.status(f"[MH_DM_DEBUG] Instance does NOT have datetime_array attribute.")
 
-        if not hasattr(mag_instance_to_use, 'datetime_array') or mag_instance_to_use.datetime_array is None or len(mag_instance_to_use.datetime_array) == 0:
-            pm.warning(f"Plotbot did NOT populate the global mag_RTN instance for {plotbot_trange}. datetime_array is missing or empty.")
+        # --- ADDED: Explicit Clipping ---
+        # Ensure we are using data ONLY within the extended_trange, even if cache provided more.
+        # The `trange` argument to this function IS the extended_trange.
+        if hasattr(mag_instance_to_use, 'datetime_array') and mag_instance_to_use.datetime_array is not None and len(mag_instance_to_use.datetime_array) > 0:
+            pm.status(f"[MH_DM_DEBUG] Clipping data from instance (ID: {id(mag_instance_to_use)}) to extended_trange: {trange}")
+            
+            from .time_management import clip_to_original_time_range 
+
+            clipped_times, clipped_bmag = clip_to_original_time_range(
+                mag_instance_to_use.datetime_array, 
+                mag_instance_to_use.raw_data.get('bmag'), 
+                trange # Use the `trange` argument passed to this function, which is the extended_trange
+            )
+            _, clipped_br = clip_to_original_time_range(mag_instance_to_use.datetime_array, mag_instance_to_use.raw_data.get('br'), trange)
+            _, clipped_bt = clip_to_original_time_range(mag_instance_to_use.datetime_array, mag_instance_to_use.raw_data.get('bt'), trange)
+            _, clipped_bn = clip_to_original_time_range(mag_instance_to_use.datetime_array, mag_instance_to_use.raw_data.get('bn'), trange)
+            
+            pm.status(f"[MH_DM_DEBUG] Clipping complete. Resulting points: {len(clipped_times) if clipped_times is not None else 'None'}")
+            
+            if clipped_times is None or clipped_bmag is None:
+                pm.error(f"[MH_DM_DEBUG] Clipping resulted in None for times or bmag. Original points: {len(mag_instance_to_use.datetime_array) if mag_instance_to_use.datetime_array is not None else 'None'}. Trange: {trange}")
+                return None, None, None, None, None
+
+            pm.status(f"Successfully prepared MAG data using Plotbot for {trange}. Points: {len(clipped_times)}.")
+            return clipped_times, clipped_br, clipped_bt, clipped_bn, clipped_bmag
+        else:
+            pm.warning("[MH_DM_DEBUG] Cannot perform clipping: Instance lacks valid datetime_array or raw_data.")
+            pm.error("Failed to prepare MAG data (clipping step failed).")
             return None, None, None, None, None
+        # --- END ADDED Clipping ---
 
-        times = mag_instance_to_use.datetime_array 
-        
-        br = mag_instance_to_use.br.data if hasattr(mag_instance_to_use.br, 'data') else np.array([])
-        bt = mag_instance_to_use.bt.data if hasattr(mag_instance_to_use.bt, 'data') else np.array([])
-        bn = mag_instance_to_use.bn.data if hasattr(mag_instance_to_use.bn, 'data') else np.array([])
-        bmag = mag_instance_to_use.bmag.data if hasattr(mag_instance_to_use.bmag, 'data') else np.array([])
-
-        # Basic check if data arrays are populated as expected
-        if len(times) > 0 and (len(br) == 0 and len(bt) == 0 and len(bn) == 0 and len(bmag) == 0) :
-            pm.warning(f"MAG components (br,bt,bn,bmag) are all empty after Plotbot fetch for {plotbot_trange}, though times were found (len: {len(times)}).")
-            # This could happen if .data attributes are not what we expect or components are not populated
-
-        # If bmag is specifically empty but others are not, try to calculate it as a fallback
-        if len(times) > 0 and len(bmag) == 0 and (len(br) == len(times) and len(bt) == len(times) and len(bn) == len(times)) :
-            if np.all(np.isfinite(br)) and np.all(np.isfinite(bt)) and np.all(np.isfinite(bn)) :
-                pm.status(f"Calculating Bmag from components for {plotbot_trange}.")
-                bmag = np.sqrt(br**2 + bt**2 + bn**2)
-            else :
-                pm.warning(f"Could not calculate Bmag: non-finite values in components for {plotbot_trange}.")
-                bmag = np.full(len(times), np.nan) # Ensure bmag has same length as times
-        elif len(times) > 0 and len(bmag) != len(times) :
-             pm.warning(f"Bmag length ({len(bmag)}) does not match times length ({len(times)}). Setting Bmag to NaNs.")
-             bmag = np.full(len(times), np.nan)
-        elif len(times) == 0 :
-            pm.warning(f"No time data loaded for {plotbot_trange}, component arrays will be empty.")
-            br, bt, bn, bmag = np.array([]), np.array([]), np.array([]), np.array([])
-
-        pm.status(f"Successfully prepared MAG data using Plotbot for {plotbot_trange}. Points: {len(times)}.")
-        return times, br, bt, bn, bmag
-
-    except Exception as e :
-        pm.error(f"Exception in download_and_prepare_high_res_mag_data for {plotbot_trange}: {str(e)}")
+    except Exception as e:
+        pm.error(f"An unexpected error occurred in download_and_prepare_high_res_mag_data: {e}")
         import traceback
         pm.error(traceback.format_exc())
         return None, None, None, None, None
