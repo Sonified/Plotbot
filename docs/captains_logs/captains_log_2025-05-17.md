@@ -105,6 +105,12 @@
 
 **Next Steps after this log update:** Push these changes (creation of empty files) and the updated log to GitHub. Then, reset the AI assistant to begin the refactoring with a clean slate, following this plan.
 
+## Push: v2.32
+
+- **Version Tag:** `2025_05_17_v2.32`
+- **Commit Message:** `Refactor: Prepare for psp_mag_classes.py split by creating new files and plan (v2.32)`
+- **Summary:** Created new empty files (`_utils.py`, `psp_mag_rtn_4sa.py`, `psp_mag_rtn.py`, `psp_mag_sc_4sa.py`, `psp_mag_sc.py`) in `plotbot/data_classes/` and documented the detailed refactoring plan in this log. This prepares for splitting the monolithic `psp_mag_classes.py`.
+
 ## Refactor: `psp_mag_classes.pyi` Split
 
 - **Summary:** Split the contents of `plotbot/data_classes/psp_mag_classes.pyi` into new individual stub files:
@@ -120,5 +126,11 @@
 - **Version Tag:** `2025_05_17_v2.33`
 - **Commit Message:** `Refactor: Split psp_mag_classes.pyi into individual stub files (v2.33)`
 - **Summary:** Moved type hint definitions from the monolithic `psp_mag_classes.pyi` to separate files (`psp_mag_rtn_4sa.pyi`, `psp_mag_rtn.pyi`, `psp_mag_sc_4sa.pyi`, `psp_mag_sc.pyi`) and deleted the original. This is part of the larger `psp_mag_classes.py` refactor.
+
+## Push: v2.34
+
+- **Version Tag:** `2025_05_17_v2.34`
+- **Commit Message:** `Docs: Corrected v2.32 entry in captain's log (v2.34)`
+- **Summary:** Pushed a correction to the captain's log to accurately reflect the v2.32 push details. Updated `plotbot/__init__.py` with the new version and commit message.
 
 *(Log remains open for further updates on 2025-05-17)* 
