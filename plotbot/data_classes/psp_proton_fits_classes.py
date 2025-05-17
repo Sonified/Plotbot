@@ -89,6 +89,7 @@ class proton_fits_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'data_type', 'psp_fld_l3_sf0_fit') # Explicitly set data_type
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)

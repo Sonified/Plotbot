@@ -110,6 +110,7 @@ class alpha_fits_class: # Renamed class
         # Use 'time' for TT2000 array, 'datetime_array' for datetime objects
         object.__setattr__(self, 'time', None) 
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'data_type', 'psp_fld_l3_sf1_fit') # Explicitly set data_type
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None

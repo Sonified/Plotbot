@@ -23,6 +23,7 @@ class epad_strahl_class:
         object.__setattr__(self, 'datetime_array', None)
         object.__setattr__(self, 'times_mesh', [])
         object.__setattr__(self, 'pitch_angle', None)
+        object.__setattr__(self, 'data_type', 'spe_sf0_pad') # Explicitly set data_type
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
@@ -246,6 +247,7 @@ class epad_strahl_high_res_class:
         object.__setattr__(self, 'datetime_array', None)
         object.__setattr__(self, 'times_mesh', [])
         object.__setattr__(self, 'pitch_angle', None)
+        object.__setattr__(self, 'data_type', 'spe_hires_pad') # Explicitly set data_type for high-res
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)

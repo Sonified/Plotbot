@@ -309,12 +309,12 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             print_manager.debug(f"{data_type} - Import/Refresh required")
             data_obj = import_data_function(trange, data_type)
 
-            if data_obj is not None: #REVISIT this code, likely the source of the "not found friend" error.
-                pass
-                print(f"*** GET_DATA DEBUG: data_obj from import_data_function ID: {id(data_obj)}, data_obj.data ID: {id(data_obj.data) if hasattr(data_obj, 'data') and data_obj.data is not None else 'N/A'}, data_obj.data keys: {list(data_obj.data.keys()) if hasattr(data_obj, 'data') and data_obj.data is not None else 'N/A'} ***")
-            else:
-                pass
-                print(f"*** GET_DATA DEBUG: data_obj from import_data_function is None for {data_type} {trange} ***")
+            # if data_obj is not None: #REVISIT this code, likely the source of the "not found friend" error.
+            #     pass
+            #     print(f"*** GET_DATA DEBUG: data_obj from import_data_function ID: {id(data_obj)}, data_obj.data ID: {id(data_obj.data) if hasattr(data_obj, 'data') and data_obj.data is not None else 'N/A'}, data_obj.data keys: {list(data_obj.data.keys()) if hasattr(data_obj, 'data') and data_obj.data is not None else 'N/A'} ***")
+            # else:
+            #     pass
+            #     print(f"*** GET_DATA DEBUG: data_obj from import_data_function is None for {data_type} {trange} ***")
 
             if data_obj is None: 
                 print_manager.warning(f"Import returned no data for {data_type}, skipping update.")

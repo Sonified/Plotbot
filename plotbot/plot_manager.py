@@ -450,13 +450,17 @@ class plot_manager(np.ndarray):
         # For recognized attributes, return from plot_options if available
         if name in self.PLOT_ATTRIBUTES:
             return getattr(self.plot_options, name, None)
-        # For unrecognized attributes, TEMPORARY FIX: still allow storing the attribute
-        # but print a warning
-        if not name.startswith('_'):
-            print_manager.warning(f"Warning: '{name}' is not a recognized attribute, but will be stored anyway.")
-            # Create an entry in _plot_state for this attribute
-            self._plot_state[name] = None
+        # For unrecognized attributes (not found in _plot_state or as a PLOT_ATTRIBUTE)
+        if not name.startswith('_'): # Ensure it's not an internal attribute we missed
+            # Behavior for trying to GET an unrecognized attribute:
+            # Warn and return None, but do not store it.
+            print_manager.warning(f"Warning: '{name}' is not a recognized attribute for {self.__class__.__name__}. Returning None.")
             return None
+        # If it's an underscore attribute not caught by the initial check in this method
+        # (object.__getattribute__) and it's not a recognized plot state or option,
+        # it implies a missing dunder/internal attribute or a misconfiguration.
+        # Standard behavior is to raise AttributeError.
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
     def _set_plot_option(self, attribute, value):
         if not self.plot_options:

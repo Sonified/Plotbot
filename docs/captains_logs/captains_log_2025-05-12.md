@@ -28,4 +28,9 @@
 - **Commit Message:** `Standardize plotbot.ipynb (v2.30)`
 - **Summary:** Pushed updates to `plotbot.ipynb` for standardization.
 
-*(Log remains open for further updates on 2025-05-12)* 
+*(Log remains open for further updates on 2025-05-12)*
+
+## Future Work / Next Steps
+
+- **Multiplot Bug:** Multiplot is currently broken when using 'ham' data with `plt.options.x_axis_carrington_lon = True`. The x-axis incorrectly displays time instead of Carrington longitude, and the visuals are not plotted correctly. This needs to be investigated and fixed.
+- **Normalized Br Variable:** Add a new variable for normalized Br. This requires `psp_mag_classes.py` to fetch `SUN_DIST` data from the proton data type (`spi_sf00_l3_mom`), apply linear interpolation to match the magnetic field timestamps, and then calculate the normalized value using the formula: `Br_norm = Br * (Rsun^2)`. 

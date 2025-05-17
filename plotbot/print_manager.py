@@ -146,8 +146,8 @@ class print_manager_class:
         self.custom_debug_enabled = False  # Custom variable operations debugging
         self.variable_testing_enabled = False # Variable testing specific debugging
         self.variable_basic_enabled = False   # Basic user-facing variable info 
-        self.error_enabled = False            # Error messages (always keep this enabled)
-        self.time_tracking_enabled = False    # Time range tracking (enabled by default)
+        self.error_enabled = True            # Error messages
+        self.time_tracking_enabled = False    # Time range tracking (disabled by default)
         self.test_enabled = False             # Test output (enabled by default)
         self.module_prefix_enabled = False    # Show module name prefix (enabled by default)
         self.processing_enabled = False       # Show data processing status messages (enabled by default)

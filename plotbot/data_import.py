@@ -575,7 +575,7 @@ def import_data_function(trange, data_type):
         
     else:
         # --- Existing CDF Processing Logic ---
-        print(f"*** IDF_DEBUG: Entered Standard CDF Processing for {data_type} ***")
+        print_manager.time_output("import_data_function", f"*** IDF_DEBUG: Entered Standard CDF Processing for {data_type} ***")
         print_manager.time_output("import_data_function", f"\n=== Starting import for {data_type} (CDF) ===")
 
         # Format dates for TT2000 conversion (needed for CDF processing)

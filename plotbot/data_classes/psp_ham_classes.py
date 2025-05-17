@@ -56,6 +56,7 @@ class ham_class:
         })
         object.__setattr__(self, 'time', None) # To store raw TT2000 time
         object.__setattr__(self, 'datetime_array', None) # To store Python datetime objects
+        object.__setattr__(self, 'data_type', 'ham') # Explicitly set data_type
 
         if imported_data is None:
             self.set_ploptions() # Set empty ploptions on init

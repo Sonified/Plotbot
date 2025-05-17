@@ -44,6 +44,7 @@ class proton_class:
         object.__setattr__(self, 'energy_vals', None)
         object.__setattr__(self, 'theta_vals', None)
         object.__setattr__(self, 'phi_vals', None)
+        object.__setattr__(self, 'data_type', 'spi_sf00_l3_mom')
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
@@ -139,8 +140,7 @@ class proton_class:
         available_attrs = list(self.raw_data.keys()) if self.raw_data else []
         print(f"'{name}' is not a recognized attribute, friend!")
         print(f"Try one of these: {', '.join(available_attrs)}")
-        # raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
-        # return None
+        return None
     
     def __setattr__(self, name, value):
         # Allow direct setting of dunder OR single underscore methods/attributes
@@ -766,6 +766,7 @@ class proton_hr_class:
         object.__setattr__(self, 'energy_vals', None)
         object.__setattr__(self, 'theta_vals', None)
         object.__setattr__(self, 'phi_vals', None)
+        object.__setattr__(self, 'data_type', 'spi_af00_L3_mom')
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)

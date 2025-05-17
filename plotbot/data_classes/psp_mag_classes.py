@@ -144,7 +144,7 @@ class mag_rtn_4sa_class:
             # Do not set the attrib
     def calculate_variables(self, imported_data):
         # STRATEGIC PRINT I
-        print_manager.debug(f"[MAG_CLASS_DEBUG I] calculate_variables called for instance ID: {id(self)}")
+        print(f"[MAG_CLASS_DEBUG I] calculate_variables called for instance ID: {id(self)}")
 
         print(f"*** MAG_CLASS_CALCVARS (mag_rtn_4sa_class) ID:{id(self)}: imported_data ID: {id(imported_data) if imported_data is not None else 'None'}, .data ID: {id(imported_data.data) if imported_data is not None and hasattr(imported_data, 'data') and imported_data.data is not None else 'N/A'} ***")
         if hasattr(imported_data, 'data') and isinstance(imported_data.data, dict):
