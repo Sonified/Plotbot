@@ -118,6 +118,7 @@ class print_manager_class:
     CUSTOM_DEBUG = False
     PV_TESTING = False
     ZARR_INTEGRATION = False  # Disabled by default; enable for Zarr debugging
+    DEPENDENCY_MANAGEMENT = False # New style for dependency management prints
     
     # Colors for class-level access
     BLACK = '\033[30m'
@@ -156,6 +157,7 @@ class print_manager_class:
         self._pyspedas_verbose = False   # State variable for the pyspedas_verbose property
         self.pyspedas_filter_instance = None  # Instance of the PyspedasInfoFilter
         self.data_snapshot_enabled = False # <<< ADDED: Flag for snapshot messages
+        self.dependency_management_enabled = False # Flag for dependency management prints
         # print(f"[PM_DEBUG] __init__: Default _pyspedas_verbose = {self._pyspedas_verbose}") # Remove print
         
         # Print formatting prefixes
@@ -168,6 +170,7 @@ class print_manager_class:
         self.test_prefix = "[TEST] "         # Test output prefix
         self.processing_prefix = "[PROCESS] "  # Processing status prefix
         self.snapshot_prefix = "[SNAPSHOT] " # <<< ADDED: Prefix for snapshot messages
+        self.dependency_management_prefix = "[DEPENDENCY] " # Prefix for dependency management prints
         
         # Severity levels
         self.level_critical = "[CRITICAL] "  # Critical errors/warnings
@@ -661,6 +664,25 @@ class print_manager_class:
         """Set whether to show data snapshot loading/saving messages."""
         self.data_snapshot_enabled = value
     # <<< END ADDED Property >>>
+
+    def dependency_management(self, msg):
+        """Print dependency management messages if enabled."""
+        if self.dependency_management_enabled:
+            prefix = self.dependency_management_prefix if self.category_prefix_enabled else ""
+            print(self._format_message(f"{prefix}{msg}"))
+
+    @property
+    def show_dependency_management(self):
+        """Get the current state of dependency management output."""
+        return self.dependency_management_enabled
+        
+    @show_dependency_management.setter
+    def show_dependency_management(self, value):
+        """Set whether dependency management output is enabled."""
+        if not isinstance(value, bool):
+            print("[PRINT_MANAGER_WARNING] show_dependency_management must be set to True or False.")
+            return
+        self.dependency_management_enabled = value
 
 # Create a singleton instance
 print_manager = print_manager_class()

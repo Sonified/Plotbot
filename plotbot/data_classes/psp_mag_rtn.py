@@ -1,0 +1,1 @@
+# This file will contain the mag_rtn_class for PSP data. 

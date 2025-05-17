@@ -265,18 +265,18 @@ def plotbot(trange, *args):
     plot_vars = []
     
     # Process plot requests and collect variables
-    print_manager.variable_testing("\n=== Preparing variables for plotting ===")
+    print_manager.dependency_management("\n=== Preparing variables for plotting ===")
     for request in plot_requests:
-        print_manager.variable_testing(f"Processing request: {request['class_name']}.{request['subclass_name']}")
+        print_manager.dependency_management(f"Processing request: {request['class_name']}.{request['subclass_name']}")
         class_instance = data_cubby.grab(request['class_name'])     # Retrieve class instance for this plot request
-        print_manager.variable_testing(f"Retrieved class instance: {class_instance.__class__.__name__}")
+        print_manager.dependency_management(f"Retrieved class instance: {class_instance.__class__.__name__}")
         
         var = class_instance.get_subclass(request['subclass_name']) # Get specific component to plot
-        print_manager.variable_testing(f"Retrieved variable: {request['class_name']}.{request['subclass_name']}, data_type: {getattr(var, 'data_type', 'unknown')}")
+        print_manager.dependency_management(f"Retrieved variable: {request['class_name']}.{request['subclass_name']}, data_type: {getattr(var, 'data_type', 'unknown')}")
         
         # This is where we'd need to handle custom variables (ensure they have the right attributes)
         if hasattr(var, 'data_type'):
-            print_manager.variable_testing(f"Variable data_type: {var.data_type}")
+            print_manager.dependency_management(f"Variable data_type: {var.data_type}")
         
         plot_vars.append((var, request['axis_spec']))               # Store variable and its axis specification
         

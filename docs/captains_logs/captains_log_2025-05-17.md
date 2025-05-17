@@ -28,3 +28,85 @@
 - **Version Tag:** `2025_05_12_v2.31`
 - **Commit Message:** `Fix: Initialize data_type in data classes to resolve attribute errors (v2.31)`
 - **Summary:** Addressed attribute errors by explicitly initializing `data_type` in all relevant data classes (`psp_proton_classes`, `psp_proton_fits_classes`, `psp_alpha_fits_classes`, `psp_electron_classes`, `psp_ham_classes`). 
+
+## Refactor Plan: Split `psp_mag_classes.py` and Update Imports
+
+**Goal:** To improve maintainability and reduce complexity by splitting the monolithic `plotbot/data_classes/psp_mag_classes.py` file into individual files for each magnetic field data class and a shared utility file. This will also involve updating all necessary import statements across the codebase.
+
+**Detailed Steps:**
+
+**Phase 1: File and Class Restructuring**
+
+1.  **Create Utility File (`_utils.py`):**
+    *   File: `plotbot/data_classes/_utils.py` (Already created)
+    *   Action: Move the `_format_setattr_debug(name, value)` function from `psp_mag_classes.py` into this file.
+    *   Imports for `_utils.py`: `import numpy as np`, `import pandas as pd`.
+
+2.  **Refactor `mag_rtn_4sa_class`:**
+    *   New File: `plotbot/data_classes/psp_mag_rtn_4sa.py` (Already created)
+    *   Action: Move the `mag_rtn_4sa_class` definition and its global instance creation (`mag_rtn_4sa = mag_rtn_4sa_class(None)`) from `psp_mag_classes.py` into `psp_mag_rtn_4sa.py`.
+    *   Imports for `psp_mag_rtn_4sa.py`: `import numpy as np`, `import pandas as pd`, `import cdflib`, `from datetime import datetime, timedelta, timezone`, `import logging`, `from plotbot.print_manager import print_manager`, `from plotbot.plot_manager import plot_manager`, `from plotbot.ploptions import ploptions, retrieve_ploption_snapshot`, `from ._utils import _format_setattr_debug`.
+
+3.  **Refactor `mag_rtn_class`:**
+    *   New File: `plotbot/data_classes/psp_mag_rtn.py` (Already created)
+    *   Action: Move `mag_rtn_class` definition and `mag_rtn = mag_rtn_class(None)` into `psp_mag_rtn.py`.
+    *   Imports for `psp_mag_rtn.py`: (Same as `psp_mag_rtn_4sa.py`).
+
+4.  **Refactor `mag_sc_4sa_class`:**
+    *   New File: `plotbot/data_classes/psp_mag_sc_4sa.py` (Already created)
+    *   Action: Move `mag_sc_4sa_class` definition and `mag_sc_4sa = mag_sc_4sa_class(None)` into `psp_mag_sc_4sa.py`.
+    *   Imports for `psp_mag_sc_4sa.py`: (Same as `psp_mag_rtn_4sa.py`).
+
+5.  **Refactor `mag_sc_class`:**
+    *   New File: `plotbot/data_classes/psp_mag_sc.py` (Already created)
+    *   Action: Move `mag_sc_class` definition and `mag_sc = mag_sc_class(None)` into `psp_mag_sc.py`.
+    *   Imports for `psp_mag_sc.py`: (Same as `psp_mag_rtn_4sa.py`).
+
+6.  **Cleanup `psp_mag_classes.py`:**
+    *   Action: After all classes and the utility function are moved, `plotbot/data_classes/psp_mag_classes.py` should be empty of class definitions. It can then be deleted.
+
+**Phase 2: Update Imports and Codebase Adjustments**
+
+1.  **Create/Update `plotbot/data_classes/__init__.py`:**
+    *   Purpose: To re-export the classes and instances from their new individual files, maintaining the `from plotbot.data_classes import ...` import pattern.
+    *   Content:
+        ```python
+        # plotbot/data_classes/__init__.py
+        from .psp_mag_rtn_4sa import mag_rtn_4sa_class, mag_rtn_4sa
+        from .psp_mag_rtn import mag_rtn_class, mag_rtn
+        from .psp_mag_sc_4sa import mag_sc_4sa_class, mag_sc_4sa
+        from .psp_mag_sc import mag_sc_class, mag_sc
+        # ... (Ensure other existing data class imports from this __init__ are preserved)
+
+        __all__ = [
+            'mag_rtn_4sa_class', 'mag_rtn_4sa',
+            'mag_rtn_class', 'mag_rtn',
+            'mag_sc_4sa_class', 'mag_sc_4sa',
+            'mag_sc_class', 'mag_sc',
+            # ... (Ensure __all__ is updated accordingly, preserving existing entries)
+        ]
+        ```
+
+2.  **Update `plotbot/__init__.py`:**
+    *   File: `plotbot/__init__.py`
+    *   Action: Change the import line for magnetic field classes.
+        *   **From:** `from .data_classes.psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc, mag_rtn_4sa_class, mag_rtn_class, mag_sc_4sa_class, mag_sc_class`
+        *   **To:** `from .data_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc, mag_rtn_4sa_class, mag_rtn_class, mag_sc_4sa_class, mag_sc_class` (This relies on `plotbot/data_classes/__init__.py` correctly exporting these names).
+    *   Verify that `CLASS_NAME_MAPPING` in this file still functions correctly with the re-exported class names.
+
+3.  **Global Import Scan and Update (Anticipated Files):**
+    *   Review and update imports in any file that might be directly importing from `plotbot.data_classes.psp_mag_classes`. This is less likely if `plotbot/__init__.py` and `plotbot/data_classes/__init__.py` were the primary points of import.
+    *   Potential files to check (this list might not be exhaustive and depends on actual usage, but these are common places where data classes might be referenced):
+        *   `plotbot/plotbot_main.py`
+        *   `plotbot/get_data.py`
+        *   `plotbot/data_cubby.py` (especially for type hints or direct class references if any)
+        *   Any test files in the `tests/` directory that specifically import or use these magnetic field classes (e.g., `tests/test_proton_r_sun.py` if it ever used mag classes directly, or other specific mag tests).
+        *   Any Jupyter notebooks or example scripts if they import directly.
+
+**Next Steps after this log update:** Push these changes (creation of empty files) and the updated log to GitHub. Then, reset the AI assistant to begin the refactoring with a clean slate, following this plan.
+
+## Push: v2.32 (Pending)
+
+- **Version Tag:** `2025_05_17_v2.32`
+- **Commit Message:** `Refactor: Prepare for psp_mag_classes.py split by creating new files and plan (v2.32)`
+- **Summary:** Created new empty files (`_utils.py`, `psp_mag_rtn_4sa.py`, `psp_mag_rtn.py`, `psp_mag_sc_4sa.py`, `psp_mag_sc.py`) in `plotbot/data_classes/` and documented the detailed refactoring plan in this log. This prepares for splitting the monolithic `psp_mag_classes.py`. 
