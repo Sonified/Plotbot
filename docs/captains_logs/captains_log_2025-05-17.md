@@ -130,7 +130,27 @@
 ## Push: v2.34
 
 - **Version Tag:** `2025_05_17_v2.34`
-- **Commit Message:** `Docs: Corrected v2.32 entry in captain's log (v2.34)`
+- **Commit Message:** `Docs: Corrected v2.32 entry in captain\'s log (v2.34)`
 - **Summary:** Pushed a correction to the captain's log to accurately reflect the v2.32 push details. Updated `plotbot/__init__.py` with the new version and commit message.
+
+*(Log remains open for further updates on 2025-05-17)* 
+
+## Refactor: `psp_mag_classes.py` Content Migration and Deletion
+
+- **Summary:** Completed Phase 1 (File and Class Restructuring) of the `psp_mag_classes.py` refactor plan:
+    - Moved the `_format_setattr_debug` function to `plotbot/data_classes/_utils.py`.
+    - Moved `mag_rtn_4sa_class` and its instance to `plotbot/data_classes/psp_mag_rtn_4sa.py`.
+    - Moved `mag_rtn_class` and its instance to `plotbot/data_classes/psp_mag_rtn.py`.
+    - Moved `mag_sc_4sa_class` and its instance to `plotbot/data_classes/psp_mag_sc_4sa.py`.
+    - Moved `mag_sc_class` and its instance to `plotbot/data_classes/psp_mag_sc.py`.
+    - All necessary imports were added to the new files.
+- The original `plotbot/data_classes/psp_mag_classes.py` file, now empty of substantive code, has been deleted.
+- The next steps will involve Phase 2: Updating imports across the codebase, particularly in `plotbot/data_classes/__init__.py` and `plotbot/__init__.py`, and then testing.
+
+## Push: v2.35
+
+- **Version Tag:** `2025_05_17_v2.35`
+- **Commit Message:** `Refactor: Finalized splitting of psp_mag_classes.py content; deleted original file (v2.35)`
+- **Summary:** Moved all class definitions and the utility function from `psp_mag_classes.py` into their respective new files (`_utils.py`, `psp_mag_rtn_4sa.py`, `psp_mag_rtn.py`, `psp_mag_sc_4sa.py`, `psp_mag_sc.py`). The original `psp_mag_classes.py` was then deleted. This completes the primary file restructuring for the magnetic field data classes.
 
 *(Log remains open for further updates on 2025-05-17)* 

@@ -224,8 +224,8 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vMajor.Minor (Minor increments by 0.01 usually)
-__version__ = "2025_05_17_v2.34"
-COMMIT_MESSAGE = "Docs: Corrected v2.32 entry in captain's log (v2.34)"
+COMMIT_MESSAGE = "Refactor: Finalized splitting of psp_mag_classes.py content; deleted original file (v2.35)"
+__version__ = "2025_05_17_v2.35"
 
 # Print version information on import
 print(f"   Version: {__version__}")
