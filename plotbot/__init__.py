@@ -224,14 +224,12 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vMajor.Minor (Minor increments by 0.01 usually)
-__version__ = "2025_05_17_v2.32"
-
-# This commit message will be used in the git commit and the console log.
-__commit_message__ = "Refactor: Prepare for psp_mag_classes.py split by creating new files and plan (v2.32)"
+__version__ = "2025_05_17_v2.33"
+COMMIT_MESSAGE = "Refactor: Split psp_mag_classes.pyi into individual stub files (v2.33)"
 
 # Print version information on import
 print(f"   Version: {__version__}")
-print(f"Commit: {__commit_message__}")
+print(f"   Commit: {COMMIT_MESSAGE}")
 
 # --- Final Print Message ---
 print(f"\n{BLUE}🤖 Plotbot Initialized{RESET}")
