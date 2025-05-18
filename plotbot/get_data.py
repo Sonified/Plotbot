@@ -21,7 +21,8 @@ from .config import config
 # Import specific data classes as needed
 from . import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
 from .data_classes.psp_electron_classes import epad, epad_hr
-from .data_classes.psp_proton_classes import proton, proton_hr
+from .data_classes.psp_proton import proton
+from .data_classes.psp_proton_hr import proton_hr
 from .data_classes.psp_proton_fits_classes import proton_fits_class, proton_fits
 from .data_classes.psp_ham_classes import ham_class, ham
 

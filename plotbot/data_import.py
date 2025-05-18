@@ -856,15 +856,15 @@ def import_data_function(trange, data_type):
         # === DIAGNOSTIC PRINT BEFORE RETURN ===
         print_manager.debug(f"*** IMPORT_DATA_DEBUG (CDF Path) for data_type '{data_type}' (originally requested: '{data_type_requested_at_start}') ***")
         if data_object is not None:
-            print(f"    data_object ID: {id(data_object)}")
+            print_manager.datacubby(f"    data_object ID: {id(data_object)}")
             if hasattr(data_object, 'times') and data_object.times is not None:
-                print(f"    DataObject.times length: {len(data_object.times)}, dtype: {data_object.times.dtype if hasattr(data_object.times, 'dtype') else type(data_object.times)}")
+                print_manager.datacubby(f"    DataObject.times length: {len(data_object.times)}, dtype: {data_object.times.dtype if hasattr(data_object.times, 'dtype') else type(data_object.times)}")
             else:
-                print(f"    DataObject.times is None or missing.")
+                print_manager.datacubby(f"    DataObject.times is None or missing.")
             
             if hasattr(data_object, 'data') and isinstance(data_object.data, dict):
-                print(f"    data_object.data ID: {id(data_object.data)}")
-                print(f"    DataObject.data keys: {list(data_object.data.keys())}")
+                print_manager.datacubby(f"    data_object.data ID: {id(data_object.data)}")
+                print_manager.datacubby(f"    DataObject.data keys: {list(data_object.data.keys())}")
                 if data_type_requested_at_start == 'mag_RTN_4sa': # Adjusted for current test
                     expected_key = 'psp_fld_l2_mag_RTN_4_Sa_per_Cyc'
                     if expected_key in data_object.data:
@@ -872,13 +872,13 @@ def import_data_function(trange, data_type):
                         val_type = type(val)
                         val_shape = val.shape if hasattr(val, 'shape') else 'N/A'
                         val_len = len(val) if hasattr(val, '__len__') else 'N/A'
-                        print(f"        '{expected_key}' is PRESENT. Type: {val_type}, Shape: {val_shape}, Len: {val_len}")
+                        print_manager.datacubby(f"        '{expected_key}' is PRESENT. Type: {val_type}, Shape: {val_shape}, Len: {val_len}")
                     else:
-                        print(f"        '{expected_key}' is MISSING from data_object.data for {data_type_requested_at_start} request.") # Adjusted
+                        print_manager.datacubby(f"        '{expected_key}' is MISSING from data_object.data for {data_type_requested_at_start} request.") # Adjusted
             else:
-                print(f"    DataObject.data is None or not a dict.")
+                print_manager.datacubby(f"    DataObject.data is None or not a dict.")
         else:
-            print(f"    data_object is None at final diagnostic print (CDF Path).")
+            print_manager.datacubby(f"    data_object is None at final diagnostic print (CDF Path).")
         # === END DIAGNOSTIC PRINT ===
 
         data_obj_to_return = data_object # data_object is used in CDF path

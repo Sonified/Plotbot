@@ -174,3 +174,31 @@
     - Ran tests (specifically `tests/test_proton_r_sun.py` and `tests/test_stardust.py`) to confirm the import changes were successful and did not introduce regressions.
     - Refactored `tests/test_proton_r_sun.py` to be pytest-compatible by renaming `main()` to `test_proton_r_sun_plot()` and removing the `if __name__ == '__main__':` block.
 - **Outcome:** All direct usages of `plotbot.data_classes.psp_mag_classes` have been updated. The codebase now correctly imports magnetic field data classes from their new, individual modules within `plotbot/data_classes/`. 
+
+## Refactor: `psp_proton_classes.py` Split and `.pyi` Creation
+
+- **Summary:** Continued the modularization effort by splitting `plotbot/data_classes/psp_proton_classes.py` into individual files for each proton data class:
+    - `proton_class` and its instance `proton` were moved to `plotbot/data_classes/psp_proton.py`.
+    - `proton_hr_class` and its instance `proton_hr` were moved to `plotbot/data_classes/psp_proton_hr.py`.
+    - Necessary imports were added to these new files.
+    - The original `plotbot/data_classes/psp_proton_classes.py` was deleted.
+- **Import Updates:** Adjusted import statements across the codebase to reflect these changes. Files updated include:
+    - `plotbot/__init__.py`
+    - `plotbot/data_cubby.py`
+    - `plotbot/get_data.py`
+    - `plotbot/plotbot_main.py`
+    - `plotbot/data_classes/psp_proton_fits_classes.py`
+    - `tests/test_snapshot_save_load.py`
+    - `tests/core/test_plotting.py`
+- **Stub Files:** Created new `.pyi` stub files for the new proton class files:
+    - `plotbot/data_classes/psp_proton.pyi`
+    - `plotbot/data_classes/psp_proton_hr.pyi`
+- **Outcome:** The proton data classes are now in their own modules, improving organization. All import errors related to this change have been resolved.
+
+## Push: v2.37
+
+- **Version Tag:** `2025_05_17_v2.37`
+- **Commit Message:** `Refactor: v2.37 Split psp_proton_classes.py and created .pyi files`
+- **Summary:** Successfully split `psp_proton_classes.py` into `psp_proton.py` and `psp_proton_hr.py`, updated all relevant imports across the codebase, and generated corresponding `.pyi` stub files. 
+
+*(Log remains open for further updates on 2025-05-17)* 

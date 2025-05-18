@@ -238,7 +238,7 @@ class proton_fits_class:
         # --- Import needed functions/instances within method to avoid top-level circular imports --- 
         # from ..get_data import get_data # NO LONGER NEEDED
         from ..data_import import import_data_function # Import directly
-        from .psp_proton_classes import proton # Still need the proton class instance for attribute access
+        from .psp_proton import proton # MODIFIED - Still need the proton class instance for attribute access
         from dateutil.parser import parse
 
         try:

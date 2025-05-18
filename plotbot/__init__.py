@@ -35,7 +35,8 @@ from .data_classes.psp_mag_rtn import mag_rtn, mag_rtn_class
 from .data_classes.psp_mag_sc_4sa import mag_sc_4sa, mag_sc_4sa_class
 from .data_classes.psp_mag_sc import mag_sc, mag_sc_class
 from .data_classes.psp_electron_classes import epad, epad_hr, epad_strahl_class, epad_strahl_high_res_class
-from .data_classes.psp_proton_classes import proton, proton_hr, proton_class, proton_hr_class
+from .data_classes.psp_proton import proton, proton_class
+from .data_classes.psp_proton_hr import proton_hr, proton_hr_class
 from .data_classes.psp_proton_fits_classes import proton_fits # Import the FITS class
 from .data_classes.psp_ham_classes import ham, ham_class # ADDED: Import the HAM class instance and class
 
@@ -227,8 +228,8 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vMajor.Minor (Minor increments by 0.01 usually)
-COMMIT_MESSAGE = "Refactor: Updated imports across codebase after psp_mag_classes.py split (v2.36)"
-__version__ = "2025_05_17_v2.36"
+COMMIT_MESSAGE = "Refactor: v2.37 Split psp_proton_classes.py and created .pyi files"
+__version__ = "2025_05_17_v2.37"
 
 # Print version information on import
 print(f"   Version: {__version__}")

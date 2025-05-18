@@ -26,7 +26,9 @@ from plotbot import print_manager
 from plotbot.test_pilot import phase, system_check
 from plotbot.data_classes.psp_mag_classes import mag_rtn_4sa_class, mag_rtn_class, mag_sc_4sa_class, mag_sc_class
 from plotbot.data_classes.psp_electron_classes import epad_strahl_class, epad_strahl_high_res_class
-from plotbot.data_classes.psp_proton_classes import proton_class, proton_hr_class
+from plotbot.plot_manager import plot_manager
+from plotbot.config import config
+from plotbot import proton_class, proton_hr_class
 from plotbot.data_classes.psp_ham_classes import ham_class
 
 # Import test helpers
