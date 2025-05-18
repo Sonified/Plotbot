@@ -98,6 +98,14 @@
    - Discovered an inconsistent data state where `proton.sun_dist_rsun.data` is available but `proton.datetime_array` is None
    - This suggests the proton data is only partially loaded, which needs to be fixed for br_norm calculation to work properly
    - The proton class may need to ensure datetime_array is properly set when sun_dist_rsun data is loaded
+   - **Crucial observation:** Test output showed contradictory behavior:
+     ```
+     'br_norm' is not a recognized attribute, friend!
+     Try one of these: all, br, bt, bn, bmag, pmag, br_norm
+     mag_rtn_4sa has br_norm attribute: True
+     ```
+   - This confirms our earlier suspicion: the __getattr__ method prints an error but doesn't raise AttributeError, causing hasattr() to return True even though the attribute doesn't really exist
+   - This explains why tests expecting br_norm to exist would pass superficially but fail when trying to actually use the value
 
 ## Push: v2.39
 
@@ -105,5 +113,12 @@
 - **Commit Message:** `Feature: Document implementation plan for br_norm calculation (v2.39)`
 - **Git Hash:** `b3198d0`
 - **Summary:** Added detailed analysis of the codebase structure and a comprehensive implementation plan for the br_norm calculation feature. Discovered key insights about the proton class's sun distance data handling and the magnetometer class's attribute resolution behavior that will inform our implementation approach.
+
+## Push: v2.40
+
+- **Version Tag:** `2025_05_18_v2.40`
+- **Commit Message:** `Fix: Circular import in br_norm implementation & identify data loading issue (v2.40)`
+- **Git Hash:** `2a1b355`
+- **Summary:** Fixed the circular import issue by removing the global import of get_data from psp_mag_rtn_4sa.py and keeping it inside the _calculate_br_norm method. While testing the fix, identified a new issue where proton.datetime_array is None while sun_dist_rsun.data is available, indicating a partially loaded state that needs to be addressed in future work.
 
 *(Log remains open for further updates on 2025-05-18)* 
