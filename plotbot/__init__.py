@@ -228,8 +228,8 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vMajor.Minor (Minor increments by 0.01 usually)
-COMMIT_MESSAGE = "Feature: Document implementation plan for br_norm calculation (v2.39)"
-__version__ = "2025_05_18_v2.39"
+COMMIT_MESSAGE = "Fix: Circular import in br_norm implementation & identify data loading issue (v2.40)"
+__version__ = "2025_05_18_v2.40"
 
 # Print version information on import
 print(f"   Version: {__version__}")

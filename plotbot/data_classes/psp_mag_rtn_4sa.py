@@ -26,7 +26,8 @@ class mag_rtn_4sa_class:
             'bt': None,
             'bn': None,
             'bmag': None,
-            'pmag': None
+            'pmag': None,
+            'br_norm': None  # Add br_norm to raw_data initialization
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
@@ -99,6 +100,18 @@ class mag_rtn_4sa_class:
                 # Re-raise AttributeError if the internal/dunder method truly doesn't exist
                 raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
+        # Special case for br_norm - calculate it if requested but not yet available
+        if name == 'br_norm' and hasattr(self, 'raw_data') and 'br_norm' in self.raw_data:
+            if self.raw_data['br_norm'] is None and self.raw_data['br'] is not None:
+                # We have br data but no br_norm yet - calculate it
+                print_manager.dependency_management("Lazy loading br_norm - calculating now...")
+                self._calculate_br_norm()
+                
+                # Now create a plot_manager if successful calculation
+                if self.raw_data['br_norm'] is not None:
+                    self._setup_br_norm_plot_manager()
+                    return self.br_norm  # Return the newly created plot_manager
+        
         if 'raw_data' not in self.__dict__:
             raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
         print_manager.dependency_management('mag_rtn_4sa getattr helper!')
@@ -167,7 +180,8 @@ class mag_rtn_4sa_class:
             'bt': bt,
             'bn': bn,
             'bmag': bmag,
-            'pmag': pmag
+            'pmag': pmag,
+            'br_norm': None  # br_norm is calculated only when requested (lazy loading)
         }
 
         # # Convert TT2000 timestamps to datetime objects using cdflib
@@ -178,6 +192,125 @@ class mag_rtn_4sa_class:
         print_manager.dependency_management(f"Field data shape: {self.field.shape}")
         print_manager.dependency_management(f"First TT2000 time: {self.time[0]}")
     
+    def _calculate_br_norm(self):
+        """
+        Calculate the normalized radial magnetic field (Br*R²)
+        
+        This parameter accounts for the 1/r² decrease of the magnetic field strength 
+        with distance from the Sun, allowing for meaningful comparisons between
+        measurements at different solar distances.
+        
+        The formula is:
+        Br_norm = Br * ((Rsun / conversion_factor)²)
+        
+        Where:
+        - Br is the radial magnetic field component in nT
+        - Rsun is the distance from the Sun in solar radii
+        - conversion_factor is 215.032867644 (Rsun per AU)
+        - The result is in nT*AU²
+        
+        This method will:
+        1. Check if br data exists
+        2. Get proton sun_dist_rsun data if not already loaded
+        3. Interpolate sun distance to match mag timeline
+        4. Calculate br_norm using the validated formula
+        5. Store result in raw_data['br_norm']
+        """
+        # Check if we have valid br data to work with
+        if self.raw_data['br'] is None or len(self.raw_data['br']) == 0 or self.datetime_array is None:
+            print_manager.datacubby("Cannot calculate br_norm: No br data available")
+            return None
+        
+        try:
+            # Import the necessary components
+            from plotbot import proton, get_data
+            import scipy.interpolate as interpolate
+            import matplotlib.dates as mdates
+            
+            # Get the current time range from our datetime_array
+            start_time = self.datetime_array[0].strftime('%Y/%m/%d %H:%M:%S.%f')
+            end_time = self.datetime_array[-1].strftime('%Y/%m/%d %H:%M:%S.%f')
+            trange = [start_time, end_time]
+            
+            print_manager.dependency_management(f"Fetching sun_dist_rsun data for br_norm calculation (time range: {trange})")
+            
+            # Request proton sun_dist_rsun data for our time range
+            get_data(trange, proton.sun_dist_rsun)
+            
+            # Check if we have valid proton data
+            if not hasattr(proton, 'sun_dist_rsun') or not hasattr(proton.sun_dist_rsun, 'data') or proton.sun_dist_rsun.data is None:
+                print_manager.datacubby("Cannot calculate br_norm: Failed to get proton sun distance data")
+                return None
+                
+            # Get the necessary data arrays
+            br_data = self.raw_data['br']
+            mag_datetime = self.datetime_array
+            proton_datetime = proton.datetime_array
+            sun_dist_rsun = proton.sun_dist_rsun.data
+            
+            print_manager.datacubby(f"Interpolating sun_dist_rsun to match mag timeline...")
+            print_manager.datacubby(f"  Mag datetime length: {len(mag_datetime)}")
+            print_manager.datacubby(f"  Proton datetime length: {len(proton_datetime)}")
+            
+            # Convert datetime arrays to numeric for interpolation
+            proton_time_numeric = mdates.date2num(proton_datetime)
+            mag_time_numeric = mdates.date2num(mag_datetime)
+            
+            # Create interpolation function
+            interp_func = interpolate.interp1d(
+                proton_time_numeric, 
+                sun_dist_rsun,
+                kind='linear',
+                bounds_error=False,
+                fill_value='extrapolate'
+            )
+            
+            # Apply interpolation to get sun distance at mag timestamps
+            sun_dist_interp = interp_func(mag_time_numeric)
+            
+            # Calculate br_norm using the precise conversion factor
+            rsun_to_au_conversion_factor = 215.032867644  # Solar radii per AU
+            br_norm = br_data * ((sun_dist_interp / rsun_to_au_conversion_factor) ** 2)
+            
+            print_manager.datacubby(f"Successfully calculated br_norm (shape: {br_norm.shape})")
+            
+            # Store the result
+            self.raw_data['br_norm'] = br_norm
+            return True
+            
+        except Exception as e:
+            print_manager.datacubby(f"Error calculating br_norm: {str(e)}")
+            import traceback
+            print_manager.datacubby(traceback.format_exc())
+            return None
+    
+    def _setup_br_norm_plot_manager(self):
+        """Create plot manager for br_norm with appropriate options"""
+        if self.raw_data['br_norm'] is not None and self.datetime_array is not None:
+            self.br_norm = plot_manager(
+                self.raw_data['br_norm'],
+                plot_options=ploptions(
+                    data_type='mag_RTN_4sa',    # Actual data product name
+                    var_name='br_norm_rtn_4sa',  # Variable name
+                    class_name='mag_rtn_4sa',   # Class handling this data
+                    subclass_name='br_norm',    # Specific component
+                    plot_type='time_series',    # Type of plot
+                    datetime_array=self.datetime_array,  # Time data
+                    y_label='Br·R² [nT·AU²]',   # Y-axis label
+                    legend_label='$B_R \cdot R^2$',  # Legend text
+                    color='darkorange',         # Plot color (different from br's forestgreen)
+                    y_scale='linear',           # Scale type
+                    y_limit=None,               # Y-axis limits
+                    line_width=1,               # Line width
+                    line_style='-'              # Line style
+                )
+            )
+            print_manager.dependency_management(f"Created plot manager for br_norm")
+            return True
+        else:
+            print_manager.dependency_management(f"Cannot create plot manager for br_norm: No data available")
+            return False
+
     def set_ploptions(self):
         """Create plot managers for each component with default options"""
         # STRATEGIC PRINT K
@@ -301,6 +434,9 @@ class mag_rtn_4sa_class:
             )
             
         )
+
+        # br_norm plot manager is only created when it's data is available (lazy loading)
+        # We don't create it here initially to avoid unnecessary proton data loading
 
     def restore_from_snapshot(self, snapshot_data):
         """

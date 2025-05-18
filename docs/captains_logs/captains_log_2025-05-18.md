@@ -85,6 +85,20 @@
        - Document dependencies on proton.sun_dist_rsun
        - Add formulas and conversion factors in comments
 
+## Implementation Progress and Issues
+
+- **Circular Import Fix:**
+   - Identified circular import issue between data_cubby.py and psp_mag_rtn_4sa.py
+   - Fixed by removing the global import of get_data in psp_mag_rtn_4sa.py and keeping it in the _calculate_br_norm method
+   - This allows the tests to run without import errors
+
+- **Data Loading Issue:**
+   - Testing revealed a new issue with the `test_real_world_implementation()` test in `test_br_norm_lazy_loading.py`
+   - Error: `TypeError: object of type 'NoneType' has no len()` at line 283 when trying to access `len(proton_datetime)`
+   - Discovered an inconsistent data state where `proton.sun_dist_rsun.data` is available but `proton.datetime_array` is None
+   - This suggests the proton data is only partially loaded, which needs to be fixed for br_norm calculation to work properly
+   - The proton class may need to ensure datetime_array is properly set when sun_dist_rsun data is loaded
+
 ## Push: v2.39
 
 - **Version Tag:** `2025_05_18_v2.39`
