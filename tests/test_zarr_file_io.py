@@ -12,6 +12,9 @@ from plotbot.data_download_berkeley import download_berkeley_data
 from dateutil.parser import parse
 import plotbot as pb
 from plotbot.get_data import get_data
+from plotbot.data_cubby import data_cubby
+from plotbot.print_manager import print_manager
+from plotbot import mag_rtn_4sa
 
 # === Test 1 ===
 def test_01_generate_dummy_file_in_data_cubby(persist=True):
@@ -264,7 +267,7 @@ def test6_cdf_to_zarr_mirroring(trange=None, persist=True):
     # --- REST OF TEST LOGIC ---
     from plotbot.data_download_helpers import check_local_files
     from plotbot.get_data import get_data
-    from plotbot.data_classes.psp_mag_classes import mag_rtn_4sa
+    from plotbot import mag_rtn_4sa
     from cdflib import CDF
     import pandas as pd
     import zarr

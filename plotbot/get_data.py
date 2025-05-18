@@ -16,7 +16,10 @@ from .data_download_pyspedas import download_spdf_data
 import plotbot
 from .data_import import import_data_function, DataObject
 from .data_classes.psp_data_types import data_types
-from .data_classes.psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
+from .config import config
+
+# Import specific data classes as needed
+from . import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
 from .data_classes.psp_electron_classes import epad, epad_hr
 from .data_classes.psp_proton_classes import proton, proton_hr
 from .data_classes.psp_proton_fits_classes import proton_fits_class, proton_fits

@@ -1415,3 +1415,18 @@ PASSED
 12-May-25 11:57:07: /opt/anaconda3/envs/plotbot_env/lib/python3.12/site-packages/numpy/core/fromnumeric.py:3504: RuntimeWarning: Mean of empty slice.
   return _methods._mean(a, axis=axis, dtype=dtype,
 
+17-May-25 16:21:09: Stardust Plotbot Call Completed - PASSED: plotbot call should complete without error.
+17-May-25 16:21:09: Stardust Plotbot Figure Exists - PASSED: plotbot should have created a figure.
+17-May-25 16:21:09: Stardust Multiplot Figure Created - PASSED: multiplot should return a figure object.
+17-May-25 16:21:09: Stardust Multiplot Axes Returned - PASSED: multiplot should return valid Axes object(s). Got type: <class 'list'>
+17-May-25 16:21:10: Stardust Showdahodo Figure Created - PASSED: showdahodo should return a figure object.
+17-May-25 16:21:10: Stardust Showdahodo Axis Created - PASSED: showdahodo should return an axis object.
+17-May-25 16:21:10: SPDF Mock Called (dict check) - PASSED: SPDF mock flag should be True.
+17-May-25 16:21:10: Berkeley Mock Called (dict check) - PASSED: Berkeley mock flag should be True.
+17-May-25 16:21:10: Stardust Cleanup Skipped - PASSED: No files recorded for cleanup.
+17-May-25 16:21:35: Audifier Instance Exists - PASSED: Global audifier instance should exist.
+17-May-25 16:21:35: Initial File Cleanup - PASSED: Should ensure no target files exist initially.
+17-May-25 16:21:36: Downloading https://spdf.gsfc.nasa.gov/pub/data/psp/fields/l2/mag_rtn_4_per_cycle/2018/psp_fld_l2_mag_rtn_4_sa_per_cyc_20181022_v02.cdf to psp_data/fields/l2/mag_rtn_4_per_cycle/2018/psp_fld_l2_mag_rtn_4_sa_per_cyc_20181022_v02.cdf
+17-May-25 16:21:38: Download complete: psp_data/fields/l2/mag_rtn_4_per_cycle/2018/psp_fld_l2_mag_rtn_4_sa_per_cyc_20181022_v02.cdf
+17-May-25 16:21:38: First SPDF Call Execution - PASSED: First call should successfully download the file.
+17-May-25 16:21:39: Second SPDF Call Execution - PASSED: Second call should find the file locally.

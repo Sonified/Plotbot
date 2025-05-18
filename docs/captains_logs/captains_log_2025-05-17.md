@@ -153,4 +153,24 @@
 - **Commit Message:** `Refactor: Finalized splitting of psp_mag_classes.py content; deleted original file (v2.35)`
 - **Summary:** Moved all class definitions and the utility function from `psp_mag_classes.py` into their respective new files (`_utils.py`, `psp_mag_rtn_4sa.py`, `psp_mag_rtn.py`, `psp_mag_sc_4sa.py`, `psp_mag_sc.py`). The original `psp_mag_classes.py` was then deleted. This completes the primary file restructuring for the magnetic field data classes.
 
-*(Log remains open for further updates on 2025-05-17)* 
+*(Log remains open for further updates on 2025-05-17)*
+
+## Refactor: Update Imports Post `psp_mag_classes.py` Split
+
+- **Summary:** Completed Phase 2 (Update Imports and Codebase Adjustments) of the `psp_mag_classes.py` refactor plan.
+    - Corrected import statements in `plotbot/__init__.py` to directly import magnetic field classes and instances from their new specific files (e.g., `from .data_classes.psp_mag_rtn_4sa import mag_rtn_4sa, mag_rtn_4sa_class`).
+    - Confirmed that `plotbot/data_classes/__init__.py` was not needed and should not be created for these direct imports. Deleted the erroneously created `plotbot/data_classes/__init__.py`.
+    - Updated import statements in the following files to reflect the new locations of the magnetic field data classes:
+        - `plotbot/get_data.py`
+        - `plotbot/plotbot_main.py`
+        - `plotbot/data_snapshot.py`
+        - `plotbot/data_cubby.py`
+        - `tests/test_psp_mag_br_norm.py`
+        - `tests/test_zarr_file_io.py`
+        - `tests/test_e2e_snapshot_workflow.py`
+        - `tests/test_stardust.py`
+        - `tests/test_audifier.py`
+        - `tests/test_snapshot_save_load.py`
+    - Ran tests (specifically `tests/test_proton_r_sun.py` and `tests/test_stardust.py`) to confirm the import changes were successful and did not introduce regressions.
+    - Refactored `tests/test_proton_r_sun.py` to be pytest-compatible by renaming `main()` to `test_proton_r_sun_plot()` and removing the `if __name__ == '__main__':` block.
+- **Outcome:** All direct usages of `plotbot.data_classes.psp_mag_classes` have been updated. The codebase now correctly imports magnetic field data classes from their new, individual modules within `plotbot/data_classes/`. 

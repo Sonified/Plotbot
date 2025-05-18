@@ -30,7 +30,10 @@ from .config import config
 from .plotbot_helpers import time_clip
 
 # Import data classes and their instances (Updated Paths)
-from .data_classes.psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc, mag_rtn_4sa_class, mag_rtn_class, mag_sc_4sa_class, mag_sc_class
+from .data_classes.psp_mag_rtn_4sa import mag_rtn_4sa, mag_rtn_4sa_class
+from .data_classes.psp_mag_rtn import mag_rtn, mag_rtn_class
+from .data_classes.psp_mag_sc_4sa import mag_sc_4sa, mag_sc_4sa_class
+from .data_classes.psp_mag_sc import mag_sc, mag_sc_class
 from .data_classes.psp_electron_classes import epad, epad_hr, epad_strahl_class, epad_strahl_high_res_class
 from .data_classes.psp_proton_classes import proton, proton_hr, proton_class, proton_hr_class
 from .data_classes.psp_proton_fits_classes import proton_fits # Import the FITS class
@@ -224,8 +227,8 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vMajor.Minor (Minor increments by 0.01 usually)
-COMMIT_MESSAGE = "Refactor: Finalized splitting of psp_mag_classes.py content; deleted original file (v2.35)"
-__version__ = "2025_05_17_v2.35"
+COMMIT_MESSAGE = "Refactor: Updated imports across codebase after psp_mag_classes.py split (v2.36)"
+__version__ = "2025_05_17_v2.36"
 
 # Print version information on import
 print(f"   Version: {__version__}")

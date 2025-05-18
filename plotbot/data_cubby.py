@@ -12,7 +12,10 @@ import cdflib
 # --- Import Data Class Types for Mapping ---
 # Assuming these classes are defined elsewhere and accessible
 # We need the actual class types, not just the instances
-from .data_classes.psp_mag_classes import mag_rtn_4sa_class, mag_rtn_class, mag_sc_4sa_class, mag_sc_class
+from .data_classes.psp_mag_rtn_4sa import mag_rtn_4sa_class
+from .data_classes.psp_mag_rtn import mag_rtn_class
+from .data_classes.psp_mag_sc_4sa import mag_sc_4sa_class
+from .data_classes.psp_mag_sc import mag_sc_class
 from .data_classes.psp_electron_classes import epad_strahl_class, epad_strahl_high_res_class
 from .data_classes.psp_proton_classes import proton_class, proton_hr_class
 # Note: proton_fits and ham are handled differently in get_data, so maybe not needed here?

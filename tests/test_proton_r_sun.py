@@ -6,7 +6,7 @@
 # likely as an alias or wrapper for pytplot.
 from plotbot import print_manager, config, plotbot, mag_rtn_4sa, proton, plt
 
-def main():
+def test_proton_r_sun_plot():
     # Configure plotting options via 'plt.options'
     try:
         if hasattr(plt, 'options'):
@@ -60,5 +60,5 @@ def main():
 
     print(f"--- [test_proton_r_sun] plotbot call completed. ---")
 
-if __name__ == "__main__":
-    main() 
+# if __name__ == "__main__": # Removed for pytest compatibility
+#     test_proton_r_sun_plot() # MODIFIED from main() 

@@ -54,7 +54,7 @@ from .multiplot_options import plt, MultiplotOptions
 from .get_data import get_data  # Add get_data import
 
 from .data_classes.psp_data_types import data_types
-from .data_classes.psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
+from . import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
 from .data_classes.psp_electron_classes import epad, epad_hr
 from .data_classes.psp_proton_classes import proton, proton_hr
 from .get_encounter import get_encounter_number

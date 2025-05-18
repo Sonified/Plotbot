@@ -62,7 +62,7 @@ from plotbot import print_manager # For logging
 from plotbot import plt # For plot closing
 from plotbot.test_pilot import phase, system_check # Test helpers
 from plotbot.audifier import Audifier, audifier as global_audifier
-from plotbot.data_classes.psp_mag_classes import mag_rtn, mag_rtn_4sa # Restore mag_rtn
+from plotbot import mag_rtn, mag_rtn_4sa # MODIFIED
 from plotbot.data_download_pyspedas import download_spdf_data # For SPDF debug test
 from plotbot.data_download_berkeley import download_berkeley_data # For conflict test
 from plotbot import config # Removed alias, import directly from package

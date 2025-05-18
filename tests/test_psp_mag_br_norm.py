@@ -4,7 +4,7 @@ import pathlib
 import pytest
 import matplotlib.pyplot as plt
 from datetime import datetime
-from plotbot.data_classes.psp_mag_classes import mag_rtn_4sa_class
+from plotbot import mag_rtn_4sa_class
 
 # Import plotbot and mag_rtn_4sa for integration test
 try:

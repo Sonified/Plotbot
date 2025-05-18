@@ -19,7 +19,7 @@ import plotbot as pb
 from plotbot.plotbot_main import plotbot # Import the plotbot function
 from plotbot.data_cubby import data_cubby # Import data_cubby
 from plotbot import config # Import config to modify server setting
-from plotbot.data_classes.psp_mag_classes import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
+from plotbot import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc # MODIFIED
 from plotbot.data_classes.psp_proton_classes import proton, proton_hr
 from plotbot.data_classes.psp_proton_fits_classes import proton_fits
 from plotbot.data_classes.psp_ham_classes import ham
@@ -27,6 +27,7 @@ from plotbot.data_classes.psp_electron_classes import epad, epad_hr
 # Excluded alpha_fits as requested
 # from plotbot.data_classes.psp_alpha_fits_classes import alpha_fits_class 
 # from plotbot.data_classes.custom_variables import CustomVariablesContainer
+from plotbot.data_snapshot import save_data_snapshot, load_data_snapshot
 
 # Set up test log dir
 os.makedirs('tests/test_logs', exist_ok=True)

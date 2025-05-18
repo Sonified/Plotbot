@@ -14,7 +14,7 @@ from .print_manager import print_manager
 from .data_cubby import data_cubby
 from .plot_manager import plot_manager
 from .data_tracker import global_tracker
-from .data_classes.psp_mag_classes import mag_rtn_class, mag_sc_class # Ensure specific classes can be checked if needed
+from . import mag_rtn_class, mag_sc_class # MODIFIED
 from .data_classes.psp_data_types import data_types as psp_data_types
 
 # Type hint for raw data object

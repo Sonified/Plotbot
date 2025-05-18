@@ -11,7 +11,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import plotbot as pb # Using pb alias as requested
 from plotbot import print_manager
 from plotbot.data_snapshot import save_data_snapshot, load_data_snapshot
-from plotbot.data_classes.psp_mag_classes import mag_rtn_4sa_class # For re-init/type check
+from plotbot.data_tracker import global_tracker
+from plotbot.data_cubby import data_cubby
+from plotbot import mag_rtn_4sa_class # MODIFIED
+from plotbot.data_classes.psp_electron_classes import epad_strahl_class # For re-init/type check
 # Conditional import for magnetic_hole_finder parts
 MH_FINDER_AVAILABLE = False
 try:
