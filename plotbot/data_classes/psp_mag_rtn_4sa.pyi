@@ -16,13 +16,13 @@ from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
 
 # Define a type alias for the imported data structure if possible
 # Replace 'Any' with a more specific type if available (e.g., the DataObject namedtuple)
-ImportedDataType = Any
+ImportedDataType = Any # Should ideally be plotbot.data_import.DataObject
 
 class mag_rtn_4sa_class:
     raw_data: Dict[str, Optional[Union[np.ndarray, List[np.ndarray]]]]
-    datetime: List[Any] # Or more specific type if known
-    datetime_array: Optional[np.ndarray]
-    time: Optional[np.ndarray]
+    datetime: List[Any] # Or more specific type if known, e.g., List[datetime]
+    datetime_array: Optional[np.ndarray] # Typically np.ndarray[datetime]
+    time: Optional[np.ndarray] # Typically np.ndarray[np.int64] for TT2000
     field: Optional[np.ndarray]
     all: plot_manager
     br: plot_manager
@@ -31,6 +31,18 @@ class mag_rtn_4sa_class:
     bmag: plot_manager
     pmag: plot_manager
 
+    # New property for lazy loaded br_norm
+    br_norm: property # More accurately: plot_manager, but accessed as a property
+
+    # Internal attributes (optional to include, but good for completeness if accessed/known)
+    _br_norm_pm: Optional[plot_manager]
+    _current_trange: Optional[List[str]]
+
+    # Meta attributes
+    class_name: str
+    data_type: str
+    subclass_name: Optional[str]
+
     def __init__(self, imported_data: Optional[ImportedDataType]) -> None: ...
     def update(self, imported_data: Optional[ImportedDataType]) -> None: ...
     def get_subclass(self, subclass_name: str) -> Optional[plot_manager]: ...
@@ -38,5 +50,7 @@ class mag_rtn_4sa_class:
     def __setattr__(self, name: str, value: Any) -> None: ...
     def calculate_variables(self, imported_data: ImportedDataType) -> None: ...
     def set_ploptions(self) -> None: ...
+    # The br_norm property getter is implicitly defined by @property in the .py file
 
+# Global instance, if defined in the .py file
 mag_rtn_4sa: mag_rtn_4sa_class 

@@ -228,8 +228,8 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vMajor.Minor (Minor increments by 0.01 usually)
-COMMIT_MESSAGE = "Refactor: v2.37 Split psp_proton_classes.py and created .pyi files"
-__version__ = "2025_05_17_v2.37"
+COMMIT_MESSAGE = "Fix: Correct Matplotlib labels in psp_mag_rtn_4sa.py to resolve plot error (v2.38)"
+__version__ = "2025_05_17_v2.38"
 
 # Print version information on import
 print(f"   Version: {__version__}")

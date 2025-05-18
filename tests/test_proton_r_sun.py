@@ -44,7 +44,7 @@ def test_proton_r_sun_plot():
 
     # Define time range from the notebook
     # Original notebook variable name was Jaye_epad_trange
-    time_range_for_plot = ['2021/04/26 00:00:00.000', '2021/04/26 00:01:00.000']
+    time_range_for_plot = ['2021/04/26 00:00:00.000', '2021/04/27 00:00:00.000']
 
     print(f"--- [test_proton_r_sun] Initializing plotbot call ---")
     print(f"--- [test_proton_r_sun] Time range: {time_range_for_plot} ---")
@@ -56,7 +56,8 @@ def test_proton_r_sun_plot():
     plotbot(time_range_for_plot,
             mag_rtn_4sa.br, 1,
             mag_rtn_4sa.pmag, 2,
-            proton.sun_dist_rsun, 3)
+            proton.sun_dist_rsun, 3,
+            mag_rtn_4sa.br_norm, 4)
 
     print(f"--- [test_proton_r_sun] plotbot call completed. ---")
 

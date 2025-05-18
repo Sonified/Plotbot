@@ -109,7 +109,7 @@
 
 - **Version Tag:** `2025_05_17_v2.32`
 - **Commit Message:** `Refactor: Prepare for psp_mag_classes.py split by creating new files and plan (v2.32)`
-- **Summary:** Created new empty files (`_utils.py`, `psp_mag_rtn_4sa.py`, `psp_mag_rtn.py`, `psp_mag_sc_4sa.py`, `psp_mag_sc.py`) in `plotbot/data_classes/` and documented the detailed refactoring plan in this log. This prepares for splitting the monolithic `psp_mag_classes.py`.
+- **Summary:** Created new empty files (`_utils.py`, `psp_mag_rtn_4sa.py`, `psp_mag_rtn.py`, `psp_mag_sc_4sa.py`, `psp_mag_sc.py`) in `plotbot/data_classes/` and documented the detailed refactoring plan in this log. This prepares for splitting the monolithic `psp_mag_classes.py`. 
 
 ## Refactor: `psp_mag_classes.pyi` Split
 
@@ -200,5 +200,31 @@
 - **Version Tag:** `2025_05_17_v2.37`
 - **Commit Message:** `Refactor: v2.37 Split psp_proton_classes.py and created .pyi files`
 - **Summary:** Successfully split `psp_proton_classes.py` into `psp_proton.py` and `psp_proton_hr.py`, updated all relevant imports across the codebase, and generated corresponding `.pyi` stub files. 
+
+*(Log remains open for further updates on 2025-05-17)* 
+
+## Debugging: Empty Plot from `test_proton_r_sun.py`
+
+- **Issue:** An empty plot window is appearing when `tests/test_proton_r_sun.py` is run.
+- **Initial Misdiagnosis (AI Slip-up):** Initially, the AI focused on the `mag_rtn_4sa_class` instantiation in `psp_mag_rtn_4sa.py` as a potential cause for an empty plot, suspecting the `plot_manager` might display on init.
+- **Correction:** Robert correctly pointed out that `tests/test_proton_r_sun.py` makes an explicit `plotbot()` call, which is the direct source of the plot. The emptiness of the plot suggests data is not being loaded or processed correctly for the variables passed to `plotbot()` within the test's time range.
+- **Next Steps:**
+    1. Run `pytest -s tests/test_proton_r_sun.py` to capture the standard output, which includes numerous debug prints.
+    2. Analyze this output to understand the data loading and processing flow, and identify why the plot variables (`mag_rtn_4sa.br`, `mag_rtn_4sa.pmag`, `proton.sun_dist_rsun`, `mag_rtn_4sa.br_norm`) might be empty or invalid when `plotbot()` is called.
+- **Note to Future AI Self:** When a test script is explicitly mentioned as causing a plot, investigate the test script's plotting calls *first*, before looking at class instantiations, especially if the test script contains its own `plotbot` or similar high-level plotting function calls. Don't get sidetracked by general class behaviors if a more direct cause is apparent in the test execution flow.
+
+- **Resolution (2025-05-17):**
+    - The `ValueError` was traced to the `y_label` for `br_norm` in `plotbot/data_classes/psp_mag_rtn_4sa.py`. The original label `'$B_R \\cdot R^2$ (nT AU$^2$)'` caused a mathtext parsing error.
+    - **Fix 1:** Changed the label to `'$B_R \cdot R^2$' + ' (nT AU$^2$)'` to separate the math expression from the units text. This resolved the `ValueError` and the plot displayed correctly.
+    - **Fix 2:** Subsequent test runs revealed `SyntaxWarning: invalid escape sequence '\\c'` due to `\cdot` in regular strings. All relevant matplotlib labels in `psp_mag_rtn_4sa.py` (including those for `br`, `bt`, `bn`, `bmag`, `pmag`, and all instances of `br_norm` labels) were updated to use raw strings (e.g., `r'$B_R \cdot R^2$'`). This resolved the syntax warnings.
+    - The test `tests/test_proton_r_sun.py` now passes cleanly without errors or warnings.
+
+*(Log remains open for further updates on 2025-05-17)* 
+
+## Push: v2.38
+
+- **Version Tag:** `2025_05_17_v2.38`
+- **Commit Message:** `Fix: Correct Matplotlib labels in psp_mag_rtn_4sa.py to resolve plot error (v2.38)`
+- **Summary:** Corrected Matplotlib `y_label` and `legend_label` formatting in `plotbot/data_classes/psp_mag_rtn_4sa.py`. This fixed a `ValueError` in `test_proton_r_sun.py` caused by mathtext parsing issues and resolved subsequent `SyntaxWarning`s by using raw strings for LaTeX sequences. The test now passes cleanly.
 
 *(Log remains open for further updates on 2025-05-17)* 

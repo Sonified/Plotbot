@@ -279,7 +279,7 @@ def test_filename_format():
     # Import directly from the module like in the notebook
     from plotbot.audifier import audifier
     from plotbot import mag_rtn
-
+    
     # Set up temporary directory for files
     import tempfile
     temp_dir = tempfile.mkdtemp()

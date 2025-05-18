@@ -10,6 +10,8 @@ from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
 from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
 from ._utils import _format_setattr_debug
+# from plotbot.get_data import get_data # MOVED into br_norm property to avoid circular import
+# from plotbot import proton # MOVED into br_norm property to avoid circular import
 
 # 🎉 Define the main class to calculate and store mag_rtn_4sa variables 🎉
 class mag_rtn_4sa_class:
@@ -26,10 +28,13 @@ class mag_rtn_4sa_class:
             'bt': None,
             'bn': None,
             'bmag': None,
-            'pmag': None
+            'pmag': None,
+            'br_norm': None # ADDED for lazy loading
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, '_br_norm_pm', None) # ADDED for lazy loading br_norm
+        object.__setattr__(self, '_current_trange', None) # ADDED to store trange for get_data calls
 
         print_manager.dependency_management(f"*** MAG_CLASS_INIT (mag_rtn_4sa_class) ID:{id(self)}: imported_data ID: {id(imported_data) if imported_data is not None else 'None'}. ***")
         if imported_data is None:
@@ -49,6 +54,15 @@ class mag_rtn_4sa_class:
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
             return
         
+        # Store the time range associated with this update if available
+        if hasattr(imported_data, 'trange') and imported_data.trange:
+            object.__setattr__(self, '_current_trange', imported_data.trange)
+        elif self.datetime_array is not None and len(self.datetime_array) > 0:
+             # Fallback if trange not directly on imported_data, try to derive from existing datetime_array
+            start_time = self.datetime_array[0].strftime('%Y-%m-%d/%H:%M:%S.%f')[:-3]
+            end_time = self.datetime_array[-1].strftime('%Y-%m-%d/%H:%M:%S.%f')[:-3]
+            object.__setattr__(self, '_current_trange', [start_time, end_time])
+
         print_manager.datacubby("\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
         
@@ -64,6 +78,7 @@ class mag_rtn_4sa_class:
         # Perform update
         self.calculate_variables(imported_data)                                # Update raw data arrays
         self.set_ploptions()                                                  # Recreate plot managers
+        object.__setattr__(self, '_br_norm_pm', None) # Reset cached br_norm plot_manager on update
         
         # Restore state (including any modified ploptions!)
         print_manager.datacubby("Restoring saved state...")
@@ -91,20 +106,26 @@ class mag_rtn_4sa_class:
             return None  # Return None if not found
 
     def __getattr__(self, name):
+        # This method is called only if regular attribute access (via __getattribute__)
+        # fails to find the attribute. Properties like br_norm should ideally be handled
+        # by __getattribute__ before this method is ever called for them.
+
         # Allow direct access to dunder OR single underscore methods/attributes
-        if name.startswith('_'): # Check for either '__' or '_' start
+        # by attempting to fetch them using object.__getattribute__.
+        if name.startswith('_'):
             try:
                 return object.__getattribute__(self, name)
             except AttributeError:
-                # Re-raise AttributeError if the internal/dunder method truly doesn't exist
+                # If even object.__getattribute__ fails for an underscored name,
+                # then it truly doesn't exist.
                 raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
-        if 'raw_data' not in self.__dict__:
-            raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
-        print_manager.dependency_management('mag_rtn_4sa getattr helper!')
-        available_attrs = list(self.raw_data.keys()) if self.raw_data else []  # Get list of valid attributes from raw_data
-        print(f"'{name}' is not a recognized attribute, friend!")                
-        print(f"Try one of these: {', '.join(available_attrs)}") # Show list of valid attributes to use
+        # If __getattr__ is reached for a non-underscored name, it means the attribute
+        # was not found through normal means (including properties).
+        # Therefore, an AttributeError should be raised.
+        # The previous implementation incorrectly printed a message and returned None implicitly.
+        print_manager.dependency_management(f"__getattr__: Attribute '{name}' not found through standard access for {self.__class__.__name__}. Raising AttributeError.")
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
     
     def __setattr__(self, name, value):
         # Allow direct setting of dunder OR single underscore methods/attributes
@@ -132,6 +153,9 @@ class mag_rtn_4sa_class:
         print_manager.dependency_management(f"*** MAG_CLASS_CALCVARS (mag_rtn_4sa_class) ID:{id(self)}: imported_data ID: {id(imported_data) if imported_data is not None else 'None'}, .data ID: {id(imported_data.data) if imported_data is not None and hasattr(imported_data, 'data') and imported_data.data is not None else 'N/A'} ***")
         if hasattr(imported_data, 'data') and isinstance(imported_data.data, dict):
             print_manager.dependency_management(f"    Available keys in imported_data.data for CALCVARS: {list(imported_data.data.keys())}")
+            # Store the time range if it's part of the imported_data object (might be useful for br_norm)
+            if hasattr(imported_data, 'trange'):
+                object.__setattr__(self, '_current_trange', imported_data.trange)
         else:
             print_manager.dependency_management(f"    CALCVARS: imported_data.data is missing or not a dict.")
         # Store only TT2000 times as numpy array
@@ -167,7 +191,8 @@ class mag_rtn_4sa_class:
             'bt': bt,
             'bn': bn,
             'bmag': bmag,
-            'pmag': pmag
+            'pmag': pmag,
+            'br_norm': None # Ensure br_norm is in raw_data but not calculated here
         }
 
         # # Convert TT2000 timestamps to datetime objects using cdflib
@@ -186,6 +211,20 @@ class mag_rtn_4sa_class:
 
         print_manager.dependency_management(f"Setting up plot options for mag_rtn_4sa variables")
         
+        # Ensure datetime_array is available before creating plot managers
+        if self.datetime_array is None:
+            print_manager.warning(f"Cannot set plot options for {self.class_name}: datetime_array is None.")
+            # Initialize empty plot_managers for attributes if datetime_array is None
+            # This prevents AttributeError if attributes are accessed before data is loaded.
+            self.all = plot_manager(None, plot_options=ploptions(data_type='mag_RTN_4sa', class_name='mag_rtn_4sa', subclass_name='all', datetime_array=None))
+            self.br = plot_manager(None, plot_options=ploptions(data_type='mag_RTN_4sa', class_name='mag_rtn_4sa', subclass_name='br', datetime_array=None))
+            self.bt = plot_manager(None, plot_options=ploptions(data_type='mag_RTN_4sa', class_name='mag_rtn_4sa', subclass_name='bt', datetime_array=None))
+            self.bn = plot_manager(None, plot_options=ploptions(data_type='mag_RTN_4sa', class_name='mag_rtn_4sa', subclass_name='bn', datetime_array=None))
+            self.bmag = plot_manager(None, plot_options=ploptions(data_type='mag_RTN_4sa', class_name='mag_rtn_4sa', subclass_name='bmag', datetime_array=None))
+            self.pmag = plot_manager(None, plot_options=ploptions(data_type='mag_RTN_4sa', class_name='mag_rtn_4sa', subclass_name='pmag', datetime_array=None))
+            # Note: br_norm is handled by its property, so it doesn't need explicit empty initialization here.
+            return
+
         self.all = plot_manager(
             [self.raw_data['br'], self.raw_data['bt'], self.raw_data['bn']],
             plot_options=ploptions(
@@ -196,7 +235,7 @@ class mag_rtn_4sa_class:
                 plot_type='time_series',    # Type of plot
                 datetime_array=self.datetime_array,# Time data
                 y_label='B (nT)',          # Y-axis label
-                legend_label=['$B_R$', '$B_T$', '$B_N$'],  # Legend text
+                legend_label=[r'$B_R$', r'$B_T$', r'$B_N$'],  # Legend text
                 color=['forestgreen', 'orange', 'dodgerblue'],  # Plot colors
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
@@ -216,7 +255,7 @@ class mag_rtn_4sa_class:
                 plot_type='time_series',    # Type of plot
                 datetime_array=self.datetime_array,# Time data
                 y_label='B (nT)',          # Y-axis label
-                legend_label='$B_R$',      # Legend text
+                legend_label=r'$B_R$',      # Legend text
                 color='forestgreen',        # Plot color
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
@@ -235,7 +274,7 @@ class mag_rtn_4sa_class:
                 plot_type='time_series',    # Type of plot
                 datetime_array=self.datetime_array,# Time data
                 y_label='B (nT)',          # Y-axis label
-                legend_label='$B_T$',      # Legend text
+                legend_label=r'$B_T$',      # Legend text
                 color='orange',            # Plot color
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
@@ -254,7 +293,7 @@ class mag_rtn_4sa_class:
                 plot_type='time_series',    # Type of plot
                 datetime_array=self.datetime_array,# Time data
                 y_label='B (nT)',          # Y-axis label
-                legend_label='$B_N$',      # Legend text
+                legend_label=r'$B_N$',      # Legend text
                 color='dodgerblue',        # Plot color
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
@@ -273,7 +312,7 @@ class mag_rtn_4sa_class:
                 plot_type='time_series',    # Type of plot
                 datetime_array=self.datetime_array,# Time data
                 y_label='|B| (nT)',        # Y-axis label
-                legend_label='$|B|$',      # Legend text
+                legend_label=r'$|B|$',      # Legend text
                 color='black',             # Plot color
                 y_scale='linear',          # Scale type
                 y_limit=None,              # Y-axis limits
@@ -292,15 +331,196 @@ class mag_rtn_4sa_class:
                 plot_type='time_series',    # Type of plot
                 datetime_array=self.datetime_array,# Time data
                 y_label='Pmag (nPa)',      # Y-axis label
-                legend_label='$P_{mag}$',  # Legend text
+                legend_label=r'$P_{mag}$',  # Legend text
                 color='purple',            # Plot color
                 y_scale='log',             # Scale type
                 y_limit=None,              # Y-axis limits
                 line_width=1,              # Line width
                 line_style='-'             # Line style
             )
-            
         )
+        # br_norm plot_manager is now created on-demand by its property
+        print_manager.dependency_management(f"FYI: Example mag data: Created mag_rtn_4sa.pmag variable with data shape {self.raw_data['pmag'].shape if self.raw_data['pmag'] is not None else 'None'}")
+
+    @property
+    def br_norm(self):
+        """
+        Lazily calculates Br normalized by solar distance squared (R^2).
+        Fetches proton.sun_dist_rsun via get_data if needed.
+        """
+        from plotbot.get_data import get_data # MOVED HERE to avoid circular import
+        from plotbot import proton # MOVED HERE to avoid circular import
+
+        print_manager.dependency_management("br_norm property: Entered.") # DEBUG
+        print_manager.dependency_management(f"br_norm property: type(proton) is {type(proton)}, type(proton.sun_dist_rsun) is {type(proton.sun_dist_rsun)}") # DEBUG
+
+        if self._br_norm_pm is not None:
+            print_manager.dependency_management("br_norm: Returning cached plot_manager.")
+            return self._br_norm_pm
+
+        print_manager.dependency_management("br_norm: Attempting calculation.")
+
+        if self.datetime_array is None or len(self.datetime_array) == 0:
+            print_manager.dependency_management("WARNING: br_norm: Cannot calculate. Mag data (self.datetime_array) not loaded yet.")
+            self._br_norm_pm = plot_manager(None, plot_options=ploptions(
+                data_type='mag_RTN_4sa', class_name='mag_rtn_4sa', subclass_name='br_norm', 
+                datetime_array=None, y_label=r'$B_R \cdot R^2$' + ' (nT AU$^2$)', legend_label=r'$B_R \cdot R^2$'
+            ))
+            return self._br_norm_pm
+        
+        current_trange_for_proton = None
+        print_manager.dependency_management(f"br_norm property: Checking self._current_trange. Type: {type(self._current_trange)}, Value: {self._current_trange}") # DEBUG
+        if self._current_trange:
+            current_trange_for_proton = self._current_trange
+            print_manager.dependency_management(f"br_norm property: Used self._current_trange: {current_trange_for_proton}") # DEBUG
+        else: 
+            print_manager.dependency_management(f"br_norm property: self._current_trange is Falsey. Deriving from self.datetime_array. len={len(self.datetime_array)}") # DEBUG
+            print_manager.dependency_management(f"br_norm property: Type of self.datetime_array[0] is {type(self.datetime_array[0])}") # DEBUG
+            # Convert numpy.datetime64 to pandas Timestamp or Python datetime before strftime
+            start_dt_obj = pd.Timestamp(self.datetime_array[0])
+            end_dt_obj = pd.Timestamp(self.datetime_array[-1])
+            
+            start_time = start_dt_obj.strftime('%Y-%m-%d/%H:%M:%S.%f')[:-3]
+            print_manager.dependency_management(f"br_norm property: Calculated start_time: {start_time}") # DEBUG
+            end_time = end_dt_obj.strftime('%Y-%m-%d/%H:%M:%S.%f')[:-3]
+            print_manager.dependency_management(f"br_norm property: Calculated end_time: {end_time}") # DEBUG
+            current_trange_for_proton = [start_time, end_time]
+            print_manager.dependency_management(f"br_norm property: Derived trange for proton data: {current_trange_for_proton}")
+        
+        print_manager.dependency_management(f"br_norm property: Calling get_data for proton.sun_dist_rsun with trange: {current_trange_for_proton}")
+        get_data(current_trange_for_proton, proton.sun_dist_rsun) # Ensures proton data is loaded/calculated
+        print_manager.dependency_management(f"DEBUG MAG: br_norm: After get_data for proton.sun_dist_rsun.")
+        if hasattr(proton, 'sun_dist_rsun') and proton.sun_dist_rsun is not None and hasattr(proton.sun_dist_rsun, 'data'):
+            print_manager.dependency_management(f"DEBUG MAG: br_norm: proton.sun_dist_rsun.data type={type(proton.sun_dist_rsun.data)}, shape={getattr(proton.sun_dist_rsun.data, 'shape', 'N/A')}, ndim={getattr(proton.sun_dist_rsun.data, 'ndim', 'N/A')}")
+        else:
+            print_manager.dependency_management(f"DEBUG MAG: br_norm: proton.sun_dist_rsun or its .data attribute is None or missing.")
+        if hasattr(proton, 'datetime_array'):
+            print_manager.dependency_management(f"DEBUG MAG: br_norm: proton.datetime_array type={type(proton.datetime_array)}, len={len(proton.datetime_array) if proton.datetime_array is not None else 'None'}")
+        else:
+            print_manager.dependency_management(f"DEBUG MAG: br_norm: proton.datetime_array is missing.")
+
+        print_manager.dependency_management(f"br_norm property: After get_data for proton. proton.sun_dist_rsun.data is type {type(proton.sun_dist_rsun.data)}, proton.datetime_array is type {type(proton.datetime_array)}") # DEBUG
+        if proton.sun_dist_rsun.data is None or proton.datetime_array is None or len(proton.datetime_array) == 0:
+            print_manager.dependency_management("WARNING: br_norm: Proton sun_dist_rsun data or datetime_array not available after get_data call.")
+            self._br_norm_pm = plot_manager(None, plot_options=ploptions(
+                data_type='mag_RTN_4sa', class_name='mag_rtn_4sa', subclass_name='br_norm', 
+                datetime_array=self.datetime_array, y_label=r'$B_R \cdot R^2$' + ' (nT AU$^2$)', legend_label=r'$B_R \cdot R^2$'
+            ))
+            return self._br_norm_pm
+
+        br_data = self.raw_data.get('br')
+        if br_data is None:
+            print_manager.dependency_management("WARNING: br_norm: Mag br data not available.")
+            self._br_norm_pm = plot_manager(None, plot_options=ploptions(
+                data_type='mag_RTN_4sa', class_name='mag_rtn_4sa', subclass_name='br_norm', 
+                datetime_array=self.datetime_array, y_label=r'$B_R \cdot R^2$' + ' (nT AU$^2$)', legend_label=r'$B_R \cdot R^2$'
+            ))
+            return self._br_norm_pm
+
+        # Ensure proton.datetime_array is sorted for np.interp
+        print_manager.dependency_management("br_norm property: Preparing for interpolation.") # DEBUG
+        print_manager.dependency_management(f"br_norm property: proton.datetime_array (before sort): type={type(proton.datetime_array)}, len={len(proton.datetime_array) if proton.datetime_array is not None else 'None'}") # DEBUG
+        # Commenting out this line because it fails when proton.sun_dist_rsun.data is a scalar
+        # print_manager.dependency_management(f"br_norm property: proton.sun_dist_rsun.data (before sort): type={type(proton.sun_dist_rsun.data)}, len={len(proton.sun_dist_rsun.data) if proton.sun_dist_rsun.data is not None else 'None'}") # DEBUG
+        
+        # Sort datetime array for proper interpolation
+        sort_indices = np.argsort(proton.datetime_array)
+        proton_dt_sorted = proton.datetime_array[sort_indices]
+        
+        # Safely examine and log details about sun_dist_rsun.data before attempting to index it
+        if getattr(proton.sun_dist_rsun.data, 'ndim', None) == 0 or isinstance(proton.sun_dist_rsun.data, (int, float)):
+            print_manager.dependency_management(f"DEBUG MAG: CRITICAL - Found scalar value in proton.sun_dist_rsun.data: {proton.sun_dist_rsun.data}")
+            print_manager.dependency_management("DEBUG MAG: This is likely because SUN_DIST in CDF is stored as a scalar, not an array")
+            
+            # Check if we can use the data from raw_data directly
+            if hasattr(proton, 'raw_data') and isinstance(proton.raw_data, dict) and 'sun_dist_rsun' in proton.raw_data:
+                print_manager.dependency_management(f"DEBUG MAG: Found sun_dist_rsun in proton.raw_data. Type={type(proton.raw_data['sun_dist_rsun'])}, shape={getattr(proton.raw_data['sun_dist_rsun'], 'shape', 'No shape')}")
+                # Use the array from raw_data instead
+                print_manager.dependency_management(f"DEBUG MAG: Using sun_dist_rsun array from proton.raw_data with length {len(proton.raw_data['sun_dist_rsun'])}")
+                proton_sun_dist_sorted = proton.raw_data['sun_dist_rsun'][sort_indices]
+            else:
+                # Fallback - create a properly sized array using the scalar value
+                print_manager.dependency_management(f"DEBUG MAG: Creating array of length {len(proton.datetime_array)} with repeated scalar value")
+                proton_sun_dist_data = np.full(len(proton.datetime_array), proton.sun_dist_rsun.data, dtype=float)
+                # Proceed with this array
+                proton_sun_dist_sorted = proton_sun_dist_data[sort_indices]
+        else:
+            print_manager.dependency_management(f"DEBUG MAG: Using original array with shape {proton.sun_dist_rsun.data.shape}")
+            proton_sun_dist_sorted = proton.sun_dist_rsun.data[sort_indices]
+        
+        print_manager.dependency_management("br_norm property: Converted datetimes to timestamps for interpolation.") # DEBUG
+        # Convert datetimes to timestamps for interpolation
+        mag_timestamps = self.datetime_array.astype(np.int64) // 10**9
+        proton_timestamps_sorted = proton_dt_sorted.astype(np.int64) // 10**9
+        
+        # Handle cases where proton data might not span the mag data range
+        # Or if proton_timestamps_sorted is empty or has duplicate timestamps after conversion
+        if len(proton_timestamps_sorted) < 2 or np.all(proton_timestamps_sorted == proton_timestamps_sorted[0]):
+             print_manager.dependency_management("WARNING: br_norm: Proton datetime data is insufficient for interpolation (too few unique points).")
+             self._br_norm_pm = plot_manager(None, plot_options=ploptions(
+                data_type='mag_RTN_4sa', class_name='mag_rtn_4sa', subclass_name='br_norm', 
+                datetime_array=self.datetime_array, y_label=r'$B_R \cdot R^2$' + ' (nT AU$^2$)', legend_label=r'$B_R \cdot R^2$'
+            ))
+             return self._br_norm_pm
+
+        try:
+            print_manager.dependency_management("br_norm property: Attempting np.interp.") # DEBUG
+            sun_dist_interp_rsun = np.interp(mag_timestamps, proton_timestamps_sorted, proton_sun_dist_sorted)
+            print_manager.dependency_management("br_norm property: np.interp successful.") # DEBUG
+        except Exception as e:
+            print_manager.dependency_management(f"ERROR: br_norm: Error during interpolation of sun_dist_rsun: {e}")
+            self._br_norm_pm = plot_manager(None, plot_options=ploptions(
+                data_type='mag_RTN_4sa', class_name='mag_rtn_4sa', subclass_name='br_norm', 
+                datetime_array=self.datetime_array, y_label=r'$B_R \cdot R^2$' + ' (nT AU$^2$)', legend_label=r'$B_R \cdot R^2$'
+            ))
+            return self._br_norm_pm
+
+        rsun_to_au_conversion_factor = 215.03286764414261
+        
+        calculated_br_norm_data = br_data * ((sun_dist_interp_rsun / rsun_to_au_conversion_factor) ** 2)
+        self.raw_data['br_norm'] = calculated_br_norm_data
+        
+        print_manager.dependency_management(f"br_norm property: Successfully calculated br_norm data. Shape: {calculated_br_norm_data.shape}") # DEBUG
+        print_manager.dependency_management("br_norm property: Creating final plot_manager for br_norm.") # DEBUG
+        
+        # Ensure data is a properly shaped array (flattened to 1D if needed)
+        if calculated_br_norm_data.ndim != 1:
+            print_manager.dependency_management(f"DEBUG MAG: br_norm: Reshaping calculated_br_norm_data from {calculated_br_norm_data.ndim}D to 1D")
+            calculated_br_norm_data = calculated_br_norm_data.flatten()
+
+        # Debug the shape AFTER ensuring 1D
+        print_manager.dependency_management(f"DEBUG MAG: br_norm: Final calculated_br_norm_data shape before plot_manager: {calculated_br_norm_data.shape}, ndim={calculated_br_norm_data.ndim}")
+
+        # Create a custom plot_manager class that properly handles scalar values for Plotbot
+        class BrNormPlotManager(plot_manager):
+            def __array__(self, dtype=None):
+                # Create a proper 1D array instead of scalar
+                arr = np.asarray(self.view(np.ndarray), dtype=dtype)
+                # Ensure it's 1D, not 0D (scalar)
+                if arr.ndim == 0:
+                    print_manager.dependency_management("BrNormPlotManager: Converting scalar to 1D array")
+                    arr = np.expand_dims(arr, axis=0)
+                return plot_manager(arr, self.plot_options)
+
+        self._br_norm_pm = BrNormPlotManager(
+            calculated_br_norm_data,
+            plot_options=ploptions(
+                data_type='mag_RTN_4sa',
+                var_name='br_norm_rtn_4sa', # Suggested var_name
+                class_name='mag_rtn_4sa',
+                subclass_name='br_norm',
+                plot_type='time_series',
+                datetime_array=self.datetime_array,
+                y_label=r'$B_R \cdot R^2$' + ' (nT AU$^2$)', # Updated label
+                legend_label=r'$B_R \cdot R^2$',       # Updated legend
+                color='cyan', 
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        return self._br_norm_pm
 
     def restore_from_snapshot(self, snapshot_data):
         """

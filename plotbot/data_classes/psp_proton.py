@@ -35,7 +35,7 @@ class proton_class:
             'pressure': None,
             'density': None,
             'bmag': None,
-            'sun_dist_rsun': None
+            'sun_dist_rsun': None  # Remains None initially
         })
         object.__setattr__(self, 'datetime_array', None)
         object.__setattr__(self, 'times_mesh', [])
@@ -44,6 +44,11 @@ class proton_class:
         object.__setattr__(self, 'theta_vals', None)
         object.__setattr__(self, 'phi_vals', None)
         object.__setattr__(self, 'data_type', 'spi_sf00_l3_mom')
+
+        # Attributes for lazy loading sun_dist_rsun
+        object.__setattr__(self, '_sun_dist_km_raw', None)
+        object.__setattr__(self, '_sun_dist_rsun_calculated_flag', False)
+        object.__setattr__(self, '_sun_dist_rsun_plot_manager', None)
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
@@ -198,9 +203,9 @@ class proton_class:
         pressure_pperp = 1.602E-4 * density * t_perp
         pressure_total = 1.602E-4 * temperature * density
 
-        # Distance from sun - Added from Jaye's version
-        sun_dist_km = imported_data.data['SUN_DIST']
-        sun_dist_rsun = sun_dist_km / 695700.0 # Conversion factor for solar radii
+        # Store raw sun distance data for lazy calculation
+        self._sun_dist_km_raw = imported_data.data.get('SUN_DIST')
+        self._sun_dist_rsun_calculated_flag = False # Reset flag on new data
 
         # Get energy flux data
         eflux_v_energy = imported_data.data['EFLUX_VS_ENERGY']
@@ -261,7 +266,7 @@ class proton_class:
             'pressure': pressure_total,
             'density': density,
             'bmag': b_mag,
-            'sun_dist_rsun': sun_dist_rsun
+            'sun_dist_rsun': None # Initialize as None, will be populated by lazy loader
         }
 
     def _calculate_temperature_anisotropy(self):
@@ -301,6 +306,224 @@ class proton_class:
                 anisotropy.append(np.nan)  # or any other value that makes sense in your context
         
         return np.array(t_par), np.array(t_perp), np.array(anisotropy)
+
+    def _ensure_sun_dist_calculated(self):
+        """Calculates sun_dist_rsun if raw data is available and it hasn't been calculated yet."""
+        if not self._sun_dist_rsun_calculated_flag and \
+           self._sun_dist_km_raw is not None and \
+           self.datetime_array is not None: # Ensure datetime_array is also available
+
+            # Perform the calculation
+            calculated_value = self._sun_dist_km_raw / 695700.0
+            
+            # Ensure calculated_value is a proper array with correct shape
+            if np.isscalar(calculated_value) or getattr(calculated_value, 'ndim', 0) == 0:
+                print_manager.dependency_management(f"PROTON: Converting scalar sun_dist_rsun {calculated_value} to array with shape matching datetime_array ({len(self.datetime_array)})")
+                # Create an array of the same value with the length of datetime_array
+                calculated_value = np.full(len(self.datetime_array), calculated_value)
+            
+            self.raw_data['sun_dist_rsun'] = calculated_value
+
+            # Update the plot_manager instance with the new data
+            if self._sun_dist_rsun_plot_manager is not None:
+                self._sun_dist_rsun_plot_manager.data = calculated_value
+                # Ensure the plot_manager's datetime_array is consistent
+                self._sun_dist_rsun_plot_manager.datetime_array = self.datetime_array
+            else:
+                # This case should ideally not be hit if set_ploptions ran correctly
+                print_manager.warning("proton_class: _sun_dist_rsun_plot_manager was None during lazy calculation.")
+                
+                # Define SafePlotManager class here instead of trying to get it from property
+                class SafePlotManager(plot_manager):
+                    def __new__(cls, input_array, plot_options=None):
+                        # Get the actual ndarray view from plot_manager's __new__
+                        obj = plot_manager.__new__(cls, input_array, plot_options)
+                        # Store a reference to the proton class for accessing raw_data
+                        obj._proton_instance = proton
+                        return obj
+                        
+                    def __array_finalize__(self, obj):
+                        # Call parent's array_finalize to set up all required attributes
+                        plot_manager.__array_finalize__(self, obj)
+                        # Add our custom attribute if not already present
+                        if not hasattr(self, '_proton_instance'):
+                            self._proton_instance = getattr(obj, '_proton_instance', proton)
+                            
+                    def __array__(self, dtype=None):
+                        """Override to ensure we always return the raw_data array directly."""
+                        # First try to use the raw_data array which has the correct shape
+                        if (hasattr(self._proton_instance, 'raw_data') and 
+                            self._proton_instance.raw_data is not None and 
+                            'sun_dist_rsun' in self._proton_instance.raw_data and 
+                            self._proton_instance.raw_data['sun_dist_rsun'] is not None):
+                            
+                            print_manager.dependency_management(f"SafePlotManager: Using raw_data array with shape {self._proton_instance.raw_data['sun_dist_rsun'].shape}")
+                            # Use the raw data array directly for plotting
+                            return np.asarray(self._proton_instance.raw_data['sun_dist_rsun'], dtype=dtype)
+                        
+                        # Fallback to original data
+                        arr = np.asarray(self.view(np.ndarray), dtype=dtype)
+                        if arr.ndim == 0:  # If it's a scalar (0-dimensional array)
+                            print_manager.dependency_management("SafePlotManager: Converting scalar to 1D array")
+                            # Convert to 1D array with 1 element
+                            return np.array([arr.item()], dtype=dtype)
+                        return arr
+
+                    # Override to handle 2D indexing when used in Plotbot
+                    def __getitem__(self, key):
+                        # Prioritize using raw_data for indexing
+                        if (hasattr(self._proton_instance, 'raw_data') and 
+                            self._proton_instance.raw_data is not None and 
+                            'sun_dist_rsun' in self._proton_instance.raw_data and 
+                            self._proton_instance.raw_data['sun_dist_rsun'] is not None):
+                            
+                            raw_arr = self._proton_instance.raw_data['sun_dist_rsun']
+                            
+                            # Handle 2D indexing case
+                            if isinstance(key, tuple) and len(key) == 2:
+                                return raw_arr[key[1]]
+                            
+                            # Normal indexing
+                            return raw_arr[key]
+                        
+                        # Handle case where Plotbot tries to slice with [rows, cols]
+                        if isinstance(key, tuple) and len(key) == 2:
+                            print_manager.dependency_management(f"SafePlotManager: Got 2D indexing {key}, using just second part")
+                            # Just use the second part of the index (the columns/time indices)
+                            if self.ndim == 1:
+                                return super().__getitem__(key[1])
+                        # Otherwise use normal indexing
+                        return super().__getitem__(key)
+                
+                # Create a new SafePlotManager instance
+                self._sun_dist_rsun_plot_manager = SafePlotManager(
+                    calculated_value,
+                    plot_options=ploptions(
+                        data_type='spi_sf00_l3_mom',
+                        var_name='sun_dist_rsun',
+                        class_name='proton',
+                        subclass_name='sun_dist_rsun',
+                        plot_type='time_series',
+                        datetime_array=self.datetime_array,
+                        y_label='Sun Distance \\n ($R_s$)',
+                        legend_label='$R_s$',
+                        color='goldenrod',
+                        y_scale='linear',
+                        line_width=1,
+                        line_style='-'
+                    )
+                )
+            self._sun_dist_rsun_calculated_flag = True
+            print_manager.debug(f"Lazily calculated sun_dist_rsun for {self.data_type}")
+
+    @property
+    def sun_dist_rsun(self):
+        """Property to lazily calculate and return the sun_dist_rsun plot_manager."""
+        self._ensure_sun_dist_calculated() # Ensure it's calculated on access
+
+        # Debug output to verify data before plotting
+        print_manager.dependency_management(f"DEBUG CRITICAL: sun_dist_rsun property accessed, raw_data['sun_dist_rsun']: shape={self.raw_data['sun_dist_rsun'].shape if self.raw_data['sun_dist_rsun'] is not None else 'None'}, type={type(self.raw_data['sun_dist_rsun'])}")
+        
+        # Define the SafePlotManager class if it doesn't exist yet
+        if not hasattr(self, '_SafePlotManager'):
+            class SafePlotManager(plot_manager):
+                def __new__(cls, input_array, plot_options=None):
+                    # Get the actual ndarray view from plot_manager's __new__
+                    obj = plot_manager.__new__(cls, input_array, plot_options)
+                    # Store a reference to the proton class for accessing raw_data
+                    obj._proton_instance = proton
+                    return obj
+                    
+                def __array_finalize__(self, obj):
+                    # Call parent's array_finalize to set up all required attributes
+                    plot_manager.__array_finalize__(self, obj)
+                    # Add our custom attribute if not already present
+                    if not hasattr(self, '_proton_instance'):
+                        self._proton_instance = getattr(obj, '_proton_instance', proton)
+                
+                def __array__(self, dtype=None):
+                    """Override to ensure we always return the raw_data array directly."""
+                    # First try to use the raw_data array which has the correct shape
+                    if (hasattr(self._proton_instance, 'raw_data') and 
+                        self._proton_instance.raw_data is not None and 
+                        'sun_dist_rsun' in self._proton_instance.raw_data and 
+                        self._proton_instance.raw_data['sun_dist_rsun'] is not None):
+                        
+                        print_manager.dependency_management(f"SafePlotManager: Using raw_data array with shape {self._proton_instance.raw_data['sun_dist_rsun'].shape}")
+                        # Use the raw data array directly for plotting
+                        return np.asarray(self._proton_instance.raw_data['sun_dist_rsun'], dtype=dtype)
+                    
+                    # Fallback to original data
+                    arr = np.asarray(self.view(np.ndarray), dtype=dtype)
+                    if arr.ndim == 0:  # If it's a scalar (0-dimensional array)
+                        print_manager.dependency_management("SafePlotManager: Converting scalar to 1D array")
+                        # Convert to 1D array with 1 element
+                        return np.array([arr.item()], dtype=dtype)
+                    return arr
+
+                # Override to handle 2D indexing when used in Plotbot
+                def __getitem__(self, key):
+                    # Prioritize using raw_data for indexing
+                    if (hasattr(self._proton_instance, 'raw_data') and 
+                        self._proton_instance.raw_data is not None and 
+                        'sun_dist_rsun' in self._proton_instance.raw_data and 
+                        self._proton_instance.raw_data['sun_dist_rsun'] is not None):
+                        
+                        raw_arr = self._proton_instance.raw_data['sun_dist_rsun']
+                        
+                        # Handle 2D indexing case
+                        if isinstance(key, tuple) and len(key) == 2:
+                            return raw_arr[key[1]]
+                        
+                        # Normal indexing
+                        return raw_arr[key]
+                    
+                    # Handle case where Plotbot tries to slice with [rows, cols]
+                    if isinstance(key, tuple) and len(key) == 2:
+                        print_manager.dependency_management(f"SafePlotManager: Got 2D indexing {key}, using just second part")
+                        # Just use the second part of the index (the columns/time indices)
+                        if self.ndim == 1:
+                            return super().__getitem__(key[1])
+                    # Otherwise use normal indexing
+                    return super().__getitem__(key)
+                    
+            # Store the class for future use
+            self._SafePlotManager = SafePlotManager
+
+        if self._sun_dist_rsun_plot_manager is None:
+            # This might happen if set_ploptions hasn't run or had an issue
+            # For safety, try to initialize it if it's None, using raw_data for sun_dist_rsun
+            print_manager.dependency_management("proton_class: sun_dist_rsun plot_manager accessed before full initialization or was None. Attempting to create.")
+            
+            # Use the raw data directly if available
+            data_to_use = self.raw_data.get('sun_dist_rsun', np.array([0.0]))
+            
+            # Use our custom SafePlotManager instead of plot_manager
+            self._sun_dist_rsun_plot_manager = self._SafePlotManager(
+                data_to_use,
+                plot_options=ploptions(
+                    data_type='spi_sf00_l3_mom',
+                    var_name='sun_dist_rsun',
+                    class_name='proton',
+                    subclass_name='sun_dist_rsun',
+                    plot_type='time_series',
+                    datetime_array=self.datetime_array,
+                    y_label='Sun Distance \\n ($R_s$)',
+                    legend_label='$R_s$',
+                    color='goldenrod',
+                    y_scale='linear',
+                    line_width=1,
+                    line_style='-'
+                )
+            )
+        elif not isinstance(self._sun_dist_rsun_plot_manager, self._SafePlotManager):
+            # If it exists but isn't our safe version, replace it with the safe version
+            print_manager.dependency_management("Converting existing sun_dist_rsun to SafePlotManager")
+            data = np.array(self._sun_dist_rsun_plot_manager)
+            options = self._sun_dist_rsun_plot_manager.plot_options
+            self._sun_dist_rsun_plot_manager = self._SafePlotManager(data, plot_options=options)
+
+        return self._sun_dist_rsun_plot_manager
 
     def set_ploptions(self):
         """Set up the plotting options for all proton parameters"""
@@ -697,26 +920,6 @@ class proton_class:
                 additional_data=self.phi_vals,
                 colormap='jet',
                 colorbar_scale='log'
-            )
-        )
-
-        # Added Sun Distance variable
-        self.sun_dist_rsun = plot_manager(
-            self.raw_data['sun_dist_rsun'],
-            plot_options=ploptions(
-                data_type='spi_sf00_l3_mom',
-                var_name='sun_dist_rsun',
-                class_name='proton',
-                subclass_name='sun_dist_rsun',
-                plot_type='time_series',
-                datetime_array=self.datetime_array,
-                y_label='Sun Distance \n ($R_s$)', # Using solar radii units
-                legend_label='$R_s$',
-                color='goldenrod', # Distinct color for sun distance
-                y_scale='linear',
-                y_limit=None,
-                line_width=1,
-                line_style='-'
             )
         )
 
