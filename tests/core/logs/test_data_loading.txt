@@ -1437,3 +1437,6 @@ PASSED
 17-May-25 16:42:19: Remote index not found: https://spdf.gsfc.nasa.gov/pub/data/psp/fields/l2/mag_rtn_4_per_cycle/2025/
 17-May-25 16:42:22: Remote index not found: https://spdf.gsfc.nasa.gov/pub/data/psp/fields/l2/mag_rtn_4_per_cycle/2025/
 17-May-25 16:42:25: Remote index not found: https://spdf.gsfc.nasa.gov/pub/data/psp/fields/l2/mag_rtn_4_per_cycle/2025/
+18-May-25 20:48:16: Proton Sun Distance Data Loaded - PASSED: Should load proton sun_dist_rsun data. Shape: (2060,)
+18-May-25 20:52:30: Proton Sun Distance Data Loaded - PASSED: Should load proton sun_dist_rsun data. Shape: (2060,)
+18-May-25 20:53:19: Proton Sun Distance Data Loaded - PASSED: Should load proton sun_dist_rsun data. Shape: (2060,)

@@ -227,13 +227,12 @@ RESET = '\033[0m'
 
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
-# Format: YYYY_MM_DD_vMajor.Minor (Minor increments by 0.01 usually)
-COMMIT_MESSAGE = "Fix: Circular import in br_norm implementation & identify data loading issue (v2.40)"
-__version__ = "2025_05_18_v2.40"
-
+# Format: YYYY_MM_DD_vX.YY (X for major, YY for minor revisions on the same day)
+__version__ = "2025_04_19_v1.00"
+__commit_message__ = "Debug proton time range updates and data cubby merge logic."
 # Print version information on import
 print(f"   Version: {__version__}")
-print(f"   Commit: {COMMIT_MESSAGE}")
+print(f"   Commit: {__commit_message__}")
 
 # --- Final Print Message ---
 print(f"\n{BLUE}🤖 Plotbot Initialized{RESET}")

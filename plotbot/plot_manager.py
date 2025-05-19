@@ -415,8 +415,8 @@ class plot_manager(np.ndarray):
             else:
                 # For unrecognized attributes, provide a friendly error
                 print_manager.debug('Manager message:')
-                print(f"'{name}' is not a recognized attribute, friend!")
-                print(f"Try one of these: {', '.join(self.PLOT_ATTRIBUTES)}")
+                print(f"[Plot Manager] '{name}' is not a recognized attribute, friend!")
+                print(f"[Plot Manager] Try one of these: {', '.join(self.PLOT_ATTRIBUTES)}")
                 return
 
         except Exception as e:

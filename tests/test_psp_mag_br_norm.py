@@ -4,15 +4,26 @@ import pathlib
 import pytest
 import matplotlib.pyplot as plt
 from datetime import datetime
-from plotbot import mag_rtn_4sa_class
+import os
+import sys
 
-# Import plotbot and mag_rtn_4sa for integration test
+from plotbot import mag_rtn_4sa_class
+from plotbot.print_manager import print_manager
+
+# Enable dependency management prints
+print_manager.show_dependency_management = True
+
+# Import plotbot, mag_rtn_4sa, and proton for integration test
 try:
-    from plotbot import mag_rtn_4sa, plt as plotbot_plt, plotbot
+    from plotbot import mag_rtn_4sa, proton, plt as plotbot_plt, plotbot
 except ImportError as e:
     mag_rtn_4sa = None
+    proton = None
     plotbot = None
     plotbot_plt = plt
+
+# Path for the log file
+log_file = os.path.join(os.path.dirname(__file__), "test_logs", "test_psp_mag_br_norm.txt")
 
 def test_mag_rtn_4sa_br_norm_initialization():
     # Try to use real Parker_positional_data.npz if available
@@ -53,53 +64,70 @@ def test_mag_rtn_4sa_br_norm_initialization():
     print("br_norm plot_manager:", mag.br_norm)
 
 @pytest.mark.mission("Plotbot Integration Test (br_norm)")
-def test_plotbot_br_norm_smoke():
+def test_plotbot_br_norm_smoke(capsys):
     """Integration test: plot mag_rtn_4sa.br_norm with plotbot and check for figure AND data."""
-    if mag_rtn_4sa is None or plotbot is None:
-        pytest.skip("Plotbot or mag_rtn_4sa not importable.")
+    print_manager.show_debug = True # Enable debug prints for this test
+    if mag_rtn_4sa is None or proton is None or plotbot is None:
+        pytest.skip("Plotbot, mag_rtn_4sa, or proton not importable.")
     
-    TRANGE = ['2023-09-28/06:00:00.000', '2023-09-28/07:00:00.000']
+    TRANGE = ['2023-09-28/00:00:00.000', '2023-09-29/00:00:00.000'] # 1 day
     plotbot_plt.close('all')
     fig = None
     
-    print(f"\nRequesting mag_rtn_4sa.br_norm for trange: {TRANGE}")
+    print(f"\nRequesting plots for trange: {TRANGE}")
+    print("Panel 1: mag_rtn_4sa.br")
+    print("Panel 2: proton.sun_dist_rsun")
+    print("Panel 3: mag_rtn_4sa.br_norm")
 
     try:
-        plotbot(TRANGE, mag_rtn_4sa.br_norm, 1)
+        plotbot(TRANGE, mag_rtn_4sa.br, 1, proton.sun_dist_rsun, 2, mag_rtn_4sa.br_norm, 3)
         fig_num = plt.gcf().number
         fig = plt.figure(fig_num)
-        assert fig is not None, "plotbot should have created a figure for br_norm."
+        assert fig is not None, "plotbot should have created a figure."
+        assert len(fig.axes) == 3, "Figure should have 3 panels for the 3 variables."
 
-        # === Data Verification ===
+        # === Data Verification (focus on br_norm as it's the most complex) ===
         print("\nVerifying data in mag_rtn_4sa.br_norm...")
         assert hasattr(mag_rtn_4sa, 'br_norm'), "mag_rtn_4sa instance should have 'br_norm' attribute."
-        
-        # This is where it might fail if __getattr__ isn't working as expected for br_norm
         br_norm_attr = mag_rtn_4sa.br_norm 
         assert br_norm_attr is not None, "mag_rtn_4sa.br_norm should not be None."
-        
         assert hasattr(br_norm_attr, 'data'), "mag_rtn_4sa.br_norm should have a '.data' attribute."
         br_norm_data_content = br_norm_attr.data
         assert br_norm_data_content is not None, "mag_rtn_4sa.br_norm.data should not be None."
-        
         assert isinstance(br_norm_data_content, np.ndarray), "mag_rtn_4sa.br_norm.data should be a numpy array."
         assert len(br_norm_data_content) > 0, "mag_rtn_4sa.br_norm.data should not be empty."
-        
         print(f"mag_rtn_4sa.br_norm.data shape: {br_norm_data_content.shape}")
         print(f"mag_rtn_4sa.br_norm.data head: {br_norm_data_content[:5]}")
         print("test_plotbot_br_norm_smoke: Successfully verified data in mag_rtn_4sa.br_norm")
         # === End Data Verification ===
 
     except AttributeError as ae:
-        # Catch AttributeError specifically to see if br_norm is the issue
+        print(f"AttributeError during test_plotbot_br_norm_smoke: {ae}. This likely means br_norm is not accessible.")
         pytest.fail(f"AttributeError during test_plotbot_br_norm_smoke: {ae}. This likely means br_norm is not accessible.")
     except Exception as e:
+        print(f"Error during test_plotbot_br_norm_smoke: {e}")
         pytest.fail(f"Error during test_plotbot_br_norm_smoke: {e}")
     finally:
         if fig is not None:
             plotbot_plt.close(fig)
         else:
             plotbot_plt.close('all')
+        # Capture all output
+        out, err = capsys.readouterr()
+
+        # First, print to console (so tee can capture it if active)
+        if out:
+            print("\n=== CAPTURED STDOUT (via print) ===\n", out)
+        if err:
+            print("\n=== CAPTURED STDERR (via print) ===\n", err, file=sys.stderr) # Print errors to stderr
+
+        # Then, write to the dedicated log file
+        with open(log_file, "a") as f:
+            f.write("\n=== CAPTURED STDOUT (direct write) ===\n")
+            f.write(out)
+            f.write("\n=== CAPTURED STDERR (direct write) ===\n")
+            f.write(err)
+            f.write("\n=== END CAPSYS BLOCK ===\n")
 
 @pytest.mark.mission("Plotbot Data Verification (mag_rtn_4sa.br)")
 def test_plotbot_br_data_verification():
@@ -135,6 +163,7 @@ def test_plotbot_br_data_verification():
         print("test_plotbot_br_data_verification: Successfully verified data in mag_rtn_4sa.br")
         
     except Exception as e:
+        print(f"Error during test_plotbot_br_data_verification: {e}")
         pytest.fail(f"Error during test_plotbot_br_data_verification: {e}")
     finally:
         plotbot_plt.close('all') # Clean up plots 

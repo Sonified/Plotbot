@@ -4,7 +4,10 @@
 # and subsequent usage of these names.
 # It's assumed that 'plotbot/__init__.py' makes 'plt' available,
 # likely as an alias or wrapper for pytplot.
+import pytest
 from plotbot import print_manager, config, plotbot, mag_rtn_4sa, proton, plt
+from plotbot.test_pilot import phase, system_check
+import traceback
 
 def test_proton_r_sun_plot():
     # Configure plotting options via 'plt.options'
@@ -59,6 +62,64 @@ def test_proton_r_sun_plot():
             proton.sun_dist_rsun, 3)
 
     print(f"--- [test_proton_r_sun] plotbot call completed. ---")
+
+@pytest.mark.mission("Proton Sun Distance Data Acquisition")
+def test_proton_sun_dist_rsun_acquisition():
+    """Tests the acquisition of proton sun_dist_rsun data specifically.
+    
+    Uses the same time range as the br_norm test to ensure consistency.
+    """
+    # Use the same time range as the br_norm test
+    trange_test = ['2023-09-28/06:00:00.000', '2023-09-28/07:00:00.000']
+    
+    phase(1, "Enable Debug Logging")
+    print_manager.show_debug = True
+    print_manager.show_dependency_management = True
+    print_manager.show_datacubby = True
+    print(f"Debug logging enabled: {print_manager.show_debug}")
+    
+    phase(2, "Attempt to get proton sun_dist_rsun data")
+    print(f"Calling get_data for proton.sun_dist_rsun with trange={trange_test}")
+    
+    try:
+        # Import get_data if not already imported
+        from plotbot.get_data import get_data
+        
+        # Print initial state
+        print("\nInitial state:")
+        print(f"proton.sun_dist_rsun exists: {hasattr(proton, 'sun_dist_rsun')}")
+        if hasattr(proton, 'sun_dist_rsun'):
+            print(f"proton.sun_dist_rsun.data exists: {hasattr(proton.sun_dist_rsun, 'data')}")
+            if hasattr(proton.sun_dist_rsun, 'data'):
+                print(f"proton.sun_dist_rsun.data is None: {proton.sun_dist_rsun.data is None}")
+        
+        # Call get_data directly
+        print("\nCalling get_data...")
+        get_data(trange_test, proton.sun_dist_rsun)
+        print("get_data call completed")
+        
+        # Check if data was loaded
+        print("\nFinal state:")
+        data_loaded = hasattr(proton.sun_dist_rsun, 'data') and proton.sun_dist_rsun.data is not None
+        data_shape = proton.sun_dist_rsun.data.shape if data_loaded else None
+        
+        print(f"Data loaded: {data_loaded}")
+        if data_loaded:
+            print(f"Data shape: {data_shape}")
+            print(f"First few values: {proton.sun_dist_rsun.data[:5]}")
+            print(f"Data type: {type(proton.sun_dist_rsun.data)}")
+        
+        system_check("Proton Sun Distance Data Loaded", data_loaded, 
+                    f"Should load proton sun_dist_rsun data. Shape: {data_shape}")
+        
+    except Exception as e:
+        print(f"Error during get_data call: {e}")
+        traceback.print_exc()
+        pytest.fail(f"Failed to get proton sun_dist_rsun data: {e}")
+    finally:
+        print_manager.show_debug = False
+        print_manager.show_dependency_management = False
+        print_manager.show_datacubby = False
 
 # if __name__ == "__main__": # Removed for pytest compatibility
 #     test_proton_r_sun_plot() # MODIFIED from main() 

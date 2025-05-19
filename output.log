@@ -1,0 +1,41 @@
+initialized server_access
+initialized global_tracker
+initialized ploptions
+initialized plot_manager
+initialized epad class
+initialized epad_hr class
+initialized proton class
+initialized proton_hr class
+Plotbot Version: 2025_05_18_v2.41
+Commit Message: Test: v2.41 Enhance br_norm testing and log __getattr__ insights
+initialized data_cubby
+initialized proton_fits class
+initialized ham_class
+🔉 initialized audifier
+
+Importing libraries, this may take a moment. Hold tight... 
+
+✅ Imported standard libraries and utilities.
+✅ Imported numpy, pandas, and scipy libraries.
+✅ Imported matplotlib libraries.
+✅ Imported cdflib, BeautifulSoup, requests, dateutil, and datetime libraries.
+
+🤖 Plotbot Initialized
+✨ Showdahodo initialized
+Positional Data Helper Initialized
+📈📉 Multiplot Initialized
+   Version: 2025_05_18_v2.40
+   Commit: Fix: Circular import in br_norm implementation & identify data loading issue (v2.40)
+
+[94m🤖 Plotbot Initialized[0m
+Test-only mode enabled
+============================= test session starts ==============================
+platform darwin -- Python 3.12.4, pytest-7.4.4, pluggy-1.5.0 -- /opt/anaconda3/envs/plotbot_env/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/robertalexander/GitHub/Plotbot
+configfile: pytest.ini
+collecting ... collected 1 item
+
+tests/test_psp_mag_br_norm.py::test_plotbot_br_norm_smoke PASSED
+
+============================== 1 passed in 2.98s ===============================

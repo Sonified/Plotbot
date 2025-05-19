@@ -100,7 +100,9 @@
      - **Revised Test Strategy Implemented:**
        1.  A new test, `test_plotbot_br_data_verification`, was created. It successfully verified that `mag_rtn_4sa.br.data` correctly returns a populated numpy array when requested via `plotbot`. This test established a reliable method for checking actual data presence (verifying `.data` attribute, its `np.ndarray` type, and `len > 0`).
        2.  The existing `test_plotbot_br_norm_smoke` (in `tests/test_psp_mag_br_norm.py`) was then modified to incorporate these same rigorous data verification checks specifically for `mag_rtn_4sa.br_norm`.
-     - **Current Status & Next Step:** We are now ready to run the enhanced `test_plotbot_br_norm_smoke`. It is anticipated that this test will fail at the newly added data verification assertions for `br_norm`. This expected failure will confirm that `br_norm` data is not being correctly populated or made accessible. This will then guide our debugging of the `__getattr__` method and the associated `_calculate_br_norm` and `_setup_br_norm_plot_manager` logic within `psp_mag_rtn_4sa.py`. The immediate first step in fixing `psp_mag_rtn_4sa.py` will be to ensure `__getattr__` raises an `AttributeError` when an attribute is truly not found or cannot be provided.
+     - **Current Status & Next Step:** The enhanced `test_plotbot_br_norm_smoke` correctly fails, confirming `mag_rtn_4sa.br_norm` is `None`. The tagged print output confirms the "not a recognized attribute" messages for `br_norm` originate from `psp_mag_rtn_4sa.py`'s `__getattr__`.
+       The critical question now is: why does accessing `mag_rtn_4sa.br` succeed (as proven by `test_plotbot_br_data_verification`), while `mag_rtn_4sa.br_norm` fails, even though both are keys in `self.raw_data` and should be handled by `__getattr__` if not found as direct attributes?
+       Our immediate task is to trace the execution path for `br` versus `br_norm` within `psp_mag_rtn_4sa.py`. We need to identify where `br` (and other standard components like `bt`, `bn`, `bmag`) are successfully instantiated as `plot_manager` objects and made available as attributes, and why this process is failing or being bypassed for `br_norm`. Understanding this discrepancy is key before modifying `__getattr__` to raise `AttributeError`, as the root cause might be in the setup/calculation logic for `br_norm` itself, or how `__getattr__` attempts to retrieve/create it.
 
 ## Push: v2.39
 
@@ -141,7 +143,7 @@
 
 - **Version Tag:** `2025_05_18_v2.41`
 - **Commit Message:** `Test: v2.41 Enhance br_norm testing and log __getattr__ insights`
-- **Git Hash:** (To be filled in after commit)
+- **Git Hash:** `c1f88a2`
 - **Summary:** This push includes the recent updates to `br_norm` testing infrastructure and detailed Captain's Log entries regarding `__getattr__` behavior and test strategies.
 
 *(Log remains open for further updates on 2025-05-18)* 

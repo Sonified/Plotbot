@@ -1,9 +1,11 @@
 # test_pilot.py - Space-themed pytest framework for Plotbot
 import logging
+import os
 
 # Set up logging (if not already set by test file)
+log_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tests", "test_logs", "test_data_loading.txt")
 logging.basicConfig(
-    filename="tests/core/logs/test_data_loading.txt",  # Default; can be overridden by test file
+    filename=log_file,
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -12,7 +14,6 @@ try:
     import pytest
     import time
     import inspect
-    import os
     from termcolor import colored
     from datetime import datetime
     import numpy as np
