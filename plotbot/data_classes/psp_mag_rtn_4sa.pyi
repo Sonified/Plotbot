@@ -30,6 +30,7 @@ class mag_rtn_4sa_class:
     bn: plot_manager
     bmag: plot_manager
     pmag: plot_manager
+    br_norm: plot_manager
 
     def __init__(self, imported_data: Optional[ImportedDataType]) -> None: ...
     def update(self, imported_data: Optional[ImportedDataType]) -> None: ...

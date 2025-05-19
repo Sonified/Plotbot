@@ -81,6 +81,47 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
     get_data(trange, pb.proton_fits.abs_qz_p, skip_refresh_check=True)
     """
     pm = print_manager # Local alias
+    # Temporary debug for test_proton_trange_updates.py - RE-ADDING BLOCK
+    if 'tests.test_proton_trange_updates' in sys.modules:
+        test_module = sys.modules['tests.test_proton_trange_updates']
+        if getattr(test_module, 'DEBUG_FORCE_STOP_IN_GET_DATA_CALL2', False):
+            # Check if any of the requested variables are related to proton/spi_sf00_l3_mom or epad
+            is_relevant_call = False
+            problematic_vars = []
+            for var_item_tuple in variables:
+                # variables are now tuples (var_obj, plot_num, subplot_num)
+                var_item = var_item_tuple[0] # Get the actual variable object
+                if hasattr(var_item, 'data_type') and var_item.data_type in ['spi_sf00_l3_mom', 'epad_omni_diff_flux']:
+                    is_relevant_call = True
+                    problematic_vars.append(var_item.data_type)
+                    break # Found one, no need to check others for this purpose
+                if isinstance(var_item, type) and hasattr(var_item, '__name__') and var_item.__name__ in ['proton_class', 'epad_class']:
+                     is_relevant_call = True
+                     problematic_vars.append(var_item.__name__)
+                     break
+            
+            if is_relevant_call:
+                debug_msg = f"[GET_DATA_DEBUG_STOP] TEMP_DEBUG: Controlled stop in get_data during CALL 2 for {problematic_vars} due to DEBUG_FORCE_STOP_IN_GET_DATA_CALL2. TRANGE: {trange}. Returning None."
+                print_manager.debug(debug_msg) # Use existing print_manager
+                # Ensure this message also goes to capsys if possible, though print_manager should handle it
+                print(debug_msg) # Explicit print for safety, might be redundant if print_manager covers console
+                return None # Gracefully stop this specific data call
+
+    # Simpler logging for variables to avoid IndexError
+    variable_names_for_log = []
+    for var_tuple in variables:
+        if isinstance(var_tuple, tuple) and len(var_tuple) > 0:
+            actual_var = var_tuple[0]
+            if hasattr(actual_var, 'name'):
+                variable_names_for_log.append(actual_var.name)
+            else:
+                variable_names_for_log.append(str(actual_var))
+        else:
+            # Handle cases where var_tuple might not be a tuple or is empty
+            variable_names_for_log.append(str(var_tuple)) 
+
+    print_manager.debug(f"[GET_DATA_ENTRY] Original trange: {trange}, variables: {variable_names_for_log}")
+
     # STRATEGIC PRINT GET_DATA_ENTRY
     if variables:
         first_var_spec = variables[0]
@@ -313,13 +354,6 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             print_manager.debug(f"{data_type} - Import/Refresh required")
             data_obj = import_data_function(trange, data_type)
 
-            # if data_obj is not None: #REVISIT this code, likely the source of the "not found friend" error.
-            #     pass
-            #     print(f"*** GET_DATA DEBUG: data_obj from import_data_function ID: {id(data_obj)}, data_obj.data ID: {id(data_obj.data) if hasattr(data_obj, 'data') and data_obj.data is not None else 'N/A'}, data_obj.data keys: {list(data_obj.data.keys()) if hasattr(data_obj, 'data') and data_obj.data is not None else 'N/A'} ***")
-            # else:
-            #     pass
-            #     print(f"*** GET_DATA DEBUG: data_obj from import_data_function is None for {data_type} {trange} ***")
-
             if data_obj is None: 
                 print_manager.warning(f"Import returned no data for {data_type}, skipping update.")
                 # Ensure we don't proceed with a None data_obj to DataCubby for this trange
@@ -332,35 +366,6 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             # Use canonical key for cubby update
             print_manager.status(f"📥 Requesting DataCubby to update/merge global instance for {cubby_key}...")
             update_success = data_cubby.update_global_instance(cubby_key, data_obj)
-
-            # # === DIAGNOSTIC PRINT AFTER CUBBY UPDATE === # COMMENTED OUT TO FIX ERROR
-            # if class_instance: # class_instance should be the one cubby updated
-            #     # Re-grab to be absolutely sure we have the cubby's version if it was replaced
-            #     # Though update_global_instance should modify in-place if found
-            #     # For safety, let's use the cubby_key to get the object plotbot will use
-            #     potentially_updated_instance = getattr(plotbot, cubby_key, None)
-            #     if potentially_updated_instance:
-            #         inst_id = id(potentially_updated_instance)
-            #         dt_array_len = len(potentially_updated_instance.datetime_array) if hasattr(potentially_updated_instance, 'datetime_array') and potentially_updated_instance.datetime_array is not None else 'None'
-            #         time_len = len(potentially_updated_instance.time) if hasattr(potentially_updated_instance, 'time') and potentially_updated_instance.time is not None else 'None'
-            #         field_shape = potentially_updated_instance.field.shape if hasattr(potentially_updated_instance, 'field') and potentially_updated_instance.field is not None else 'None'
-            #         raw_data_keys = list(potentially_updated_instance.raw_data.keys()) if hasattr(potentially_updated_instance, 'raw_data') and potentially_updated_instance.raw_data is not None else 'None'
-            #         print_manager.debug(f"[GET_DATA_POST_CUBBY] Instance '{cubby_key}' (ID: {inst_id}):")
-            #         print_manager.debug(f"    datetime_array len: {dt_array_len}")
-            #         print_manager.debug(f"    time (TT2000) len: {time_len}")
-            #         print_manager.debug(f"    field shape: {field_shape}")
-            #         if raw_data_keys:
-            #             for r_key in raw_data_keys:
-            #                 if r_key == 'all' and isinstance(potentially_updated_instance.raw_data[r_key], list):
-            #                     comp0_len = len(potentially_updated_instance.raw_data[r_key][0]) if len(potentially_updated_instance.raw_data[r_key]) > 0 and potentially_updated_instance.raw_data[r_key][0] is not None else 'N/A'
-            #                     print_manager.debug(f"    raw_data['{r_key}'] (list) comp0 len: {comp0_len}")
-            #                 elif hasattr(potentially_updated_instance.raw_data[r_key], '__len__'):
-            #                     print_manager.debug(f"    raw_data['{r_key}'] len: {len(potentially_updated_instance.raw_data[r_key])}")
-            #     else:
-            #         print_manager.debug(f"[GET_DATA_POST_CUBBY] Could not getattr plotbot.{cubby_key} for checking.")
-            # else:
-            #     print_manager.debug(f"[GET_DATA_POST_CUBBY] class_instance was None before cubby call, cannot check specific instance.")
-            # # === END DIAGNOSTIC PRINT ===
 
             if update_success:
                 print_manager.status(f"✅ DataCubby processed update for {cubby_key}.")

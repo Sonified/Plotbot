@@ -1,4 +1,4 @@
-# This file will contain the mag_rtn_4sa_class for PSP data. 
+# psp_mag_rtn_4sa.py - Calculates and stores mag_rtn_4sa variables
 
 import numpy as np
 import pandas as pd

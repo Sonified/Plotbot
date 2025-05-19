@@ -16,6 +16,7 @@ from dateutil.parser import parse
 
 from .print_manager import print_manager
 from .data_classes.psp_data_types import data_types # To get pyspedas datatype mapping
+from .time_utils import daterange
 # Add other necessary imports (time, etc.) as needed
 
 # Define the mapping from Plotbot keys to pyspedas specifics
@@ -88,6 +89,7 @@ def download_spdf_data(trange, plotbot_key):
     Returns:
         list: List of relative paths to downloaded files or an empty list if download failed.
     """
+    print_manager.debug(f"[DOWNLOAD_SPDF_ENTRY] Received trange: {trange}, data_type: {plotbot_key}")
     print_manager.debug(f"Attempting SPDF download for {plotbot_key} in range {trange}")
 
     if plotbot_key not in PYSPEDAS_MAP:

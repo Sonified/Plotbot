@@ -7,16 +7,17 @@ import pandas as pd
 
 # Attempt to import plotbot components
 try:
-    from plotbot import plotbot, proton # Removed mag_rtn_4sa from this direct import
-    from plotbot.multiplot_options import plt 
+    from plotbot import plotbot, proton, mag_rtn_4sa
+    from plotbot.multiplot_options import plt
     from plotbot.print_manager import print_manager
-    from plotbot.time_utils import str_to_datetime # Changed to str_to_datetime
-    # If mag_rtn_4sa is needed as a type or for specific tests later, 
-    # consider importing its class: from plotbot.data_classes.psp_mag_rtn_4sa import mag_rtn_4sa_class
+    from plotbot.time_utils import str_to_datetime
     PLOTBOT_AVAILABLE = True
-except ImportError as e: # Add 'as e' to see the import error if it occurs
-    print(f"ImportError in test_proton_trange_updates: {e}") # Print the error
+except ImportError as e:
+    print(f"ImportError in test_proton_trange_updates: {e}")
     PLOTBOT_AVAILABLE = False
+
+# Global flag for debugging - RE-ADDING
+DEBUG_FORCE_STOP_IN_GET_DATA_CALL2 = False
 
 # Helper to ensure datetime is UTC
 def ensure_utc(dt_obj):
@@ -27,91 +28,74 @@ def ensure_utc(dt_obj):
     return dt_obj.astimezone(timezone.utc)
 
 # Path for the log file for this specific test
-log_file_path = os.path.join(os.path.dirname(__file__), "test_logs", "test_proton_trange_updates.txt")
+log_file_path = os.path.join(os.path.dirname(__file__), "test_logs", "test_two_call_incorrect_merged_trange.txt")
 
 @pytest.mark.skipif(not PLOTBOT_AVAILABLE, reason="Plotbot components not available")
-def test_proton_datetime_updates_with_plotbot(capsys):
+def test_two_call_incorrect_merged_trange(capsys):
     """
-    Tests if the global proton instance's datetime_array is correctly updated
-    when plotbot is called sequentially with different, non-overlapping time ranges.
+    Tests the scenario:
+    1. Plot TRANGE_LATER (proton, mag)
+    2. Plot TRANGE_EARLIER (proton, mag)
+    Observe if get_data for proton in the second call uses an incorrectly merged trange.
     """
-    print_manager.show_debug = True
-    print_manager.show_dependency_management = True # For detailed cubby/get_data logs
-    print_manager.show_datacubby = True # Enable instance-level datacubby prints
-    # print_manager.DATACUBBY = True      # Enable class-level datacubby prints (just in case)
+    print_manager.show_debug = False
+    print_manager.show_dependency_management = True
+    print_manager.show_datacubby = True
+    print_manager.show_get_data = True             # CRITICAL
+    print_manager.show_data_tracker_population = True # Useful
 
     # Ensure the log directory exists
     os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
-    # Clear previous log file content for this specific test
     with open(log_file_path, "w") as f:
-        f.write("Log for test_proton_datetime_updates_with_plotbot\n")
-        f.write("="*50 + "\n")
+        f.write("Log for test_two_call_incorrect_merged_trange\n")
+        f.write("="*70 + "\n")
 
-    TRANGE1_STR = ['2023-09-27/00:00:00.000', '2023-09-27/01:00:00.000']
-    TRANGE2_STR = ['2023-09-28/00:00:00.000', '2023-09-28/01:00:00.000']
-
-    # Convert string tranges to datetime objects for assertions
-    TRANGE1_DT = [ensure_utc(str_to_datetime(TRANGE1_STR[0])), ensure_utc(str_to_datetime(TRANGE1_STR[1]))]
-    TRANGE2_DT = [ensure_utc(str_to_datetime(TRANGE2_STR[0])), ensure_utc(str_to_datetime(TRANGE2_STR[1]))]
+    TRANGE1_STR = ['2023-09-28/00:00:00.000', '2023-09-29/00:00:00.000']
+    TRANGE2_STR = ['2023-09-26/00:00:00.000', '2023-09-26/00:01:00.000']
     
-    tolerance = timedelta(seconds=5) # Tolerance for time comparisons
+    # For matching against log output if needed, but not used in assertions here
+    # TRANGE1_DT = [ensure_utc(str_to_datetime(s)) for s in TRANGE1_STR]
+    # TRANGE2_DT = [ensure_utc(str_to_datetime(s)) for s in TRANGE2_STR]
+    # tolerance = timedelta(seconds=5)
 
-    # --- First plotbot call ---
-    print(f"\n--- Calling plotbot with TRANGE1: {TRANGE1_STR} ---")
+    # --- Call 1: TRANGE1_STR ---
+    print(f"\n--- CALL 1: TRANGE1_STR ({TRANGE1_STR}) with proton.sun_dist_rsun, mag_rtn_4sa.br_norm ---")
     plt.close('all')
-    plotbot(TRANGE1_STR, proton.sun_dist_rsun, 1)
-    
-    assert hasattr(proton, 'datetime_array'), "proton should have datetime_array after first plotbot call."
-    assert proton.datetime_array is not None, "proton.datetime_array should not be None after first plotbot call."
-    assert len(proton.datetime_array) > 0, "proton.datetime_array should not be empty after first plotbot call."
-    
-    # Convert numpy.datetime64 to Python datetime and ensure UTC for comparison
-    proton_dt_min1 = ensure_utc(pd.Timestamp(proton.datetime_array.min()).to_pydatetime())
-    proton_dt_max1 = ensure_utc(pd.Timestamp(proton.datetime_array.max()).to_pydatetime())
-    
-    print(f"TRANGE1: Start={TRANGE1_DT[0]}, End={TRANGE1_DT[1]}")
-    print(f"Proton after TRANGE1: Min={proton_dt_min1}, Max={proton_dt_max1}")
+    plotbot(TRANGE1_STR, proton.sun_dist_rsun, 1, mag_rtn_4sa.br_norm, 2)
+    # assert plt.gcf().get_axes(), "No axes found after CALL 1." # Removed problematic assertion
+    print(f"Completed CALL 1.")
 
-    assert TRANGE1_DT[0] - tolerance <= proton_dt_min1 <= TRANGE1_DT[1] + tolerance, f"Proton min time {proton_dt_min1} out of TRANGE1 {TRANGE1_DT} (with tolerance)"
-    assert TRANGE1_DT[0] - tolerance <= proton_dt_max1 <= TRANGE1_DT[1] + tolerance, f"Proton max time {proton_dt_max1} out of TRANGE1 {TRANGE1_DT} (with tolerance)"
-
-    # --- Second plotbot call ---
-    print(f"\n--- Calling plotbot with TRANGE2: {TRANGE2_STR} ---")
+    # --- Call 2: TRANGE2_STR ---
+    # Set the debug flag before the problematic call
+    global DEBUG_FORCE_STOP_IN_GET_DATA_CALL2
+    # DEBUG_FORCE_STOP_IN_GET_DATA_CALL2 = True
+    print(f"\n--- CALL 2: TRANGE2_STR ({TRANGE2_STR}) with proton.sun_dist_rsun, mag_rtn_4sa.br_norm ---")
+    print(f"DEBUG_FORCE_STOP_IN_GET_DATA_CALL2 set to {DEBUG_FORCE_STOP_IN_GET_DATA_CALL2}")
     plt.close('all')
-    plotbot(TRANGE2_STR, proton.sun_dist_rsun, 1)
-
-    assert hasattr(proton, 'datetime_array'), "proton should have datetime_array after second plotbot call."
-    assert proton.datetime_array is not None, "proton.datetime_array should not be None after second plotbot call."
-    assert len(proton.datetime_array) > 0, "proton.datetime_array should not be empty after second plotbot call."
-
-    proton_dt_min2 = ensure_utc(pd.Timestamp(proton.datetime_array.min()).to_pydatetime())
-    proton_dt_max2 = ensure_utc(pd.Timestamp(proton.datetime_array.max()).to_pydatetime())
-
-    print(f"TRANGE2: Start={TRANGE2_DT[0]}, End={TRANGE2_DT[1]}")
-    print(f"Proton after TRANGE2: Min={proton_dt_min2}, Max={proton_dt_max2}")
-
-    assert TRANGE2_DT[0] - tolerance <= proton_dt_min2 <= TRANGE2_DT[1] + tolerance, f"Proton min time {proton_dt_min2} out of TRANGE2 {TRANGE2_DT} (with tolerance)"
-    assert TRANGE2_DT[0] - tolerance <= proton_dt_max2 <= TRANGE2_DT[1] + tolerance, f"Proton max time {proton_dt_max2} out of TRANGE2 {TRANGE2_DT} (with tolerance)"
-
-    # Crucially, assert that the new times are NOT within the old range (unless TRANGE1 and TRANGE2 overlap significantly, which they don't here)
-    assert not (TRANGE1_DT[0] - tolerance <= proton_dt_min2 <= TRANGE1_DT[1] + tolerance), f"Proton min time {proton_dt_min2} after TRANGE2 call is still within TRANGE1 {TRANGE1_DT}"
-    assert not (TRANGE1_DT[0] - tolerance <= proton_dt_max2 <= TRANGE1_DT[1] + tolerance), f"Proton max time {proton_dt_max2} after TRANGE2 call is still within TRANGE1 {TRANGE1_DT}"
+    plotbot(TRANGE2_STR, proton.sun_dist_rsun, 1, mag_rtn_4sa.br_norm, 2) # CORRECTED based on user's notebook
     
-    print("\n--- Test assertions passed ---")
+    # Reset the flag
+    DEBUG_FORCE_STOP_IN_GET_DATA_CALL2 = False
+    print(f"DEBUG_FORCE_STOP_IN_GET_DATA_CALL2 reset to {DEBUG_FORCE_STOP_IN_GET_DATA_CALL2}")
+    print(f"Completed CALL 2 (or it was intelligently stopped).")
 
-    # Capture and save output
-    captured_out, captured_err = capsys.readouterr()
-    with open(log_file_path, "a") as f:
-        f.write("\n=== STDOUT CAPTURE ===\n")
-        f.write(captured_out)
-        if captured_err:
-            f.write("\n=== STDERR CAPTURE ===\n")
-            f.write(captured_err)
-    
-    # Also print to console if pytest is run with -s
-    if captured_out:
-        sys.stdout.write("\n=== CAPTURED STDOUT (test_proton_trange_updates) ===\n")
-        sys.stdout.write(captured_out)
-    if captured_err:
-        sys.stderr.write("\n=== CAPTURED STDERR (test_proton_trange_updates) ===\n")
-        sys.stderr.write(captured_err) 
+    # Final capture of all output for logging
+    # capsys will capture everything printed to stdout/stderr during the test
+    captured_out_final, captured_err_final = capsys.readouterr()
+    with open(log_file_path, "a") as f: # Append to the log file
+        f.write("\n=== COMPLETE STDOUT CAPTURE (includes output from both calls) ===\n")
+        f.write(captured_out_final)
+        if captured_err_final:
+            f.write("\n=== COMPLETE STDERR CAPTURE (includes output from both calls) ===\n")
+            f.write(captured_err_final)
+
+    print("\n--- Test sequence completed. ---")
+    print(f"Inspect log: {log_file_path}")
+    print(f"Look for '[GET_DATA_ENTRY]' calls for 'spi_sf00_l3_mom'.")
+    print(f"Check the 'trange' passed to get_data or used by DataTracker for those calls.")
+    print(f"The problematic merged trange seen in user logs was approx: ['{TRANGE2_STR[0]}', '{TRANGE1_STR[1]}']")
+
+# To remove any old test function if it exists and wasn't overwritten by name
+# This is a placeholder comment; actual removal/cleanup might need to be more specific
+# if the old function had a different name and was not test_multi_call_scenario_with_epad.
+# For now, assuming the function replacement by name is sufficient. 

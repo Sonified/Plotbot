@@ -13,7 +13,10 @@ from .data_classes.psp_data_types import data_types
 # FUNCTION: download_berkeley_data
 #====================================================================
 def download_berkeley_data(trange, data_type):
-    """Download new PSP data from the Berkeley server for a given data type and time range."""
+    """Downloads data from the Berkeley server.
+    Download new PSP data from the Berkeley server for a given data type and time range."""
+    
+    print_manager.debug(f"[DOWNLOAD_BERKELEY_ENTRY] Received trange: {trange}, data_type: {data_type}")
     
     #====================================================================
     # VALIDATE DATA TYPE AND GET CONFIG

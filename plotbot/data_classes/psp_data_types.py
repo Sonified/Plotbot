@@ -142,10 +142,10 @@ data_types = {
 
 # Increment this version number each time significant changes are pushed.
 # Example: __version__ = "YYYY_MM_DD_vX.XX"
-__version__ = "2025_05_18_v2.41"
+__version__ = "2025_05_18_v2.42"
 
 # This commit message will be used in the git commit and the console log.
-commit_message = "Test: v2.41 Enhance br_norm testing and log __getattr__ insights"
+commit_message = "Refactor br_norm: Plan to make br_norm a derived data type."
 
 # Print version information on import
 print(f"Plotbot Version: {__version__}")
