@@ -142,10 +142,10 @@ data_types = {
 
 # Increment this version number each time significant changes are pushed.
 # Example: __version__ = "YYYY_MM_DD_vX.XX"
-__version__ = "2025_05_12_v2.29"
+__version__ = "2025_05_18_v2.41"
 
 # This commit message will be used in the git commit and the console log.
-commit_message = "Add SUN_DIST to spi_sf00_l3_mom data_vars"
+commit_message = "Test: v2.41 Enhance br_norm testing and log __getattr__ insights"
 
 # Print version information on import
 print(f"Plotbot Version: {__version__}")
