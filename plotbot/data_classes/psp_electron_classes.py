@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd 
 import cdflib 
 from datetime import datetime, timedelta, timezone
+from typing import Optional, List # Added for type hinting
 
 # Import our custom managers (UPDATED PATHS)
 from plotbot.print_manager import print_manager
@@ -24,6 +25,7 @@ class epad_strahl_class:
         object.__setattr__(self, 'times_mesh', [])
         object.__setattr__(self, 'pitch_angle', None)
         object.__setattr__(self, 'data_type', 'spe_sf0_pad') # Explicitly set data_type
+        object.__setattr__(self, '_current_operation_trange', None) # Initialize new attribute
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
@@ -41,11 +43,15 @@ class epad_strahl_class:
 
 
     #strahl_update
-    def update(self, imported_data): #This is function is the exact same across all classes :)
+    def update(self, imported_data, original_requested_trange: Optional[List[str]] = None): #This is function is the exact same across all classes :)
         """Method to update class with new data. 
         NOTE: This function updates the class with newly imported data. We need to use the data_cubby
         as a registry to store class instances in order to avoid circular references that would occur
         if the class stored itself as an attribute and tried to reference itself directly. The code breaks without the cubby!"""
+        if original_requested_trange is not None:
+            self._current_operation_trange = original_requested_trange
+            print_manager.dependency_management(f"[{self.__class__.__name__}] Updated _current_operation_trange to: {self._current_operation_trange}")
+        
         if imported_data is None:                                                # Exit if no new data
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
             return
@@ -248,6 +254,7 @@ class epad_strahl_high_res_class:
         object.__setattr__(self, 'times_mesh', [])
         object.__setattr__(self, 'pitch_angle', None)
         object.__setattr__(self, 'data_type', 'spe_hires_pad') # Explicitly set data_type for high-res
+        object.__setattr__(self, '_current_operation_trange', None) # Initialize new attribute
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
@@ -263,11 +270,15 @@ class epad_strahl_high_res_class:
         # Stash the instance in data_cubby for later retrieval / to avoid circular references
         # data_cubby.stash(self, class_name='epad_hr')
 
-    def update(self, imported_data): #This is function is the exact same across all classes :)
+    def update(self, imported_data, original_requested_trange: Optional[List[str]] = None): #This is function is the exact same across all classes :)
         """Method to update class with new data. 
         NOTE: This function updates the class with newly imported data. We need to use the data_cubby
         as a registry to store class instances in order to avoid circular references that would occur
         if the class stored itself as an attribute and tried to reference itself directly. The code breaks without the cubby!"""
+        if original_requested_trange is not None:
+            self._current_operation_trange = original_requested_trange
+            print_manager.dependency_management(f"[{self.__class__.__name__}] Updated _current_operation_trange to: {self._current_operation_trange}")
+        
         if imported_data is None:                                                # Exit if no new data
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
             return

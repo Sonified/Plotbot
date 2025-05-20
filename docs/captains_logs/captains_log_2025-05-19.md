@@ -53,4 +53,32 @@ Created several HTML files to explain the problem and solution using the "Plotbo
 
 **Other Minor Fixes During This Process:**
 *   Corrected `global_tracker.update_data_range` to `global_tracker.update_calculated_range` in `get_data.py`.
-*   Moved `mdates` and `interpolate` imports to be local within `_calculate_br_norm` in `psp_mag_rtn_4sa.py`. 
+*   Moved `mdates` and `interpolate` imports to be local within `_calculate_br_norm` in `psp_mag_rtn_4sa.py`.
+
+## Git Push Details (br_norm fix):
+
+*   **Version:** `2025_05_19_v2.44`
+*   **Commit Message:** `Fix: br_norm uses correct trange for dependencies via original_requested_trange. Docs: Added HTML explanations. Version: 2025_05_19_v2.44`
+*   **Git Hash:** `bc02d5c`
+
+## Bug Fix: `epad_strahl_class.update()` TypeError
+
+**Problem:**
+A `TypeError` occurred when calling `plotbot` with `epad.strahl`: `epad_strahl_class.update() got an unexpected keyword argument 'original_requested_trange'`.
+
+**Cause:**
+The `DataCubby.update_global_instance` method was modified to always pass `original_requested_trange` to the `update()` method of data class instances. While `mag_rtn_4sa_class` and `proton_class` were updated to accept this, `epad_strahl_class` and `epad_strahl_high_res_class` (in `plotbot/data_classes/psp_electron_classes.py`) had not been.
+
+**Solution:**
+Modified the `update()` methods in `epad_strahl_class` and `epad_strahl_high_res_class` to:
+1.  Accept the `original_requested_trange: Optional[List[str]] = None` parameter.
+2.  Initialize and store this parameter in `self._current_operation_trange` for consistency, even if not immediately used for further internal dependency fetching by these specific classes.
+
+**Outcome:**
+This resolved the `TypeError`, allowing `plotbot` calls involving `epad.strahl` (and likely `epad_hr.strahl`) to proceed correctly.
+
+## Git Push Details (epad fix):
+
+*   **Version:** `2025_05_19_v2.45`
+*   **Commit Message:** `Fix: epad classes now accept original_requested_trange in update method. Version: 2025_05_19_v2.45`
+*   **Git Hash:** `(to be filled after push)` 
