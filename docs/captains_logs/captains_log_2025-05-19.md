@@ -81,4 +81,61 @@ This resolved the `TypeError`, allowing `plotbot` calls involving `epad.strahl` 
 
 *   **Version:** `2025_05_19_v2.45`
 *   **Commit Message:** `Fix: epad classes now accept original_requested_trange in update method. Version: 2025_05_19_v2.45`
-*   **Git Hash:** `(to be filled after push)` 
+*   **Git Hash:** `55fc89e`
+
+## Investigation: Unexpected `br_norm` Calculation in `multiplot`
+
+**Symptom:**
+When using `multiplot` (e.g., with `mag_rtn_4sa.br` or other variables, not necessarily `mag_rtn_4sa.br_norm` itself), a `TypeError: len() of unsized object` would occur within `psp_mag_rtn_4sa.py` during the `_calculate_br_norm` method. This happened because `proton.sun_dist_rsun.data` was `None`.
+
+**Root Cause Analysis:**
+The core issue was twofold, revealing a subtle interaction between lazy loading, state saving, and dependency data handling:
+
+1.  **Unintended Triggering of `br_norm` Calculation:**
+    *   The `mag_rtn_4sa_class.update()` method, called by `DataCubby` for each panel in `multiplot` to refresh data, contains a loop: `for subclass_name in self.raw_data.keys(): var = getattr(self, subclass_name) ...`.
+    *   This loop iterates through all keys in `self.raw_data` (which includes `'br_norm'`) and calls `getattr(self, subclass_name)`.
+    *   When `subclass_name` is `'br_norm'`, `getattr(self, 'br_norm')` accesses the `br_norm` property.
+    *   Accessing the `br_norm` property, by design (lazy loading), triggers its `_calculate_br_norm()` method.
+    *   This meant `_calculate_br_norm()` was being executed for each panel processed by `multiplot`, even if `mag_rtn_4sa.br_norm` was not the variable explicitly requested for plotting in that panel. The `update` method was trying to save the plot state of all its potential components, inadvertently waking up `br_norm`.
+
+2.  **Failure to Load `proton.sun_dist_rsun` Dependency:**
+    *   When `_calculate_br_norm()` (now unexpectedly triggered) called `get_data(panel_trange, proton.sun_dist_rsun)` to fetch its dependency, an issue arose if `proton` data for that `panel_trange` was deemed a "cache hit" by `global_tracker` (e.g., due to a previous panel loading overlapping data).
+    *   In this cache-hit scenario, `get_data` would call `proton_instance.update(None, original_requested_trange=panel_trange)`.
+    *   The `proton_class.update()` method, when receiving `imported_data=None`, would only update its internal `_current_operation_trange`. It would *not* re-fetch or re-process `self.raw_data['sun_dist_rsun']`.
+    *   Consequently, `proton.sun_dist_rsun.data` remained `None` (or stale), leading to the `TypeError` when `_calculate_br_norm` tried to use its length.
+
+**Status/Resolution Notes for this specific `TypeError`:**
+*   The immediate `TypeError` (due to `proton.sun_dist_rsun.data` being `None`) was the primary focus of the `v2.44` fix, where the "sticky note" (`original_requested_trange`) was passed down. However, if `proton.sun_dist_rsun` itself isn't proactive in loading its data when its property is accessed (and `raw_data` is empty despite `_current_operation_trange` being set), this error could still manifest.
+*   The fix in `v2.45` (making `epad_strahl_class` accept `original_requested_trange`) was unrelated to this specific `br_norm` calculation path but fixed a similar `TypeError` for `epad` plots.
+*   The underlying issue of `mag_rtn_4sa_class.update()` unintentionally triggering `br_norm` calculation still needs to be addressed for true lazy loading behavior during updates if this behavior is not desired. A more targeted approach to state saving within `update()` would be required. 
+
+## Major Debugging Insight: The "Stale Order Ticket" in Jupyter Notebooks
+
+**Problem:**
+We were observing a `TypeError: len() of unsized object` within `_calculate_br_norm` when trying to plot variables like `proton.anisotropy`. The mystery was why `mag_rtn_4sa.update()` (and thus `_calculate_br_norm`) was being called at all when the requested plot seemingly had nothing to do with `mag_rtn_4sa`.
+
+**Root Cause Discovery (The "Stale Order Ticket"):**
+The issue was traced back to the execution order within the `Examples_Multiplot.ipynb` Jupyter Notebook:
+1.  The `plot_variable` was initially assigned to `mag_rtn_4sa.br_norm`.
+2.  The `plot_data` list (used by `multiplot`) was constructed using this initial `plot_variable`. Thus, `plot_data` contained references to `mag_rtn_4sa.br_norm` instances.
+3.  Later, `plot_variable` was reassigned to `proton.anisotropy` (or another variable).
+4.  However, `multiplot` was called with the *original* `plot_data` list, which still held the "stale order" for `mag_rtn_4sa.br_norm`.
+
+This meant `multiplot` was indeed (correctly, based on the stale `plot_data`) attempting to process `mag_rtn_4sa.br_norm` for each panel, leading to the `mag_rtn_4sa.update()` call and the subsequent error chain when `_calculate_br_norm` couldn't get its `proton.sun_dist_rsun` dependency (due to the previously discussed cache-hit/update logic in `proton_class`).
+
+**Resolution/Clarification:**
+By ensuring the `plot_data` list is constructed *after* `plot_variable` is set to the desired variable for the current plotting session, the correct variable instances are passed to `multiplot`. This resolved the unexpected `TypeError` when plotting `mag_rtn_4sa.br_norm` (and by extension, likely resolved any similar errors if `proton.anisotropy` was intended but `mag_rtn_4sa.br_norm` was accidentally passed via a stale `plot_data`).
+
+**Documentation:**
+*   Created `docs/br_norm_uninvited_guest_mystery.html` to explain why `_calculate_br_norm` was being triggered by `mag_rtn_4sa_class.update()`'s internal loop.
+*   Created `docs/notebook_stale_plot_data_mystery.html` to specifically address the Jupyter Notebook execution order issue and the "stale order ticket" problem.
+
+**Next Steps (From User):**
+1.  Re-verify plotting `proton.anisotropy` to ensure the notebook execution order fix has resolved any issues there.
+2.  Investigate why Carrington longitude plots might be using a date for the x-axis and displaying data in "weird spread out chunks."
+
+## Git Push Details (End of Session - Notebook Issue Fix & Docs):
+
+*   **Version:** `2025_05_19_v2.46`
+*   **Commit Message:** `v2.46: Docs: Explain br_norm TypeError & notebook execution flow. Fix stale plot_data in example.`
+*   **Key Changes:** Added HTML documentation explaining the `br_norm` TypeError (uninvited guest due to `mag_rtn_4sa.update()` loop) and the Jupyter notebook execution order issue (stale `plot_data` list). The notebook example was implicitly fixed by understanding this, leading to successful `br_norm` plotting when intended. 

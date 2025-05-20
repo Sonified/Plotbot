@@ -228,8 +228,8 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vX.YY (X for major, YY for minor revisions on the same day)
-__version__ = "2025_05_19_v2.45"
-__commit_message__ = "Fix: epad classes now accept original_requested_trange in update method. Version: 2025_05_19_v2.45"
+__version__ = "2025_05_19_v2.46"
+__commit_message__ = "v2.46: Docs: Explain br_norm TypeError & notebook execution flow. Fix stale plot_data in example."
 # Print version information on import
 print(f"   Version: {__version__}")
 print(f"   Commit: {__commit_message__}")
