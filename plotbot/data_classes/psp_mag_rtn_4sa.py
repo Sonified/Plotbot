@@ -158,19 +158,24 @@ class mag_rtn_4sa_class:
                 print_manager.dependency_management(f"[BR_NORM_PROPERTY] _br_norm_manager is being updated. Current options.datetime_array len: {len(options.datetime_array) if options.datetime_array is not None else 'None'}")
                 if options.datetime_array is not None and len(options.datetime_array) > 0:
                     print_manager.dependency_management(f"[BR_NORM_PROPERTY] options.datetime_array[0]: {options.datetime_array[0]}, [-1]: {options.datetime_array[-1]}")
-                else:
-                    print_manager.dependency_management(f"[BR_NORM_PROPERTY] options.datetime_array is None or empty. Will use parent self.datetime_array for new manager if available.")
-                    if not (hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0):
-                        print_manager.dependency_management(f"[BR_NORM_PROPERTY] CRITICAL WARNING: Parent self.datetime_array is also None or empty. This will likely lead to issues.")
-                    else:
-                         # Ensure the options object used for the new plot_manager has the correct datetime_array
+                
+                # PROPOSED CHANGE APPLIED HERE:
+                # Always ensure options.datetime_array is synchronized with the parent's current datetime_array
+                if hasattr(self, 'datetime_array') and self.datetime_array is not None:
+                    # If options.datetime_array is not already the parent's array (or if options.datetime_array is None), update it
+                    # Added check for options.datetime_array being None before np.array_equal
+                    if options.datetime_array is None or not np.array_equal(options.datetime_array, self.datetime_array):
+                         print_manager.dependency_management(f"[BR_NORM_PROPERTY] Aligning options.datetime_array with parent. Parent len: {len(self.datetime_array) if self.datetime_array is not None else 'None'}")
                          options.datetime_array = self.datetime_array
-                         print_manager.dependency_management(f"[BR_NORM_PROPERTY] Updated options.datetime_array to parent self.datetime_array. Len: {len(options.datetime_array)}")
+                else: # Parent has no datetime_array
+                    # If parent has no datetime_array, set options.datetime_array to empty or None consistently
+                    options.datetime_array = np.array([]) if options.datetime_array is not None else None
+                    print_manager.dependency_management(f"[BR_NORM_PROPERTY] Parent datetime_array is None. Set options.datetime_array to {'empty array' if options.datetime_array is not None else 'None'}.")
 
 
                 self._br_norm_manager = plot_manager(
                     self.raw_data['br_norm'],
-                    plot_options=options # Options should now have the correct datetime_array
+                    plot_options=options 
                 )
                 print_manager.dependency_management(f"[BR_NORM_PROPERTY] Updated _br_norm_manager with data shape: {self.raw_data['br_norm'].shape if self.raw_data['br_norm'] is not None else 'None'}")
                 print_manager.dependency_management(f"[BR_NORM_PROPERTY] New _br_norm_manager.plot_options.datetime_array len: {len(self._br_norm_manager.plot_options.datetime_array) if self._br_norm_manager.plot_options.datetime_array is not None else 'None'}")
@@ -330,7 +335,7 @@ class mag_rtn_4sa_class:
             
             # Use existing data
             print_manager.dependency_management("[BR_NORM_DEBUG] All checks passed, proceeding with br_norm calculation")
-            br_data = self.raw_data['br']
+            # br_data = self.raw_data['br']
             print_manager.dependency_management(f"[BR_NORM_DEBUG] br_data type: {type(br_data)}, shape: {getattr(br_data, 'shape', 'NO SHAPE')}")
             
             # Get time range from datetime_array - no checks, just use it
@@ -351,6 +356,17 @@ class mag_rtn_4sa_class:
             print_manager.dependency_management(f"[BR_NORM_DEBUG] Before get_data: proton.sun_dist_rsun.data = {getattr(proton.sun_dist_rsun, 'data', 'NO DATA ATTR')}")
             print(f"[DEBUG] About to call get_data with trange={trange}", file=sys.stderr)
             print(f"[DEBUG] Before get_data: proton.sun_dist_rsun.data = {getattr(proton.sun_dist_rsun, 'data', 'NO DATA ATTR')}", file=sys.stderr)
+            
+                        # Call get_data with verbose debugging
+            try:
+                print_manager.dependency_management(f"[BR_NORM_DEBUG] Calling get_data(trange={trange}, mag_rtn_4sa.br)...")
+                get_data(trange, mag_rtn_4sa.br)
+                print_manager.dependency_management(f"[BR_NORM_DEBUG] get_data call completed")
+            except Exception as get_data_error:
+                print_manager.dependency_management(f"[BR_NORM_DEBUG] ERROR in get_data call: {get_data_error}")
+                import traceback
+                print_manager.dependency_management(f"[BR_NORM_DEBUG] get_data traceback: {traceback.format_exc()}")
+                return False
             
             # Call get_data with verbose debugging
             try:
@@ -415,6 +431,8 @@ class mag_rtn_4sa_class:
             print_manager.dependency_management(f"[BR_NORM_DEBUG] sun_dist_interp shape: {sun_dist_interp.shape}")
             
             # Calculate br_norm using the precise conversion factor
+            br_data = mag_rtn_4sa.br.data
+            
             print_manager.dependency_management(f"[BR_NORM_DEBUG] Calculating br_norm with conversion factor")
             rsun_to_au_conversion_factor = 215.032867644  # Solar radii per AU
             br_norm = br_data * ((sun_dist_interp / rsun_to_au_conversion_factor) ** 2)

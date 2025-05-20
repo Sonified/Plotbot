@@ -79,3 +79,28 @@
   - Commit Message: "Refactor br_norm: Plan to make br_norm a derived data type."
   - Details: Pushing the comprehensive discussion and decision to refactor `br_norm` handling by treating it as a distinct, derived data type. This includes updates to the captain's log detailing the refined approach. No functional code changes for `br_norm` are included in this push, only the planning and version increment.
 
+- **Update plotting calls to use the new `psp_br_norm_calculated` type.**
+
+- **Plan for `PspBrNormCalculator` and `get_data` for Dependencies (2025-04-19 Night):**
+  - **`PspBrNormCalculator` Structure (`plotbot/data_classes/psp_br_norm.py`):**
+    - `__init__(self, imported_data_bundle=None)`: If `imported_data_bundle` is provided, calls `self.calculate_variables()`.
+    - `calculate_variables(self, imported_data_bundle)`:
+      - Receives a dictionary `imported_data_bundle` (e.g., `{'mag_input': mag_object, 'proton_input': proton_object}`).
+      - Extracts `Br` and `mag_datetime_array` from `imported_data_bundle['mag_input']`.
+      - Extracts `sun_dist_rsun` and `proton_datetime_array` from `imported_data_bundle['proton_input']`.
+      - Performs interpolation of `sun_dist_rsun` (from proton data) onto `mag_datetime_array`.
+      - Calculates `br_norm`.
+      - Sets `self.raw_data = {'br_norm': calculated_br_norm_array}`.
+      - Sets `self.datetime_array` (based on `mag_datetime_array`).
+      - Sets `self.time` (TT2000 of `self.datetime_array`).
+    - Initializes `class_name = 'PspBrNormCalculator'`, `data_type = 'psp_br_norm_calculated'`.
+    - Implements `set_ploptions()` for direct plotting of `br_norm`.
+  - **`get_data.py` Logic for `has_dependencies: True`:**
+    - When a requested `data_type` has `has_dependencies: True`:
+      1. `get_data` looks up the `dependencies` dictionary in `psp_data_types.py`.
+      2. For each dependency listed (e.g., `'mag_RTN_4sa'`, `'spi_sf00_l3_mom'`), `get_data` recursively calls itself to fetch/load that dependency for the same target `trange`.
+      3. The fetched dependency objects are collected into a `dependency_bundle` dictionary, keyed by the keys specified in the `dependencies` entry (e.g., `'mag_input'`, `'proton_input'`).
+      4. `get_data` then instantiates the specified `class_name` (e.g., `PspBrNormCalculator`).
+      5. It calls the calculator's `calculate_variables(dependency_bundle)` method.
+      6. The populated calculator instance is then stashed in `DataCubby` and returned.
+

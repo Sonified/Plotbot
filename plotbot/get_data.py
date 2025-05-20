@@ -120,7 +120,7 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             # Handle cases where var_tuple might not be a tuple or is empty
             variable_names_for_log.append(str(var_tuple)) 
 
-    print_manager.debug(f"[GET_DATA_ENTRY] Original trange: {trange}, variables: {variable_names_for_log}")
+    print_manager.dependency_management(f"[GET_DATA_ENTRY] Original trange: {trange}, variables: {variable_names_for_log}")
 
     # STRATEGIC PRINT GET_DATA_ENTRY
     if variables:
@@ -130,9 +130,9 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             dt_len_entry = len(first_var_spec.datetime_array) if first_var_spec.datetime_array is not None else "None"
             min_dt_entry = first_var_spec.datetime_array[0] if dt_len_entry not in ["None", 0] else "N/A"
             max_dt_entry = first_var_spec.datetime_array[-1] if dt_len_entry not in ["None", 0] else "N/A"
-            pm.debug(f"[GET_DATA_ENTRY] Instance {getattr(first_var_spec, 'data_type', 'N/A')} (ID: {id(first_var_spec)}) passed in. Len: {dt_len_entry}, Min: {min_dt_entry}, Max: {max_dt_entry}")
+            pm.dependency_management(f"[GET_DATA_ENTRY] Instance {getattr(first_var_spec, 'data_type', 'N/A')} (ID: {id(first_var_spec)}) passed in. Len: {dt_len_entry}, Min: {min_dt_entry}, Max: {max_dt_entry}")
         elif isinstance(first_var_spec, str): # It's a data_type string
-            pm.debug(f"[GET_DATA_ENTRY] Called with data_type string: {first_var_spec}")
+            pm.dependency_management(f"[GET_DATA_ENTRY] Called with data_type string: {first_var_spec}")
 
     # Validate time range and ensure UTC timezone
     try:
@@ -202,25 +202,25 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
         else:
             print_manager.variable_testing(f"  Warning: Could not determine processable data type for variable: {var}")
 
-    print_manager.debug(f"[GET_DATA PRE-LOOP] required_data_types set: {required_data_types}")
+    print_manager.dependency_management(f"[GET_DATA PRE-LOOP] required_data_types set: {required_data_types}")
     
     # Print status summary
     for dt in required_data_types:
         subclasses = subclasses_by_type.get(dt, [])
         if dt == 'proton_fits':
-             print_manager.debug(f"🛰️ {dt} - calculation may be needed")
+             print_manager.status(f"🛰️ {dt} - calculation may be needed")
         elif subclasses:
-            print_manager.debug(f"🛰️ {dt} - acquiring variables: {', '.join(subclasses)}")
+            print_manager.status(f"🛰️ {dt} - acquiring variables: {', '.join(subclasses)}")
         else:
-            print_manager.debug(f"🛰️ {dt} - acquiring all variables")
+            print_manager.status(f"🛰️ {dt} - acquiring all variables")
 
     #====================================================================
     # STEP 2: PROCESS EACH REQUIRED DATA TYPE
     #====================================================================
     
     for data_type in required_data_types:
-        print_manager.debug(f"[GET_DATA IN-LOOP] Current data_type from set: '{data_type}' (Type: {type(data_type)})")
-        print_manager.debug(f"Processing Data Type: {data_type}...")
+        print_manager.dependency_management(f"[GET_DATA IN-LOOP] Current data_type from set: '{data_type}' (Type: {type(data_type)})")
+        print_manager.dependency_management(f"Processing Data Type: {data_type}...")
         
         # --- Handle FITS Calculation Type --- 
         if data_type == 'proton_fits':
@@ -230,7 +230,7 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             calculation_needed_by_tracker = global_tracker.is_calculation_needed(trange, fits_calc_key)
 
             if calculation_needed_by_tracker:
-                # print_manager.debug(f"FITS Calculation required for {trange} (Triggered by {data_type}).")
+                # print_manager.dependency_management(f"FITS Calculation required for {trange} (Triggered by {data_type}).")
                 data_obj_fits = import_data_function(trange, fits_calc_trigger)
                 if data_obj_fits:
                     print_manager.status(f"📥 Updating {fits_calc_key} with calculated data...")
@@ -272,7 +272,7 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
                 ham_needs_refresh = True # No data means refresh needed
 
             if ham_needs_refresh:
-                print_manager.debug(f"Ham data update required for {trange}.")
+                print_manager.dependency_management(f"Ham data update required for {trange}.")
                 data_obj_ham = import_data_function(trange, 'ham')
                 
                 if data_obj_ham:
@@ -292,8 +292,8 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
 
         # --- Handle Standard CDF Types --- 
         # data_type here will be e.g., 'spe_sf0_pad'
-        print_manager.debug(f"[GET_DATA_CONFIG_CHECK] Attempting to get config for data_type FROM LOOP VAR: '{data_type}'")
-        print_manager.debug(f"[GET_DATA_CONFIG_CHECK] Available keys in psp_data_types: {list(data_types.keys())}")
+        print_manager.dependency_management(f"[GET_DATA_CONFIG_CHECK] Attempting to get config for data_type FROM LOOP VAR: '{data_type}'")
+        print_manager.dependency_management(f"[GET_DATA_CONFIG_CHECK] Available keys in psp_data_types: {list(data_types.keys())}")
         config = data_types.get(data_type) # Use original data_type for config lookup
         if not config: 
             print_manager.warning(f"Config not found for standard type {data_type} during processing loop.")
@@ -323,25 +323,25 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
         # Prioritize the calculation check. If calculation is NOT needed, we're done.
         if calculation_needed:
             # Clarify debug message
-            print_manager.debug(f"Tracker indicates calculation needed for {cubby_key} (using original type {data_type}). Proceeding...")
+            print_manager.dependency_management(f"Tracker indicates calculation needed for {cubby_key} (using original type {data_type}). Proceeding...")
             
             # Determine server mode (Berkeley or SPDF)
             # This part uses the original data_type implicitly via config
             server_mode = plotbot.config.data_server.lower()
-            print_manager.debug(f"Server mode for {data_type}: {server_mode}")
+            print_manager.dependency_management(f"Server mode for {data_type}: {server_mode}")
             download_successful = False # Reset flag
             
             if server_mode == 'spdf':
-                print_manager.debug(f"Attempting SPDF download for {data_type}...")
+                print_manager.status(f"Attempting SPDF download for {data_type}...")
                 download_successful = download_spdf_data(trange, data_type)
             elif server_mode == 'berkeley' or server_mode == 'berkley':
-                print_manager.debug(f"Attempting Berkeley download for {data_type}...")
+                print_manager.status(f"Attempting Berkeley download for {data_type}...")
                 download_successful = download_berkeley_data(trange, data_type)
             elif server_mode == 'dynamic':
-                print_manager.debug(f"Attempting SPDF download (dynamic mode) for {data_type}...")
+                print_manager.status(f"Attempting SPDF download (dynamic mode) for {data_type}...")
                 download_successful = download_spdf_data(trange, data_type)
                 if not download_successful:
-                    print_manager.debug(f"SPDF download failed/incomplete for {data_type}, falling back to Berkeley...")
+                    print_manager.status(f"SPDF download failed/incomplete for {data_type}, falling back to Berkeley...")
                     download_successful = download_berkeley_data(trange, data_type)
             else:
                 print_manager.warning(f"Invalid config.data_server mode: '{server_mode}'. Defaulting to Berkeley (or Berkley). Handle invalid mode.")
@@ -351,7 +351,7 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             # The import logic below relies on files being present locally if needed.
             # The download functions are responsible for ensuring this.
             # Pass ORIGINAL data_type to import_data_function
-            print_manager.debug(f"{data_type} - Import/Refresh required")
+            print_manager.dependency_management(f"{data_type} - Import/Refresh required")
             data_obj = import_data_function(trange, data_type)
 
             if data_obj is None: 
