@@ -8,6 +8,7 @@ import sys
 import inspect
 import copy
 import cdflib
+from typing import Optional, List
 
 # --- Import Data Class Types for Mapping ---
 # Assuming these classes are defined elsewhere and accessible
@@ -526,10 +527,28 @@ class data_cubby:
             return variable
 
     @classmethod
-    def update_global_instance(cls, data_type_str, imported_data_obj: DataObject, is_segment_merge: bool = False) -> bool:
-        pm = print_manager # Add pm alias for print_manager
-        # STRATEGIC PRINT E (part 1 - before grab)
-        pm.dependency_management(f"[CUBBY_UPDATE_DEBUG E1] Attempting to update global instance for data_type: {data_type_str}")
+    def update_global_instance(cls, 
+                               data_type_str: str, 
+                               imported_data_obj: DataObject, 
+                               is_segment_merge: bool = False, 
+                               original_requested_trange: Optional[List[str]] = None
+                              ) -> bool:
+        """Updates or creates the global instance of a data class.
+
+        Args:
+            data_type_str: The string identifier for the data type (e.g., 'mag_rtn_4sa').
+            imported_data_obj: The DataObject containing newly imported/fetched data.
+            is_segment_merge: Flag indicating if this is a segment merge operation.
+            original_requested_trange: The trange originally requested by the user/plotbot call.
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+        """
+        pm = print_manager # Local alias for brevity
+        pm.datacubby(f"\n=== DataCubby: update_global_instance for {data_type_str} ===")
+        pm.datacubby(f"Received is_segment_merge: {is_segment_merge}")
+        if original_requested_trange:
+            pm.datacubby(f"Received original_requested_trange: {original_requested_trange}")
 
         # First attempt to grab by the specific data_type_str.
         # This might fail if the global instance is registered under a more general name (e.g., 'proton' for 'spi_sf00_l3_mom').
@@ -611,7 +630,11 @@ class data_cubby:
                     dt_len_before_instance_update = len(global_instance.datetime_array) if hasattr(global_instance, 'datetime_array') and global_instance.datetime_array is not None else "None_or_NoAttr"
                     pm.dependency_management(f"[CUBBY_UPDATE_DEBUG H1] Instance (ID: {id(global_instance)}) BEFORE global_instance.update(). datetime_array len: {dt_len_before_instance_update}")
                     
-                    global_instance.update(imported_data_obj)
+                    # Call update with only the arguments known to be generally accepted or recently added
+                    global_instance.update(
+                        imported_data_obj,
+                        original_requested_trange=original_requested_trange
+                    )
                     
                     # STRATEGIC PRINT H2
                     dt_len_after_instance_update = len(global_instance.datetime_array) if hasattr(global_instance, 'datetime_array') and global_instance.datetime_array is not None else "None_or_NoAttr"

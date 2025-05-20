@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plotbot's Kitchen: The Case of Br_Norm's Missing Sticky Note</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; max-width: 800px; margin: auto; color: #333; }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        h2 { color: #16a085; margin-top: 30px; }
+        p { margin-bottom: 15px; }
+        ul { margin-bottom: 15px; padding-left: 20px; }
+        li { margin-bottom: 5px; }
+        code { background-color: #ecf0f1; padding: 2px 5px; border-radius: 4px; font-family: "Courier New", Courier, monospace; color: #c0392b; }
+        strong { color: #2c3e50; }
+        .scenario { background-color: #f9f9f9; border-left: 4px solid #3498db; padding: 15px; margin-top: 20px; border-radius: 5px;}
+        .scenario h3 { margin-top: 0; color: #3498db;}
+        .highlight { background-color: #fef9e7; border: 1px dashed #f39c12; padding: 10px; margin-top: 10px; border-radius: 5px;}
+        .code-block { background-color: #2d2d2d; color: #f1f1f1; padding: 15px; border-radius: 5px; margin: 10px 0; font-family: "Courier New", Courier, monospace; overflow-x: auto;}
+        .code-block .keyword { color: #569cd6; }
+        .code-block .variable { color: #9cdcfe; }
+        .code-block .string { color: #ce9178; }
+        .code-block .comment { color: #6a9955; }
+    </style>
+</head>
+<body>
+
+    <h1>Plotbot's Kitchen: The Case of Br_Norm's Missing Sticky Note</h1>
+
+    <p>Let's zoom in on that crucial moment: when someone in the kitchen talks to <code>GetData</code> (our Expediter). The information <code>GetData</code> has depends entirely on what it's told <em>during that specific conversation (function call)</em>.</p>
+
+    <div class="scenario">
+        <h3>Scenario 1: Direct Request for a Simple Ingredient (e.g., <code>proton.density</code>)</h3>
+        <p>When Chef Plotbot needs <code>proton.density</code> for your current order (<code>TRANGE_FOR_TODAY</code>):</p>
+        <ol>
+            <li><strong>Chef Plotbot (<code>plotbot</code> function) talks to the Expediter (<code>get_data</code> function):</strong>
+                <p>The Chef explicitly says: "Hey Expediter, get me <code>proton.density</code> for <code>TRANGE_FOR_TODAY</code>."</p>
+                <p>In code terms, the <code>plotbot</code> function <em>calls</em> the <code>get_data</code> function and <em>passes <code>TRANGE_FOR_TODAY</code> as an argument</em>:</p>
+                <div class="code-block">
+                    <span class="keyword">def</span> <span class="function-name">plotbot</span>(<span class="variable">TRANGE_FOR_TODAY</span>, <span class="variable">variable_to_plot</span>, ...):<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;...<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">actual_data_object</span> = get_data(<span class="string">TRANGE_FOR_TODAY</span>, <span class="variable">variable_to_plot</span>, ...)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;...
+                </div>
+            </li>
+            <li><strong>Expediter (<code>get_data</code>) has the "Sticky Note":</strong>
+                <p>Because <code>TRANGE_FOR_TODAY</code> was a direct piece of information (an argument) given to <code>get_data</code> in *this specific call*, <code>get_data</code> knows exactly what time range to work with for <code>proton.density</code>.</p>
+            </li>
+        </ol>
+    </div>
+
+    <div class="scenario">
+        <h3>Scenario 2: Calculated Ingredient (<code>mag_rtn_4sa.br_norm</code>) and its Dependency</h3>
+        <p>This is a bit more indirect for <code>br_norm</code>'s dependency (<code>sun_dist_rsun</code>):</p>
+        <ol>
+            <li><strong>Chef Plotbot (<code>plotbot</code>) talks to Expediter (<code>get_data</code>) for the PARENT ingredient:</strong>
+                <p>Chef: "Expediter, get me <code>mag_rtn_4sa</code> (which contains <code>br_norm</code>) for <code>TRANGE_FOR_TODAY</code>."</p>
+                <div class="code-block">
+                    <span class="keyword">def</span> <span class="function-name">plotbot</span>(<span class="variable">TRANGE_FOR_TODAY</span>, <span class="variable">mag_rtn_4sa.br_norm</span>, ...):<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;...<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// get_data is called for the parent object, mag_rtn_4sa</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">mag_rtn_4sa_object</span> = get_data(<span class="string">TRANGE_FOR_TODAY</span>, <span class="variable">mag_rtn_4sa</span>, ...)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;...<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Later, mag_rtn_4sa.br_norm is accessed, triggering its calculation</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;plot_this_specific_thing(<span class="variable">mag_rtn_4sa_object.br_norm</span>)
+                </div>
+                <p>The <code>get_data</code> call updates the main <code>mag_rtn_4sa</code> station with data for <code>TRANGE_FOR_TODAY</code>. The "Sticky Note" (<code>TRANGE_FOR_TODAY</code>) was used for <em>this</em> update.</p>
+            </li>
+            <li><strong><code>Br_Norm</code> Sous-Chef (<code>_calculate_br_norm</code> method) Starts Cooking:</strong>
+                <p>Later, when <code>mag_rtn_4sa.br_norm</code> is needed, its <code>@property</code> runs the <code>_calculate_br_norm</code> method. This method is now active, <em>inside</em> the <code>mag_rtn_4sa</code> object.</p>
+            </li>
+            <li><strong><code>Br_Norm</code> Sous-Chef talks to Expediter (<code>get_data</code>) for ITS OWN ingredient (<code>sun_dist_rsun</code>):</strong>
+                <div class="highlight">
+                    <p><strong>This is the critical difference:</strong> The <code>_calculate_br_norm</code> method makes a <em>new, separate call</em> to <code>get_data</code> to fetch <code>proton.sun_dist_rsun</code>.</p>
+                    <p>Crucially, the original <code>TRANGE_FOR_TODAY</code> ("Sticky Note") from Chef Plotbot's first call (Step 1) is <strong>not automatically an input or parameter to the <code>_calculate_br_norm</code> method itself.</strong> The method doesn't inherently "remember" or "see" it.</p>
+                </div>
+                <div class="code-block">
+                    <span class="keyword">class</span> <span class="class-name">mag_rtn_4sa_class</span>:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;...<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">def</span> <span class="function-name">_calculate_br_norm</span>(<span class="variable">self</span>): <span class="comment">// Notice: no 'TRANGE_FOR_TODAY' parameter here!</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// It has to decide what trange to use for sun_dist_rsun.</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="variable">trange_for_dependency</span> = <span class="comment">derive_from_self_datetime_array() // THIS IS THE CURRENT PROBLEM</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;get_data(<span class="string">trange_for_dependency</span>, <span class="variable">proton.sun_dist_rsun</span>, ...)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...
+                </div>
+                <p>Because <code>_calculate_br_norm</code> doesn't receive <code>TRANGE_FOR_TODAY</code>, it improvises by looking at <code>self.datetime_array</code> (the parent's full pantry). When <em>it</em> calls <code>get_data</code>, it passes this (potentially merged and overly broad) <code>trange_for_dependency</code>.</p>
+            </li>
+        </ol>
+    </div>
+
+    <h2>Why the Difference? Function Call Boundaries.</h2>
+    <p>Think of each function or method call as a separate conversation with its own set of information (its parameters). Information isn't automatically shared between separate calls unless it's explicitly passed along.</p>
+    <ul>
+        <li><code>plotbot</code> <span class="arrow">&rarr;</span> <code>get_data</code> (for <code>proton.density</code>): <code>TRANGE_FOR_TODAY</code> is passed.</li>
+        <li><code>plotbot</code> <span class="arrow">&rarr;</span> <code>get_data</code> (for <code>mag_rtn_4sa</code>): <code>TRANGE_FOR_TODAY</code> is passed. This updates <code>mag_rtn_4sa</code>.</li>
+        <li><code>mag_rtn_4sa._calculate_br_norm</code> <span class="arrow">&rarr;</span> <code>get_data</code> (for <code>proton.sun_dist_rsun</code>): <code>TRANGE_FOR_TODAY</code> is <strong>not</strong> automatically passed here. <code>_calculate_br_norm</code> makes up its own <code>trange</code>.</li>
+    </ul>
+
+    <p>The "sticky note" (<code>TRANGE_FOR_TODAY</code>) gets to the <code>Mag_RTN_4SA_Station</code> when its main data is updated. But that note isn't automatically put into the <code>Br_Norm</code> sous-chef's pocket for when *it* needs to order its own separate ingredients later. We need a mechanism to ensure that sticky note is available to <code>_calculate_br_norm</code>.</p>
+
+</body>
+</html> 

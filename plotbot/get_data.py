@@ -365,14 +365,18 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             # Tell DataCubby to handle the update/merge for the global instance
             # Use canonical key for cubby update
             print_manager.status(f"📥 Requesting DataCubby to update/merge global instance for {cubby_key}...")
-            update_success = data_cubby.update_global_instance(cubby_key, data_obj)
+            update_success = data_cubby.update_global_instance(
+                data_type_str=cubby_key, # Use canonical cubby_key
+                imported_data_obj=data_obj,
+                # is_segment_merge can use default False if not explicitly determined earlier
+                original_requested_trange=trange # Pass the original trange
+            )
 
             if update_success:
-                print_manager.status(f"✅ DataCubby processed update for {cubby_key}.")
-                # Use canonical key for tracker update
-                global_tracker.update_calculated_range(trange, cubby_key)
+                pm.status(f"✅ DataCubby processed update for {cubby_key}.")
+                global_tracker.update_calculated_range(trange, cubby_key) # Use cubby_key and correct method name
             else:
-                print_manager.warning(f"DataCubby failed to process update for {cubby_key}. Tracker not updated.")
+                pm.warning(f"DataCubby failed to process update for {cubby_key}. Tracker not updated.")
             # --- End Import/Update Data --- 
 
         else: # Calculation NOT needed

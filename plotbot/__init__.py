@@ -228,8 +228,8 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vX.YY (X for major, YY for minor revisions on the same day)
-__version__ = "2025_04_19_v1.00"
-__commit_message__ = "Debug proton time range updates and data cubby merge logic."
+__version__ = "2025_05_19_v1.00"
+__commit_message__ = "Fix: br_norm uses correct trange for dependencies via original_requested_trange. Docs: Added HTML explanations. Version: 2025_05_19_v1.00"
 # Print version information on import
 print(f"   Version: {__version__}")
 print(f"   Commit: {__commit_message__}")

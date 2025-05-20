@@ -20,3 +20,37 @@
 ## Session End Notes:
 
 Pushing documentation changes to GitHub. 
+
+## Major Bug Fix: `mag_rtn_4sa.br_norm` Time Range Correction (The "Sticky Note" Saga)
+
+**Problem:**
+The `mag_rtn_4sa.br_norm` component, when calculating itself, was inadvertently using a merged time range derived from its parent's `datetime_array` to fetch its dependencies (specifically `proton.sun_dist_rsun`). This occurred if `plotbot` was called multiple times with different time ranges, causing `br_norm` to request `sun_dist_rsun` data for a period far exceeding the currently requested plot, leading to incorrect calculations or empty plots for the second `plotbot` call.
+
+**Solution - "Passing the Sticky Note":**
+The fix involved ensuring that the `original_requested_trange` from the `plotbot` call is explicitly passed down through the data loading and processing chain:
+
+1.  **`get_data.py`**: Modified to pass the `trange` (the "sticky note") as `original_requested_trange` to `data_cubby.update_global_instance`.
+2.  **`data_cubby.py`**:
+    *   The `update_global_instance` method was updated to accept `original_requested_trange`.
+    *   It now passes this `original_requested_trange` to the `update()` method of the specific data class instance (e.g., `mag_rtn_4sa_class`).
+3.  **Data Classes (e.g., `psp_mag_rtn_4sa.py`, `psp_proton.py`):**
+    *   Added `_current_operation_trange` attribute, initialized to `None`.
+    *   The `update()` method in these classes now accepts `original_requested_trange` and stores it in `self._current_operation_trange`.
+4.  **`psp_mag_rtn_4sa.py` (`_calculate_br_norm` method):**
+    *   This method now prioritizes `self._current_operation_trange` when determining the `trange_for_dependencies`.
+    *   If `_current_operation_trange` is available, it uses this specific time range for its `get_data` call to fetch `proton.sun_dist_rsun`.
+    *   A fallback to using `self.datetime_array` remains if `_current_operation_trange` is not set (though with the new flow, it should always be set during a standard `plotbot` call).
+
+**Outcome:**
+With these changes, `_calculate_br_norm` now requests its dependencies (like `sun_dist_rsun`) using the precise time range of the current `plotbot` call. This ensures that calculations are based on the correct data segment, resolving the issue of incorrect or missing `br_norm` data in subsequent `plotbot` calls with different time ranges. The test `test_two_call_incorrect_merged_trange` now passes, confirming the fix.
+
+**Documentation:**
+Created several HTML files to explain the problem and solution using the "Plotbot's Kitchen" metaphor:
+*   `docs/br_norm_issue.html`
+*   `docs/br_norm_trange_mystery.html`
+*   `docs/br_norm_lost_sticky_note.html`
+*   `docs/br_norm_sticky_note_success.html` (summarizing the successful fix)
+
+**Other Minor Fixes During This Process:**
+*   Corrected `global_tracker.update_data_range` to `global_tracker.update_calculated_range` in `get_data.py`.
+*   Moved `mdates` and `interpolate` imports to be local within `_calculate_br_norm` in `psp_mag_rtn_4sa.py`. 

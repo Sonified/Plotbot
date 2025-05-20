@@ -6,11 +6,14 @@ import cdflib
 from datetime import datetime, timedelta, timezone
 import logging
 import sys
+from typing import Optional, List # Added for type hinting
 
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
 from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
 from ._utils import _format_setattr_debug
+# import matplotlib.dates as mdates # Will be moved
+# import scipy.interpolate as interpolate # Will be moved
 
 # 🎉 Define the main class to calculate and store mag_rtn_4sa variables 🎉
 class mag_rtn_4sa_class:
@@ -32,6 +35,7 @@ class mag_rtn_4sa_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, '_current_operation_trange', None) # Initialize new attribute
 
         print_manager.dependency_management(f"*** MAG_CLASS_INIT (mag_rtn_4sa_class) ID:{id(self)}: imported_data ID: {id(imported_data) if imported_data is not None else 'None'}. ***")
         if imported_data is None:
@@ -45,7 +49,14 @@ class mag_rtn_4sa_class:
             self.set_ploptions()
             print_manager.status("Successfully calculated mag rtn 4sa variables.")
     
-    def update(self, imported_data):
+    def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
+        # Store the passed trange
+        object.__setattr__(self, '_current_operation_trange', original_requested_trange)
+        if original_requested_trange:
+            print_manager.dependency_management(f"[MAG_CLASS_UPDATE] Stored _current_operation_trange: {self._current_operation_trange}")
+        else:
+            print_manager.dependency_management(f"[MAG_CLASS_UPDATE] original_requested_trange not provided or None.")
+
         print_manager.dependency_management(f"*** MAG_CLASS_UPDATE (mag_rtn_4sa_class) ID:{id(self)}: imported_data ID: {id(imported_data) if imported_data is not None else 'None'}, .data ID: {id(imported_data.data) if imported_data is not None and hasattr(imported_data, 'data') and imported_data.data is not None else 'N/A'} ***")
         if imported_data is None:                                                # Exit if no new data
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
@@ -156,22 +167,19 @@ class mag_rtn_4sa_class:
                 print_manager.dependency_management("[BR_NORM_PROPERTY] _calculate_br_norm successful, updating _br_norm_manager.")
                 options = self._br_norm_manager.plot_options
                 print_manager.dependency_management(f"[BR_NORM_PROPERTY] _br_norm_manager is being updated. Current options.datetime_array len: {len(options.datetime_array) if options.datetime_array is not None else 'None'}")
-                if options.datetime_array is not None and len(options.datetime_array) > 0:
-                    print_manager.dependency_management(f"[BR_NORM_PROPERTY] options.datetime_array[0]: {options.datetime_array[0]}, [-1]: {options.datetime_array[-1]}")
+                # if options.datetime_array is not None and len(options.datetime_array) > 0:
+                #     print_manager.dependency_management(f"[BR_NORM_PROPERTY] options.datetime_array[0]: {options.datetime_array[0]}, [-1]: {options.datetime_array[-1]}")
                 
-                # PROPOSED CHANGE APPLIED HERE:
-                # Always ensure options.datetime_array is synchronized with the parent's current datetime_array
-                if hasattr(self, 'datetime_array') and self.datetime_array is not None:
-                    # If options.datetime_array is not already the parent's array (or if options.datetime_array is None), update it
-                    # Added check for options.datetime_array being None before np.array_equal
-                    if options.datetime_array is None or not np.array_equal(options.datetime_array, self.datetime_array):
-                         print_manager.dependency_management(f"[BR_NORM_PROPERTY] Aligning options.datetime_array with parent. Parent len: {len(self.datetime_array) if self.datetime_array is not None else 'None'}")
-                         options.datetime_array = self.datetime_array
-                else: # Parent has no datetime_array
-                    # If parent has no datetime_array, set options.datetime_array to empty or None consistently
-                    options.datetime_array = np.array([]) if options.datetime_array is not None else None
-                    print_manager.dependency_management(f"[BR_NORM_PROPERTY] Parent datetime_array is None. Set options.datetime_array to {'empty array' if options.datetime_array is not None else 'None'}.")
-
+                # Ensure the plot_options for the new manager uses the PARENT's datetime_array
+                if hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0:
+                    print_manager.dependency_management(f"[BR_NORM_PROPERTY] Parent self.datetime_array IS valid and populated. Setting options.datetime_array. Parent len: {len(self.datetime_array)}")
+                    options.datetime_array = self.datetime_array
+                elif options.datetime_array is None: # Parent dt_array is None/empty, and current options.dt_array is also None
+                    print_manager.dependency_management(f"[BR_NORM_PROPERTY] Parent self.datetime_array is NOT valid (or empty), and options.datetime_array is None. Setting to empty np.array([]) to be safe.")
+                    options.datetime_array = np.array([]) # Default to empty array
+                else: # Parent dt_array is None/empty, but options.datetime_array was something (e.g. from placeholder or already empty)
+                    print_manager.dependency_management(f"[BR_NORM_PROPERTY] Parent self.datetime_array is NOT valid (or empty). Current options.datetime_array len: {len(options.datetime_array) if options.datetime_array is not None else 'None'}. Will retain existing options.datetime_array or ensure it's an empty array if it was None.")
+                    options.datetime_array = options.datetime_array if options.datetime_array is not None else np.array([])
 
                 self._br_norm_manager = plot_manager(
                     self.raw_data['br_norm'],
@@ -267,189 +275,140 @@ class mag_rtn_4sa_class:
         print_manager.dependency_management(f"First TT2000 time: {self.time[0]}")
     
     def _calculate_br_norm(self):
-        """
-        Calculate the normalized radial magnetic field (Br*R²)
-        
-        This parameter accounts for the 1/r² decrease of the magnetic field strength 
-        with distance from the Sun, allowing for meaningful comparisons between
-        measurements at different solar distances.
-        
-        The formula is:
-        Br_norm = Br * ((Rsun / conversion_factor)²)
-        
-        Where:
-        - Br is the radial magnetic field component in nT
-        - Rsun is the distance from the Sun in solar radii
-        - conversion_factor is 215.032867644 (Rsun per AU)
-        - The result is in nT*AU²
-        """
-        print_manager.dependency_management(f"[_CALCULATE_BR_NORM ENTRY] Called for instance ID: {id(self)}")
-        dt_array_status = "exists and is populated" if hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0 else "MISSING or EMPTY"
-        print_manager.dependency_management(f"[_CALCULATE_BR_NORM ENTRY] self.datetime_array status: {dt_array_status}")
-        if hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0:
-            print_manager.dependency_management(f"[_CALCULATE_BR_NORM ENTRY] self.datetime_array[0]: {self.datetime_array[0]}, [-1]: {self.datetime_array[-1]}")
+        """Calculate Br normalized by R^2."""
+        from plotbot.get_data import get_data # Local import
+        from plotbot import proton # Local import for proton data
+        import matplotlib.dates as mdates # Moved here
+        import scipy.interpolate as interpolate # Moved here
 
-        try:
-            # Import necessary components
-            from plotbot import proton, get_data
-            import scipy.interpolate as interpolate
-            import matplotlib.dates as mdates
-            
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] _calculate_br_norm called for instance ID: {id(self)}")
-            
-            # Debug proton state at the start
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] BEFORE CALCULATION - proton ID: {id(proton)}")
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] BEFORE CALCULATION - proton.sun_dist_rsun exists: {hasattr(proton, 'sun_dist_rsun')}")
-            if hasattr(proton, 'sun_dist_rsun'):
-                print_manager.dependency_management(f"[BR_NORM_DEBUG] BEFORE CALCULATION - proton.sun_dist_rsun ID: {id(proton.sun_dist_rsun)}")
-                print_manager.dependency_management(f"[BR_NORM_DEBUG] BEFORE CALCULATION - proton.sun_dist_rsun.data exists: {hasattr(proton.sun_dist_rsun, 'data')}")
-                if hasattr(proton.sun_dist_rsun, 'data') and proton.sun_dist_rsun.data is not None:
-                    print_manager.dependency_management(f"[BR_NORM_DEBUG] BEFORE CALCULATION - proton.sun_dist_rsun.data shape: {proton.sun_dist_rsun.data.shape}")
-            
-            # Check if we have the necessary data already loaded
-            if not hasattr(self, 'raw_data'):
-                print_manager.dependency_management("[BR_NORM_DEBUG] raw_data attribute missing")
-                return False
-                
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] raw_data keys: {list(self.raw_data.keys())}")
-            
-            if 'br' not in self.raw_data:
-                print_manager.dependency_management("[BR_NORM_DEBUG] 'br' key not in raw_data")
-                return False
-                
-            if self.raw_data['br'] is None:
-                print_manager.dependency_management("[BR_NORM_DEBUG] raw_data['br'] is None")
-                return False
-                
-            if not hasattr(self, 'datetime_array'):
-                print_manager.dependency_management("[BR_NORM_DEBUG] datetime_array attribute missing")
-                return False
-                
-            if self.datetime_array is None:
-                print_manager.dependency_management("[BR_NORM_DEBUG] datetime_array is None")
-                return False
-                
-            if len(self.datetime_array) == 0:
-                print_manager.dependency_management("[BR_NORM_DEBUG] datetime_array is empty")
-                return False
-            
-            # Use existing data
-            print_manager.dependency_management("[BR_NORM_DEBUG] All checks passed, proceeding with br_norm calculation")
-            # br_data = self.raw_data['br']
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] br_data type: {type(br_data)}, shape: {getattr(br_data, 'shape', 'NO SHAPE')}")
-            
-            # Get time range from datetime_array - no checks, just use it
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] datetime_array length: {len(self.datetime_array)}")
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] First datetime: {self.datetime_array[0] if len(self.datetime_array) > 0 else 'EMPTY'}")
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] Last datetime: {self.datetime_array[-1] if len(self.datetime_array) > 0 else 'EMPTY'}")
-            
-            # Fix: Use YYYY-MM-DD/HH:MM:SS.fff format with slash separator
-            start_time = pd.Timestamp(self.datetime_array[0]).strftime('%Y-%m-%d/%H:%M:%S.%f')
-            end_time = pd.Timestamp(self.datetime_array[-1]).strftime('%Y-%m-%d/%H:%M:%S.%f')
-            trange = [start_time, end_time]
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] Created trange: {trange}")
-            
-            # Get proton sun_dist_rsun data
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] Getting sun_dist_rsun data for br_norm calculation (using trange derived from mag field times)")
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] About to call get_data with trange={trange}")
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] Before get_data: proton ID={id(proton)}")
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] Before get_data: proton.sun_dist_rsun.data = {getattr(proton.sun_dist_rsun, 'data', 'NO DATA ATTR')}")
-            print(f"[DEBUG] About to call get_data with trange={trange}", file=sys.stderr)
-            print(f"[DEBUG] Before get_data: proton.sun_dist_rsun.data = {getattr(proton.sun_dist_rsun, 'data', 'NO DATA ATTR')}", file=sys.stderr)
-            
-                        # Call get_data with verbose debugging
-            try:
-                print_manager.dependency_management(f"[BR_NORM_DEBUG] Calling get_data(trange={trange}, mag_rtn_4sa.br)...")
-                get_data(trange, mag_rtn_4sa.br)
-                print_manager.dependency_management(f"[BR_NORM_DEBUG] get_data call completed")
-            except Exception as get_data_error:
-                print_manager.dependency_management(f"[BR_NORM_DEBUG] ERROR in get_data call: {get_data_error}")
-                import traceback
-                print_manager.dependency_management(f"[BR_NORM_DEBUG] get_data traceback: {traceback.format_exc()}")
-                return False
-            
-            # Call get_data with verbose debugging
-            try:
-                print_manager.dependency_management(f"[BR_NORM_DEBUG] Calling get_data(trange={trange}, proton.sun_dist_rsun)...")
-                get_data(trange, proton.sun_dist_rsun)
-                print_manager.dependency_management(f"[BR_NORM_DEBUG] get_data call completed")
-            except Exception as get_data_error:
-                print_manager.dependency_management(f"[BR_NORM_DEBUG] ERROR in get_data call: {get_data_error}")
-                import traceback
-                print_manager.dependency_management(f"[BR_NORM_DEBUG] get_data traceback: {traceback.format_exc()}")
-                return False
-            
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] After get_data: proton ID={id(proton)}")
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] After get_data: proton.sun_dist_rsun.data = {getattr(proton.sun_dist_rsun, 'data', 'NO DATA ATTR')}")
-            print(f"[DEBUG] After get_data: proton.sun_dist_rsun.data = {getattr(proton.sun_dist_rsun, 'data', 'NO DATA ATTR')}", file=sys.stderr)
-            
-            # Add explicit check that data was loaded
-            if not hasattr(proton.sun_dist_rsun, 'data') or proton.sun_dist_rsun.data is None:
-                print_manager.dependency_management(f"[BR_NORM_DEBUG] ERROR: proton.sun_dist_rsun.data is None after get_data call")
-                return False
-                
-            if len(proton.sun_dist_rsun.data) == 0:
-                print_manager.dependency_management(f"[BR_NORM_DEBUG] ERROR: proton.sun_dist_rsun.data is empty (length 0) after get_data call")
-                return False
-            
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] SUCCESS: proton.sun_dist_rsun.data loaded with shape {proton.sun_dist_rsun.data.shape}")
-            
-            # Get the proton data directly - let any errors raise naturally
-            mag_datetime = self.datetime_array
-            proton_datetime = proton.datetime_array
-            sun_dist_rsun = proton.sun_dist_rsun.data
-            
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] Using proton_datetime with length {len(proton_datetime)}")
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] Using sun_dist_rsun with shape {sun_dist_rsun.shape}")
-            
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] Proton data state:")
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] proton_datetime type: {type(proton_datetime)}, shape: {getattr(proton_datetime, 'shape', 'NO SHAPE')}")
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] sun_dist_rsun type: {type(sun_dist_rsun)}, shape: {getattr(sun_dist_rsun, 'shape', 'NO SHAPE')}")
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] First proton datetime: {proton_datetime[0] if len(proton_datetime) > 0 else 'EMPTY'}")
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] Last proton datetime: {proton_datetime[-1] if len(proton_datetime) > 0 else 'EMPTY'}")
-            
-            # Convert datetime arrays to numeric for interpolation
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] Converting datetime arrays to numeric with mdates.date2num")
-            proton_time_numeric = mdates.date2num(proton_datetime)
-            mag_time_numeric = mdates.date2num(mag_datetime)
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] proton_time_numeric shape: {proton_time_numeric.shape}")
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] mag_time_numeric shape: {mag_time_numeric.shape}")
-            
-            # Create interpolation function
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] Creating interpolation function")
-            interp_func = interpolate.interp1d(
-                proton_time_numeric, 
-                sun_dist_rsun,
-                kind='linear',
-                bounds_error=False,
-                fill_value='extrapolate'
-            )
-            
-            # Apply interpolation to get sun distance at mag timestamps
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] Applying interpolation")
-            sun_dist_interp = interp_func(mag_time_numeric)
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] sun_dist_interp shape: {sun_dist_interp.shape}")
-            
-            # Calculate br_norm using the precise conversion factor
-            br_data = mag_rtn_4sa.br.data
-            
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] Calculating br_norm with conversion factor")
-            rsun_to_au_conversion_factor = 215.032867644  # Solar radii per AU
-            br_norm = br_data * ((sun_dist_interp / rsun_to_au_conversion_factor) ** 2)
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] br_norm shape: {br_norm.shape}")
-            
-            # Store the result
-            self.raw_data['br_norm'] = br_norm
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] Successfully calculated br_norm (shape: {br_norm.shape})")
-            print_manager.dependency_management(f"[_CALCULATE_BR_NORM EXIT] Successfully calculated and stored br_norm.")
-            return True
-            
-        except Exception as e:
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] Error calculating br_norm: {str(e)}")
-            import traceback
-            print_manager.dependency_management(f"[BR_NORM_DEBUG] {traceback.format_exc()}")
-            print_manager.dependency_management(f"[_CALCULATE_BR_NORM EXIT] Failed with exception.")
+        # Log entry with instance ID
+        print_manager.dependency_management(f"[BR_NORM_CALC ENTRY] _calculate_br_norm called for instance ID: {id(self)}")
+
+        # Determine the trange to use for fetching dependencies
+        trange_for_dependencies = None
+        using_specific_trange = False
+        if hasattr(self, '_current_operation_trange') and self._current_operation_trange is not None:
+            trange_for_dependencies = self._current_operation_trange
+            using_specific_trange = True
+            print_manager.dependency_management(f"[BR_NORM_CALC] Using specific _current_operation_trange for dependencies: {trange_for_dependencies}")
+        elif self.datetime_array is not None and len(self.datetime_array) > 0:
+            # Fallback: Derive trange from existing datetime_array if _current_operation_trange is not set
+            start_time_dt = pd.to_datetime(self.datetime_array[0])
+            end_time_dt = pd.to_datetime(self.datetime_array[-1])
+            # Ensure explicit UTC timezone if not present, then format
+            start_time_str = start_time_dt.tz_localize('UTC').strftime('%Y-%m-%d/%H:%M:%S.%f') if start_time_dt.tzinfo is None else start_time_dt.strftime('%Y-%m-%d/%H:%M:%S.%f')
+            end_time_str = end_time_dt.tz_localize('UTC').strftime('%Y-%m-%d/%H:%M:%S.%f') if end_time_dt.tzinfo is None else end_time_dt.strftime('%Y-%m-%d/%H:%M:%S.%f')
+            trange_for_dependencies = [start_time_str, end_time_str]
+            print_manager.warning(f"[BR_NORM_CALC] _current_operation_trange not available. Using FALLBACK trange derived from self.datetime_array for dependencies: {trange_for_dependencies}")
+        else:
+            print_manager.error("[BR_NORM_CALC] Cannot determine time range for dependencies: _current_operation_trange is None AND self.datetime_array is empty or None.")
+            self.raw_data['br_norm'] = None # Ensure it's None if calculation fails
             return False
+
+        # Check 1: Ensure essential data (br) is available
+        if not hasattr(self, 'raw_data') or 'br' not in self.raw_data or self.raw_data['br'] is None:
+            print_manager.dependency_management("[BR_NORM_DEBUG] raw_data['br'] is None")
+            return False
+        
+        if not hasattr(self, 'datetime_array') or self.datetime_array is None or len(self.datetime_array) == 0:
+            print_manager.dependency_management("[BR_NORM_DEBUG] datetime_array is None or empty")
+            return False
+        
+        # Check 2: Ensure proton data is available
+        if not hasattr(proton, 'sun_dist_rsun') or not hasattr(proton.sun_dist_rsun, 'data'):
+            print_manager.dependency_management("[BR_NORM_DEBUG] proton.sun_dist_rsun is not available")
+            return False
+        
+        if proton.sun_dist_rsun.data is None or len(proton.sun_dist_rsun.data) == 0:
+            print_manager.dependency_management("[BR_NORM_DEBUG] proton.sun_dist_rsun.data is None or empty")
+            return False
+        
+        # Check 3: Ensure trange_for_dependencies is valid
+        if trange_for_dependencies is None or not isinstance(trange_for_dependencies, list) or len(trange_for_dependencies) != 2:
+            print_manager.dependency_management("[BR_NORM_DEBUG] trange_for_dependencies is None or invalid")
+            return False
+        
+        # Use existing data
+        print_manager.dependency_management("[BR_NORM_DEBUG] All checks passed, proceeding with br_norm calculation")
+        br_data = self.raw_data['br']
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] br_data type: {type(br_data)}, shape: {getattr(br_data, 'shape', 'NO SHAPE')}")
+        
+        # Get time range from datetime_array - no checks, just use it
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] datetime_array length: {len(self.datetime_array)}")
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] First datetime: {self.datetime_array[0] if len(self.datetime_array) > 0 else 'EMPTY'}")
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] Last datetime: {self.datetime_array[-1] if len(self.datetime_array) > 0 else 'EMPTY'}")
+        
+        # Fix: Use YYYY-MM-DD/HH:MM:SS.fff format with slash separator
+        start_time = pd.Timestamp(self.datetime_array[0]).strftime('%Y-%m-%d/%H:%M:%S.%f')
+        end_time = pd.Timestamp(self.datetime_array[-1]).strftime('%Y-%m-%d/%H:%M:%S.%f')
+        trange = [start_time, end_time]
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] Created trange: {trange}")
+        
+        # Get proton sun_dist_rsun data
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] Getting sun_dist_rsun data for br_norm calculation (using trange: {trange_for_dependencies})")
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] Before get_data: proton ID={id(proton)}")
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] Before get_data: proton.sun_dist_rsun.data = {getattr(proton.sun_dist_rsun, 'data', 'NO DATA ATTR')}")
+        get_data(trange_for_dependencies, proton.sun_dist_rsun)
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] After get_data: proton.sun_dist_rsun.data = {getattr(proton.sun_dist_rsun, 'data', 'NO DATA ATTR')}")
+
+        # Add explicit check that data was loaded
+        if not hasattr(proton.sun_dist_rsun, 'data') or proton.sun_dist_rsun.data is None:
+            print_manager.dependency_management(f"[BR_NORM_DEBUG] ERROR: proton.sun_dist_rsun.data is None after get_data call")
+            return False
+            
+        if len(proton.sun_dist_rsun.data) == 0:
+            print_manager.dependency_management(f"[BR_NORM_DEBUG] ERROR: proton.sun_dist_rsun.data is empty (length 0) after get_data call")
+            return False
+        
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] SUCCESS: proton.sun_dist_rsun.data loaded with shape {proton.sun_dist_rsun.data.shape}")
+        
+        # Get the proton data directly - let any errors raise naturally
+        mag_datetime = self.datetime_array
+        proton_datetime = proton.datetime_array
+        sun_dist_rsun = proton.sun_dist_rsun.data
+        
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] Using proton_datetime with length {len(proton_datetime)}")
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] Using sun_dist_rsun with shape {sun_dist_rsun.shape}")
+        
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] Proton data state:")
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] proton_datetime type: {type(proton_datetime)}, shape: {getattr(proton_datetime, 'shape', 'NO SHAPE')}")
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] sun_dist_rsun type: {type(sun_dist_rsun)}, shape: {getattr(sun_dist_rsun, 'shape', 'NO SHAPE')}")
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] First proton datetime: {proton_datetime[0] if len(proton_datetime) > 0 else 'EMPTY'}")
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] Last proton datetime: {proton_datetime[-1] if len(proton_datetime) > 0 else 'EMPTY'}")
+        
+        # Convert datetime arrays to numeric for interpolation
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] Converting datetime arrays to numeric with mdates.date2num")
+        proton_time_numeric = mdates.date2num(proton_datetime)
+        mag_time_numeric = mdates.date2num(mag_datetime)
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] proton_time_numeric shape: {proton_time_numeric.shape}")
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] mag_time_numeric shape: {mag_time_numeric.shape}")
+        
+        # Create interpolation function
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] Creating interpolation function")
+        interp_func = interpolate.interp1d(
+            proton_time_numeric, 
+            sun_dist_rsun,
+            kind='linear',
+            bounds_error=False,
+            fill_value='extrapolate'
+        )
+        
+        # Apply interpolation to get sun distance at mag timestamps
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] Applying interpolation")
+        sun_dist_interp = interp_func(mag_time_numeric)
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] sun_dist_interp shape: {sun_dist_interp.shape}")
+        
+        # Calculate br_norm using the precise conversion factor
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] Calculating br_norm with conversion factor")
+        rsun_to_au_conversion_factor = 215.032867644  # Solar radii per AU
+        br_norm = br_data * ((sun_dist_interp / rsun_to_au_conversion_factor) ** 2)
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] br_norm shape: {br_norm.shape}")
+        
+        # Store the result
+        self.raw_data['br_norm'] = br_norm
+        print_manager.dependency_management(f"[BR_NORM_DEBUG] Successfully calculated br_norm (shape: {br_norm.shape})")
+        print_manager.dependency_management(f"[_CALCULATE_BR_NORM EXIT] Successfully calculated and stored br_norm.")
+        return True
     
     def _setup_br_norm_plot_manager(self):
         """Create plot manager for br_norm with appropriate options"""

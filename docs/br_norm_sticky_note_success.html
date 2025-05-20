@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plotbot's Kitchen: The Sticky Note Reaches Its Destination!</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; max-width: 800px; margin: auto; color: #333; }
+        h1 { color: #27ae60; border-bottom: 2px solid #2ecc71; padding-bottom: 10px; }
+        h2 { color: #16a085; margin-top: 30px; }
+        p { margin-bottom: 15px; }
+        ul { margin-bottom: 15px; padding-left: 20px; }
+        li { margin-bottom: 5px; }
+        code { background-color: #ecf0f1; padding: 2px 5px; border-radius: 4px; font-family: "Courier New", Courier, monospace; color: #c0392b; }
+        strong { color: #2c3e50; }
+        .highlight { background-color: #e8f6f3; border: 1px dashed #1abc9c; padding: 15px; margin-top: 20px; border-radius: 5px;}
+        .arrow { font-size: 1.5em; color: #3498db; margin: 0 10px; }
+        .code-block { background-color: #f9f9f9; border: 1px solid #ddd; padding: 10px; border-radius: 5px; margin-bottom:15px; font-family: "Courier New", Courier, monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>Plotbot's Kitchen: The Sticky Note Reaches Its Destination!</h1>
+
+    <p>Robert, we've had a breakthrough! The persistent issue with <code>mag_rtn_4sa.br_norm</code> using the wrong time range for its ingredients (like <code>proton.sun_dist_rsun</code>) has been resolved. The kitchen is running smoothly again, and it all came down to making sure the original customer's order slip (the "sticky note" representing the specific <code>trange</code>) was carefully passed along every step of the way.</p>
+
+    <h2>The Problem Refresher: The Overly Broad Shopping List</h2>
+    <p>Previously, when the <code>Br_Norm</code> Sous-Chef (the <code>_calculate_br_norm</code> method) needed to get, say, <code>sun_dist_rsun</code> from the <code>Proton</code> Station, it was looking at the entire stock of ingredients already available at its own <code>Mag_RTN_4sa</code> station. If the <code>Mag_RTN_4sa</code> station had ingredients from multiple previous orders (a merged time range), the <code>Br_Norm</code> Sous-Chef would inadvertently use this very broad shopping list to request its own items. This led to it getting <code>sun_dist_rsun</code> for a much wider time frame than the current customer actually ordered, causing all sorts of confusion and sometimes empty plots.</p>
+
+    <h2>The Solution: Passing the "Sticky Note" Faithfully</h2>
+    <p>Here's how we fixed it, step-by-step through the kitchen workflow:</p>
+
+    <ol>
+        <li>
+            <strong>The Head Chef (<code>plotbot</code> & <code>get_data</code>):</strong>
+            <p>When a new order (a <code>plotbot</code> call) comes in with a specific time range (<code>TRANGE_CURRENT_ORDER</code>), Chef Plotbot writes this down on a "sticky note." The <code>get_data</code> function, which is like the main order processing desk, now takes this exact sticky note.</p>
+            <p><em>The Change:</em> <code>get_data</code> was modified to explicitly pass this <code>TRANGE_CURRENT_ORDER</code> to the <code>DataCubby</code>'s main update service (<code>DataCubby.update_global_instance</code>) using a new argument: <code>original_requested_trange</code>.</p>
+            <div class="code-block">
+# In get_data.py, calling DataCubby:
+data_cubby.update_global_instance(
+    ...,
+    original_requested_trange=trange # <--- The sticky note!
+)
+            </div>
+        </li>
+
+        <li>
+            <strong>The Pantry Manager (<code>DataCubby</code>):</strong>
+            <p>The <code>DataCubby</code> (our central pantry and data instance manager) now expects this sticky note (<code>original_requested_trange</code>) when it's asked to update or prepare a main ingredient line (a data class instance like <code>mag_rtn_4sa_class</code>).</p>
+            <p><em>The Change:</em> The <code>DataCubby.update_global_instance</code> method was updated to accept <code>original_requested_trange</code>. When it then tells a specific Sous-Chef (a data class instance like <code>mag_rtn_4sa_class</code>) to update itself with new raw ingredients (by calling its <code>.update()</code> method), it hands over this same sticky note.</p>
+            <div class="code-block">
+# In data_cubby.py, the update_global_instance method signature:
+def update_global_instance(cls, ..., original_requested_trange: Optional[List[str]] = None):
+    ...
+    # When calling the specific data class's update:
+    global_instance.update(
+        imported_data_obj,
+        original_requested_trange=original_requested_trange # <--- Passing it on!
+    )
+            </div>
+        </li>
+
+        <li>
+            <strong>The Specialized Sous-Chefs (e.g., <code>mag_rtn_4sa_class</code>, <code>proton_class</code>):</strong>
+            <p>Each main Sous-Chef station (our data classes like <code>mag_rtn_4sa_class</code> or <code>proton_class</code>) now has a little pocket to keep the current order's sticky note.</p>
+            <p><em>The Changes:</em></p>
+            <ul>
+                <li>Their recipe book (<code>__init__</code> method) was updated to create an empty pocket: <code>self._current_operation_trange = None</code>.</li>
+                <li>Their main "prepare ingredients" instruction (the <code>.update()</code> method) was modified to accept the <code>original_requested_trange</code> (the sticky note) and put it in this pocket: <code>self._current_operation_trange = original_requested_trange</code>.</li>
+            </ul>
+            <div class="code-block">
+# In psp_mag_rtn_4sa.py (and similarly in psp_proton.py):
+class mag_rtn_4sa_class:
+    def __init__(self, imported_data):
+        ...
+        object.__setattr__(self, '_current_operation_trange', None) # New pocket
+
+    def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
+        object.__setattr__(self, '_current_operation_trange', original_requested_trange) # Store sticky note
+        ...
+            </div>
+        </li>
+
+        <li>
+            <strong>The <code>Br_Norm</code> Sous-Chef's Smarter Shopping Trip (<code>_calculate_br_norm</code>):</strong>
+            <p>This was the crucial step! Now, when the <code>Br_Norm</code> Sous-Chef (the <code>_calculate_br_norm</code> method within <code>mag_rtn_4sa_class</code>) needs to prepare its special normalized Br dish, it first checks its pocket for that sticky note (<code>self._current_operation_trange</code>).</p>
+            <p><em>The Change:</em></p>
+            <ul>
+                <li>If the sticky note is there, it uses <em>that exact time range</em> to request its sub-ingredients (like <code>proton.sun_dist_rsun</code> from the <code>Proton</code> Station via <code>get_data</code>).</li>
+                <li>If, for some reason, the sticky note is missing (e.g., if <code>update</code> wasn't called with it), it has a fallback: it looks at the general time range of ingredients already at its <code>Mag_RTN_4sa</code> station (<code>self.datetime_array</code>). But the priority is the sticky note!</li>
+            </ul>
+            <div class="code-block">
+# In psp_mag_rtn_4sa.py, inside _calculate_br_norm:
+trange_for_dependencies = None
+if hasattr(self, '_current_operation_trange') and self._current_operation_trange is not None:
+    trange_for_dependencies = self._current_operation_trange # <--- Use the sticky note!
+    print_manager.dependency_management(f"Using specific _current_operation_trange: {trange_for_dependencies}")
+elif self.datetime_array is not None and len(self.datetime_array) > 0:
+    # ... fallback to derive trange from self.datetime_array ...
+else:
+    # ... error, cannot determine trange ...
+    return False
+
+# When calling get_data for dependencies:
+get_data(trange_for_dependencies, proton.sun_dist_rsun) # Uses the correct, specific trange!
+            </div>
+        </li>
+    </ol>
+
+    <h2>The Delicious Outcome!</h2>
+    <p>By ensuring this "sticky note" (the <code>original_requested_trange</code>) is passed down faithfully, the <code>Br_Norm</code> Sous-Chef now makes highly specific requests for its ingredients. It no longer tries to get <code>sun_dist_rsun</code> for "all time" (or a merged time), but precisely for the time range the customer actually ordered. This means its calculations are correct, and the final dish (the plot) is exactly what was requested for that specific order, even if there have been many different orders before!</p>
+
+    <div class="highlight">
+        <p><strong>In essence:</strong> We've taught the kitchen staff to pay close attention to the <em>current order's details</em> at every step, especially when a complex dish relies on ingredients prepared by other stations. No more mix-ups based on leftover ingredients from previous meals!</p>
+    </div>
+
+    <h2>Other Minor Kitchen Cleanups:</h2>
+    <p>Along the way, we also fixed a few other minor hiccups:</p>
+    <ul>
+        <li>Ensured all Sous-Chefs (data classes) were ready to receive the "sticky note" in their <code>update</code> methods (e.g., <code>proton_class.update()</code> also now accepts <code>original_requested_trange</code>).</li>
+        <li>Corrected a filing mistake in the main kitchen log (<code>global_tracker.update_data_range</code> was corrected to <code>global_tracker.update_calculated_range</code> in <code>get_data.py</code>).</li>
+        <li>Made sure the <code>Br_Norm</code> Sous-Chef had all its small tools (<code>mdates</code> and <code>interpolate</code> imports) directly at its workstation (inside <code>_calculate_br_norm</code>).</li>
+    </ul>
+    <p>These were like ensuring every chef had the right utensils and knew the correct filing codes, allowing the main "sticky note" system to work flawlessly.</p>
+
+    <p>Congratulations on solving this tricky one, Robert! The kitchen is now much more efficient and accurate.</p>
+</body>
+</html> 
