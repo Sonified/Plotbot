@@ -664,6 +664,7 @@ def multiplot(plot_list, **kwargs):
                                 # x_data remains time_slice, data_slice remains original data_slice
 
                         # --- Use filtered x_data and data_slice --- 
+                        print_manager.processing(f"[PLOT_DEBUG Panel {i}] x_data type: {type(x_data).__name__}, first 5: {x_data[:5] if hasattr(x_data, '__getitem__') else x_data}")
                         ax2.plot(x_data, 
                                 data_slice, # Use filtered data_slice
                                 linewidth=options.magnetic_field_line_width if options.save_preset else single_var.line_width,
@@ -764,6 +765,7 @@ def multiplot(plot_list, **kwargs):
                                 print_manager.status(f"Panel {i+1} (List Var): Positional mapping failed (returned None). Using time.")
                         
                         # --- Use filtered x_data and data_slice --- 
+                        print_manager.processing(f"[PLOT_DEBUG Panel {i}] x_data type: {type(x_data).__name__}, first 5: {x_data[:5] if hasattr(x_data, '__getitem__') else x_data}")
                         axs[i].plot(x_data, 
                                 data_slice, # Use filtered data_slice
                                 linewidth=options.magnetic_field_line_width if options.save_preset else single_var.line_width,
@@ -987,6 +989,7 @@ def multiplot(plot_list, **kwargs):
                                 except Exception as dbg_e:
                                     print_manager.debug(f"[DEBUG Perihelion Value Check - Panel {i+1} TimeSeries] Error during value check: {dbg_e}")
 
+                            print_manager.processing(f"[PLOT_DEBUG Panel {i}] x_data type: {type(x_data).__name__}, first 5: {x_data[:5] if hasattr(x_data, '__getitem__') else x_data}")
                             axs[i].plot(x_data,
                                         data_slice, # Use potentially filtered data_slice
                                         linewidth=options.magnetic_field_line_width if options.save_preset else var.line_width,
@@ -1101,6 +1104,7 @@ def multiplot(plot_list, **kwargs):
                             else:
                                 print_manager.debug(f"  x_data range: {np.min(x_data)} to {np.max(x_data)}")
                             # <<< END DEBUG >>>
+                            print_manager.processing(f"[PLOT_DEBUG Panel {i}] x_data type: {type(x_data).__name__}, first 5: {x_data[:5] if hasattr(x_data, '__getitem__') else x_data}")
                             axs[i].scatter(x_data,
                                           data_slice, # Use filtered data_slice
                                           color=plot_color,
@@ -1387,6 +1391,7 @@ def multiplot(plot_list, **kwargs):
                             except Exception as dbg_e:
                                 print_manager.debug(f"[DEBUG Perihelion Value Check - Panel {i+1} TimeSeries] Error during value check: {dbg_e}")
                         
+                        print_manager.processing(f"[PLOT_DEBUG Panel {i}] x_data type: {type(x_data).__name__}, first 5: {x_data[:5] if hasattr(x_data, '__getitem__') else x_data}")
                         axs[i].plot(x_data, 
                                     data_slice, # Use potentially filtered data_slice
                                     linewidth=options.magnetic_field_line_width if options.save_preset else var.line_width,
@@ -1463,6 +1468,7 @@ def multiplot(plot_list, **kwargs):
                     
                     # Plot the HAM data using filtered x_data and data_slice
                     print_manager.debug(f"Panel {i+1}: Plotting HAM data on right axis")
+                    print_manager.processing(f"[PLOT_DEBUG Panel {i}] x_data type: {type(x_data).__name__}, first 5: {x_data[:5] if hasattr(x_data, '__getitem__') else x_data}")
                     ax2.plot(x_data, 
                             data_slice, # Use filtered data_slice
                             linewidth=ham_var.line_width,
@@ -1952,360 +1958,74 @@ def multiplot(plot_list, **kwargs):
     #==========================================================================
     # STEP 5: FINAL AXIS FORMATTING (Ticks, Labels, Limits)
     #==========================================================================
-    print_manager.debug("Starting final axis formatting loop...")
-
-    common_min_val = None
-    common_max_val = None
-    common_range_applied = False # Flag to track if a common range was applied
-
-    # If using a single x-axis and it's positional, determine common range
-    if options.use_single_x_axis and using_positional_axis:
-        all_panel_x_data = []
-        for i_ax, ax_panel in enumerate(axs):
-            # Check if panel actually used degrees, otherwise, its x_data is still time
-            panel_used_degrees_for_plotting = hasattr(ax_panel, '_panel_actually_used_degrees') and ax_panel._panel_actually_used_degrees
-            
-            # If the global mode is degrees, but this panel didn't use it, its x_data is time and shouldn't be included
-            if data_type == 'degrees_from_perihelion' and not panel_used_degrees_for_plotting:
-                print_manager.debug(f"Panel {i_ax}: Global mode is 'degrees_from_perihelion', but panel did not use it. Skipping for common range calc.")
-                continue
-
-            # For other positional types, assume x_data is numerical if lines exist
-            # For time axis or relative time, this common range logic doesn't apply here.
-            if data_type != 'time' and data_type != 'relative_time':
-                lines = ax_panel.get_lines()
-                if lines:
-                    for line in lines:
-                        x_data_from_line = line.get_xdata() # Renamed for clarity from x_data_line
-                        if x_data_from_line is not None and len(x_data_from_line) > 0:
-                            # Ensure x_data_from_line is a NumPy array to safely check dtype
-                            x_data_np = np.asarray(x_data_from_line)
-                            if np.issubdtype(x_data_np.dtype, np.number): # Check dtype on the NumPy array
-                                all_panel_x_data.extend(x_data_np)
-        
-        if all_panel_x_data:
-            # Remove NaNs before finding min/max
-            all_panel_x_data_finite = np.array(all_panel_x_data)[np.isfinite(all_panel_x_data)]
-            if len(all_panel_x_data_finite) > 0:
-                common_min_val = np.min(all_panel_x_data_finite)
-                common_max_val = np.max(all_panel_x_data_finite)
-                
-                # Apply padding to the common range
-                if common_min_val is not None and common_max_val is not None:
-                    data_span = common_max_val - common_min_val
-                    padding = data_span * 0.05  # 5% padding
-                    common_min_val -= padding
-                    common_max_val += padding
-                    common_range_applied = True
-                    print_manager.debug(f"Common positional range calculated: {common_min_val:.2f} to {common_max_val:.2f} ({data_type})")
-
+    print_manager.processing("[XAXIS_FORMATTING] Entering consolidated x-axis formatting block.")
     for i, ax in enumerate(axs):
         # Determine the mode for the current axis for formatting
-        # This needs to be robust to panel-specific overrides or fallbacks if a panel couldn't use the global mode.
-        current_axis_mode = data_type # Start with the global data_type
-        
-        # If the global mode is 'degrees_from_perihelion', check if this specific panel actually used it.
-        # If not, it fell back to time, so its formatting should be 'time'.
+        current_axis_mode = data_type
         if data_type == 'degrees_from_perihelion':
             if not (hasattr(ax, '_panel_actually_used_degrees') and ax._panel_actually_used_degrees):
-                current_axis_mode = 'time' # Fallback for this panel
+                current_axis_mode = 'time'
                 print_manager.debug(f"Panel {i}: Global mode is 'degrees_from_perihelion', but panel fell back. Formatting as 'time'.")
-        
-        # Similar logic if global mode is relative_time but a panel couldn't use it (e.g., due to positional override)
-        # (This might be more complex if relative time can be mixed with positional per panel)
-        # For now, assume if global data_type is 'relative_time', panels use it.
-        
-        # <<< ADDED DEBUG PRINT >>>
         print_manager.debug(f"Panel {i}: Final formatting using current_axis_mode = '{current_axis_mode}', global_data_type_for_x-axis = '{data_type}'")
 
+        # X-Axis Label AND Tick Label Visibility
         if options.use_single_x_axis:
-            # If using single x-axis, only label the bottom-most plot
+            if i == len(axs) - 1: # If it's the bottom panel
+                ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size, labelpad=options.x_label_pad)
+                ax.tick_params(axis='x', labelbottom=True) # Ensure tick labels are on for bottom
+            else: # If it's not the bottom panel
+                ax.set_xlabel('')
+                ax.set_xticklabels([]) # Hide tick labels
+                ax.tick_params(axis='x', labelbottom=False) # Explicitly turn off tick labels
+        else: # If not using single_x_axis (each panel gets its own)
             ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size, labelpad=options.x_label_pad)
-            # print_manager.debug(f"  Set bottom x-label: '{axis_label}'") # Use axis_label - Reduced verbosity
+            ax.tick_params(axis='x', labelbottom=True) # Ensure tick labels are on for all panels
+
+        # X-Axis Tick Formatter and Locator (consolidated)
+        if current_axis_mode == 'time':
+            locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
+            formatter = mdates.ConciseDateFormatter(locator)
+            ax.xaxis.set_major_locator(locator)
+            ax.xaxis.set_major_formatter(formatter)
+        elif current_axis_mode == 'relative_time':
+            # (Assume relative time logic is handled elsewhere, or add here if needed)
+            pass
+        elif current_axis_mode in ['degrees_from_perihelion', 'carrington_lon', 'carrington_lat']:
+            num_ticks = 5 * options.positional_tick_density
+            ax.xaxis.set_major_locator(mpl_plt.MaxNLocator(num_ticks))
+            def angle_formatter(x, pos):
+                if x == int(x):
+                    return f"{int(x)}°"
+                else:
+                    return f"{x:.1f}°"
+            ax.xaxis.set_major_formatter(FuncFormatter(angle_formatter))
+        elif current_axis_mode == 'r_sun':
+            num_ticks = 5 * options.positional_tick_density
+            ax.xaxis.set_major_locator(mpl_plt.MaxNLocator(num_ticks))
+            def radial_formatter(x, pos):
+                if x == int(x):
+                    return f"{int(x)}"
+                else:
+                    return f"{x:.1f}"
+            ax.xaxis.set_major_formatter(FuncFormatter(radial_formatter))
         else:
-            ax.set_xlabel('')
+            print_manager.debug(f"Panel {i}: Unknown axis mode '{current_axis_mode}', letting Matplotlib handle defaults.")
 
-        # --- TICK LOCATOR --- 
-        # <<< COMMENTING OUT EXPLICIT LOCATOR/FORMATTER >>>
-        # tick_step = None
-        # if current_axis_mode == 'degrees_from_perihelion' and hasattr(options, 'degrees_from_perihelion_tick_step') and options.degrees_from_perihelion_tick_step:
-        #     tick_step = options.degrees_from_perihelion_tick_step
-        #     print_manager.debug(f"  Using fixed tick step for degrees_from_perihelion: {tick_step}")
-        # # Add elif for potential future fixed steps for lon/lat if needed
-        
-        # if tick_step:
-        #     # Use FixedLocator if a specific step is provided
-        #     start_tick = np.ceil(ax.get_xlim()[0] / tick_step) * tick_step
-        #     end_tick = np.floor(ax.get_xlim()[1] / tick_step) * tick_step
-        #     ticks = np.arange(start_tick, end_tick + tick_step, tick_step)
-        #     ax.xaxis.set_major_locator(mticker.FixedLocator(ticks))
-        #     # print_manager.debug(f"  Applied FixedLocator with step {tick_step}") # <<< COMMENTED OUT
-        # else:
-        #     # Default: Use MaxNLocator based on density
-        #     num_ticks = 5 * options.positional_tick_density
-        #     ax.xaxis.set_major_locator(mpl_plt.MaxNLocator(num_ticks))
-        #     # print_manager.debug(f"  Applied MaxNLocator with ~{num_ticks} ticks (density={options.positional_tick_density}x)") # <<< COMMENTED OUT
-        print_manager.debug(f"  Letting Matplotlib handle default locator for {current_axis_mode}.")
-
-        # --- TICK FORMATTER (Same for all degree types) --- 
-        # <<< COMMENTING OUT EXPLICIT FORMATTER >>>
-        # def angle_formatter(x, pos):
-        #     # Ensure clean formatting, avoid unnecessary decimals like .0
-        #     if x == int(x):
-        #         return f"{int(x)}°"
-        #     else:
-        #         # Round to avoid excessive precision, e.g., 123.4567°
-        #         return f"{x:.1f}°"
-        # ax.xaxis.set_major_formatter(FuncFormatter(angle_formatter))
-        # # print_manager.debug(f"  Applied angle_formatter.") # <<< COMMENTED OUT
-        print_manager.debug(f"  Letting Matplotlib handle default formatter for {current_axis_mode}.")
-        
-        # --- X-AXIS LIMITS --- 
+        # X-Axis Limits (consolidated)
         fixed_range = None
         if current_axis_mode == 'degrees_from_perihelion' and hasattr(options, 'degrees_from_perihelion_range') and options.degrees_from_perihelion_range:
             fixed_range = options.degrees_from_perihelion_range
-            print_manager.debug(f"  Using fixed range for degrees_from_perihelion: {fixed_range}")
-        elif (current_axis_mode == 'carrington_lon' or current_axis_mode == 'carrington_lat') and options.x_axis_positional_range:
-             fixed_range = options.x_axis_positional_range
-             print_manager.debug(f"  Using fixed range for {current_axis_mode}: {fixed_range}")
-        
-        if fixed_range:
             ax.set_xlim(fixed_range)
-            print_manager.debug(f"  Applied fixed xlim: {ax.get_xlim()}")
-        elif not options.use_single_x_axis: # Auto-scale if no fixed range AND not using single x-axis
-            # Calculate range from data if not using single x axis (handled later for single axis)
-            lines = ax.get_lines()
-            if lines and len(lines) > 0 and len(lines[0].get_xdata()) > 0:
-                x_data = lines[0].get_xdata()
-                min_val, max_val = np.nanmin(x_data), np.nanmax(x_data)
-                if np.isfinite(min_val) and np.isfinite(max_val):
-                    data_range = max_val - min_val
-                    padding = data_range * 0.05 if data_range > 0 else 1 # Add padding, handle zero range
-                    ax.set_xlim(min_val - padding, max_val + padding)
-                    print_manager.debug(f"  Auto-scaled individual xlim: {ax.get_xlim()}")
-                else:
-                     print_manager.warning(f"Axis {i}: Cannot auto-scale limits, data contains NaNs or Infs.")
-            else:
-                print_manager.warning(f"Axis {i}: Cannot auto-scale limits, no plottable data found.")
-        # Else: If using single x-axis and no fixed range, scaling is handled globally later
-
-        # --- X-AXIS LABEL --- 
-        # Use the axis_label determined during initialization
-        if options.use_single_x_axis:
-            if i == len(axs) - 1:
-                # --- DEBUG: Print label being set --- 
-                print_manager.debug(f"[Final Format Loop - Axis {i}] Setting bottom label to: '{axis_label}'")
-                # --- END DEBUG --- 
-                ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size, labelpad=options.x_label_pad)
-                # print_manager.debug(f"  Set bottom x-label: '{axis_label}'") # Use axis_label - Reduced verbosity
-            else:
-                ax.set_xlabel('')
-        else:
-            # --- DEBUG: Print label being set --- 
-            print_manager.debug(f"[Final Format Loop - Axis {i}] Setting individual label to: '{axis_label}'")
-            # --- END DEBUG --- 
-            ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size, labelpad=options.x_label_pad)
-            # print_manager.debug(f"  Set individual x-label: '{axis_label}'") # Use axis_label - Reduced verbosity
-
-        # --- TICK FORMATTER --- 
-        # <<< COMMENTING OUT EXPLICIT FORMATTER >>>
-        # def angle_formatter(x, pos):
-        #     # Ensure clean formatting, avoid unnecessary decimals like .0
-        #     if x == int(x):
-        #         return f"{int(x)}°"
-        #     else:
-        #         # Round to avoid excessive precision, e.g., 123.4567°
-        #         return f"{x:.1f}°"
-        # ax.xaxis.set_major_formatter(FuncFormatter(angle_formatter))
-        # # print_manager.debug(f"  Applied angle_formatter.") # <<< COMMENTED OUT
-        print_manager.debug(f"  Letting Matplotlib handle default formatter for {current_axis_mode}.")
-        
-        # --- X-AXIS LIMITS --- 
-        fixed_range = None
-        if current_axis_mode == 'degrees_from_perihelion' and hasattr(options, 'degrees_from_perihelion_range') and options.degrees_from_perihelion_range:
-            fixed_range = options.degrees_from_perihelion_range
-            print_manager.debug(f"  Using fixed range for degrees_from_perihelion: {fixed_range}")
-        elif (current_axis_mode == 'carrington_lon' or current_axis_mode == 'carrington_lat') and options.x_axis_positional_range:
-             fixed_range = options.x_axis_positional_range
-             print_manager.debug(f"  Using fixed range for {current_axis_mode}: {fixed_range}")
-        
-        if fixed_range:
+        elif current_axis_mode in ['carrington_lon', 'carrington_lat'] and options.x_axis_positional_range:
+            fixed_range = options.x_axis_positional_range
             ax.set_xlim(fixed_range)
-            print_manager.debug(f"  Applied fixed xlim: {ax.get_xlim()}")
-        elif not options.use_single_x_axis: # Auto-scale if no fixed range AND not using single x-axis
-            # Calculate range from data if not using single x axis (handled later for single axis)
-            lines = ax.get_lines()
-            if lines and len(lines) > 0 and len(lines[0].get_xdata()) > 0:
-                x_data = lines[0].get_xdata()
-                min_val, max_val = np.nanmin(x_data), np.nanmax(x_data)
-                if np.isfinite(min_val) and np.isfinite(max_val):
-                    data_range = max_val - min_val
-                    padding = data_range * 0.05 if data_range > 0 else 1 # Add padding, handle zero range
-                    ax.set_xlim(min_val - padding, max_val + padding)
-                    print_manager.debug(f"  Auto-scaled individual xlim: {ax.get_xlim()}")
-                else:
-                     print_manager.warning(f"Axis {i}: Cannot auto-scale limits, data contains NaNs or Infs.")
-            else:
-                print_manager.warning(f"Axis {i}: Cannot auto-scale limits, no plottable data found.")
-        # Else: If using single x-axis and no fixed range, scaling is handled globally later
+        # (Add more limit logic as needed for other axis types)
 
-        # --- X-AXIS LABEL --- 
-        # Use the axis_label determined during initialization
-        if options.use_single_x_axis:
-            if i == len(axs) - 1:
-                # --- DEBUG: Print label being set --- 
-                print_manager.debug(f"[Final Format Loop - Axis {i}] Setting bottom label to: '{axis_label}'")
-                # --- END DEBUG --- 
-                ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size, labelpad=options.x_label_pad)
-                # print_manager.debug(f"  Set bottom x-label: '{axis_label}'") # Use axis_label - Reduced verbosity
-            else:
-                ax.set_xlabel('')
-        else:
-            # --- DEBUG: Print label being set --- 
-            print_manager.debug(f"[Final Format Loop - Axis {i}] Setting individual label to: '{axis_label}'")
-            # --- END DEBUG --- 
-            ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size, labelpad=options.x_label_pad)
-            # print_manager.debug(f"  Set individual x-label: '{axis_label}'") # Use axis_label - Reduced verbosity
+        # Tick label size
+        ax.tick_params(axis='x', labelsize=options.x_tick_label_font_size)
+        ax.tick_params(axis='y', labelsize=options.y_tick_label_font_size)
 
-        # --- TICK FORMATTER --- 
-        # <<< COMMENTING OUT EXPLICIT FORMATTER >>>
-        # def angle_formatter(x, pos):
-        #     # Ensure clean formatting, avoid unnecessary decimals like .0
-        #     if x == int(x):
-        #         return f"{int(x)}°"
-        #     else:
-        #         # Round to avoid excessive precision, e.g., 123.4567°
-        #         return f"{x:.1f}°"
-        # ax.xaxis.set_major_formatter(FuncFormatter(angle_formatter))
-        # # print_manager.debug(f"  Applied angle_formatter.") # <<< COMMENTED OUT
-        print_manager.debug(f"  Letting Matplotlib handle default formatter for {current_axis_mode}.")
-        
-        # --- X-AXIS LIMITS --- 
-        fixed_range = None
-        if current_axis_mode == 'degrees_from_perihelion' and hasattr(options, 'degrees_from_perihelion_range') and options.degrees_from_perihelion_range:
-            fixed_range = options.degrees_from_perihelion_range
-            print_manager.debug(f"  Using fixed range for degrees_from_perihelion: {fixed_range}")
-        elif (current_axis_mode == 'carrington_lon' or current_axis_mode == 'carrington_lat') and options.x_axis_positional_range:
-             fixed_range = options.x_axis_positional_range
-             print_manager.debug(f"  Using fixed range for {current_axis_mode}: {fixed_range}")
-        
-        if fixed_range:
-            ax.set_xlim(fixed_range)
-            print_manager.debug(f"  Applied fixed xlim: {ax.get_xlim()}")
-        elif not options.use_single_x_axis: # Auto-scale if no fixed range AND not using single x-axis
-            # Calculate range from data if not using single x axis (handled later for single axis)
-            lines = ax.get_lines()
-            if lines and len(lines) > 0 and len(lines[0].get_xdata()) > 0:
-                x_data = lines[0].get_xdata()
-                min_val, max_val = np.nanmin(x_data), np.nanmax(x_data)
-                if np.isfinite(min_val) and np.isfinite(max_val):
-                    data_range = max_val - min_val
-                    padding = data_range * 0.05 if data_range > 0 else 1 # Add padding, handle zero range
-                    ax.set_xlim(min_val - padding, max_val + padding)
-                    print_manager.debug(f"  Auto-scaled individual xlim: {ax.get_xlim()}")
-                else:
-                     print_manager.warning(f"Axis {i}: Cannot auto-scale limits, data contains NaNs or Infs.")
-            else:
-                print_manager.warning(f"Axis {i}: Cannot auto-scale limits, no plottable data found.")
-        # Else: If using single x-axis and no fixed range, scaling is handled globally later
-
-        # --- X-AXIS LABEL --- 
-        # Use the axis_label determined during initialization
-        if options.use_single_x_axis:
-            if i == len(axs) - 1:
-                # --- DEBUG: Print label being set --- 
-                print_manager.debug(f"[Final Format Loop - Axis {i}] Setting bottom label to: '{axis_label}'")
-                # --- END DEBUG --- 
-                ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size, labelpad=options.x_label_pad)
-                # print_manager.debug(f"  Set bottom x-label: '{axis_label}'") # Use axis_label - Reduced verbosity
-            else:
-                ax.set_xlabel('')
-        else:
-            # --- DEBUG: Print label being set --- 
-            print_manager.debug(f"[Final Format Loop - Axis {i}] Setting individual label to: '{axis_label}'")
-            # --- END DEBUG --- 
-            ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size, labelpad=options.x_label_pad)
-            # print_manager.debug(f"  Set individual x-label: '{axis_label}'") # Use axis_label - Reduced verbosity
-
-        # --- TICK FORMATTER --- 
-        # <<< COMMENTING OUT EXPLICIT FORMATTER >>>
-        # def angle_formatter(x, pos):
-        #     # Ensure clean formatting, avoid unnecessary decimals like .0
-        #     if x == int(x):
-        #         return f"{int(x)}°"
-        #     else:
-        #         # Round to avoid excessive precision, e.g., 123.4567°
-        #         return f"{x:.1f}°"
-        # ax.xaxis.set_major_formatter(FuncFormatter(angle_formatter))
-        # # print_manager.debug(f"  Applied angle_formatter.") # <<< COMMENTED OUT
-        print_manager.debug(f"  Letting Matplotlib handle default formatter for {current_axis_mode}.")
-        
-        # --- X-AXIS LIMITS --- 
-        fixed_range = None
-        if current_axis_mode == 'degrees_from_perihelion' and hasattr(options, 'degrees_from_perihelion_range') and options.degrees_from_perihelion_range:
-            fixed_range = options.degrees_from_perihelion_range
-            print_manager.debug(f"  Using fixed range for degrees_from_perihelion: {fixed_range}")
-        elif (current_axis_mode == 'carrington_lon' or current_axis_mode == 'carrington_lat') and options.x_axis_positional_range:
-             fixed_range = options.x_axis_positional_range
-             print_manager.debug(f"  Using fixed range for {current_axis_mode}: {fixed_range}")
-        
-        if fixed_range:
-            ax.set_xlim(fixed_range)
-            print_manager.debug(f"  Applied fixed xlim: {ax.get_xlim()}")
-        elif not options.use_single_x_axis: # Auto-scale if no fixed range AND not using single x-axis
-            # Calculate range from data if not using single x axis (handled later for single axis)
-            lines = ax.get_lines()
-            if lines and len(lines) > 0 and len(lines[0].get_xdata()) > 0:
-                x_data = lines[0].get_xdata()
-                min_val, max_val = np.nanmin(x_data), np.nanmax(x_data)
-                if np.isfinite(min_val) and np.isfinite(max_val):
-                    data_range = max_val - min_val
-                    padding = data_range * 0.05 if data_range > 0 else 1 # Add padding, handle zero range
-                    ax.set_xlim(min_val - padding, max_val + padding)
-                    print_manager.debug(f"  Auto-scaled individual xlim: {ax.get_xlim()}")
-                else:
-                     print_manager.warning(f"Axis {i}: Cannot auto-scale limits, data contains NaNs or Infs.")
-            else:
-                print_manager.warning(f"Axis {i}: Cannot auto-scale limits, no plottable data found.")
-        # Else: If using single x-axis and no fixed range, scaling is handled globally later
-
-        # --- X-AXIS LABEL --- 
-        # Use the axis_label determined during initialization
-        if options.use_single_x_axis:
-            if i == len(axs) - 1:
-                # --- DEBUG: Print label being set --- 
-                print_manager.debug(f"[Final Format Loop - Axis {i}] Setting bottom label to: '{axis_label}'")
-                # --- END DEBUG --- 
-                ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size, labelpad=options.x_label_pad)
-                # print_manager.debug(f"  Set bottom x-label: '{axis_label}'") # Use axis_label - Reduced verbosity
-            else:
-                ax.set_xlabel('')
-        else:
-            # --- DEBUG: Print label being set --- 
-            print_manager.debug(f"[Final Format Loop - Axis {i}] Setting individual label to: '{axis_label}'")
-            # --- END DEBUG --- 
-            ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size, labelpad=options.x_label_pad)
-            # print_manager.debug(f"  Set individual x-label: '{axis_label}'") # Use axis_label - Reduced verbosity
-
-        # --- TICK FORMATTER --- 
-        # <<< COMMENTING OUT EXPLICIT FORMATTER >>>
-        # def angle_formatter(x, pos):
-        #     # Ensure clean formatting, avoid unnecessary decimals like .0
-        #     if x == int(x):
-        #         return f"{int(x)}°"
-        #     else:
-        #         # Round to avoid excessive precision, e.g., 123.4567°
-        #         return f"{x:.1f}°"
-        # ax.xaxis.set_major_formatter(FuncFormatter(angle_formatter))
-        # # print_manager.debug(f"  Applied angle_formatter.") # <<< COMMENTED OUT
-        print_manager.debug("Performing final enforced check to hide tick labels on non-bottom panels for single-x-axis mode")
-        for i, ax in enumerate(axs):
-            if i < len(axs) - 1:  # All but the last (bottom) plot
-                ax.set_xticklabels([])  # Force hide tick labels
-                # Also set tick visibility to False for extra assurance
-                for tick in ax.get_xticklabels():
-                    tick.set_visible(False)
-                # print_manager.debug(f"Forcibly hid all tick labels for panel {i}")
+    print_manager.processing("[XAXIS_FORMATTING] Exiting consolidated x-axis formatting block.")
     
     print_manager.debug("=== Multiplot Complete ===\n")
     

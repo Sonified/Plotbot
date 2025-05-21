@@ -120,8 +120,8 @@ class mag_rtn_4sa_class:
         print_manager.warning(f"[MAG_CLASS_GET_SUBCLASS] '{subclass_name}' is not a recognized subclass, property, or raw_data key for instance ID: {id(self)}.")
         available_attrs = [attr for attr in dir(self) if not attr.startswith('_') and not callable(getattr(self, attr))]
         available_raw_keys = list(self.raw_data.keys()) if hasattr(self, 'raw_data') and self.raw_data else []
-        print_manager.info(f"[MAG_CLASS_GET_SUBCLASS] Available properties/attributes: {available_attrs}")
-        print_manager.info(f"[MAG_CLASS_GET_SUBCLASS] Available raw_data keys: {available_raw_keys}")
+        print_manager.dependency_management(f"[MAG_CLASS_GET_SUBCLASS] Available properties/attributes: {available_attrs}")
+        print_manager.dependency_management(f"[MAG_CLASS_GET_SUBCLASS] Available raw_data keys: {available_raw_keys}")
         return None
 
     def __getattr__(self, name):

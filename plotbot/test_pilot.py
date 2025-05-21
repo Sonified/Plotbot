@@ -2,13 +2,26 @@
 import logging
 import os
 
-# Set up logging (if not already set by test file)
-log_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tests", "test_logs", "test_data_loading.txt")
-logging.basicConfig(
-    filename=log_file,
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+# Define the intended log file path
+log_file_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tests", "test_logs")
+log_file_path = os.path.join(log_file_dir, "test_data_loading.txt")
+
+try:
+    # Ensure the log directory exists
+    os.makedirs(log_file_dir, exist_ok=True)
+    # Attempt to configure file-based logging
+    logging.basicConfig(
+        filename=log_file_path,
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+except Exception as e:
+    # If file logging fails for any reason, fall back to console logging
+    print(f"Notice: Could not configure file logging for {log_file_path} ({e}). Falling back to console logging for test_pilot.")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s"
+    )
 
 try:
     import pytest

@@ -45,6 +45,7 @@ class XAxisPositionalDataMapper:
     def load_data(self):
         """Load positional data from NPZ file."""
         resolved_path = self._resolve_path()
+        print_manager.processing(f"Attempting to load Parker Solar Probe positional data from {resolved_path}...")
         try:
             print_manager.status(f"Loading Parker Solar Probe positional data from {resolved_path}")
             # Use the resolved path to load data
@@ -78,13 +79,21 @@ class XAxisPositionalDataMapper:
                 
             print_manager.status(f"-> Loaded {len(self.times_numeric)} positional data points with types: {', '.join(data_types)}")
             self.data_loaded = True
+            if self.data_loaded and self.times_numeric is not None and len(self.times_numeric) > 0:
+                ref_start_time = pd.to_datetime(self.times_numeric[0] * 1e9)
+                ref_end_time = pd.to_datetime(self.times_numeric[-1] * 1e9)
+                print_manager.processing(f"SUCCESS: Positional data loaded. Mapper Time Range: {ref_start_time} to {ref_end_time}")
+            elif self.data_loaded:
+                print_manager.processing("SUCCESS: Positional data loaded, but times_numeric array is None or empty.")
             return True
         except FileNotFoundError:
              print_manager.error(f"ERROR: Positional data file not found at {resolved_path}")
+             print_manager.processing(f"FAILURE: Positional data file not found at {resolved_path}")
              self.data_loaded = False
              return False
         except Exception as e:
             print_manager.error(f"ERROR: Failed to load or process positional data from {resolved_path}: {e}")
+            print_manager.processing(f"FAILURE: Failed to load or process positional data from {resolved_path}: {e}")
             self.data_loaded = False
             return False
 
@@ -102,6 +111,13 @@ class XAxisPositionalDataMapper:
         Returns:
             NumPy array of positional values, or None if mapping fails.
         """
+        print_manager.processing(f"[MAP_TO_POSITION_ENTRY] Called for data_type: {data_type}. Input datetime_array length: {len(datetime_array) if datetime_array is not None else 'None'}")
+        if datetime_array is not None and len(datetime_array) > 5:
+            print_manager.processing(f"  Input datetime_array (first 3): {datetime_array[:3]}")
+            print_manager.processing(f"  Input datetime_array (last 3): {datetime_array[-3:]}")
+        elif datetime_array is not None:
+            print_manager.processing(f"  Input datetime_array: {datetime_array}")
+
         if not self.data_loaded or self.times_numeric is None:
             print_manager.warning("Positional data not properly loaded, cannot map to positions.")
             return None
@@ -240,6 +256,12 @@ class XAxisPositionalDataMapper:
             # --- DEBUG: Print interpolation output ---
             print_manager.debug(f"  [Mapper Debug] np.interp output (first 5): {interp_values[:5]}")
             # --- END DEBUG ---
+            print_manager.processing(f"[MAP_TO_POSITION_EXIT] Returning interp_values. Length: {len(interp_values) if interp_values is not None else 'None'}")
+            if interp_values is not None and len(interp_values) > 5:
+                print_manager.processing(f"  Output interp_values (first 3): {interp_values[:3]}")
+                print_manager.processing(f"  Output interp_values (last 3): {interp_values[-3:]}")
+            elif interp_values is not None:
+                print_manager.processing(f"  Output interp_values: {interp_values}")
             return interp_values
         except Exception as e:
             print_manager.error(f"Error during interpolation for {data_type}: {e}")

@@ -149,14 +149,3 @@ data_types = {
         'data_vars': ['br_norm']              # The primary variable this type produces
     }
 }
-
-# Increment this version number each time significant changes are pushed.
-# Example: __version__ = "YYYY_MM_DD_vX.XX"
-__version__ = "2025_05_18_v2.43"
-
-# This commit message will be used in the git commit and the console log.
-commit_message = "docs: Create HTML explanation of data update flow (v2.43)"
-
-# Print version information on import
-print(f"Plotbot Version: {__version__}")
-print(f"Commit Message: {commit_message}")

@@ -59,7 +59,7 @@ from .data_classes.custom_variables import custom_variable, CustomVariablesConta
 
 # Import test_pilot for testing - safely importing the test functions
 # (test_pilot handles the fallback if pytest is not available)
-from .test_pilot import run_missions, phase, system_check
+#from .test_pilot import run_missions, phase, system_check
 
 # Add a method to debug custom variables
 def debug_custom_variables():
@@ -211,9 +211,6 @@ __all__ = [
     'audifier',
     'custom_variable',  # Using custom_variable instead of new_variable
     'debug_custom_variables',  # Add debug function for custom variables
-    'run_missions',   # Add test_pilot functions
-    'phase',
-    'system_check',
     'time_clip',      # ADDED time_clip helper function
     'config',         # ADDED config to __all__
     'data_snapshot',  # Add data_snapshot to __all__
@@ -228,8 +225,8 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vX.YY (X for major, YY for minor revisions on the same day)
-__version__ = "2025_05_19_v2.47"
-__commit_message__ = "Refactor: Remove redundant .field handling from DataCubby. Confirmed no impact on br_norm calculation."
+__version__ = "2025_05_21_v2.48"
+__commit_message__ = "v2.48 Refactor: Decouple test_pilot from main plotbot import to fix user FileNotFoundError."
 # Print version information on import
 print(f"   Version: {__version__}")
 print(f"   Commit: {__commit_message__}")
