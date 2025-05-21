@@ -134,13 +134,24 @@ class proton_class:
             except AttributeError:
                 raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
+        if name == 'field':
+            print_manager.dependency_management(f"[PROTON_GETATTR_FIELD_ACCESS] Attempt to access 'field' attribute on {self.__class__.__name__} instance ID {id(self)}")
+
         if 'raw_data' not in self.__dict__:
-            raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
-        print_manager.debug('proton getattr helper!')
+            # This case should ideally not be hit if __init__ runs correctly
+            print_manager.error(f"[PROTON_GETATTR_ERROR] raw_data not initialized for {self.__class__.__name__} instance when trying to get '{name}'")
+            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}' (raw_data not initialized)")
+        
+        # If the attribute is a known data component, it should have been set up by set_ploptions
+        # and would be directly accessible, or handled by plot_manager's __get__ if it's a PlotManager instance.
+        # This __getattr__ is more of a fallback for names NOT in raw_data.keys() or not plot_manager instances.
+        
         available_attrs = list(self.raw_data.keys()) if self.raw_data else []
-        print(f"'{name}' is not a recognized attribute, friend!")
+        print_manager.dependency_management(f"[PROTON_GETATTR] Attribute '{name}' not found directly. Known raw_data keys: {available_attrs}")
+        # Default message for unrecognized attributes:
+        print(f"[PROTON_GETATTR] '{name}' is not a recognized attribute, friend!")
         print(f"Try one of these: {', '.join(available_attrs)}")
-        return None
+        return None # Or raise AttributeError if preferred for stricter behavior
     
     def __setattr__(self, name, value):
         # Allow direct setting of dunder OR single underscore methods/attributes
@@ -148,19 +159,30 @@ class proton_class:
             object.__setattr__(self, name, value)
             return
 
+        if name == 'field':
+            print_manager.dependency_management(f"[PROTON_SETATTR_FIELD_SET] Attempt to set 'field' attribute on {self.__class__.__name__} instance ID {id(self)} to value of type {type(value)}")
+
         # Allow setting known attributes
-        print_manager.debug(f"Setting attribute: {name} with value: {value}")
-        if name in ['datetime_array', 'raw_data', 'time', 'field', 'mag_field', 'temp_tensor', 'energy_flux', 'theta_flux', 'phi_flux', 'energy_vals', 'theta_vals', 'phi_vals', 'times_mesh', 'times_mesh_angle', 'data_type'] or name in self.raw_data:
-            super().__setattr__(name, value)
+        # print_manager.debug(f"Setting attribute: {name} with value: {value}") # Too verbose for general use
+        if name in ['datetime_array', 'raw_data', 'time', 'field', 'mag_field', 'temp_tensor', 'energy_flux', 'theta_flux', 'phi_flux', 'energy_vals', 'theta_vals', 'phi_vals', 'times_mesh', 'times_mesh_angle', 'data_type'] or \
+           (hasattr(self, 'raw_data') and isinstance(self.raw_data, dict) and name in self.raw_data) or \
+           (hasattr(self, name) and not callable(getattr(self, name))): # Allow setting if it's an existing non-callable attribute (like a PlotManager instance)
+            object.__setattr__(self, name, value) # Use object.__setattr__ to bypass this method for known attributes
         else:
-            # Print friendly error message
-            print('proton setattr helper!')
-            print(f"'{name}' is not a recognized attribute, friend!")
-            available_attrs = list(self.raw_data.keys()) if self.raw_data else []
-            print(f"Try one of these: {', '.join(available_attrs)}")
+            # Print friendly error message for truly unrecognized attributes
+            print_manager.warning(f"[PROTON_SETATTR] Attribute '{name}' is not explicitly defined in settable list for {self.__class__.__name__}. Allowed if it's a plot_manager instance or in raw_data.")
+            available_attrs = list(getattr(self, 'raw_data', {}).keys()) + ['datetime_array', 'time', 'field', 'mag_field', 'temp_tensor', 'energy_flux', 'theta_flux', 'phi_flux', 'energy_vals', 'theta_vals', 'phi_vals', 'times_mesh', 'times_mesh_angle', 'data_type']
+            print(f"[PROTON_SETATTR] '{name}' is not a recognized settable attribute, friend! (Or it might be a method name)")
+            print(f"Known data keys and core attributes: {', '.join(list(set(available_attrs)))}")
+            # Potentially raise an error here if strict attribute setting is desired
+            # For now, just warn and allow if it's an existing attribute (e.g. plot manager objects)
+            object.__setattr__(self, name, value)
 
     def calculate_variables(self, imported_data):
         """Calculate the proton parameters and derived quantities."""
+        pm = print_manager # local alias
+        pm.dependency_management(f"[PROTON_CALC_VARS_ENTRY] Instance ID {id(self)} calculating variables. Imported data time type: {type(getattr(imported_data, 'times', None))}")
+
         # Extract time and field data
         self.time = imported_data.times
         self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time))  # Use cdflib instead of pandas

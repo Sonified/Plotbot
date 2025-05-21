@@ -92,16 +92,37 @@ class mag_rtn_4sa_class:
         print_manager.datacubby("=== End Update Debug ===\\n")
         
     def get_subclass(self, subclass_name):  # Dynamic component retrieval method
-        """Retrieve a specific component"""
-        print_manager.dependency_management(f"Getting subclass: {subclass_name}")  # Log which component is requested
-        print_manager.dependency_management(f"Accessing subclass: mag_rtn_4sa.{subclass_name}")
-        if subclass_name in self.raw_data.keys():  # Check if component exists in raw_data
-            print_manager.dependency_management(f"Returning {subclass_name} component")  # Log successful component find
-            return getattr(self, subclass_name)  # Return the plot_manager instance
-        else:
-            print(f"'{subclass_name}' is not a recognized subclass, friend!")  # Friendly error message
-            print(f"Try one of these: {', '.join(self.raw_data.keys())}")  # Show available components
-            return None  # Return None if not found
+        """Retrieve a specific component (subclass or property)."""
+        print_manager.dependency_management(f"[MAG_CLASS_GET_SUBCLASS] Attempting to get subclass/property: {subclass_name} for instance ID: {id(self)}")
+
+        # First, check if it's a direct attribute/property of the instance
+        if hasattr(self, subclass_name):
+            # Verify it's not a private or dunder attribute unless explicitly intended (though typically not requested via get_subclass)
+            if not subclass_name.startswith('_'): 
+                retrieved_attr = getattr(self, subclass_name)
+                print_manager.dependency_management(f"[MAG_CLASS_GET_SUBCLASS] Found '{subclass_name}' as a direct attribute/property. Type: {type(retrieved_attr)}")
+                return retrieved_attr
+            else:
+                print_manager.dependency_management(f"[MAG_CLASS_GET_SUBCLASS] '{subclass_name}' is an internal attribute, not returning via get_subclass.")
+        
+        # If not a direct attribute, check if it's a key in raw_data (original behavior for data components)
+        # This part might be redundant if set_ploptions correctly creates plot_manager instances as attributes.
+        # However, keeping it ensures that if raw_data keys are somehow requested directly, they can be accessed if they aren't also properties.
+        if hasattr(self, 'raw_data') and self.raw_data and subclass_name in self.raw_data.keys():
+            # This path should ideally be less common if plot_managers are set up for all raw_data items
+            # and those plot_managers are accessed directly as attributes (handled by the hasattr check above).
+            # This could return the raw numpy array if the plot_manager wasn't set up as an attribute.
+            component = self.raw_data.get(subclass_name)
+            print_manager.dependency_management(f"[MAG_CLASS_GET_SUBCLASS] Found '{subclass_name}' as a key in raw_data. Type: {type(component)}. This might be raw data.")
+            return component # Could be a plot_manager if set_ploptions assigned it here, or raw data.
+
+        # If not found as a direct attribute or in raw_data keys
+        print_manager.warning(f"[MAG_CLASS_GET_SUBCLASS] '{subclass_name}' is not a recognized subclass, property, or raw_data key for instance ID: {id(self)}.")
+        available_attrs = [attr for attr in dir(self) if not attr.startswith('_') and not callable(getattr(self, attr))]
+        available_raw_keys = list(self.raw_data.keys()) if hasattr(self, 'raw_data') and self.raw_data else []
+        print_manager.info(f"[MAG_CLASS_GET_SUBCLASS] Available properties/attributes: {available_attrs}")
+        print_manager.info(f"[MAG_CLASS_GET_SUBCLASS] Available raw_data keys: {available_raw_keys}")
+        return None
 
     def __getattr__(self, name):
         # Allow direct access to dunder OR single underscore methods/attributes
@@ -305,27 +326,26 @@ class mag_rtn_4sa_class:
             self.raw_data['br_norm'] = None # Ensure it's None if calculation fails
             return False
 
-        # Check 1: Ensure essential data (br) is available
-        if not hasattr(self, 'raw_data') or 'br' not in self.raw_data or self.raw_data['br'] is None:
-            print_manager.dependency_management("[BR_NORM_DEBUG] raw_data['br'] is None")
-            return False
+        # Ensure proton.sun_dist_rsun data is loaded for the correct time range BEFORE accessing its .data attribute
+        print_manager.dependency_management(f"[BR_NORM_CALC] Calling get_data for proton.sun_dist_rsun with trange: {trange_for_dependencies}")
+        get_data(trange_for_dependencies, proton.sun_dist_rsun)
+        print_manager.dependency_management(f"[BR_NORM_CALC] Returned from get_data for proton.sun_dist_rsun.")
         
-        if not hasattr(self, 'datetime_array') or self.datetime_array is None or len(self.datetime_array) == 0:
-            print_manager.dependency_management("[BR_NORM_DEBUG] datetime_array is None or empty")
-            return False
-        
-        # Check 2: Ensure proton data is available
+        # Check 2: Ensure proton data is available AFTER attempting to load it
         if not hasattr(proton, 'sun_dist_rsun') or not hasattr(proton.sun_dist_rsun, 'data'):
-            print_manager.dependency_management("[BR_NORM_DEBUG] proton.sun_dist_rsun is not available")
+            print_manager.error("[BR_NORM_CALC ERROR] proton.sun_dist_rsun or its .data attribute is not available even after get_data call.")
+            self.raw_data['br_norm'] = None # Ensure it's None if calculation fails
             return False
         
-        if proton.sun_dist_rsun.data is None or len(proton.sun_dist_rsun.data) == 0:
-            print_manager.dependency_management("[BR_NORM_DEBUG] proton.sun_dist_rsun.data is None or empty")
+        if proton.sun_dist_rsun.data is None or len(proton.sun_dist_rsun.data) == 0: # This was the line causing the error
+            print_manager.error(f"[BR_NORM_CALC ERROR] proton.sun_dist_rsun.data is None or empty after get_data call for trange {trange_for_dependencies}. Cannot calculate br_norm.")
+            print_manager.dependency_management(f"[BR_NORM_CALC DEBUG] proton.sun_dist_rsun type: {type(proton.sun_dist_rsun)}, .data type: {type(proton.sun_dist_rsun.data) if hasattr(proton.sun_dist_rsun, 'data') else 'N/A'}")
+            self.raw_data['br_norm'] = None # Ensure it's None if calculation fails
             return False
         
-        # Check 3: Ensure trange_for_dependencies is valid
+        # Check 3: Ensure trange_for_dependencies is valid (repeated check, but good for safety after get_data)
         if trange_for_dependencies is None or not isinstance(trange_for_dependencies, list) or len(trange_for_dependencies) != 2:
-            print_manager.dependency_management("[BR_NORM_DEBUG] trange_for_dependencies is None or invalid")
+            print_manager.dependency_management("[BR_NORM_DEBUG] trange_for_dependencies is None or invalid (post get_data check)")
             return False
         
         # Use existing data

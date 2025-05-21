@@ -365,6 +365,7 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             # Tell DataCubby to handle the update/merge for the global instance
             # Use canonical key for cubby update
             print_manager.status(f"📥 Requesting DataCubby to update/merge global instance for {cubby_key}...")
+            print_manager.dependency_management(f"[GET_DATA PRE-CUBBY CALL] Passing to DataCubby: cubby_key='{cubby_key}', original_requested_trange='{trange}', type(original_requested_trange[0])='{type(trange[0]) if trange and len(trange)>0 else 'N/A'}'")
             update_success = data_cubby.update_global_instance(
                 data_type_str=cubby_key, # Use canonical cubby_key
                 imported_data_obj=data_obj,

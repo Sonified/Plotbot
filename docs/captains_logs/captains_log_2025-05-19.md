@@ -139,3 +139,27 @@ By ensuring the `plot_data` list is constructed *after* `plot_variable` is set t
 *   **Version:** `2025_05_19_v2.46`
 *   **Commit Message:** `v2.46: Docs: Explain br_norm TypeError & notebook execution flow. Fix stale plot_data in example.`
 *   **Key Changes:** Added HTML documentation explaining the `br_norm` TypeError (uninvited guest due to `mag_rtn_4sa.update()` loop) and the Jupyter notebook execution order issue (stale `plot_data` list). The notebook example was implicitly fixed by understanding this, leading to successful `br_norm` plotting when intended. 
+
+## Resolution: Simplification of DataCubby - Removal of `.field` Handling
+
+**Context:**
+We previously investigated a `[PROTON_GETATTR] 'field' is not a recognized attribute, friend!` message originating from `DataCubby` attempting to manage a `.field` attribute on data class instances, particularly magnetic field types.
+
+**Investigation & Findings:**
+*   A `grep` search across `multiplot.py`, `plotbot_main.py`, `showdahodo.py`, `showda_holes.py`, and `psp_mag_rtn.py` confirmed that a `.field` attribute (representing a 3-component vector) is not used by external plotting functions or relied upon after data objects are retrieved from `DataCubby`.
+*   In `psp_mag_rtn.py` (and similarly in `psp_mag_rtn_4sa.py`), `self.field` is used as an *internal* variable during the `calculate_variables` process to initially hold the 3-component data, from which `br`, `bt`, `bn` are derived and stored in `self.raw_data`. The class itself manages this internal attribute.
+*   The `_calculate_br_norm` method in `psp_mag_rtn_4sa.py` correctly uses `self.raw_data['br']` for its calculations, not `self.field`.
+
+**Resolution:**
+Based on these findings, the explicit handling (get, set, reconstruction) of a `.field` attribute within `DataCubby.update_global_instance` was deemed unnecessary and potentially a source of confusion or future bugs.
+*   The code block responsible for `.field` reconstruction for magnetic field types was removed from `plotbot/data_cubby.py`.
+
+**Outcome:**
+*   `DataCubby` is now simpler and no longer attempts to manage an internal attribute of data classes that it doesn't need to.
+*   The responsibility for managing internal data structures like a 3-component `field` (if used) lies entirely within the respective data classes.
+*   Testing confirmed that the removal of this logic did not break existing functionality, including the calculation of `mag_rtn_4sa.br_norm`. The "friend" error related to `field` in `DataCubby` should no longer appear.
+
+## Git Push Details (DataCubby .field Refactor):
+
+*   **Version:** `2025_05_19_v2.47`
+*   **Commit Message:** `Refactor: Remove redundant .field handling from DataCubby. Confirmed no impact on br_norm calculation.` 

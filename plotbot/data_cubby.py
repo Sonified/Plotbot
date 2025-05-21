@@ -533,89 +533,90 @@ class data_cubby:
                                is_segment_merge: bool = False, 
                                original_requested_trange: Optional[List[str]] = None
                               ) -> bool:
-        """Updates or creates the global instance of a data class.
+        """
+        Updates the global instance of a data type with new data.
+        Handles merging if data already exists or populating if it's empty.
 
         Args:
-            data_type_str: The string identifier for the data type (e.g., 'mag_rtn_4sa').
-            imported_data_obj: The DataObject containing newly imported/fetched data.
-            is_segment_merge: Flag indicating if this is a segment merge operation.
-            original_requested_trange: The trange originally requested by the user/plotbot call.
+            data_type_str (str): The string identifier for the data type (e.g., 'mag_rtn_4sa', 'spi_sf00_l3_mom').
+            imported_data_obj (DataObject): The new data object (typically from import_data_function).
+            is_segment_merge (bool): Flag indicating if this is a segment merge (not fully implemented yet).
+            original_requested_trange (Optional[List[str]]): The original time range requested by the user/higher-level function.
 
         Returns:
-            bool: True if the update was successful, False otherwise.
+            bool: True if the update was successful or deemed unnecessary, False otherwise.
         """
-        pm = print_manager # Local alias for brevity
-        pm.datacubby(f"\n=== DataCubby: update_global_instance for {data_type_str} ===")
-        pm.datacubby(f"Received is_segment_merge: {is_segment_merge}")
-        if original_requested_trange:
-            pm.datacubby(f"Received original_requested_trange: {original_requested_trange}")
+        pm = print_manager # Local alias
+        pm.dependency_management(f"[CUBBY_UPDATE_ENTRY] Received call for '{data_type_str}'. Original trange: '{original_requested_trange}', type(original_requested_trange[0])='{type(original_requested_trange[0]) if original_requested_trange and len(original_requested_trange)>0 else 'N/A'}'")
 
-        # First attempt to grab by the specific data_type_str.
-        # This might fail if the global instance is registered under a more general name (e.g., 'proton' for 'spi_sf00_l3_mom').
-        global_instance_direct_grab = cls.grab(data_type_str.lower()) 
+        # --- Helper for time range validation (NEW) ---
+        def _validate_trange_elements(trange_to_validate, context_msg=""):
+            if not isinstance(trange_to_validate, list) or len(trange_to_validate) != 2:
+                pm.error(f"Error parsing/validating input time range for {context_msg}: Input trange must be a list of two elements.")
+                return False
+            for i, item in enumerate(trange_to_validate):
+                if not isinstance(item, (str, datetime, pd.Timestamp)):
+                    pm.error(f"Error parsing/validating input time range for {context_msg}: Input trange elements must be strings or datetime/timestamp objects. Element {i} is {type(item)}.")
+                    return False
+            return True
+        # --- End Helper ---
 
-        # STRATEGIC PRINT E (part 2 - after grab)
-        dt_len_before_update = "NoInstance"
-        instance_id_before_update = "NoInstance"
-        if global_instance_direct_grab is not None: # Check the result of the direct grab
-            instance_id_before_update = id(global_instance_direct_grab)
-            dt_len_before_update = len(global_instance_direct_grab.datetime_array) if hasattr(global_instance_direct_grab, 'datetime_array') and global_instance_direct_grab.datetime_array is not None else "None_or_NoAttr"
-        # This debug message is fine, it just reports the result of the first grab attempt.
-        pm.dependency_management(f"[CUBBY_UPDATE_DEBUG E2] Result of direct grab for global_instance (ID: {instance_id_before_update}) for {data_type_str}. datetime_array len BEFORE update: {dt_len_before_update}")
-
-        pm.datacubby(f"\n=== Updating Global Instance: {data_type_str} (is_segment_merge: {is_segment_merge}) ===")
-
-        # 1. Find the target global instance
-        global_instance = None # Reset for the search logic below
-        target_key = data_type_str.lower() # Key we expect based on data type
-
-        # Try grabbing by the direct key first (this uses the result from above)
-        global_instance = global_instance_direct_grab # Use the already grabbed instance if successful
-
-        # If grab by key failed, try finding instance by expected TYPE
-        if global_instance is None:
-            pm.dependency_management(f"Direct grab for key '{target_key}' failed or instance was None. Attempting to find instance by type...")
-            TargetClass = cls._get_class_type_from_string(target_key)
-            if TargetClass:
-                pm.dependency_management(f"Expected type: {TargetClass.__name__}")
-                found_instance = None
-                found_key = None
-                # Search class_registry first (most common)
-                for key, instance in cls.class_registry.items():
-                    if isinstance(instance, TargetClass):
-                        found_instance = instance
-                        found_key = key
-                        pm.dependency_management(f"Found matching instance by type in class_registry with key: '{found_key}'")
-                        break
-                # Potential: Search other registries if needed?
-
-                if found_instance:
-                    global_instance = found_instance
-                    # It might be useful to know the key it *was* found under, even if we update using target_key?
-                    # For now, we just need the instance reference.
-                else:
-                    pm.warning(f"Could not find any instance of type {TargetClass.__name__} in registries.")
-            else:
-                pm.warning(f"Could not determine target class type for '{target_key}'. Cannot find instance by type.")
-
-        # If still no instance found after key and type search, error out
-        if global_instance is None:
-            pm.error(f"UPDATE GLOBAL ERROR - Could not find/resolve global instance for '{data_type_str}'!")
-            pm.datacubby("=== End Global Instance Update ===\n")
+        if imported_data_obj is None and not is_segment_merge:
+            pm.warning(f"[CUBBY_UPDATE_WARNING] imported_data_obj is None and not a segment merge for {data_type_str}. Update aborted.")
             return False
 
-        pm.datacubby(f"Found target global instance: {type(global_instance).__name__} (ID: {id(global_instance)}) to update for data_type '{data_type_str}'")
+        # --- STEP 1: Get the target global instance --- 
+        global_instance = None
+        target_class_type = cls._get_class_type_from_string(data_type_str)
+        pm.dependency_management(f"[CUBBY_UPDATE_DEBUG A] data_type_str: '{data_type_str}', target_class_type: '{target_class_type}'")
 
-        # 2. Check if the global instance is currently empty
-        has_existing_data = (hasattr(global_instance, 'datetime_array') and 
-                             global_instance.datetime_array is not None and 
-                             len(global_instance.datetime_array) > 0)
-                             
-        # STRATEGIC PRINT L
-        dt_len_for_L = len(global_instance.datetime_array) if hasattr(global_instance, 'datetime_array') and global_instance.datetime_array is not None else "None_or_NoAttr"
-        pm.dependency_management(f"[CUBBY_UPDATE_DEBUG L] Pre-branch check. has_existing_data: {has_existing_data}, is_segment_merge: {is_segment_merge}. global_instance (ID: {id(global_instance)}) dt_len: {dt_len_for_L}")
+        if target_class_type:
+            # Try to find an existing instance by its actual class type in the class_registry
+            for key, inst in cls.class_registry.items():
+                if isinstance(inst, target_class_type):
+                    global_instance = inst
+                    pm.dependency_management(f"[CUBBY_UPDATE_DEBUG B] Found matching instance by type in class_registry with key: '{key}', instance ID: {id(global_instance)}")
+                    break
+        
+        if global_instance is None:
+            # Fallback: try direct key lookup in class_registry (old way, less robust for type matching)
+            global_instance = cls.class_registry.get(data_type_str.lower()) # Ensure lowercase for lookup
+            if global_instance:
+                pm.dependency_management(f"[CUBBY_UPDATE_DEBUG C] Found instance by direct key '{data_type_str.lower()}' in class_registry, instance ID: {id(global_instance)}")
+            else:
+                # If still not found, it might be an issue with registration or a new data type
+                pm.error(f"[CUBBY_UPDATE_ERROR] No global instance found or registered for data_type '{data_type_str}'. Cannot update.")
+                # Optionally, create a new instance if that's the desired behavior for unknown types
+                # if target_class_type:
+                #     pm.status(f"No instance found for {data_type_str}, creating a new one of type {target_class_type}")
+                #     global_instance = target_class_type(None) # Initialize with no data
+                #     cls.class_registry[data_type_str.lower()] = global_instance
+                # else:
+                return False
 
-        # 3. Handle Empty Instance Case OR if it's the first segment for a segment merge operation
+        pm.dependency_management(f"[CUBBY] Found target global instance: {type(global_instance).__name__} (ID: {id(global_instance)}) to update for data_type '{data_type_str}'")
+        
+        # --- STEP 2: Validate the original_requested_trange if provided (especially for proton) --- 
+        # This is the "Cranky Timekeeper" point for proton data
+        # Using data_type_str.lower() for reliable matching against common keys
+        # Explicitly check for proton related keys: 'spi_sf00_l3_mom' (official CDF name) and 'proton' (common alias)
+        if data_type_str.lower() == 'spi_sf00_l3_mom' or data_type_str.lower() == 'proton':
+            if original_requested_trange:
+                pm.dependency_management(f"[CUBBY_UPDATE_TRANGE_VALIDATION] Validating original_requested_trange for '{data_type_str}': {original_requested_trange}, Types: [{type(original_requested_trange[0]) if len(original_requested_trange)>0 else 'N/A'}, {type(original_requested_trange[1]) if len(original_requested_trange)>1 else 'N/A'}]")
+                if not _validate_trange_elements(original_requested_trange, context_msg=data_type_str):
+                    # Error already printed by _validate_trange_elements
+                    return False # Stop update if validation fails
+            else:
+                pm.dependency_management(f"[CUBBY_UPDATE_TRANGE_VALIDATION] No original_requested_trange provided for '{data_type_str}', skipping explicit validation here.")
+
+        # --- STEP 3: Determine if the global instance has existing data ---
+        has_existing_data = False
+        if global_instance and hasattr(global_instance, 'datetime_array') and global_instance.datetime_array is not None and len(global_instance.datetime_array) > 0:
+            has_existing_data = True
+
+        pm.dependency_management(f"[CUBBY_UPDATE_DEBUG D] has_existing_data: {has_existing_data}")
+
+        # --- STEP 4: Handle the update logic based on existing data ---
         if not has_existing_data or is_segment_merge:
             if is_segment_merge and has_existing_data:
                 pm.datacubby(f"[CUBBY DEBUG] is_segment_merge is True, but instance for {data_type_str} already has data. Will overwrite with first segment via update().")
@@ -726,35 +727,8 @@ class data_cubby:
                         global_instance.time = np.array([], dtype=np.int64) # Ensure correct dtype for empty
                         pm.dependency_management(f"[CUBBY_UPDATE_DEBUG] datetime_array was empty or None, set time to empty int64 array.")
 
-                    # STEP 3: Reconstruct .field from .raw_data (CRITICAL)
-                    pm.dependency_management(f"[CUBBY_UPDATE_DEBUG] PRE-FIELD-RECONSTRUCTION:")
-                    pm.dependency_management(f"    current field shape: {global_instance.field.shape if hasattr(global_instance, 'field') and global_instance.field is not None else 'None'}")
-                    if hasattr(global_instance, 'raw_data') and global_instance.raw_data and hasattr(global_instance, 'datetime_array') and global_instance.datetime_array is not None:
-                        expected_len = len(global_instance.datetime_array)
-                        if ('br' in global_instance.raw_data and 'bt' in global_instance.raw_data and 'bn' in global_instance.raw_data and
-                            global_instance.raw_data['br'] is not None and global_instance.raw_data['bt'] is not None and global_instance.raw_data['bn'] is not None and
-                            len(global_instance.raw_data['br']) == expected_len and
-                            len(global_instance.raw_data['bt']) == expected_len and
-                            len(global_instance.raw_data['bn']) == expected_len):
-                            global_instance.field = np.column_stack((global_instance.raw_data['br'], global_instance.raw_data['bt'], global_instance.raw_data['bn']))
-                            pm.dependency_management(f"[CUBBY_UPDATE_DEBUG] Reconstructed RTN field. New Shape: {global_instance.field.shape if global_instance.field is not None else 'None'}")
-                        elif ('bx' in global_instance.raw_data and 'by' in global_instance.raw_data and 'bz' in global_instance.raw_data and
-                              global_instance.raw_data['bx'] is not None and global_instance.raw_data['by'] is not None and global_instance.raw_data['bz'] is not None and
-                              len(global_instance.raw_data['bx']) == expected_len and
-                              len(global_instance.raw_data['by']) == expected_len and
-                              len(global_instance.raw_data['bz']) == expected_len):
-                            global_instance.field = np.column_stack((global_instance.raw_data['bx'], global_instance.raw_data['by'], global_instance.raw_data['bz']))
-                            pm.dependency_management(f"[CUBBY_UPDATE_DEBUG] Reconstructed SC field. New Shape: {global_instance.field.shape if global_instance.field is not None else 'None'}")
-                        else:
-                            pm.dependency_management(f"[CUBBY_UPDATE_DEBUG] Field components in raw_data missing, None, or length mismatch with datetime_array (expected {expected_len}). Setting field to None.")
-                            global_instance.field = None
-                    else:
-                        pm.dependency_management(f"[CUBBY_UPDATE_DEBUG] No raw_data or datetime_array on global_instance to reconstruct field from. Setting field to None.")
-                        global_instance.field = None
-                    pm.dependency_management(f"[CUBBY_UPDATE_DEBUG] POST-FIELD-RECONSTRUCTION:")
-                    pm.dependency_management(f"    FINAL field shape: {global_instance.field.shape if global_instance.field is not None else 'None'}")
-
-                    # STEP 4: NOW call set_ploptions, as the instance should be internally consistent
+                    # Call set_ploptions on the global_instance AFTER all raw data arrays are set
+                    # This is crucial because set_ploptions uses these arrays to initialize PlotManagers
                     if hasattr(global_instance, 'set_ploptions'):
                         global_instance.set_ploptions()
                         dt_len_after_setploptions = len(global_instance.datetime_array) if hasattr(global_instance, 'datetime_array') and global_instance.datetime_array is not None else "None_or_NoAttr"
@@ -763,16 +737,16 @@ class data_cubby:
                         pm.dependency_management(f"[CUBBY_UPDATE_DEBUG G_POST_FINAL] Instance (ID: {id(global_instance)}) AFTER ALL MERGE LOGIC (before return True). datetime_array len: {dt_len_after_setploptions}, min: {min_dt_G}, max: {max_dt_G}")
                         
                         # STRATEGIC PRINT CHECK_REGISTRY
-                        instance_in_registry_check = cls.class_registry.get(target_key) # target_key is data_type_str.lower()
+                        instance_in_registry_check = cls.class_registry.get(data_type_str.lower()) # target_key is data_type_str.lower()
                         if instance_in_registry_check is not None:
                             reg_len = len(instance_in_registry_check.datetime_array) if hasattr(instance_in_registry_check, 'datetime_array') and instance_in_registry_check.datetime_array is not None else "None_or_NoAttr"
                             reg_min_dt = instance_in_registry_check.datetime_array[0] if reg_len not in ["None_or_NoAttr", 0] else "N/A"
                             reg_max_dt = instance_in_registry_check.datetime_array[-1] if reg_len not in ["None_or_NoAttr", 0] else "N/A"
-                            pm.dependency_management(f"[CUBBY_UPDATE_DEBUG CHECK_REGISTRY] Instance in class_registry['{target_key}'] (ID: {id(instance_in_registry_check)}) state. dt_len: {reg_len}, min: {reg_min_dt}, max: {reg_max_dt}")
+                            pm.dependency_management(f"[CUBBY_UPDATE_DEBUG CHECK_REGISTRY] Instance in class_registry['{data_type_str.lower()}'] (ID: {id(instance_in_registry_check)}) state. dt_len: {reg_len}, min: {reg_min_dt}, max: {reg_max_dt}")
                             if instance_in_registry_check is not global_instance:
                                 pm.warning(f"[CUBBY_UPDATE_DEBUG CHECK_REGISTRY] Instance in registry (ID: {id(instance_in_registry_check)}) is NOT THE SAME OBJECT as global_instance (ID: {id(global_instance)}) just updated!")
                         else:
-                            pm.dependency_management(f"[CUBBY_UPDATE_DEBUG CHECK_REGISTRY] Instance for key '{target_key}' NOT FOUND in class_registry after merge ops.")
+                            pm.dependency_management(f"[CUBBY_UPDATE_DEBUG CHECK_REGISTRY] Instance for key '{data_type_str.lower()}' NOT FOUND in class_registry after merge ops.")
                         return True
                     else:
                          pm.warning(f"Global instance for {data_type_str} has no set_ploptions(). Plot managers might be stale.")
