@@ -479,4 +479,38 @@ def test_empty_spectral_plot_handling():
                 "Spectral data (epad.strahl) should be empty")
     
     # Reset debug setting
-    print_manager.show_debug = False 
+    print_manager.show_debug = False
+
+@pytest.mark.mission("Plot Manager Truthiness")
+def test_simple_plot_truthiness_error():
+    """Test for the ValueError related to plot_manager truthiness in a simple plotbot call."""
+    print("\n================================================================================")
+    print("TEST #X: Plot Manager Truthiness in Simple Plot")
+    print("Verifies if the ValueError occurs with a basic plotbot(TRANGE, mag_rtn_4sa.br, 1) call")
+    print("================================================================================\n")
+
+    phase(1, "Setting up and running simple plotbot call")
+    print_manager.show_status = True
+    print_manager.show_processing = True
+    # print_manager.show_debug = True # Uncomment if deeper debugging prints are needed
+
+    TRANGE = ['2023-09-28/00:00:00.000', '2023-09-29/00:00:00.000'] # 1 day
+    
+    print_manager.test(f"Calling plotbot with TRANGE: {TRANGE} and variable: mag_rtn_4sa.br")
+    
+    # We expect this call to potentially raise the ValueError
+    # If it does, pytest will catch it and display the traceback.
+    # If it passes without error, the test will pass, indicating the issue might be elsewhere or conditional.
+    try:
+        plotbot(TRANGE, mag_rtn_4sa.br, 1)
+        system_check("Simple plotbot call execution", True, "Plotbot call completed without ValueError.")
+    except ValueError as e:
+        if "The truth value of an array with more than one element is ambiguous" in str(e):
+            system_check("Simple plotbot call execution", False, f"ValueError caught as expected: {e}")
+            pytest.fail(f"ValueError caught as expected, confirming the issue: {e}")
+        else:
+            system_check("Simple plotbot call execution", False, f"An unexpected ValueError occurred: {e}")
+            raise # Re-raise if it's a different ValueError
+    except Exception as e:
+        system_check("Simple plotbot call execution", False, f"An unexpected error occurred: {e}")
+        raise # Re-raise any other unexpected error 

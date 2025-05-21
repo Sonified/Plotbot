@@ -65,29 +65,54 @@ class mag_rtn_4sa_class:
         print_manager.datacubby("\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
         
-        # Store current state before update (including any modified ploptions) ⭐️THIS print can go inside the data cubby
-        current_state = {}
-        for subclass_name in self.raw_data.keys():                             # Use keys()
-            if hasattr(self, subclass_name):
-                var = getattr(self, subclass_name)
-                if hasattr(var, '_plot_state'):
-                    current_state[subclass_name] = dict(var._plot_state)       # Save current plot state
-                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_ploption_snapshot(current_state[subclass_name])}")
+        # Store current state before update (including any modified ploptions)
+        current_plot_states = {}
+        standard_components = ['all', 'br', 'bt', 'bn', 'bmag', 'pmag']
+        for comp_name in standard_components:
+            if hasattr(self, comp_name):
+                manager = getattr(self, comp_name)
+                if isinstance(manager, plot_manager) and hasattr(manager, '_plot_state'):
+                    current_plot_states[comp_name] = dict(manager._plot_state)
+                    print_manager.datacubby(f"Stored {comp_name} state: {retrieve_ploption_snapshot(current_plot_states[comp_name])}")
+
+        # Special handling for br_norm: save state only if it's been fully initialized
+        if hasattr(self, '_br_norm_manager') and \
+           isinstance(self._br_norm_manager, plot_manager) and \
+           self.raw_data.get('br_norm') is not None and \
+           hasattr(self._br_norm_manager, '_plot_state'):
+            current_plot_states['br_norm'] = dict(self._br_norm_manager._plot_state)
+            print_manager.datacubby(f"Stored br_norm (from _br_norm_manager) state: {retrieve_ploption_snapshot(current_plot_states['br_norm'])}")
 
         # Perform update
         self.calculate_variables(imported_data)                                # Update raw data arrays
-        self.set_ploptions()                                                  # Recreate plot managers
+        self.set_ploptions()                                                  # Recreate plot managers for standard components
         
         # Restore state (including any modified ploptions!)
         print_manager.datacubby("Restoring saved state...")
-        for subclass_name, state in current_state.items():                    # Restore saved states
-            if hasattr(self, subclass_name):
-                var = getattr(self, subclass_name)
-                var._plot_state.update(state)                                 # Restore plot state
+        print_manager.processing(f"[MAG_UPDATE_DEBUG] Entering loop to restore plot states. current_plot_states keys: {list(current_plot_states.keys())}")
+        for comp_name, state in current_plot_states.items():
+            print_manager.processing(f"[MAG_UPDATE_DEBUG] Processing comp_name: '{comp_name}'")
+            target_manager = None
+            if comp_name == 'br_norm':
+                # If br_norm state was saved, it means it was active.
+                # Accessing self.br_norm will trigger the property, which should
+                # re-calculate if necessary and update/create self._br_norm_manager.
+                _ = self.br_norm # Ensure property runs and _br_norm_manager is current
+                if hasattr(self, '_br_norm_manager') and isinstance(self._br_norm_manager, plot_manager):
+                    target_manager = self._br_norm_manager
+            elif hasattr(self, comp_name): # For standard components
+                manager = getattr(self, comp_name)
+                if isinstance(manager, plot_manager):
+                    target_manager = manager
+            
+            print_manager.processing(f"[MAG_UPDATE_DEBUG] For comp_name '{comp_name}', target_manager is: {type(target_manager)}, Value: {target_manager}")
+            print_manager.processing(f"[MAG_UPDATE_DEBUG] ---> IMMEDIATELY BEFORE 'if target_manager:' for comp_name '{comp_name}'")
+            if target_manager:
+                target_manager._plot_state.update(state)
                 for attr, value in state.items():
-                    if hasattr(var.plot_options, attr):
-                        setattr(var.plot_options, attr, value)                # Restore individual options
-                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_ploption_snapshot(state)}")
+                    if hasattr(target_manager.plot_options, attr):
+                        setattr(target_manager.plot_options, attr, value)
+                print_manager.datacubby(f"Restored {comp_name} state to {'_br_norm_manager' if comp_name == 'br_norm' else comp_name}: {retrieve_ploption_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\\n")
         

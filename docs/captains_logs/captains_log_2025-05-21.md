@@ -19,5 +19,9 @@
 *   `test_pilot.py` will now only be loaded when test scripts explicitly import it, ensuring a cleaner separation between the library's usage and its testing infrastructure.
 
 **Git Push:**
-*   Version: `2025_05_21_v2.48`
-*   Commit Message: `v2.48 Refactor: Decouple test_pilot from main plotbot import to fix user FileNotFoundError.` 
+*   **Version:** `2025_05_21_v2.49`
+*   **Commit Message:** `v2.49 Fix: Correct plot_manager truthiness evaluation to prevent ValueError.`
+
+## Data Visualization Note: positional_data_overview.png
+
+* Observed that the Carrington longitude plot (top panel) in `local_images/positional_data_overview.png` appears zoomed out. It's difficult to determine from this overview whether the longitude data is wrapping as expected, or if there is a plotting/visualization issue. This may warrant a closer look or a more zoomed-in plot for clarity in future analyses. 

@@ -97,6 +97,17 @@ class plot_manager(np.ndarray):
         if not hasattr(self, '_original_options'):
             self._original_options = getattr(obj, '_original_options', None)
 
+    def __bool__(self):
+        # A plot_manager instance is considered "True" if its underlying
+        # NumPy array representation has at least one element.
+        try:
+            # self.size is an attribute of np.ndarray, giving total number of elements
+            return self.size > 0
+        except AttributeError:
+            # Fallback in case self.size isn't available (e.g., during partial initialization)
+            # or if self is not a valid ndarray view at the moment of the check.
+            return False
+
     @property
     def data(self):
         """Return the raw numpy array data"""
