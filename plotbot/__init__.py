@@ -225,8 +225,8 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vX.YY (X for major, YY for minor revisions on the same day)
-__version__ = "2025_05_22_v2.50"
-__commit_message__ = "v2.50 Refactor: Removed redundant Phase 2 data loading from Plotbot for optimization."
+__version__ = "2025_05_22_v2.51"
+__commit_message__ = "v2.51 Fix: Corrected proton spectral data handling for times_mesh creation"
 # Print version information on import
 print(f"   Version: {__version__}")
 print(f"   Commit: {__commit_message__}")

@@ -36,7 +36,10 @@ class proton_class:
             'pressure': None,
             'density': None,
             'bmag': None,
-            'sun_dist_rsun': None
+            'sun_dist_rsun': None,
+            'ENERGY_VALS': None,  # Added for consistency
+            'THETA_VALS': None,   # Added for consistency
+            'PHI_VALS': None      # Added for consistency
         })
         object.__setattr__(self, 'datetime_array', None)
         object.__setattr__(self, 'times_mesh', [])
@@ -185,7 +188,11 @@ class proton_class:
 
         # Extract time and field data
         self.time = imported_data.times
+        
+        pm.processing(f"[PROTON_CALC_VARS] About to create self.datetime_array from self.time (len: {len(self.time) if self.time is not None else 'None'}) for instance ID {id(self)}")
         self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time))  # Use cdflib instead of pandas
+        pm.processing(f"[PROTON_CALC_VARS] self.datetime_array (id: {id(self.datetime_array)}) created. len: {len(self.datetime_array) if self.datetime_array is not None else 'None'}. Range: {self.datetime_array[0]} to {self.datetime_array[-1]}" if self.datetime_array is not None and len(self.datetime_array) > 0 else f"[PROTON_CALC_VARS] self.datetime_array is empty/None for instance ID {id(self)}")
+
         # Store magnetic field and temperature tensor for anisotropy calculation
         self.mag_field = imported_data.data['MAGF_INST']
         self.temp_tensor = imported_data.data['T_TENSOR_INST']
@@ -226,9 +233,9 @@ class proton_class:
         sun_dist_rsun = sun_dist_km / 695700.0 # Conversion factor for solar radii
 
         # Get energy flux data
-        eflux_v_energy = imported_data.data['EFLUX_VS_ENERGY']
-        eflux_v_theta = imported_data.data['EFLUX_VS_THETA']
-        eflux_v_phi = imported_data.data['EFLUX_VS_PHI']
+        # eflux_v_energy = imported_data.data['EFLUX_VS_ENERGY'] # Redundant
+        # eflux_v_theta = imported_data.data['EFLUX_VS_THETA']   # Redundant
+        # eflux_v_phi = imported_data.data['EFLUX_VS_PHI']     # Redundant
 
         # Extract specific components for spectral data
         self.energy_flux = imported_data.data['EFLUX_VS_ENERGY']
@@ -239,17 +246,27 @@ class proton_class:
         self.phi_vals = imported_data.data['PHI_VALS']
 
         # Calculate spectral data time arrays
+        # Simplified to directly use .shape[1], mirroring electron class calculate_variables assumption
+        # Assumes self.energy_flux (etc.) are valid 2D arrays after assignment from imported_data.
         self.times_mesh = np.meshgrid(
             self.datetime_array,
-            np.arange(32),
+            np.arange(self.energy_flux.shape[1]), # Use self.energy_flux directly
             indexing='ij'
         )[0]
+        pm.processing(f"[PROTON_CALC_VARS] self.times_mesh (id: {id(self.times_mesh)}) created. Shape: {self.times_mesh.shape if self.times_mesh is not None else 'None'}. "
+                      f"Time range (mesh[0,:]): {self.times_mesh[0,0]} to {self.times_mesh[0,-1]} " if self.times_mesh is not None and self.times_mesh.size > 0 and self.times_mesh.ndim == 2 and self.times_mesh.shape[0] > 0 and self.times_mesh.shape[1] > 0 else 
+                      f"[PROTON_CALC_VARS] self.times_mesh is empty/None or not 2D as expected. Shape: {self.times_mesh.shape if hasattr(self.times_mesh, 'shape') else 'N/A'}")
 
+        # Simplified for times_mesh_angle, mirroring electron class calculate_variables assumption
+        # Assumes self.theta_flux (etc.) are valid 2D arrays after assignment from imported_data.
         self.times_mesh_angle = np.meshgrid(
             self.datetime_array,
-            np.arange(8),
+            np.arange(self.theta_flux.shape[1]), # Use self.theta_flux directly
             indexing='ij'
         )[0]
+        pm.processing(f"[PROTON_CALC_VARS] self.times_mesh_angle (id: {id(self.times_mesh_angle)}) created. Shape: {self.times_mesh_angle.shape if self.times_mesh_angle is not None else 'None'}. "
+                      f"Time range (mesh[0,:]): {self.times_mesh_angle[0,0]} to {self.times_mesh_angle[0,-1]} " if self.times_mesh_angle is not None and self.times_mesh_angle.size > 0 and self.times_mesh_angle.ndim == 2 and self.times_mesh_angle.shape[0] > 0 and self.times_mesh_angle.shape[1] > 0 else 
+                      f"[PROTON_CALC_VARS] self.times_mesh_angle is empty/None or not 2D as expected. Shape: {self.times_mesh_angle.shape if hasattr(self.times_mesh_angle, 'shape') else 'N/A'}")
 
         # Compute centroids
         centroids_spi_nrg = np.ma.average(self.energy_vals, 
@@ -284,7 +301,10 @@ class proton_class:
             'pressure': pressure_total,
             'density': density,
             'bmag': b_mag,
-            'sun_dist_rsun': sun_dist_rsun
+            'sun_dist_rsun': sun_dist_rsun,
+            'ENERGY_VALS': self.energy_vals,
+            'THETA_VALS': self.theta_vals,
+            'PHI_VALS': self.phi_vals
         }
 
     def _calculate_temperature_anisotropy(self):
@@ -327,6 +347,13 @@ class proton_class:
 
     def set_ploptions(self):
         """Set up the plotting options for all proton parameters"""
+        print_manager.processing(f"[PROTON_SET_PLOPT ENTRY] id(self): {id(self)}")
+        datetime_array_exists = hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0
+        if datetime_array_exists:
+            print_manager.processing(f"[PROTON_SET_PLOPT] self.datetime_array (id: {id(self.datetime_array)}) len: {len(self.datetime_array)}. Range: {self.datetime_array[0]} to {self.datetime_array[-1]}")
+        else:
+            print_manager.processing(f"[PROTON_SET_PLOPT] self.datetime_array does not exist, is None, or is empty for instance ID {id(self)}.")
+
         # Temperature components
         self.t_par = plot_manager(
             self.raw_data['t_par'],
@@ -657,6 +684,51 @@ class proton_class:
         )
 
         # Spectral Plots
+        # --- Energy Flux ---
+        print_manager.processing(f"[PROTON_SET_PLOPT] Preparing plot_manager for energy_flux. Instance ID {id(self)}.")
+        # Check and regenerate times_mesh for energy_flux if necessary
+        times_mesh_exists = hasattr(self, 'times_mesh') and self.times_mesh is not None
+        raw_data_eflux_exists = hasattr(self, 'raw_data') and 'energy_flux' in self.raw_data and self.raw_data['energy_flux'] is not None and isinstance(self.raw_data['energy_flux'], np.ndarray)
+
+        if times_mesh_exists and isinstance(self.times_mesh, np.ndarray) and raw_data_eflux_exists and datetime_array_exists:
+            needs_regeneration_eflux = False
+            expected_y_dim_eflux = self.raw_data['energy_flux'].shape[1] if self.raw_data['energy_flux'].ndim == 2 else 1
+
+            if self.times_mesh.ndim != 2:
+                needs_regeneration_eflux = True
+                print_manager.processing(f"[PROTON_SET_PLOPT] times_mesh for energy_flux is not 2D (shape: {self.times_mesh.shape}). Regenerating.")
+            elif self.times_mesh.shape[0] != len(self.datetime_array):
+                needs_regeneration_eflux = True
+                print_manager.processing(f"[PROTON_SET_PLOPT] times_mesh for energy_flux shape[0] ({self.times_mesh.shape[0]}) != len(datetime_array) ({len(self.datetime_array)}). Regenerating.")
+            elif self.times_mesh.shape[1] != expected_y_dim_eflux:
+                needs_regeneration_eflux = True
+                print_manager.processing(f"[PROTON_SET_PLOPT] times_mesh for energy_flux shape[1] ({self.times_mesh.shape[1]}) != expected data y_dim ({expected_y_dim_eflux}). Regenerating.")
+
+            if needs_regeneration_eflux:
+                print_manager.processing(f"[PROTON_SET_PLOPT] Regenerating times_mesh for energy_flux. Old shape: {self.times_mesh.shape if isinstance(self.times_mesh, np.ndarray) else 'N/A'}. Instance ID {id(self)}.")
+                self.times_mesh = np.meshgrid(
+                    self.datetime_array,
+                    np.arange(expected_y_dim_eflux),
+                    indexing='ij'
+                )[0]
+                print_manager.processing(f"[PROTON_SET_PLOPT] Regenerated times_mesh for energy_flux. New shape: {self.times_mesh.shape}. Instance ID {id(self)}.")
+        elif not datetime_array_exists and hasattr(self, 'times_mesh'): # If datetime_array is bad, times_mesh should be empty
+             self.times_mesh = np.array([])
+             print_manager.warning(f"[PROTON_SET_PLOPT] datetime_array is not valid, ensuring times_mesh for energy_flux is empty. Instance ID {id(self)}.")
+
+
+        # Log state of times_mesh before passing to plot_manager
+        current_times_mesh_to_pass = self.times_mesh if hasattr(self, 'times_mesh') else None
+        if current_times_mesh_to_pass is not None and isinstance(current_times_mesh_to_pass, np.ndarray):
+            shape_str_tm = str(current_times_mesh_to_pass.shape)
+            time_range_str_tm = "N/A or not applicable for 0/1D"
+            if current_times_mesh_to_pass.ndim == 2 and current_times_mesh_to_pass.shape[0] > 0 and current_times_mesh_to_pass.shape[1] > 0:
+                time_range_str_tm = f"{current_times_mesh_to_pass[0,0]} to {current_times_mesh_to_pass[0,-1]}"
+            
+            print_manager.processing(f"[PROTON_SET_PLOPT] plot_manager for energy_flux gets datetime_array (is self.times_mesh, id: {id(current_times_mesh_to_pass)}). Shape: {shape_str_tm}. Time range (mesh[0,:]): {time_range_str_tm}. Instance ID {id(self)}.")
+        else:
+            print_manager.processing(f"[PROTON_SET_PLOPT] plot_manager for energy_flux gets datetime_array (self.times_mesh) that is None or not an ndarray. Value: {current_times_mesh_to_pass}. Instance ID {id(self)}.")
+
         self.energy_flux = plot_manager(
             self.raw_data['energy_flux'],
             plot_options=ploptions(
@@ -666,18 +738,65 @@ class proton_class:
                 subclass_name='energy_flux',
                 plot_type='spectral',
                 datetime_array=self.times_mesh,
-                y_label='Proton\nEnergy\nFlux (eV)',
+                y_label='Proton\\nEnergy\\nFlux (eV)',
                 legend_label='Proton Energy Flux',
                 color='black',
                 y_scale='log',
                 y_limit=[50, 5000],
                 line_width=1,
                 line_style='-',
-                additional_data=self.energy_vals,
+                additional_data=self.raw_data['ENERGY_VALS'],
                 colormap='jet',
                 colorbar_scale='log'
             )
         )
+
+        # --- Theta Flux & Phi Flux ---
+        print_manager.processing(f"[PROTON_SET_PLOPT] Preparing plot_managers for theta_flux and phi_flux. Instance ID {id(self)}.")
+        # Check and regenerate times_mesh_angle if necessary
+        times_mesh_angle_exists = hasattr(self, 'times_mesh_angle') and self.times_mesh_angle is not None
+        # Assuming theta_flux is representative for raw_data check, or use a combined check
+        raw_data_tflux_exists = hasattr(self, 'raw_data') and 'theta_flux' in self.raw_data and self.raw_data['theta_flux'] is not None and isinstance(self.raw_data['theta_flux'], np.ndarray)
+
+        if times_mesh_angle_exists and isinstance(self.times_mesh_angle, np.ndarray) and raw_data_tflux_exists and datetime_array_exists:
+            needs_regeneration_angle = False
+            # Use theta_flux's shape for expected y-dimension for times_mesh_angle
+            expected_y_dim_angle = self.raw_data['theta_flux'].shape[1] if self.raw_data['theta_flux'].ndim == 2 else 1
+
+            if self.times_mesh_angle.ndim != 2:
+                needs_regeneration_angle = True
+                print_manager.processing(f"[PROTON_SET_PLOPT] times_mesh_angle is not 2D (shape: {self.times_mesh_angle.shape}). Regenerating.")
+            elif self.times_mesh_angle.shape[0] != len(self.datetime_array):
+                needs_regeneration_angle = True
+                print_manager.processing(f"[PROTON_SET_PLOPT] times_mesh_angle shape[0] ({self.times_mesh_angle.shape[0]}) != len(datetime_array) ({len(self.datetime_array)}). Regenerating.")
+            elif self.times_mesh_angle.shape[1] != expected_y_dim_angle:
+                needs_regeneration_angle = True
+                print_manager.processing(f"[PROTON_SET_PLOPT] times_mesh_angle shape[1] ({self.times_mesh_angle.shape[1]}) != expected data y_dim ({expected_y_dim_angle}). Regenerating.")
+
+            if needs_regeneration_angle:
+                print_manager.processing(f"[PROTON_SET_PLOPT] Regenerating times_mesh_angle. Old shape: {self.times_mesh_angle.shape if isinstance(self.times_mesh_angle, np.ndarray) else 'N/A'}. Instance ID {id(self)}.")
+                self.times_mesh_angle = np.meshgrid(
+                    self.datetime_array,
+                    np.arange(expected_y_dim_angle),
+                    indexing='ij'
+                )[0]
+                print_manager.processing(f"[PROTON_SET_PLOPT] Regenerated times_mesh_angle. New shape: {self.times_mesh_angle.shape}. Instance ID {id(self)}.")
+        elif not datetime_array_exists and hasattr(self, 'times_mesh_angle'): # If datetime_array is bad, times_mesh_angle should be empty
+            self.times_mesh_angle = np.array([])
+            print_manager.warning(f"[PROTON_SET_PLOPT] datetime_array is not valid, ensuring times_mesh_angle is empty. Instance ID {id(self)}.")
+
+
+        # Log state of times_mesh_angle before passing to plot_managers
+        current_times_mesh_angle_to_pass = self.times_mesh_angle if hasattr(self, 'times_mesh_angle') else None
+        if current_times_mesh_angle_to_pass is not None and isinstance(current_times_mesh_angle_to_pass, np.ndarray):
+            shape_str_tma = str(current_times_mesh_angle_to_pass.shape)
+            time_range_str_tma = "N/A or not applicable for 0/1D"
+            if current_times_mesh_angle_to_pass.ndim == 2 and current_times_mesh_angle_to_pass.shape[0] > 0 and current_times_mesh_angle_to_pass.shape[1] > 0:
+                time_range_str_tma = f"{current_times_mesh_angle_to_pass[0,0]} to {current_times_mesh_angle_to_pass[0,-1]}"
+
+            print_manager.processing(f"[PROTON_SET_PLOPT] plot_managers for theta/phi_flux get datetime_array (is self.times_mesh_angle, id: {id(current_times_mesh_angle_to_pass)}). Shape: {shape_str_tma}. Time range (mesh[0,:]): {time_range_str_tma}. Instance ID {id(self)}.")
+        else:
+            print_manager.processing(f"[PROTON_SET_PLOPT] plot_managers for theta/phi_flux get datetime_array (self.times_mesh_angle) that is None or not an ndarray. Value: {current_times_mesh_angle_to_pass}. Instance ID {id(self)}.")
 
         self.theta_flux = plot_manager(
             self.raw_data['theta_flux'],
@@ -695,7 +814,7 @@ class proton_class:
                 y_limit=None,
                 line_width=1,
                 line_style='-',
-                additional_data=self.theta_vals,
+                additional_data=self.raw_data['THETA_VALS'],
                 colormap='jet',
                 colorbar_scale='log'
             )
@@ -717,7 +836,7 @@ class proton_class:
                 y_limit=None,
                 line_width=1,
                 line_style='-',
-                additional_data=self.phi_vals,
+                additional_data=self.raw_data['PHI_VALS'],
                 colormap='jet',
                 colorbar_scale='log'
             )

@@ -35,6 +35,7 @@ from plotbot import mag_rtn_4sa, proton, plt, mag_rtn, epad
 from plotbot.data_classes.custom_variables import custom_variable
 from plotbot.plotbot_main import plotbot
 from plotbot.test_pilot import phase, system_check
+from plotbot.plotbot_helpers import time_clip
 
 @pytest.mark.mission("Custom Variable Time Range Update")
 def test_custom_variable_time_update():
@@ -682,7 +683,7 @@ def test_proton_energy_flux_adjacent_trange_issue_observational():
     # Ensure necessary modules are accessible
     from plotbot import proton, plt
     from plotbot.plotbot_main import plotbot
-    from plotbot.print_manager import print_manager # Ensure print_manager is available
+    # Removed: from plotbot.plotbot_helpers import time_clip 
 
     # --- Test Setup ---
     print_manager.test("--- Phase 1: Test Setup ---")
@@ -716,6 +717,12 @@ def test_proton_energy_flux_adjacent_trange_issue_observational():
         print_manager.test(f"ERROR during first plotbot call: {e}")
         pytest.fail(f"Test failed during first plotbot call: {e}")
 
+    num_points_after_t1 = 0
+    if hasattr(proton.energy_flux, 'datetime_array') and proton.energy_flux.datetime_array is not None:
+        num_points_after_t1 = len(proton.energy_flux.datetime_array)
+    print_manager.test(f"Number of data points in proton.energy_flux.datetime_array after Trange_1: {num_points_after_t1}")
+    assert num_points_after_t1 > 0, f"Proton energy flux should have data points after Trange_1 plot, found {num_points_after_t1}"
+
     # --- Second Plot Call ---
     print_manager.test("\n--- Phase 3: Second Plotbot Call (Trange_2) ---")
     plt.options.single_title_text = f"Proton Energy Flux - Trange 2: {Trange_2[0]} to {Trange_2[1]}"
@@ -726,6 +733,13 @@ def test_proton_energy_flux_adjacent_trange_issue_observational():
     except Exception as e:
         print_manager.test(f"ERROR during second plotbot call: {e}")
         pytest.fail(f"Test failed during second plotbot call: {e}")
+    
+    num_points_after_t2 = 0
+    if hasattr(proton.energy_flux, 'datetime_array') and proton.energy_flux.datetime_array is not None:
+        num_points_after_t2 = len(proton.energy_flux.datetime_array)
+    print_manager.test(f"Number of data points in proton.energy_flux.datetime_array after Trange_2: {num_points_after_t2}")
+    assert num_points_after_t2 > num_points_after_t1, \
+        f"Proton energy flux datetime_array should have more data points after Trange_2 plot (had {num_points_after_t1}, now {num_points_after_t2}). This may indicate new data wasn't merged/loaded."
 
     print_manager.test("\n--- Phase 4: Test Completion ---")
-    print_manager.test(f"SUCCESS - Proton Energy Flux adjacent time range test completed without runtime errors.") 
+    print_manager.test(f"SUCCESS - Proton Energy Flux adjacent time range test completed with basic data length checks.") 
