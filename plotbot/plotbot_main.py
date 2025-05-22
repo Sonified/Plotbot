@@ -222,26 +222,26 @@ def plotbot(trange, *args):
     #====================================================================
     # PHASE 2: LOAD STANDARD (NON-CUSTOM) DATA USING get_data
     #====================================================================
-    loaded_data_objects = {}
-    print_manager.debug("--- [plotbot] STARTING PHASE 2: Load Standard Data ---")
-    for data_type in required_data_types:
-        # Skip if it's a custom type already handled
-        if data_type == 'custom_data_type':
-            continue
+    # loaded_data_objects = {}
+    # print_manager.debug("--- [plotbot] STARTING PHASE 2: Load Standard Data ---")
+    # for data_type in required_data_types:
+    #     # Skip if it's a custom type already handled
+    #     if data_type == 'custom_data_type':
+    #         continue
         
-        print_manager.debug(f"--- [plotbot] Calling get_data for data_type: '{data_type}' ---")
-        loaded_data = get_data(trange, data_type)  # Call get_data for each required type
-        print_manager.debug(f"--- [plotbot] Returned from get_data for data_type: '{data_type}'. Result type: {type(loaded_data)} ---")
-        loaded_data_objects[data_type] = loaded_data
-        # Debug: Print if data was loaded successfully or not
-        if loaded_data is not None and hasattr(loaded_data, 'data') and loaded_data.data:
-            print_manager.variable_testing(f"✅ Successfully loaded data for {data_type}")
-        else:
-            print_manager.warning(f"⚠️ Failed to load data for {data_type}")
+    #     print_manager.debug(f"--- [plotbot] Calling get_data for data_type: '{data_type}' ---")
+    #     loaded_data = get_data(trange, data_type)  # Call get_data for each required type
+    #     print_manager.debug(f"--- [plotbot] Returned from get_data for data_type: '{data_type}'. Result type: {type(loaded_data)} ---")
+    #     loaded_data_objects[data_type] = loaded_data
+    #     # Debug: Print if data was loaded successfully or not
+    #     if loaded_data is not None and hasattr(loaded_data, 'data') and loaded_data.data:
+    #         print_manager.variable_testing(f"✅ Successfully loaded data for {data_type}")
+    #     else:
+    #         print_manager.warning(f"⚠️ Failed to load data for {data_type}")
             
-    print_manager.debug("--- [plotbot] FINISHED PHASE 2: Load Standard Data ---")
+    # print_manager.debug("--- [plotbot] FINISHED PHASE 2: Load Standard Data ---")
 
-    print_manager.status(" ")    # Add spacing between sections
+    # print_manager.status(" ")    # Add spacing between sections
 
     #====================================================================
     # PHASE 3: HANDLE REGULAR VARIABLES
@@ -249,18 +249,37 @@ def plotbot(trange, *args):
     regular_vars = []
     for request in plot_requests:
         if request['data_type requested for plotbot'] != 'custom_data_type':
-            print_manager.variable_testing(f"Found regular variable request: {request['class_name']}.{request['subclass_name']}")
+            # print_manager.variable_testing(f"Found regular variable request: {request['class_name']}.{request['subclass_name']}") # User requested this to be less verbose
             class_instance = data_cubby.grab(request['class_name'])
             if class_instance:
                 var = class_instance.get_subclass(request['subclass_name'])
                 if var is not None:
                     regular_vars.append(var)
-                    print_manager.custom_debug(f"Added regular variable: {request['class_name']}.{request['subclass_name']}\n")
+                    # print_manager.custom_debug(f"Added regular variable: {request['class_name']}.{request['subclass_name']}\n") # User requested this to be less verbose
 
-    # Get data for regular variables
+    # NEW: Smart caching check
     if regular_vars:
-        print_manager.status(f"Acquiring data for {len(regular_vars)} regular variables...")
-        get_data(trange, *regular_vars)
+        # Check if we already have data for this time range
+        need_data_loading = False
+        
+        for var in regular_vars:
+            data_type = var.data_type
+            # Construct a unique identifier for the variable instance for tracker
+            # This should align with how it's stored/checked elsewhere if instance-specific tracking is used
+            # For now, assuming data_type and trange is enough for global_tracker.is_calculation_needed
+            if not global_tracker.is_calculation_needed(trange, data_type):
+                print_manager.variable_testing(f"Data for {data_type} in trange {trange} already exists according to global_tracker.")
+                continue  # Data exists, skip this variable
+            else:
+                print_manager.variable_testing(f"Data for {data_type} in trange {trange} needs loading according to global_tracker.")
+                need_data_loading = True
+                break
+        
+        if need_data_loading:
+            print_manager.status(f"📥 Acquiring data for {len(regular_vars)} regular variables...")
+            get_data(trange, *regular_vars)
+        else:
+            print_manager.status(f"✅ All data already cached for {len(regular_vars)} regular variables in the specified trange.")
 
     #------------------ Prepare Plot Variables ------------------#
     plot_vars = []

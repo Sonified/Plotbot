@@ -5,6 +5,7 @@ import pandas as pd
 import cdflib
 from datetime import datetime, timedelta, timezone
 import logging
+from typing import Optional, List
 
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
@@ -24,10 +25,12 @@ class mag_rtn_class:
             'bt': None,
             'bn': None,
             'bmag': None,
-            'pmag': None
+            'pmag': None,
+            'br_norm': None  # Add br_norm for lazy loading
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, '_current_operation_trange', None) # For br_norm dependency time range
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
@@ -40,11 +43,18 @@ class mag_rtn_class:
             self.set_ploptions()
             print_manager.status("Successfully calculated mag rtn variables.")
     
-    def update(self, imported_data): #This is function is the exact same across all classes :)
+    def update(self, imported_data, original_requested_trange: Optional[List[str]] = None): #This is function is the exact same across all classes :)
         """Method to update class with new data. 
         NOTE: This function updates the class with newly imported data. We need to use the data_cubby
         as a registry to store class instances in order to avoid circular references that would occur
         if the class stored itself as an attribute and tried to reference itself directly. The code breaks without the cubby!"""
+        # Store the passed trange
+        object.__setattr__(self, '_current_operation_trange', original_requested_trange)
+        if original_requested_trange:
+            print_manager.dependency_management(f"[MAG_RTN_CLASS_UPDATE] Stored _current_operation_trange: {self._current_operation_trange}")
+        else:
+            print_manager.dependency_management(f"[MAG_RTN_CLASS_UPDATE] original_requested_trange not provided or None.")
+
         if imported_data is None:                                                # Exit if no new data
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
             return
@@ -53,28 +63,49 @@ class mag_rtn_class:
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
         
         # Store current state before update (including any modified ploptions)
-        current_state = {}
-        for subclass_name in self.raw_data.keys():                             # Use keys()
-            if hasattr(self, subclass_name):
-                var = getattr(self, subclass_name)
-                if hasattr(var, '_plot_state'):
-                    current_state[subclass_name] = dict(var._plot_state)       # Save current plot state
-                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_ploption_snapshot(current_state[subclass_name])}")
+        current_plot_states = {}
+        standard_components = ['all', 'br', 'bt', 'bn', 'bmag', 'pmag']
+        for comp_name in standard_components:
+            if hasattr(self, comp_name):
+                manager = getattr(self, comp_name)
+                if isinstance(manager, plot_manager) and hasattr(manager, '_plot_state'):
+                    current_plot_states[comp_name] = dict(manager._plot_state)
+                    print_manager.datacubby(f"Stored {comp_name} state: {retrieve_ploption_snapshot(current_plot_states[comp_name])}")
+
+        # Special handling for br_norm: save state only if it's been fully initialized
+        if hasattr(self, '_br_norm_manager') and \
+           isinstance(self._br_norm_manager, plot_manager) and \
+           self.raw_data.get('br_norm') is not None and \
+           hasattr(self._br_norm_manager, '_plot_state'):
+            current_plot_states['br_norm'] = dict(self._br_norm_manager._plot_state)
+            print_manager.datacubby(f"Stored br_norm (from _br_norm_manager) state: {retrieve_ploption_snapshot(current_plot_states['br_norm'])}")
 
         # Perform update
         self.calculate_variables(imported_data)                                # Update raw data arrays
-        self.set_ploptions()                                                  # Recreate plot managers
+        self.set_ploptions()                                                  # Recreate plot managers for standard components
         
         # Restore state (including any modified ploptions!)
         print_manager.datacubby("Restoring saved state...")
-        for subclass_name, state in current_state.items():                    # Restore saved states
-            if hasattr(self, subclass_name):
-                var = getattr(self, subclass_name)
-                var._plot_state.update(state)                                 # Restore plot state
+        for comp_name, state in current_plot_states.items():                    # Restore saved states
+            target_manager = None
+            if comp_name == 'br_norm':
+                # If br_norm state was saved, it means it was active.
+                # Accessing self.br_norm will trigger the property, which should
+                # re-calculate if necessary and update/create self._br_norm_manager.
+                _ = self.br_norm # Ensure property runs and _br_norm_manager is current
+                if hasattr(self, '_br_norm_manager') and isinstance(self._br_norm_manager, plot_manager):
+                    target_manager = self._br_norm_manager
+            elif hasattr(self, comp_name): # For standard components
+                manager = getattr(self, comp_name)
+                if isinstance(manager, plot_manager):
+                    target_manager = manager
+            
+            if target_manager:
+                target_manager._plot_state.update(state)
                 for attr, value in state.items():
-                    if hasattr(var.plot_options, attr):
-                        setattr(var.plot_options, attr, value)                # Restore individual options
-                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_ploption_snapshot(state)}")
+                    if hasattr(target_manager.plot_options, attr):
+                        setattr(target_manager.plot_options, attr, value)
+                print_manager.datacubby(f"Restored {comp_name} state to {'_br_norm_manager' if comp_name == 'br_norm' else comp_name}: {retrieve_ploption_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\\n")
         
@@ -153,7 +184,8 @@ class mag_rtn_class:
             'bt': bt,
             'bn': bn,
             'bmag': bmag,
-            'pmag': pmag
+            'pmag': pmag,
+            'br_norm': None  # br_norm is calculated only when requested (lazy loading)
         }
 
         print_manager.dependency_management(f"\nDebug - Data Arrays:")
@@ -356,6 +388,125 @@ class mag_rtn_class:
         """
         for key, value in snapshot_data.__dict__.items():
             setattr(self, key, value)
+
+    @property
+    def br_norm(self):
+        """Property for br_norm component that handles lazy loading."""
+        print_manager.dependency_management(f"[BR_NORM_PROPERTY ENTRY (mag_rtn)] Accessing br_norm for instance ID: {id(self)}")
+        dt_array_status = "exists and is populated" if hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0 else "MISSING or EMPTY"
+        print_manager.dependency_management(f"[BR_NORM_PROPERTY ENTRY (mag_rtn)] Parent self.datetime_array status: {dt_array_status}")
+
+        if not hasattr(self, '_br_norm_manager'):
+            print_manager.dependency_management("[BR_NORM_PROPERTY (mag_rtn)] Creating initial placeholder manager")
+            self._br_norm_manager = plot_manager(
+                np.array([]),
+                plot_options=ploptions(
+                    data_type='mag_RTN',      # Adjusted for mag_rtn
+                    var_name='br_norm_rtn',   # Adjusted for mag_rtn
+                    class_name='mag_rtn',     # Adjusted for mag_rtn
+                    subclass_name='br_norm',
+                    plot_type='time_series',
+                    datetime_array=self.datetime_array if hasattr(self, 'datetime_array') else np.array([]),
+                    y_label='Br·R² [nT·AU²]',
+                    legend_label=r'$B_R \cdot R^2$', # Escaped backslash
+                    color='darkorange',
+                    y_scale='linear',
+                    line_width=1,
+                    line_style='-'
+                )
+            )
+
+        if hasattr(self, 'raw_data') and self.raw_data.get('br') is not None and len(self.raw_data['br']) > 0:
+            print_manager.dependency_management("[BR_NORM_PROPERTY (mag_rtn)] Parent raw_data['br'] exists. Attempting calculation.")
+            success = self._calculate_br_norm()
+            if success and self.raw_data.get('br_norm') is not None:
+                print_manager.dependency_management("[BR_NORM_PROPERTY (mag_rtn)] _calculate_br_norm successful, updating _br_norm_manager.")
+                options = self._br_norm_manager.plot_options
+                
+                if hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0:
+                    options.datetime_array = self.datetime_array
+                elif options.datetime_array is None:
+                    options.datetime_array = np.array([])
+                else:
+                    options.datetime_array = options.datetime_array if options.datetime_array is not None else np.array([])
+
+                self._br_norm_manager = plot_manager(
+                    self.raw_data['br_norm'],
+                    plot_options=options 
+                )
+                print_manager.dependency_management(f"[BR_NORM_PROPERTY (mag_rtn)] Updated _br_norm_manager with data shape: {self.raw_data['br_norm'].shape if self.raw_data['br_norm'] is not None else 'None'}")
+        else:
+            print_manager.dependency_management("[BR_NORM_PROPERTY (mag_rtn)] Parent raw_data['br'] MISSING or EMPTY. Not attempting _calculate_br_norm.")
+        
+        print_manager.dependency_management(f"[BR_NORM_PROPERTY EXIT (mag_rtn)] Returning _br_norm_manager (ID: {id(self._br_norm_manager)})")
+        return self._br_norm_manager
+    
+    def _calculate_br_norm(self):
+        """Calculate Br normalized by R^2."""
+        from plotbot.get_data import get_data # Local import
+        from plotbot import proton # Local import for proton data
+        import matplotlib.dates as mdates # Moved here
+        import scipy.interpolate as interpolate # Moved here
+
+        print_manager.dependency_management(f"[BR_NORM_CALC ENTRY (mag_rtn)] _calculate_br_norm called for instance ID: {id(self)}")
+
+        trange_for_dependencies = None
+        if hasattr(self, '_current_operation_trange') and self._current_operation_trange is not None:
+            trange_for_dependencies = self._current_operation_trange
+            print_manager.dependency_management(f"[BR_NORM_CALC (mag_rtn)] Using specific _current_operation_trange: {trange_for_dependencies}")
+        elif self.datetime_array is not None and len(self.datetime_array) > 0:
+            start_time_dt = pd.to_datetime(self.datetime_array[0])
+            end_time_dt = pd.to_datetime(self.datetime_array[-1])
+            start_time_str = start_time_dt.tz_localize('UTC').strftime('%Y-%m-%d/%H:%M:%S.%f') if start_time_dt.tzinfo is None else start_time_dt.strftime('%Y-%m-%d/%H:%M:%S.%f')
+            end_time_str = end_time_dt.tz_localize('UTC').strftime('%Y-%m-%d/%H:%M:%S.%f') if end_time_dt.tzinfo is None else end_time_dt.strftime('%Y-%m-%d/%H:%M:%S.%f')
+            trange_for_dependencies = [start_time_str, end_time_str]
+            print_manager.warning(f"[BR_NORM_CALC (mag_rtn)] FALLBACK trange from self.datetime_array: {trange_for_dependencies}")
+        else:
+            print_manager.error("[BR_NORM_CALC (mag_rtn)] Cannot determine time range for dependencies.")
+            self.raw_data['br_norm'] = None
+            return False
+
+        print_manager.dependency_management(f"[BR_NORM_CALC (mag_rtn)] Calling get_data for proton.sun_dist_rsun with trange: {trange_for_dependencies}")
+        get_data(trange_for_dependencies, proton.sun_dist_rsun)
+        
+        if not hasattr(proton, 'sun_dist_rsun') or not hasattr(proton.sun_dist_rsun, 'data') or \
+           proton.sun_dist_rsun.data is None or len(proton.sun_dist_rsun.data) == 0:
+            print_manager.error(f"[BR_NORM_CALC ERROR (mag_rtn)] proton.sun_dist_rsun.data is None or empty after get_data for trange {trange_for_dependencies}.")
+            self.raw_data['br_norm'] = None
+            return False
+        
+        br_data = self.raw_data['br']
+        mag_datetime = self.datetime_array
+        proton_datetime = proton.datetime_array
+        sun_dist_rsun = proton.sun_dist_rsun.data
+        
+        if mag_datetime is None or len(mag_datetime) == 0 or \
+           proton_datetime is None or len(proton_datetime) == 0 or \
+           sun_dist_rsun is None or len(sun_dist_rsun) == 0 or \
+           br_data is None or len(br_data) == 0:
+            print_manager.error("[BR_NORM_CALC (mag_rtn)] One or more required data arrays (mag_datetime, proton_datetime, sun_dist_rsun, br_data) are None or empty.")
+            self.raw_data['br_norm'] = None
+            return False
+
+        proton_time_numeric = mdates.date2num(proton_datetime)
+        mag_time_numeric = mdates.date2num(mag_datetime)
+        
+        interp_func = interpolate.interp1d(
+            proton_time_numeric, 
+            sun_dist_rsun,
+            kind='linear',
+            bounds_error=False,
+            fill_value='extrapolate'
+        )
+        
+        sun_dist_interp = interp_func(mag_time_numeric)
+        
+        rsun_to_au_conversion_factor = 215.032867644
+        br_norm_calculated = br_data * ((sun_dist_interp / rsun_to_au_conversion_factor) ** 2)
+        
+        self.raw_data['br_norm'] = br_norm_calculated
+        print_manager.dependency_management(f"[BR_NORM_CALC (mag_rtn)] Successfully calculated br_norm (shape: {br_norm_calculated.shape})")
+        return True
 
 mag_rtn = mag_rtn_class(None) #Initialize the class with no data
 print_manager.dependency_management('initialized mag_rtn class') 

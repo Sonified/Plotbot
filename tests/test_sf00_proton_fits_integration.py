@@ -479,7 +479,7 @@ class TestFitsIntegration:
     def test_plotbot_fits_group_7(self):
         """Tests FITS variables: abs_qz_p, chi_p, chi_p_norm, valfven_pfits"""
         vars_to_test = [
-            proton_fits_instance.qz_p_abs,
+            proton_fits_instance.abs_qz_p,
             proton_fits_instance.chi_p,
             proton_fits_instance.chi_p_norm,
             proton_fits_instance.valfven_pfits

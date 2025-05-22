@@ -158,6 +158,7 @@ class print_manager_class:
         self.pyspedas_filter_instance = None  # Instance of the PyspedasInfoFilter
         self.data_snapshot_enabled = False # <<< ADDED: Flag for snapshot messages
         self.dependency_management_enabled = False # Flag for dependency management prints
+        print(f"[RAW_PM_INIT] Initial self.processing_enabled: {self.processing_enabled}") # ADDED DIAGNOSTIC
         # print(f"[PM_DEBUG] __init__: Default _pyspedas_verbose = {self._pyspedas_verbose}") # Remove print
         
         # Print formatting prefixes
@@ -541,6 +542,7 @@ class print_manager_class:
     def show_processing(self, value):
         """Set whether to show data processing status messages."""
         self.processing_enabled = value
+        print(f"[RAW_PM_SETTER] show_processing setter. Value: {value}. self.processing_enabled is now: {self.processing_enabled}") # ADDED DIAGNOSTIC
         
     @property
     def show_category_prefix(self):
@@ -638,9 +640,11 @@ class print_manager_class:
 
     def processing(self, msg):
         """Print data processing status message if enabled."""
+        # print(f"[RAW_PM_PROC_ENTRY] processing() called. msg: '{msg[:50]}...'. Current self.processing_enabled: {self.processing_enabled}") # ADDED DIAGNOSTIC
         if self.processing_enabled:
+            # print(f"[RAW_PM_PROC_WILL_PRINT] processing_enabled is True. About to format/print msg: '{msg[:50]}...'") # ADDED DIAGNOSTIC
             prefix = self.processing_prefix if self.category_prefix_enabled else ""
-            print(self._format_message(f"{prefix}{msg}"))
+            # print(self._format_message(f"{prefix}{msg}"))
 
     def zarr_integration(self, msg, color=None):
         """Print Zarr integration messages (magenta)."""

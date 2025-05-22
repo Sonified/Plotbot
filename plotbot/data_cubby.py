@@ -26,6 +26,7 @@ from .data_classes.psp_proton_hr import proton_hr_class
 
 from .data_import import DataObject # Import the type hint for raw data object
 
+# print_manager.show_processing = True # SETTING THIS EARLY
 class data_cubby:
     """
     Enhanced data storage system that intelligently manages time series data
@@ -551,12 +552,38 @@ class data_cubby:
 
         # --- Helper for time range validation (NEW) ---
         def _validate_trange_elements(trange_to_validate, context_msg=""):
+            # Changed pm.error to pm.processing for this initial check
             if not isinstance(trange_to_validate, list) or len(trange_to_validate) != 2:
-                pm.error(f"Error parsing/validating input time range for {context_msg}: Input trange must be a list of two elements.")
+                pm.processing(f"VALIDATION_STRUCT_FAIL: Input trange for {context_msg} must be a list/tuple of two elements. Received: {trange_to_validate}")
                 return False
+            
+            # Existing processing prints - will remain as is
+            pm.processing(f"[VALIDATE_DEBUG_ENTRY] _validate_trange_elements received: {trange_to_validate} with types {[type(x) for x in trange_to_validate]}. Context: {context_msg}")
+
+            # New diagnostic prints OUTSIDE the critical if block, using pm.processing as per new strict rule
+            pm.processing(f"SCOPE_PROC_DEBUG: id(str) is {id(str)}, str is {str}")
+            pm.processing(f"SCOPE_PROC_DEBUG: id(datetime) is {id(datetime)}, datetime is {datetime}")
+            pm.processing(f"SCOPE_PROC_DEBUG: id(pd.Timestamp) is {id(pd.Timestamp)}, pd.Timestamp is {pd.Timestamp}")
+
             for i, item in enumerate(trange_to_validate):
+                # Existing processing print - will remain as is
+                pm.processing(f"[VALIDATE_DEBUG] Validating item '{item}' of type {type(item)}. Context: {context_msg}")
+                # New diagnostic print OUTSIDE the critical if block, using pm.processing as per new strict rule
+                pm.processing(f"ITEM_PROC_DEBUG: id(item) is {id(item)}, item is '{item}', type(item) is {type(item)}")
+
                 if not isinstance(item, (str, datetime, pd.Timestamp)):
-                    pm.error(f"Error parsing/validating input time range for {context_msg}: Input trange elements must be strings or datetime/timestamp objects. Element {i} is {type(item)}.")
+                    print("RAW PRINT AT START OF IF BLOCK") # Keep raw print
+                    # ALL DIAGNOSTIC PRINTS *INSIDE THIS IF BLOCK* WILL BE PM.PROCESSING
+                    pm.processing(f"IF_BLOCK_PROC_DEBUG: item is '{item}', type(item) is {type(item)}")
+                    pm.processing(f"IF_BLOCK_PROC_DEBUG: isinstance(item, str) is {isinstance(item, str)}")
+                    pm.processing(f"IF_BLOCK_PROC_DEBUG: isinstance(item, datetime) is {isinstance(item, datetime)}")
+                    pm.processing(f"IF_BLOCK_PROC_DEBUG: isinstance(item, pd.Timestamp) is {isinstance(item, pd.Timestamp)}")
+                    pm.processing(f"IF_BLOCK_PROC_DEBUG: id(str) is {id(str)}, id(datetime) is {id(datetime)}, id(pd.Timestamp) is {id(pd.Timestamp)}")
+
+                    # Original error-causing lines, ensuring they are pm.processing
+                    pm.processing("ERROR_TEST_AT_FAIL_POINT_PROCESSING") 
+                    print('just saying hi! 🥰🥰🥰')
+                    pm.processing(f"Error parsing/validating input time range for {context_msg}: Input trange elements must be strings or datetime/timestamp objects. Element {i} is {type(item)}.")
                     return False
             return True
         # --- End Helper ---

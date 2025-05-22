@@ -18,12 +18,12 @@ class epad_strahl_class:
         # First, set up the basic attributes without triggering __setattr__ checks
         object.__setattr__(self, 'raw_data', {
             'strahl': None,
-            'centroids': None
+            'centroids': None,
+            'pitch_angle_y_values': None # Added for merging pitch angle
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
         object.__setattr__(self, 'times_mesh', [])
-        object.__setattr__(self, 'pitch_angle', None)
         object.__setattr__(self, 'data_type', 'spe_sf0_pad') # Explicitly set data_type
         object.__setattr__(self, '_current_operation_trange', None) # Initialize new attribute
 
@@ -121,7 +121,7 @@ class epad_strahl_class:
 
         # Allow setting known attributes
         print_manager.debug(f"Setting attribute: {name} with value: {value}")
-        if name in ['datetime', 'datetime_array', 'raw_data', 'time', 'field', 'times_mesh', 'pitch_angle', 'energy_index'] or name in self.raw_data:
+        if name in ['datetime', 'datetime_array', 'raw_data', 'time', 'field', 'times_mesh', 'energy_index'] or name in self.raw_data:
             super().__setattr__(name, value)
         else:
             # Print friendly error message
@@ -133,13 +133,15 @@ class epad_strahl_class:
     
     def calculate_variables(self, imported_data):
         """Calculate and store EPAD strahl variables"""
+        print_manager.processing(f"[EPAD_CALC_VARS ENTRY] id(self): {id(self)}")
         # Store only TT2000 times as numpy array
         self.time = np.asarray(imported_data.times)
         self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time))
+        print_manager.processing(f"[EPAD_CALC_VARS] self.datetime_array (id: {id(self.datetime_array)}) len: {len(self.datetime_array) if self.datetime_array is not None else 'None'}. Range: {self.datetime_array[0]} to {self.datetime_array[-1]}" if self.datetime_array is not None and len(self.datetime_array) > 0 else "[EPAD_CALC_VARS] self.datetime_array is empty/None")
         
         # Extract data
         eflux = imported_data.data['EFLUX_VS_PA_E']
-        self.pitch_angle = imported_data.data['PITCHANGLE']  # Store pitch angle as class attribute
+        self.raw_data['pitch_angle_y_values'] = imported_data.data['PITCHANGLE'] # Now in raw_data
 
         # Debug the time values
         print_manager.debug(f"Time values type: {type(self.time)}")
@@ -171,21 +173,75 @@ class epad_strahl_class:
             np.arange(strahl.shape[1]),
             indexing='ij'
         )[0]
+        print_manager.processing(f"[EPAD_CALC_VARS] self.times_mesh (id: {id(self.times_mesh)}) shape: {self.times_mesh.shape if self.times_mesh is not None else 'None'}. Time range (mesh[0,:]): {self.times_mesh[0,0]} to {self.times_mesh[0,-1]}" if self.times_mesh is not None and self.times_mesh.size > 0 and self.times_mesh.shape[1] > 0 else "[EPAD_CALC_VARS] self.times_mesh is empty/None or not 2D as expected")
 
         # Calculate centroids
-        centroids = np.ma.average(self.pitch_angle, 
+        centroids = np.ma.average(self.raw_data['pitch_angle_y_values'], # Use from raw_data
                                 weights=strahl, 
                                 axis=1)
 
         strahl_centroids = centroids
         # Store raw data
-        self.raw_data = {
-            'strahl': strahl,
-            'centroids': centroids
-        }
+        self.raw_data['strahl'] = strahl # Already part of self.raw_data initialization
+        self.raw_data['centroids'] = centroids # Already part of self.raw_data initialization
+        # 'pitch_angle_y_values' is already set above
 
     def set_ploptions(self):
         """Set up the plotting options for strahl data"""
+        print_manager.processing(f"[EPAD_SET_PLOPT ENTRY] id(self): {id(self)}")
+        print_manager.processing(f"[EPAD_SET_PLOPT] self.datetime_array (id: {id(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else 'N/A'}) len: {len(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else 'None'}. Range: {self.datetime_array[0]} to {self.datetime_array[-1]}" if hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0 else "[EPAD_SET_PLOPT] self.datetime_array is empty/None or N/A")
+        
+        # Corrected print for self.times_mesh
+        times_mesh_exists = hasattr(self, 'times_mesh') and self.times_mesh is not None
+        raw_data_strahl_exists = hasattr(self, 'raw_data') and 'strahl' in self.raw_data and self.raw_data['strahl'] is not None
+        datetime_array_exists = hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0
+
+        if times_mesh_exists and isinstance(self.times_mesh, np.ndarray) and raw_data_strahl_exists and datetime_array_exists:
+            # Check if times_mesh needs regeneration
+            needs_regeneration = False
+            if self.times_mesh.ndim != 2: # Ensure times_mesh is 2D
+                needs_regeneration = True
+                print_manager.processing(f"[EPAD_SET_PLOPT] times_mesh is not 2D (shape: {self.times_mesh.shape}). Regenerating.")
+            elif self.times_mesh.shape[0] != len(self.datetime_array):
+                needs_regeneration = True
+                print_manager.processing(f"[EPAD_SET_PLOPT] times_mesh.shape[0] ({self.times_mesh.shape[0]}) != len(datetime_array) ({len(self.datetime_array)}). Regenerating.")
+            elif self.raw_data['strahl'].ndim == 2 and self.times_mesh.shape[1] != self.raw_data['strahl'].shape[1]: # Check second dimension if strahl data is 2D
+                needs_regeneration = True
+                print_manager.processing(f"[EPAD_SET_PLOPT] times_mesh.shape[1] ({self.times_mesh.shape[1]}) != raw_data['strahl'].shape[1] ({self.raw_data['strahl'].shape[1]}). Regenerating.")
+            elif self.raw_data['strahl'].ndim == 1 and self.times_mesh.shape[1] != 1: # Handle 1D strahl data case (e.g. centroids) - times_mesh should have 1 column
+                 # This case might need specific handling if strahl can be 1D and times_mesh needs to reflect that.
+                 # For now, assuming strahl (for pcolormesh) is typically 2D in data, so times_mesh matching its second dim is correct.
+                 # If 'strahl' component data itself can be 1D and used for pcolormesh, this check might need refinement.
+                 # The current check for raw_data['strahl'].ndim == 2 above handles the primary case.
+                 pass
+
+
+            if needs_regeneration:
+                print_manager.processing(f"[EPAD_SET_PLOPT] Regenerating times_mesh. Old shape: {self.times_mesh.shape if isinstance(self.times_mesh, np.ndarray) else 'N/A'}")
+                self.times_mesh = np.meshgrid(
+                    self.datetime_array,
+                    np.arange(self.raw_data['strahl'].shape[1] if self.raw_data['strahl'].ndim == 2 else 1), # Use 1 if strahl is 1D
+                    indexing='ij'
+                )[0]
+                print_manager.processing(f"[EPAD_SET_PLOPT] Regenerated times_mesh. New shape: {self.times_mesh.shape}")
+
+        if times_mesh_exists and isinstance(self.times_mesh, np.ndarray):
+            print_manager.processing(f"[EPAD_SET_PLOPT] self.times_mesh (id: {id(self.times_mesh)}) is ndarray. Shape: {self.times_mesh.shape}. Time range (mesh[0,:]): {self.times_mesh[0,0]} to {self.times_mesh[0,-1]}" if self.times_mesh.size > 0 and self.times_mesh.ndim == 2 and self.times_mesh.shape[1] > 0 else f"[EPAD_SET_PLOPT] self.times_mesh is ndarray but empty, not 2D, or second dim is 0. Shape: {self.times_mesh.shape}")
+        elif times_mesh_exists: # It exists but is not an ndarray (e.g., a list)
+            print_manager.processing(f"[EPAD_SET_PLOPT] self.times_mesh (id: {id(self.times_mesh)}) is {type(self.times_mesh)}. Len: {len(self.times_mesh) if hasattr(self.times_mesh, '__len__') else 'N/A'}. Value: {self.times_mesh}")
+        else: # Does not exist or is None
+            print_manager.processing(f"[EPAD_SET_PLOPT] self.times_mesh does not exist or is None.")
+
+        # The datetime_array passed to plot_manager for strahl IS self.times_mesh
+        pm_arg_times_mesh = self.times_mesh if hasattr(self, 'times_mesh') else None # Ensure it exists for print
+        # Corrected print for pm_arg_times_mesh (which is self.times_mesh)
+        if pm_arg_times_mesh is not None and isinstance(pm_arg_times_mesh, np.ndarray):
+            print_manager.processing(f"[EPAD_SET_PLOPT] plot_manager for strahl gets datetime_array (is self.times_mesh, id: {id(pm_arg_times_mesh)}) is ndarray. Shape: {pm_arg_times_mesh.shape}. Time range (mesh[0,:]): {pm_arg_times_mesh[0,0]} to {pm_arg_times_mesh[0,-1]}" if pm_arg_times_mesh.size > 0 and pm_arg_times_mesh.ndim == 2 and pm_arg_times_mesh.shape[1] > 0 else f"[EPAD_SET_PLOPT] plot_manager for strahl gets datetime_array (self.times_mesh) is ndarray but empty, not 2D, or second dim is 0. Shape: {pm_arg_times_mesh.shape}")
+        elif pm_arg_times_mesh is not None: # It exists but is not an ndarray (e.g., a list)
+            print_manager.processing(f"[EPAD_SET_PLOPT] plot_manager for strahl gets datetime_array (is self.times_mesh, id: {id(pm_arg_times_mesh)}) is {type(pm_arg_times_mesh)}. Len: {len(pm_arg_times_mesh) if hasattr(pm_arg_times_mesh, '__len__') else 'N/A'}. Value: {pm_arg_times_mesh}")
+        else: # Does not exist or is None
+            print_manager.processing(f"[EPAD_SET_PLOPT] plot_manager for strahl gets datetime_array (self.times_mesh) that does not exist or is None.")
+
         self.strahl = plot_manager(
             self.raw_data['strahl'],
             plot_options=ploptions(
@@ -202,7 +258,7 @@ class epad_strahl_class:
                 y_limit=None,
                 line_width=1,
                 line_style='-',
-                additional_data=self.pitch_angle,
+                additional_data=self.raw_data['pitch_angle_y_values'], # Use from raw_data
                 colormap='jet',
                 colorbar_scale='log',
                 colorbar_limits=None
@@ -211,6 +267,10 @@ class epad_strahl_class:
         )
 
         # Initialize centroids with plot_manager
+        # The datetime_array passed to plot_manager for centroids IS self.datetime_array
+        pm_arg_datetime_array = self.datetime_array if hasattr(self, 'datetime_array') else None # Ensure it exists for print
+        print_manager.processing(f"[EPAD_SET_PLOPT] plot_manager for centroids gets datetime_array (is self.datetime_array, id: {id(pm_arg_datetime_array) if pm_arg_datetime_array is not None else 'N/A'}) len: {len(pm_arg_datetime_array) if pm_arg_datetime_array is not None else 'None'}. Range: {pm_arg_datetime_array[0]} to {pm_arg_datetime_array[-1]}" if pm_arg_datetime_array is not None and len(pm_arg_datetime_array) > 0 else "[EPAD_SET_PLOPT] plot_manager for centroids gets datetime_array (self.datetime_array) that is empty/None or N/A")
+
         self.centroids = plot_manager(
             self.raw_data['centroids'],
             plot_options=ploptions(
@@ -230,6 +290,13 @@ class epad_strahl_class:
             )
         )
 
+    @property
+    def pitch_angle_y_values(self):
+        if hasattr(self, 'raw_data') and 'pitch_angle_y_values' in self.raw_data:
+            return self.raw_data['pitch_angle_y_values']
+        print_manager.warning(f"Property 'pitch_angle_y_values' accessed but not found in raw_data for {self.__class__.__name__}")
+        return None
+
     def restore_from_snapshot(self, snapshot_data):
         """
         Restore all relevant fields from a snapshot dictionary/object.
@@ -247,12 +314,12 @@ class epad_strahl_high_res_class:
         # First, set up the basic attributes without triggering __setattr__ checks
         object.__setattr__(self, 'raw_data', {
             'strahl': None,
-            'centroids': None
+            'centroids': None,
+            'pitch_angle_y_values': None # Added for merging pitch angle
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
         object.__setattr__(self, 'times_mesh', [])
-        object.__setattr__(self, 'pitch_angle', None)
         object.__setattr__(self, 'data_type', 'spe_hires_pad') # Explicitly set data_type for high-res
         object.__setattr__(self, '_current_operation_trange', None) # Initialize new attribute
 
@@ -348,7 +415,7 @@ class epad_strahl_high_res_class:
 
         # Allow setting known attributes
         print_manager.debug(f"Setting attribute: {name} with value: {value}")
-        if name in ['datetime', 'datetime_array', 'raw_data', 'time', 'field', 'times_mesh', 'pitch_angle', 'energy_index'] or name in self.raw_data:
+        if name in ['datetime', 'datetime_array', 'raw_data', 'time', 'field', 'times_mesh', 'energy_index'] or name in self.raw_data:
             super().__setattr__(name, value)
         else:
             # Print friendly error message
@@ -366,7 +433,7 @@ class epad_strahl_high_res_class:
         
         # Extract data
         eflux = imported_data.data['EFLUX_VS_PA_E']
-        self.pitch_angle = imported_data.data['PITCHANGLE']  # Store pitch angle as class attribute
+        self.raw_data['pitch_angle_y_values'] = imported_data.data['PITCHANGLE'] # Now in raw_data
 
         # Debug the time values
         print_manager.debug(f"Time values type: {type(self.time)}")
@@ -399,19 +466,46 @@ class epad_strahl_high_res_class:
         )[0]
 
         # Calculate centroids
-        centroids = np.ma.average(self.pitch_angle, 
+        centroids = np.ma.average(self.raw_data['pitch_angle_y_values'], # Use from raw_data
                                 weights=strahl, 
                                 axis=1)
 
         strahl_centroids = centroids
         # Store raw data
-        self.raw_data = {
-            'strahl': strahl,
-            'centroids': centroids
-        }
+        self.raw_data['strahl'] = strahl # Already part of self.raw_data initialization
+        self.raw_data['centroids'] = centroids # Already part of self.raw_data initialization
+        # 'pitch_angle_y_values' is already set above
     
     def set_ploptions(self):
         """Set up the plotting options for high-resolution strahl data"""
+        # Add the times_mesh regeneration logic for epad_strahl_high_res_class as well
+        times_mesh_exists_hr = hasattr(self, 'times_mesh') and self.times_mesh is not None
+        raw_data_strahl_exists_hr = hasattr(self, 'raw_data') and 'strahl' in self.raw_data and self.raw_data['strahl'] is not None
+        datetime_array_exists_hr = hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0
+
+        if times_mesh_exists_hr and isinstance(self.times_mesh, np.ndarray) and raw_data_strahl_exists_hr and datetime_array_exists_hr:
+            needs_regeneration_hr = False
+            if self.times_mesh.ndim != 2:
+                needs_regeneration_hr = True
+                print_manager.processing(f"[EPAD_HR_SET_PLOPT] times_mesh is not 2D (shape: {self.times_mesh.shape}). Regenerating.")
+            elif self.times_mesh.shape[0] != len(self.datetime_array):
+                needs_regeneration_hr = True
+                print_manager.processing(f"[EPAD_HR_SET_PLOPT] times_mesh.shape[0] ({self.times_mesh.shape[0]}) != len(datetime_array) ({len(self.datetime_array)}). Regenerating.")
+            elif self.raw_data['strahl'].ndim == 2 and self.times_mesh.shape[1] != self.raw_data['strahl'].shape[1]:
+                needs_regeneration_hr = True
+                print_manager.processing(f"[EPAD_HR_SET_PLOPT] times_mesh.shape[1] ({self.times_mesh.shape[1]}) != raw_data['strahl'].shape[1] ({self.raw_data['strahl'].shape[1]}). Regenerating.")
+            elif self.raw_data['strahl'].ndim == 1 and self.times_mesh.shape[1] != 1:
+                 pass # As per previous logic for 1D strahl data
+
+            if needs_regeneration_hr:
+                print_manager.processing(f"[EPAD_HR_SET_PLOPT] Regenerating times_mesh. Old shape: {self.times_mesh.shape if isinstance(self.times_mesh, np.ndarray) else 'N/A'}")
+                self.times_mesh = np.meshgrid(
+                    self.datetime_array,
+                    np.arange(self.raw_data['strahl'].shape[1] if self.raw_data['strahl'].ndim == 2 else 1),
+                    indexing='ij'
+                )[0]
+                print_manager.processing(f"[EPAD_HR_SET_PLOPT] Regenerated times_mesh. New shape: {self.times_mesh.shape}")
+
         self.strahl = plot_manager(
             self.raw_data['strahl'],
             plot_options=ploptions(
@@ -428,7 +522,7 @@ class epad_strahl_high_res_class:
                 y_limit=None,
                 line_width=1,
                 line_style='-',
-                additional_data=self.pitch_angle,
+                additional_data=self.raw_data['pitch_angle_y_values'], # Use from raw_data
                 colormap='jet',
                 colorbar_scale='log',
                 colorbar_limits=None
@@ -454,6 +548,13 @@ class epad_strahl_high_res_class:
                 line_style='-'
             )
         )
+
+    @property
+    def pitch_angle_y_values(self):
+        if hasattr(self, 'raw_data') and 'pitch_angle_y_values' in self.raw_data:
+            return self.raw_data['pitch_angle_y_values']
+        print_manager.warning(f"Property 'pitch_angle_y_values' accessed but not found in raw_data for {self.__class__.__name__}")
+        return None
 
     def restore_from_snapshot(self, snapshot_data):
         """
