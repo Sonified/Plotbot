@@ -225,8 +225,8 @@ RESET = '\033[0m'
 # --- Version Info ---
 # Increment this version number each time significant changes are pushed.
 # Format: YYYY_MM_DD_vX.YY (X for major, YY for minor revisions on the same day)
-__version__ = "2025_05_29_v2.52"
-__commit_message__ = "v2.52 Fix: Corrected data download tests, proton class update logic for trange, and midnight handling in downloads."
+__version__ = "2025_05_29_v2.53"
+__commit_message__ = "v2.53 Chore: Moved Eall_ham_v0.ipynb to gitignored local_tests_and_utils directory."
 # Print version information on import
 print(f"   Version: {__version__}")
 print(f"   Commit: {__commit_message__}")

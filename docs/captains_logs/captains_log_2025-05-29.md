@@ -15,9 +15,16 @@
 - **Data Download Midnight Handling:**
     - Corrected logic in `plotbot/data_download_berkeley.py` to ensure that requests ending at midnight (e.g., 'YYYY-MM-DD 00:00:00') correctly adjust the end time to the very end of the previous day (23:59:59.999999). This prevents missing the last segment of data for the intended final day or incorrectly starting to look for data on the specified midnight day itself.
 
+- **Repository Cleanup:**
+    - Moved large notebook file `Eall_ham_v0.ipynb` to the `local_tests_and_utils/` directory, which is gitignored. This prevents the file from being tracked and included in the main repository, reducing clone/download size for other users.
+
 - **Git Push:**
     - Version: `v2.52` (Date: 2025-05-29)
     - Commit Message: `v2.52 Fix: Corrected data download tests, proton class update logic for trange, and midnight handling in downloads.`
+
+- **Git Push:**
+    - Version: `v2.53` (Date: 2025-05-29)
+    - Commit Message: `v2.53 Chore: Moved Eall_ham_v0.ipynb to gitignored local_tests_and_utils directory.`
 
 ## Issues Encountered & Debugging
 
