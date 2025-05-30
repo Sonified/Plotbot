@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from plotbot.print_manager import print_manager
 print_manager.show_processing = True # SETTING THIS EARLY
 
-from plotbot import mag_rtn_4sa, proton, plt, mag_rtn, epad
+from plotbot import mag_rtn_4sa, proton, plt, mag_rtn, epad, proton_hr
 from plotbot.data_classes.custom_variables import custom_variable
 from plotbot.plotbot_main import plotbot
 from plotbot.test_pilot import phase, system_check
@@ -674,14 +674,14 @@ def test_epad_adjacent_trange_issue_observational():
 
 @pytest.mark.mission("Proton Energy Flux Data Disappearing Observation")
 def test_proton_energy_flux_adjacent_trange_issue_observational():
-    """Observational test for sequential proton.energy_flux plots with adjacent time ranges."""
+    """Observational test for sequential proton_hr.energy_flux plots with adjacent time ranges."""
     print_manager.test("\n================================================================================")
-    print_manager.test("TEST: Proton Energy Flux Adjacent Time Range Issue (Observational)")
-    print_manager.test("Objective: Observe behavior when plotting proton.energy_flux for two adjacent time ranges sequentially.")
+    print_manager.test("TEST: Proton_hr Energy Flux Adjacent Time Range Issue (Observational)")
+    print_manager.test("Objective: Observe behavior when plotting proton_hr.energy_flux for two adjacent time ranges sequentially.")
     print_manager.test("================================================================================\n")
 
     # Ensure necessary modules are accessible
-    from plotbot import proton, plt
+    from plotbot import proton_hr, plt
     from plotbot.plotbot_main import plotbot
     # Removed: from plotbot.plotbot_helpers import time_clip 
 
@@ -708,38 +708,187 @@ def test_proton_energy_flux_adjacent_trange_issue_observational():
 
     # --- First Plot Call ---
     print_manager.test("\n--- Phase 2: First Plotbot Call (Trange_1) ---")
-    plt.options.single_title_text = f"Proton Energy Flux - Trange 1: {Trange_1[0]} to {Trange_1[1]}"
-    print_manager.test(f"First plotbot call for TRANGE_1: {Trange_1} with proton.energy_flux")
+    plt.options.single_title_text = f"Proton_hr Energy Flux - Trange 1: {Trange_1[0]} to {Trange_1[1]}"
+    print_manager.test(f"First plotbot call for TRANGE_1: {Trange_1} with proton_hr.energy_flux")
     try:
-        plotbot(Trange_1, proton.energy_flux, 1)
+        plotbot(Trange_1, proton_hr.energy_flux, 1)
         print_manager.test("First plotbot call completed.")
     except Exception as e:
         print_manager.test(f"ERROR during first plotbot call: {e}")
         pytest.fail(f"Test failed during first plotbot call: {e}")
 
     num_points_after_t1 = 0
-    if hasattr(proton.energy_flux, 'datetime_array') and proton.energy_flux.datetime_array is not None:
-        num_points_after_t1 = len(proton.energy_flux.datetime_array)
-    print_manager.test(f"Number of data points in proton.energy_flux.datetime_array after Trange_1: {num_points_after_t1}")
+    if hasattr(proton_hr.energy_flux, 'datetime_array') and proton_hr.energy_flux.datetime_array is not None:
+        num_points_after_t1 = len(proton_hr.energy_flux.datetime_array)
+    print_manager.test(f"Number of data points in proton_hr.energy_flux.datetime_array after Trange_1: {num_points_after_t1}")
     assert num_points_after_t1 > 0, f"Proton energy flux should have data points after Trange_1 plot, found {num_points_after_t1}"
 
     # --- Second Plot Call ---
     print_manager.test("\n--- Phase 3: Second Plotbot Call (Trange_2) ---")
-    plt.options.single_title_text = f"Proton Energy Flux - Trange 2: {Trange_2[0]} to {Trange_2[1]}"
-    print_manager.test(f"Second plotbot call for TRANGE_2: {Trange_2} with proton.energy_flux")
+    plt.options.single_title_text = f"Proton_hr Energy Flux - Trange 2: {Trange_2[0]} to {Trange_2[1]}"
+    print_manager.test(f"Second plotbot call for TRANGE_2: {Trange_2} with proton_hr.energy_flux")
     try:
-        plotbot(Trange_2, proton.energy_flux, 1)
+        plotbot(Trange_2, proton_hr.energy_flux, 1)
         print_manager.test("Second plotbot call completed.")
     except Exception as e:
         print_manager.test(f"ERROR during second plotbot call: {e}")
         pytest.fail(f"Test failed during second plotbot call: {e}")
     
     num_points_after_t2 = 0
-    if hasattr(proton.energy_flux, 'datetime_array') and proton.energy_flux.datetime_array is not None:
-        num_points_after_t2 = len(proton.energy_flux.datetime_array)
-    print_manager.test(f"Number of data points in proton.energy_flux.datetime_array after Trange_2: {num_points_after_t2}")
+    if hasattr(proton_hr.energy_flux, 'datetime_array') and proton_hr.energy_flux.datetime_array is not None:
+        num_points_after_t2 = len(proton_hr.energy_flux.datetime_array)
+    print_manager.test(f"Number of data points in proton_hr.energy_flux.datetime_array after Trange_2: {num_points_after_t2}")
     assert num_points_after_t2 > num_points_after_t1, \
         f"Proton energy flux datetime_array should have more data points after Trange_2 plot (had {num_points_after_t1}, now {num_points_after_t2}). This may indicate new data wasn't merged/loaded."
 
     print_manager.test("\n--- Phase 4: Test Completion ---")
-    print_manager.test(f"SUCCESS - Proton Energy Flux adjacent time range test completed with basic data length checks.") 
+    print_manager.test(f"SUCCESS - Proton_hr Energy Flux adjacent time range test completed with basic data length checks.") 
+
+@pytest.mark.mission("MAG_RTN_4SA.BR_NORM Adjacent Time Range Issue Observation")
+def test_mag_rtn_br_norm_adjacent_trange_issue_observational():
+    print("--- TEST FUNCTION STARTED ---") # ADDED FOR BASIC OUTPUT CHECK
+    """Observational test for sequential mag_rtn_4sa.br_norm AND mag_rtn.br_norm plots 
+    with non-contiguous time ranges.
+    
+    User Core Concern: The system must not 
+    load, reference, or calculate data for any date not explicitly requested in a 
+    plotbot call. Any such behavior is considered a critical failure. This test 
+    aims to observe and rectify such issues, particularly when plotting 
+    non-contiguous time ranges.
+    """
+    test_id = "MAG_RTN_BR_NORM (4sa & standard) Non-Contiguous TRANGE Observation" # Updated test_id
+    print_manager.test(f"\n================================================================================")
+    print_manager.test(f"TEST ({test_id}): mag_rtn_4sa.br_norm & mag_rtn.br_norm Data Loading with Non-Contiguous Time Ranges") # Updated print
+    print_manager.test(f"Objective: Observe behavior when plotting both br_norm versions for two non-contiguous time ranges sequentially.") # Updated print
+    print_manager.test(f"================================================================================\\n")
+
+    from plotbot import mag_rtn_4sa, mag_rtn, plt, config # Ensure mag_rtn is also imported
+    from plotbot.plotbot_main import plotbot
+
+    # --- Test Setup ---
+    print_manager.test(f"--- ({test_id}) Phase 1: Test Setup ---")
+    # Store original print_manager settings
+    original_show_status = print_manager.show_status
+    original_show_debug = print_manager.show_debug
+    original_show_processing = print_manager.show_processing
+    original_show_datacubby = print_manager.show_datacubby
+    original_data_server = config.data_server 
+
+    # Set print_manager verbosity for detailed test output
+    print_manager.show_status = True
+    print_manager.show_debug = True
+    print_manager.show_processing = True
+    print_manager.show_datacubby = True
+    print_manager.show_test = True # Ensure test-specific prints are shown
+
+    # Set data server to berkeley as per user observation
+    config.data_server = 'berkeley'
+    print_manager.test(f"({test_id}) Config data_server set to: {config.data_server}")
+
+    plt.options.use_single_title = True
+
+    # Define non-contiguous time ranges (24 hours each, one day apart)
+    Trange_1 = ['2023-09-27/00:00:00.000', '2023-09-27/23:59:59.999']
+    Trange_2 = ['2023-09-29/00:00:00.000', '2023-09-29/23:59:59.999']
+    print_manager.test(f"({test_id}) Trange_1 defined as: {Trange_1}")
+    print_manager.test(f"({test_id}) Trange_2 defined as: {Trange_2}")
+
+    # --- First Plot Call ---
+    print_manager.test(f"\\n--- ({test_id}) Phase 2: First Plotbot Call (Trange_1) ---")
+    plt.options.single_title_text = f"br_norm (4sa & std) - Trange 1: {Trange_1[0]} to {Trange_1[1]}" # Updated title
+    print_manager.test(f"({test_id}) First plotbot call for TRANGE_1 with mag_rtn_4sa.br_norm (P1) & mag_rtn.br_norm (P2)") # Updated print
+    try:
+        plotbot(Trange_1, 
+                mag_rtn_4sa.br_norm, 1,
+                mag_rtn.br_norm, 2) # Added mag_rtn.br_norm to panel 2
+        print_manager.test(f"({test_id}) First plotbot call completed.")
+    except Exception as e:
+        print_manager.test(f"({test_id}) ERROR during first plotbot call: {e}")
+        # Restore original settings before failing
+        print_manager.show_status = original_show_status
+        print_manager.show_debug = original_show_debug
+        print_manager.show_processing = original_show_processing
+        print_manager.show_datacubby = original_show_datacubby
+        config.data_server = original_data_server
+        pytest.fail(f"({test_id}) Test failed during first plotbot call: {e}")
+
+    num_points_after_t1 = 0
+    datetime_array_t1_exists = hasattr(mag_rtn_4sa.br_norm, 'datetime_array') and mag_rtn_4sa.br_norm.datetime_array is not None
+    if datetime_array_t1_exists:
+        num_points_after_t1 = len(mag_rtn_4sa.br_norm.datetime_array)
+        print_manager.test(f"({test_id}) mag_rtn_4sa.br_norm.datetime_array after T1 - Start: {mag_rtn_4sa.br_norm.datetime_array[0]}, End: {mag_rtn_4sa.br_norm.datetime_array[-1]}, Points: {num_points_after_t1}")
+    else:
+        print_manager.test(f"({test_id}) mag_rtn_4sa.br_norm.datetime_array is None or does not exist after T1.")
+        
+    assert num_points_after_t1 > 0, f"({test_id}) mag_rtn_4sa.br_norm should have data points after Trange_1 plot, found {num_points_after_t1}"
+
+    # Add checks for mag_rtn.br_norm after T1
+    num_points_mag_rtn_t1 = 0
+    datetime_array_mag_rtn_t1_exists = hasattr(mag_rtn.br_norm, 'datetime_array') and mag_rtn.br_norm.datetime_array is not None
+    if datetime_array_mag_rtn_t1_exists:
+        num_points_mag_rtn_t1 = len(mag_rtn.br_norm.datetime_array)
+        print_manager.test(f"({test_id}) mag_rtn.br_norm.datetime_array after T1 - Start: {mag_rtn.br_norm.datetime_array[0]}, End: {mag_rtn.br_norm.datetime_array[-1]}, Points: {num_points_mag_rtn_t1}")
+    else:
+        print_manager.test(f"({test_id}) mag_rtn.br_norm.datetime_array is None or does not exist after T1.")
+    assert num_points_mag_rtn_t1 > 0, f"({test_id}) mag_rtn.br_norm should have data points after Trange_1 plot, found {num_points_mag_rtn_t1}"
+
+
+    # --- Second Plot Call ---
+    print_manager.test(f"\\n--- ({test_id}) Phase 3: Second Plotbot Call (Trange_2) ---")
+    plt.options.single_title_text = f"br_norm (4sa & std) - Trange 2: {Trange_2[0]} to {Trange_2[1]}" # Updated title
+    print_manager.test(f"({test_id}) Second plotbot call for TRANGE_2 with mag_rtn_4sa.br_norm (P1) & mag_rtn.br_norm (P2)") # Updated print
+    try:
+        plotbot(Trange_2, 
+                mag_rtn_4sa.br_norm, 1,
+                mag_rtn.br_norm, 2) # Added mag_rtn.br_norm to panel 2
+        print_manager.test(f"({test_id}) Second plotbot call completed.")
+    except Exception as e:
+        print_manager.test(f"({test_id}) ERROR during second plotbot call: {e}")
+        # Restore original settings before failing
+        print_manager.show_status = original_show_status
+        print_manager.show_debug = original_show_debug
+        print_manager.show_processing = original_show_processing
+        print_manager.show_datacubby = original_show_datacubby
+        config.data_server = original_data_server
+        pytest.fail(f"({test_id}) Test failed during second plotbot call: {e}")
+    
+    num_points_after_t2 = 0
+    datetime_array_t2_exists = hasattr(mag_rtn_4sa.br_norm, 'datetime_array') and mag_rtn_4sa.br_norm.datetime_array is not None
+    if datetime_array_t2_exists:
+        num_points_after_t2 = len(mag_rtn_4sa.br_norm.datetime_array)
+        print_manager.test(f"({test_id}) mag_rtn_4sa.br_norm.datetime_array after T2 - Start: {mag_rtn_4sa.br_norm.datetime_array[0]}, End: {mag_rtn_4sa.br_norm.datetime_array[-1]}, Points: {num_points_after_t2}")
+    else:
+        print_manager.test(f"({test_id}) mag_rtn_4sa.br_norm.datetime_array is None or does not exist after T2.")
+        
+    assert num_points_after_t2 > 0, f"({test_id}) mag_rtn_4sa.br_norm should have data points after Trange_2 plot, found {num_points_after_t2}"
+    
+    if datetime_array_t1_exists and datetime_array_t2_exists:
+        t2_start_expected = pd.Timestamp(Trange_2[0])
+        assert pd.Timestamp(mag_rtn_4sa.br_norm.datetime_array[-1]) >= t2_start_expected, \
+            f"({test_id}) Data for mag_rtn_4sa.br_norm after T2 call (ends {mag_rtn_4sa.br_norm.datetime_array[-1]}) does not seem to include Trange_2 (starts {t2_start_expected})"
+
+    # Add checks for mag_rtn.br_norm after T2
+    num_points_mag_rtn_t2 = 0
+    datetime_array_mag_rtn_t2_exists = hasattr(mag_rtn.br_norm, 'datetime_array') and mag_rtn.br_norm.datetime_array is not None
+    if datetime_array_mag_rtn_t2_exists:
+        num_points_mag_rtn_t2 = len(mag_rtn.br_norm.datetime_array)
+        print_manager.test(f"({test_id}) mag_rtn.br_norm.datetime_array after T2 - Start: {mag_rtn.br_norm.datetime_array[0]}, End: {mag_rtn.br_norm.datetime_array[-1]}, Points: {num_points_mag_rtn_t2}")
+    else:
+        print_manager.test(f"({test_id}) mag_rtn.br_norm.datetime_array is None or does not exist after T2.")
+    assert num_points_mag_rtn_t2 > 0, f"({test_id}) mag_rtn.br_norm should have data points after Trange_2 plot, found {num_points_mag_rtn_t2}"
+
+    if datetime_array_mag_rtn_t1_exists and datetime_array_mag_rtn_t2_exists: # Check based on its own _t1_exists
+        t2_start_expected = pd.Timestamp(Trange_2[0])
+        assert pd.Timestamp(mag_rtn.br_norm.datetime_array[-1]) >= t2_start_expected, \
+            f"({test_id}) Data for mag_rtn.br_norm after T2 call (ends {mag_rtn.br_norm.datetime_array[-1]}) does not seem to include Trange_2 (starts {t2_start_expected})"
+
+    print_manager.test(f"\\n--- ({test_id}) Phase 4: Test Completion & Restore Settings ---")
+    print_manager.test(f"({test_id}) Observational test complete. Review logs for DataTracker and DataCubby behavior regarding mag_rtn_4sa.br_norm and mag_rtn.br_norm.") # Updated print
+
+    # Restore original print_manager and config settings
+    print_manager.show_status = original_show_status
+    print_manager.show_debug = original_show_debug
+    print_manager.show_processing = original_show_processing
+    print_manager.show_datacubby = original_show_datacubby
+    config.data_server = original_data_server
+    print_manager.test(f"({test_id}) Restored print_manager settings and config.data_server to '{config.data_server}'.") 

@@ -26,7 +26,7 @@ class print_manager_class:
     module_prefix_enabled: bool
     processing_enabled: bool
     category_prefix_enabled: bool
-    warnings_enabled: bool
+    warning_enabled: bool
     _pyspedas_verbose: bool
     pyspedas_filter_instance: Optional[PyspedasInfoFilter]
     show_datacubby: bool # For backward compatibility
@@ -124,9 +124,9 @@ class print_manager_class:
     @show_category_prefix.setter
     def show_category_prefix(self, value: bool) -> None: ...
     @property
-    def show_warnings(self) -> bool: ...
-    @show_warnings.setter
-    def show_warnings(self, value: bool) -> None: ...
+    def show_warning(self) -> bool: ...
+    @show_warning.setter
+    def show_warning(self, value: bool) -> None: ...
     @property
     def pyspedas_verbose(self) -> bool: ...
     @pyspedas_verbose.setter

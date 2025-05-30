@@ -48,6 +48,7 @@ class proton_class:
         object.__setattr__(self, 'theta_vals', None)
         object.__setattr__(self, 'phi_vals', None)
         object.__setattr__(self, 'data_type', 'spi_sf00_l3_mom')
+        object.__setattr__(self, '_current_operation_trange', None)
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
@@ -66,6 +67,10 @@ class proton_class:
         NOTE: This function updates the class with newly imported data. We need to use the data_cubby
         as a registry to store class instances in order to avoid circular references that would occur
         if the class stored itself as an attribute and tried to reference itself directly. The code breaks without the cubby!"""
+        if original_requested_trange is not None:
+            object.__setattr__(self, '_current_operation_trange', original_requested_trange)
+            print_manager.dependency_management(f"[{self.__class__.__name__}] Updated _current_operation_trange to: {self._current_operation_trange}")
+
         if imported_data is None:                                                # Exit if no new data
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
             return
@@ -152,8 +157,8 @@ class proton_class:
         available_attrs = list(self.raw_data.keys()) if self.raw_data else []
         print_manager.dependency_management(f"[PROTON_GETATTR] Attribute '{name}' not found directly. Known raw_data keys: {available_attrs}")
         # Default message for unrecognized attributes:
-        print(f"[PROTON_GETATTR] '{name}' is not a recognized attribute, friend!")
-        print(f"Try one of these: {', '.join(available_attrs)}")
+        print_manager.warning(f"[PROTON_GETATTR] '{name}' is not a recognized attribute, friend!")
+        print_manager.warning(f"Try one of these: {', '.join(available_attrs)}")
         return None # Or raise AttributeError if preferred for stricter behavior
     
     def __setattr__(self, name, value):

@@ -1,4 +1,4 @@
-# This file will contain the mag_rtn_class for PSP data. 
+# plotbot/data_classes/psp_mag_rtn.py
 
 import numpy as np
 import pandas as pd
@@ -453,16 +453,10 @@ class mag_rtn_class:
         trange_for_dependencies = None
         if hasattr(self, '_current_operation_trange') and self._current_operation_trange is not None:
             trange_for_dependencies = self._current_operation_trange
-            print_manager.dependency_management(f"[BR_NORM_CALC (mag_rtn)] Using specific _current_operation_trange: {trange_for_dependencies}")
-        elif self.datetime_array is not None and len(self.datetime_array) > 0:
-            start_time_dt = pd.to_datetime(self.datetime_array[0])
-            end_time_dt = pd.to_datetime(self.datetime_array[-1])
-            start_time_str = start_time_dt.tz_localize('UTC').strftime('%Y-%m-%d/%H:%M:%S.%f') if start_time_dt.tzinfo is None else start_time_dt.strftime('%Y-%m-%d/%H:%M:%S.%f')
-            end_time_str = end_time_dt.tz_localize('UTC').strftime('%Y-%m-%d/%H:%M:%S.%f') if end_time_dt.tzinfo is None else end_time_dt.strftime('%Y-%m-%d/%H:%M:%S.%f')
-            trange_for_dependencies = [start_time_str, end_time_str]
-            print_manager.warning(f"[BR_NORM_CALC (mag_rtn)] FALLBACK trange from self.datetime_array: {trange_for_dependencies}")
+            print_manager.dependency_management(f"[BR_NORM_CALC (mag_rtn)] Using specific _current_operation_trange for dependencies: {trange_for_dependencies}")
         else:
-            print_manager.error("[BR_NORM_CALC (mag_rtn)] Cannot determine time range for dependencies.")
+            print_manager.error("[BR_NORM_CALC (mag_rtn)] Cannot determine time range for dependencies: _current_operation_trange is None or not set.")
+            print_manager.warning("[BR_NORM_CALC (mag_rtn)] The br_norm calculation now STRICTLY requires _current_operation_trange. Fallback to self.datetime_array has been removed.")
             self.raw_data['br_norm'] = None
             return False
 

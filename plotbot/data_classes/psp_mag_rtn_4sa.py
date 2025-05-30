@@ -52,6 +52,7 @@ class mag_rtn_4sa_class:
     def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
         # Store the passed trange
         object.__setattr__(self, '_current_operation_trange', original_requested_trange)
+        print_manager.processing(f"PSP_MAG_RTN_4SA_CLASS UPDATE: self._current_operation_trange SET TO: {self._current_operation_trange} (original_requested_trange was: {original_requested_trange})") # ADDED FOR DEBUG
         if original_requested_trange:
             print_manager.dependency_management(f"[MAG_CLASS_UPDATE] Stored _current_operation_trange: {self._current_operation_trange}")
         else:
@@ -332,22 +333,12 @@ class mag_rtn_4sa_class:
 
         # Determine the trange to use for fetching dependencies
         trange_for_dependencies = None
-        using_specific_trange = False
         if hasattr(self, '_current_operation_trange') and self._current_operation_trange is not None:
             trange_for_dependencies = self._current_operation_trange
-            using_specific_trange = True
             print_manager.dependency_management(f"[BR_NORM_CALC] Using specific _current_operation_trange for dependencies: {trange_for_dependencies}")
-        elif self.datetime_array is not None and len(self.datetime_array) > 0:
-            # Fallback: Derive trange from existing datetime_array if _current_operation_trange is not set
-            start_time_dt = pd.to_datetime(self.datetime_array[0])
-            end_time_dt = pd.to_datetime(self.datetime_array[-1])
-            # Ensure explicit UTC timezone if not present, then format
-            start_time_str = start_time_dt.tz_localize('UTC').strftime('%Y-%m-%d/%H:%M:%S.%f') if start_time_dt.tzinfo is None else start_time_dt.strftime('%Y-%m-%d/%H:%M:%S.%f')
-            end_time_str = end_time_dt.tz_localize('UTC').strftime('%Y-%m-%d/%H:%M:%S.%f') if end_time_dt.tzinfo is None else end_time_dt.strftime('%Y-%m-%d/%H:%M:%S.%f')
-            trange_for_dependencies = [start_time_str, end_time_str]
-            print_manager.warning(f"[BR_NORM_CALC] _current_operation_trange not available. Using FALLBACK trange derived from self.datetime_array for dependencies: {trange_for_dependencies}")
         else:
-            print_manager.error("[BR_NORM_CALC] Cannot determine time range for dependencies: _current_operation_trange is None AND self.datetime_array is empty or None.")
+            print_manager.error("[BR_NORM_CALC] Cannot determine time range for dependencies: _current_operation_trange is None or not set.")
+            print_manager.warning("[BR_NORM_CALC] The br_norm calculation now STRICTLY requires _current_operation_trange. The fallback to self.datetime_array for dependency trange has been removed.")
             self.raw_data['br_norm'] = None # Ensure it's None if calculation fails
             return False
 

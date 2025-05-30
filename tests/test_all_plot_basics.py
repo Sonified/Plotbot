@@ -1,3 +1,8 @@
+# To run tests from the project root directory:
+# conda run -n plotbot_env python -m pytest tests/test_all_plot_basics.py -vv
+# To run a specific test (e.g., test_plotbot_basic):
+# conda run -n plotbot_env python -m pytest tests/test_all_plot_basics.py::test_plotbot_basic -vv
+
 """
 Basic smoke tests for core plotting functions (plotbot, multiplot, showdahodo).
 Designed to be lightning fast using only mag_rtn_4sa data for a short interval.

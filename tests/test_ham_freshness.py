@@ -1,3 +1,10 @@
+#tests/test_ham_freshness.py
+# To run tests from the project root directory and see print output in the console:
+# conda run -n plotbot_env python -m pytest tests/test_ham_freshness.py -vv -s
+# To run a specific test (e.g., test_plotbot_ham_group_1) and see print output:
+# conda run -n plotbot_env python -m pytest tests/test_ham_freshness.py::test_plotbot_ham_group_1 -vv -s
+# The '-s' flag ensures that print statements are shown in the console during test execution.
+
 """
 Tests for HAM data loading, freshness, and plotting functionality.
 

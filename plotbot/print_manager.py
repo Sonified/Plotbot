@@ -101,7 +101,7 @@ class print_manager_class:
         show_module_prefix: Enable/disable showing the module name prefix (e.g., [print_manager])
         show_processing: Enable/disable data processing status messages
         show_category_prefix: Enable/disable category prefixes like [DEBUG], [PROCESS], etc.
-        show_warnings: Enable/disable warning messages
+        show_warning: Enable/disable warning messages
         pyspedas_verbose: Enable/disable verbose INFO messages from pyspedas library (default: True)
     """
     
@@ -153,7 +153,7 @@ class print_manager_class:
         self.module_prefix_enabled = False    # Show module name prefix 
         self.processing_enabled = False       # Show data processing status messages 
         self.category_prefix_enabled = False  # Show category prefixes 
-        self.warnings_enabled = False         # Show warning messages 
+        self.warning_enabled = False         # Show warning messages (renamed from warnings_enabled)
         self._pyspedas_verbose = False   # State variable for the pyspedas_verbose property
         self.pyspedas_filter_instance = None  # Instance of the PyspedasInfoFilter
         self.data_snapshot_enabled = False # <<< ADDED: Flag for snapshot messages
@@ -299,7 +299,7 @@ class print_manager_class:
             
     def warning(self, msg):
         """Print warning message (always enabled)."""
-        if self.error_enabled and self.warnings_enabled:  # Use same setting as error plus warnings toggle
+        if self.error_enabled and self.warning_enabled:  # Use same setting as error plus warning toggle
             prefix = self.level_warning if self.category_prefix_enabled else ""
             print(self._format_message(f"{prefix}{msg}"))
             
@@ -542,7 +542,7 @@ class print_manager_class:
     def show_processing(self, value):
         """Set whether to show data processing status messages."""
         self.processing_enabled = value
-        print(f"[RAW_PM_SETTER] show_processing setter. Value: {value}. self.processing_enabled is now: {self.processing_enabled}") # ADDED DIAGNOSTIC
+        # print(f"[RAW_PM_SETTER] show_processing setter. Value: {value}. self.processing_enabled is now: {self.processing_enabled}") # ADDED DIAGNOSTIC
         
     @property
     def show_category_prefix(self):
@@ -555,14 +555,14 @@ class print_manager_class:
         self.category_prefix_enabled = value
         
     @property
-    def show_warnings(self):
-        """Get the current state of warnings display."""
-        return self.warnings_enabled
+    def show_warning(self):
+        """Get the current state of warning display."""
+        return self.warning_enabled
         
-    @show_warnings.setter
-    def show_warnings(self, value):
+    @show_warning.setter
+    def show_warning(self, value):
         """Set whether to show warning messages."""
-        self.warnings_enabled = value
+        self.warning_enabled = value
         
     @property
     def pyspedas_verbose(self):

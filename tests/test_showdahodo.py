@@ -1,4 +1,9 @@
-# tests/test_showdahodo.py
+# To run tests from the project root directory and see print output in the console:
+# conda run -n plotbot_env python -m pytest tests/test_showdahodo.py -vv -s
+# To run a specific test (e.g., test_single_custom_variable) and see print output:
+# conda run -n plotbot_env python -m pytest tests/test_showdahodo.py::test_single_custom_variable -vv -s
+# The '-s' flag ensures that print statements are shown in the console during test execution.
+
 """
 Tests for showdahodo (hodogram) functionality in Plotbot.
 

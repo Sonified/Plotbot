@@ -1,3 +1,9 @@
+# To run tests from the project root directory and see print output in the console:
+# conda run -n plotbot_env python -m pytest tests/test_pyspedas_download.py -vv -s
+# To run a specific test (e.g., test_pyspedas_download_location_and_comparison) and see print output:
+# conda run -n plotbot_env python -m pytest tests/test_pyspedas_download.py::test_pyspedas_download_location_and_comparison -vv -s
+# The '-s' flag ensures that print statements are shown in the console during test execution.
+
 import pyspedas
 import os
 import pytest

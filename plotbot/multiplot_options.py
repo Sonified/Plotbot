@@ -877,7 +877,7 @@ class MultiplotOptions:
         if caller_name != 'reset' and caller_name != '__init__':
             self.__dict__['_user_set_hspace'] = True
             from .print_manager import print_manager
-            print_manager.debug(f"User explicitly set hspace to {value}")
+            # print_manager.debug(f"User explicitly set hspace to {value}")
 
     @property
     def hspace_vertical_space_between_plots(self) -> float:

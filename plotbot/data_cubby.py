@@ -658,21 +658,32 @@ class data_cubby:
                     dt_len_before_instance_update = len(global_instance.datetime_array) if hasattr(global_instance, 'datetime_array') and global_instance.datetime_array is not None else "None_or_NoAttr"
                     pm.dependency_management(f"[CUBBY_UPDATE_DEBUG H1] Instance (ID: {id(global_instance)}) BEFORE global_instance.update(). datetime_array len: {dt_len_before_instance_update}")
                     
-                    # Call update with only the arguments known to be generally accepted or recently added
-                    global_instance.update(
-                        imported_data_obj,
-                        original_requested_trange=original_requested_trange
-                    )
+                    print_manager.datacubby(f"Calling update() on global instance of {data_type_str} (ID: {id(global_instance)}). is_segment_merge={is_segment_merge}")
+                    
+                    try:
+                        # Try the new signature first (with original_requested_trange)
+                        global_instance.update(imported_data_obj, original_requested_trange=original_requested_trange)
+                        print_manager.datacubby(f"Successfully called update() with original_requested_trange on global instance of {data_type_str}")
+                    except TypeError as te:
+                        # If that fails, fall back to the old signature (without original_requested_trange)
+                        if "unexpected keyword argument" in str(te) or "takes" in str(te):
+                            print_manager.datacubby(f"Falling back to simple update() signature for {data_type_str}")
+                            global_instance.update(imported_data_obj)
+                            print_manager.datacubby(f"Successfully called update() with simple signature on global instance of {data_type_str}")
+                        else:
+                            # Re-raise if it's a different TypeError
+                            raise te
                     
                     # STRATEGIC PRINT H2
                     dt_len_after_instance_update = len(global_instance.datetime_array) if hasattr(global_instance, 'datetime_array') and global_instance.datetime_array is not None else "None_or_NoAttr"
                     pm.dependency_management(f"[CUBBY_UPDATE_DEBUG H2] Instance (ID: {id(global_instance)}) AFTER global_instance.update(). datetime_array len: {dt_len_after_instance_update}")
                     
-                    pm.datacubby("✅ Instance updated successfully via .update() method.") # Clarified message
+                    pm.datacubby("✅ Instance updated successfully via .update() method.")
                     pm.datacubby("=== End Global Instance Update ===\n")
                     return True
+                    
                 except Exception as e:
-                    pm.error(f"UPDATE GLOBAL ERROR - Error calling update() on empty instance: {e}")
+                    pm.error(f"UPDATE GLOBAL ERROR - Error calling update() on instance: {e}")
                     import traceback
                     pm.error(traceback.format_exc())
                     pm.datacubby("=== End Global Instance Update ===\n")

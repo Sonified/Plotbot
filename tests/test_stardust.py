@@ -1,4 +1,9 @@
 # tests/test_stardust.py
+# To run tests from the project root directory and see print output in the console:
+# conda run -n plotbot_env python -m pytest tests/test_stardust.py -vv -s
+# To run a specific test (e.g., test_stardust_plotbot_basic) and see print output:
+# conda run -n plotbot_env python -m pytest tests/test_stardust.py::test_stardust_plotbot_basic -vv -s
+# The '-s' flag ensures that print statements are shown in the console during test execution.
 
 """
 Master Stardust Test File

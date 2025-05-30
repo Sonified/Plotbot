@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import cdflib
 from datetime import datetime, timedelta, timezone
+from typing import Optional, List
 
 # Import our custom managers
 from plotbot.print_manager import print_manager
@@ -34,7 +35,10 @@ class proton_hr_class:
             'temperature': None,
             'pressure': None,
             'density': None,
-            'bmag': None
+            'bmag': None,
+            'ENERGY_VALS': None,  # Added for consistency
+            'THETA_VALS': None,   # Added for consistency
+            'PHI_VALS': None      # Added for consistency
         })
         
         object.__setattr__(self, 'datetime_array', None)
@@ -44,6 +48,7 @@ class proton_hr_class:
         object.__setattr__(self, 'theta_vals', None)
         object.__setattr__(self, 'phi_vals', None)
         object.__setattr__(self, 'data_type', 'spi_af00_L3_mom')
+        object.__setattr__(self, '_current_operation_trange', None)
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
@@ -57,11 +62,15 @@ class proton_hr_class:
             self.set_ploptions()
             print_manager.status("Successfully calculated high-resolution proton variables.")
 
-    def update(self, imported_data): #This is function is the exact same across all classes :)
+    def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
         """Method to update class with new data. 
         NOTE: This function updates the class with newly imported data. We need to use the data_cubby
         as a registry to store class instances in order to avoid circular references that would occur
         if the class stored itself as an attribute and tried to reference itself directly. The code breaks without the cubby!"""
+        if original_requested_trange is not None:
+            object.__setattr__(self, '_current_operation_trange', original_requested_trange)
+            print_manager.dependency_management(f"[{self.__class__.__name__}] Updated _current_operation_trange to: {self._current_operation_trange}")
+
         if imported_data is None:                                                # Exit if no new data
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
             return
@@ -86,7 +95,6 @@ class proton_hr_class:
             return
 
         print_manager.datacubby("\n=== Update Debug ===")
-        print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
         
         # Store current state before update (including any modified ploptions)
         current_state = {}
@@ -94,6 +102,7 @@ class proton_hr_class:
             if hasattr(self, subclass_name):
                 var = getattr(self, subclass_name)
                 if hasattr(var, '_plot_state'):
+                    print_manager.datacubby(f"Starting {subclass_name} update...")
                     current_state[subclass_name] = dict(var._plot_state)       # Save current plot state
                     print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_ploption_snapshot(current_state[subclass_name])}")
 
@@ -121,24 +130,42 @@ class proton_hr_class:
             print_manager.debug(f"Returning {subclass_name} component")  # Log successful component find
             return getattr(self, subclass_name)  # Return the component
         else:
-            print(f"'{subclass_name}' is not a recognized subclass, friend!")  # Friendly error message
-            print(f"Try one of these: {', '.join(self.raw_data.keys())}")  # Show available components
+            print(f"'[proton_hr_get_subclass] {subclass_name}' is not a recognized subclass, friend!")  # Friendly error message
+            print(f"[proton_hr_get_subclass] Try one of these: {', '.join(self.raw_data.keys())}")  # Show available components
             return None  # Return None if not found
     
     def __getattr__(self, name):
-        # Allow direct access to dunder OR single underscore methods/attributes
-        if name.startswith('_'): # Check for either '__' or '_' start
+        if name.startswith('_'):
             try:
                 return object.__getattribute__(self, name)
             except AttributeError:
-                raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+                # It's a private attribute, but not found. Let the error propagate naturally.
+                raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}' (tried as underscore-prefixed)")
 
-        if 'raw_data' not in self.__dict__:
-            raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
-        print_manager.debug('proton_hr getattr helper!')
-        available_attrs = list(self.raw_data.keys()) if self.raw_data else []
-        print(f"'{name}' is not a recognized attribute, friend!")
-        print(f"Try one of these: {', '.join(available_attrs)}")
+        # Attempt to retrieve as a standard attribute first.
+        # This covers plot_manager instances (e.g., self.energy_flux) and direct data attributes (e.g., self.energy_vals).
+        try:
+            return object.__getattribute__(self, name)
+        except AttributeError:
+            # If not a direct attribute, then proceed to check raw_data.
+            pass
+
+        # Check if raw_data itself is initialized. Should always be after __init__.
+        if 'raw_data' not in self.__dict__ or self.raw_data is None:
+            # This is a more fundamental issue if raw_data isn't there.
+            raise AttributeError(f"'{self.__class__.__name__}' has no attribute '{name}' (raw_data not initialized or None, and not a direct attribute)")
+
+        # If the name is a key in raw_data, return the corresponding data.
+        if name in self.raw_data:
+            # print_manager.debug(f"[__getattr__] Attribute '{name}' found in raw_data for {self.__class__.__name__}. Returning raw_data['{name}'].")
+            return self.raw_data[name]
+
+        # If not found directly and not in raw_data, then it's truly unrecognized.
+        available_raw_keys = list(self.raw_data.keys()) if self.raw_data else []
+        print_manager.warning(
+            f"[GETATTR_FALLBACK] Attribute '{name}' not found directly on {self.__class__.__name__} instance "
+            f"AND not in raw_data. Available raw_data keys: {available_raw_keys}. Returning None."
+        )
         return None
     
     def __setattr__(self, name, value):
@@ -147,22 +174,42 @@ class proton_hr_class:
             object.__setattr__(self, name, value)
             return
 
+        if name == 'field':
+            print_manager.dependency_management(f"[PROTON_HR_SETATTR_FIELD_SET] Attempt to set 'field' attribute on {self.__class__.__name__} instance ID {id(self)} to value of type {type(value)}")
+
         # Allow setting known attributes
-        print_manager.debug(f"Setting attribute: {name} with value: {value}")
-        if name in ['datetime_array', 'raw_data', 'time', 'field', 'mag_field', 'temp_tensor', 'energy_flux', 'theta_flux', 'phi_flux', 'energy_vals', 'theta_vals', 'phi_vals', 'times_mesh', 'times_mesh_angle', 'data', 'data_type'] or name in self.raw_data:
-            super().__setattr__(name, value)
+        # print_manager.debug(f"Setting attribute: {name} with value: {value}") # Too verbose for general use
+        known_attributes = ['datetime_array', 'raw_data', 'time', 'field', 'mag_field', 'temp_tensor', 
+                            'energy_flux', 'theta_flux', 'phi_flux', 'energy_vals', 'theta_vals', 
+                            'phi_vals', 'times_mesh', 'times_mesh_angle', 'data_type']
+        
+        is_known_core_attribute = name in known_attributes
+        is_in_raw_data = hasattr(self, 'raw_data') and isinstance(self.raw_data, dict) and name in self.raw_data
+        is_existing_non_callable = hasattr(self, name) and not callable(getattr(self, name))
+
+        if is_known_core_attribute or is_in_raw_data or is_existing_non_callable:
+            object.__setattr__(self, name, value) # Use object.__setattr__ to bypass this method for known attributes
         else:
-            # Print friendly error message
-            print_manager.debug('proton_hr setattr helper!')
-            print(f"'{name}' is not a recognized attribute, friend!")
-            available_attrs = list(self.raw_data.keys()) if self.raw_data else []
-            print(f"Try one of these: {', '.join(available_attrs)}")
+            # Print friendly error message for truly unrecognized attributes
+            print_manager.warning(f"[PROTON_HR_SETATTR] Attribute '{name}' is not explicitly defined in settable list for {self.__class__.__name__}. Allowed if it's a plot_manager instance or in raw_data.")
+            available_attrs = list(getattr(self, 'raw_data', {}).keys()) + known_attributes
+            print(f"[PROTON_HR_SETATTR] '{name}' is not a recognized settable attribute, friend! (Or it might be a method name)")
+            print(f"Known data keys and core attributes: {', '.join(list(set(available_attrs)))}")
+            # Potentially raise an error here if strict attribute setting is desired
+            # For now, just warn and allow if it's an existing attribute (e.g. plot manager objects)
+            object.__setattr__(self, name, value)
 
     def calculate_variables(self, imported_data):
         """Calculate the high-resolution proton parameters and derived quantities."""
+        pm = print_manager # local alias
+        pm.dependency_management(f"[PROTON_HR_CALC_VARS_ENTRY] Instance ID {id(self)} calculating variables. Imported data time type: {type(getattr(imported_data, 'times', None))}")
+
         # Extract time and field data
         self.time = imported_data.times
+        pm.processing(f"[PROTON_HR_CALC_VARS] About to create self.datetime_array from self.time (len: {len(self.time) if self.time is not None else 'None'}) for instance ID {id(self)}")
         self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time))  # Use cdflib instead of pandas
+        pm.processing(f"[PROTON_HR_CALC_VARS] self.datetime_array (id: {id(self.datetime_array)}) created. len: {len(self.datetime_array) if self.datetime_array is not None else 'None'}. Range: {self.datetime_array[0]} to {self.datetime_array[-1]}" if self.datetime_array is not None and len(self.datetime_array) > 0 else f"[PROTON_HR_CALC_VARS] self.datetime_array is empty/None for instance ID {id(self)}")
+        
         # Store magnetic field and temperature tensor for anisotropy calculation
         self.mag_field = imported_data.data['MAGF_INST']
         self.temp_tensor = imported_data.data['T_TENSOR_INST']
@@ -198,26 +245,46 @@ class proton_hr_class:
         pressure_hr = 1.602E-4 * temperature_hr * density_hr
 
         # Extract specific components for spectral data
-        energy_flux_hr = imported_data.data['EFLUX_VS_ENERGY']
-        energy_vals_hr = imported_data.data['ENERGY_VALS']
-        theta_flux_hr = imported_data.data['EFLUX_VS_THETA']
-        theta_vals_hr = imported_data.data['THETA_VALS']
-        phi_flux_hr = imported_data.data['EFLUX_VS_PHI']
-        phi_vals_hr = imported_data.data['PHI_VALS']
+        self.energy_flux = imported_data.data['EFLUX_VS_ENERGY'] # Changed from energy_flux_hr
+        self.energy_vals = imported_data.data['ENERGY_VALS']   # Changed from energy_vals_hr
+        self.theta_flux = imported_data.data['EFLUX_VS_THETA']   # Changed from theta_flux_hr
+        self.theta_vals = imported_data.data['THETA_VALS']     # Changed from theta_vals_hr
+        self.phi_flux = imported_data.data['EFLUX_VS_PHI']       # Changed from phi_flux_hr
+        self.phi_vals = imported_data.data['PHI_VALS']         # Changed from phi_vals_hr
 
         # Calculate spectral data time arrays
+        # Assumes self.energy_flux (etc.) are valid 2D arrays after assignment from imported_data.
         self.times_mesh = np.meshgrid(
             self.datetime_array,
-            np.arange(32),
+            np.arange(self.energy_flux.shape[1]), # Use self.energy_flux.shape[1]
             indexing='ij'
         )[0]
+        pm.processing(f"[PROTON_HR_CALC_VARS] self.times_mesh (id: {id(self.times_mesh)}) created. Shape: {self.times_mesh.shape if self.times_mesh is not None else 'None'}. "
+                      f"Time range (mesh[0,:]): {self.times_mesh[0,0]} to {self.times_mesh[0,-1]} " if self.times_mesh is not None and self.times_mesh.size > 0 and self.times_mesh.ndim == 2 and self.times_mesh.shape[0] > 0 and self.times_mesh.shape[1] > 0 else 
+                      f"[PROTON_HR_CALC_VARS] self.times_mesh is empty/None or not 2D as expected. Shape: {self.times_mesh.shape if hasattr(self.times_mesh, 'shape') else 'N/A'}")
 
+
+        # Assumes self.theta_flux (etc.) are valid 2D arrays after assignment from imported_data.
         self.times_mesh_angle = np.meshgrid(
             self.datetime_array,
-            np.arange(8),
+            np.arange(self.theta_flux.shape[1]), # Use self.theta_flux.shape[1]
             indexing='ij'
         )[0]
+        pm.processing(f"[PROTON_HR_CALC_VARS] self.times_mesh_angle (id: {id(self.times_mesh_angle)}) created. Shape: {self.times_mesh_angle.shape if self.times_mesh_angle is not None else 'None'}. "
+                      f"Time range (mesh[0,:]): {self.times_mesh_angle[0,0]} to {self.times_mesh_angle[0,-1]} " if self.times_mesh_angle is not None and self.times_mesh_angle.size > 0 and self.times_mesh_angle.ndim == 2 and self.times_mesh_angle.shape[0] > 0 and self.times_mesh_angle.shape[1] > 0 else 
+                      f"[PROTON_HR_CALC_VARS] self.times_mesh_angle is empty/None or not 2D as expected. Shape: {self.times_mesh_angle.shape if hasattr(self.times_mesh_angle, 'shape') else 'N/A'}")
 
+        # Compute centroids (using the new self. attributes)
+        centroids_spi_nrg_hr = np.ma.average(self.energy_vals, 
+                                           weights=self.energy_flux, 
+                                           axis=1)
+        centroids_spi_theta_hr = np.ma.average(self.theta_vals, 
+                                             weights=self.theta_flux, 
+                                             axis=1)
+        centroids_spi_phi_hr = np.ma.average(self.phi_vals, 
+                                           weights=self.phi_flux, 
+                                           axis=1)
+                                           
         # Store raw data including time - keeping original keys but storing HR values
         self.raw_data = {
             'vr': vr_hr,
@@ -231,21 +298,24 @@ class proton_hr_class:
             'beta_pperp': beta_pperp_hr,
             'pressure_ppar': pressure_ppar_hr,
             'pressure_pperp': pressure_pperp_hr,
-            'energy_flux': energy_flux_hr,
-            'theta_flux': theta_flux_hr,
-            'phi_flux': phi_flux_hr,
+            'energy_flux': self.energy_flux,    # Use self.energy_flux
+            'theta_flux': self.theta_flux,      # Use self.theta_flux
+            'phi_flux': self.phi_flux,          # Use self.phi_flux
             'v_sw': v_sw_hr,
             'm_alfven': m_alfven_hr,
             'temperature': temperature_hr,
             'pressure': pressure_hr,
             'density': density_hr,
-            'bmag': bmag_hr
+            'bmag': bmag_hr,
+            'ENERGY_VALS': self.energy_vals,    # Added for consistency
+            'THETA_VALS': self.theta_vals,      # Added for consistency
+            'PHI_VALS': self.phi_vals          # Added for consistency
         }
 
-        # Store the values
-        self.energy_vals = energy_vals_hr
-        self.theta_vals = theta_vals_hr
-        self.phi_vals = phi_vals_hr
+        # Store the values (These lines are now redundant as they are directly assigned to self attributes above and stored in raw_data)
+        # self.energy_vals = energy_vals_hr 
+        # self.theta_vals = theta_vals_hr
+        # self.phi_vals = phi_vals_hr
 
     def _calculate_temperature_anisotropy(self):
         """Calculate temperature anisotropy from the temperature tensor."""
@@ -284,6 +354,14 @@ class proton_hr_class:
     
     def set_ploptions(self):
         """Set up the plotting options for all proton parameters"""
+        pm = print_manager # local alias
+        pm.processing(f"[PROTON_HR_SET_PLOPT ENTRY] id(self): {id(self)}")
+        datetime_array_exists = hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0
+        if datetime_array_exists:
+            pm.processing(f"[PROTON_HR_SET_PLOPT] self.datetime_array (id: {id(self.datetime_array)}) len: {len(self.datetime_array)}. Range: {self.datetime_array[0]} to {self.datetime_array[-1]}")
+        else:
+            pm.processing(f"[PROTON_HR_SET_PLOPT] self.datetime_array does not exist, is None, or is empty for instance ID {id(self)}.")
+
         # Temperature components
         self.t_par = plot_manager(
             self.raw_data['t_par'],
@@ -614,6 +692,50 @@ class proton_hr_class:
         )
 
         # Spectral Plots
+        # --- Energy Flux ---
+        pm.processing(f"[PROTON_HR_SET_PLOPT] Preparing plot_manager for energy_flux. Instance ID {id(self)}.")
+        # Check and regenerate times_mesh for energy_flux if necessary
+        times_mesh_exists = hasattr(self, 'times_mesh') and self.times_mesh is not None
+        raw_data_eflux_exists = hasattr(self, 'raw_data') and 'energy_flux' in self.raw_data and self.raw_data['energy_flux'] is not None and isinstance(self.raw_data['energy_flux'], np.ndarray)
+
+        if times_mesh_exists and isinstance(self.times_mesh, np.ndarray) and raw_data_eflux_exists and datetime_array_exists:
+            needs_regeneration_eflux = False
+            # Use self.raw_data['energy_flux'].shape[1] for expected_y_dim_eflux to mirror psp_proton.py
+            expected_y_dim_eflux = self.raw_data['energy_flux'].shape[1] if self.raw_data['energy_flux'] is not None and self.raw_data['energy_flux'].ndim == 2 else 1
+
+            if self.times_mesh.ndim != 2:
+                needs_regeneration_eflux = True
+                pm.processing(f"[PROTON_HR_SET_PLOPT] times_mesh for energy_flux is not 2D (shape: {self.times_mesh.shape}). Regenerating.")
+            elif self.times_mesh.shape[0] != len(self.datetime_array):
+                needs_regeneration_eflux = True
+                pm.processing(f"[PROTON_HR_SET_PLOPT] times_mesh for energy_flux shape[0] ({self.times_mesh.shape[0]}) != len(datetime_array) ({len(self.datetime_array)}). Regenerating.")
+            elif self.times_mesh.shape[1] != expected_y_dim_eflux:
+                needs_regeneration_eflux = True
+                pm.processing(f"[PROTON_HR_SET_PLOPT] times_mesh for energy_flux shape[1] ({self.times_mesh.shape[1]}) != expected data y_dim ({expected_y_dim_eflux}). Regenerating.")
+
+            if needs_regeneration_eflux:
+                pm.processing(f"[PROTON_HR_SET_PLOPT] Regenerating times_mesh for energy_flux. Old shape: {self.times_mesh.shape if isinstance(self.times_mesh, np.ndarray) else 'N/A'}. Instance ID {id(self)}.")
+                self.times_mesh = np.meshgrid(
+                    self.datetime_array,
+                    np.arange(expected_y_dim_eflux), # Use the calculated expected_y_dim_eflux
+                    indexing='ij'
+                )[0]
+                pm.processing(f"[PROTON_HR_SET_PLOPT] Regenerated times_mesh for energy_flux. New shape: {self.times_mesh.shape}. Instance ID {id(self)}.")
+        elif not datetime_array_exists and hasattr(self, 'times_mesh'): 
+             self.times_mesh = np.array([])
+             pm.warning(f"[PROTON_HR_SET_PLOPT] datetime_array is not valid, ensuring times_mesh for energy_flux is empty. Instance ID {id(self)}.")
+
+        current_times_mesh_to_pass = self.times_mesh if hasattr(self, 'times_mesh') else None
+        if current_times_mesh_to_pass is not None and isinstance(current_times_mesh_to_pass, np.ndarray):
+            shape_str_tm = str(current_times_mesh_to_pass.shape)
+            time_range_str_tm = "N/A or not applicable for 0/1D"
+            if current_times_mesh_to_pass.ndim == 2 and current_times_mesh_to_pass.shape[0] > 0 and current_times_mesh_to_pass.shape[1] > 0:
+                time_range_str_tm = f"{current_times_mesh_to_pass[0,0]} to {current_times_mesh_to_pass[0,-1]}"
+            
+            pm.processing(f"[PROTON_HR_SET_PLOPT] plot_manager for energy_flux gets datetime_array (is self.times_mesh, id: {id(current_times_mesh_to_pass)}). Shape: {shape_str_tm}. Time range (mesh[0,:]): {time_range_str_tm}. Instance ID {id(self)}.")
+        else:
+            pm.processing(f"[PROTON_HR_SET_PLOPT] plot_manager for energy_flux gets datetime_array (self.times_mesh) that is None or not an ndarray. Value: {current_times_mesh_to_pass}. Instance ID {id(self)}.")
+
         self.energy_flux = plot_manager(
             self.raw_data['energy_flux'],
             plot_options=ploptions(
@@ -623,18 +745,62 @@ class proton_hr_class:
                 subclass_name='energy_flux',
                 plot_type='spectral',
                 datetime_array=self.times_mesh,
-                y_label='Proton\nEnergy\nFlux (eV)',
+                y_label='Proton\\nEnergy\\nFlux (eV)',
                 legend_label='Proton Energy Flux',
                 color='black',
                 y_scale='log',
                 y_limit=[50, 5000],
                 line_width=1,
                 line_style='-',
-                additional_data=self.energy_vals,
+                additional_data=self.raw_data['ENERGY_VALS'],
                 colormap='jet',
                 colorbar_scale='log'
             )
         )
+
+        # --- Theta Flux & Phi Flux ---
+        pm.processing(f"[PROTON_HR_SET_PLOPT] Preparing plot_managers for theta_flux and phi_flux. Instance ID {id(self)}.")
+        times_mesh_angle_exists = hasattr(self, 'times_mesh_angle') and self.times_mesh_angle is not None
+        # Use self.raw_data['theta_flux'] for raw_data check
+        raw_data_tflux_exists = hasattr(self, 'raw_data') and 'theta_flux' in self.raw_data and self.raw_data['theta_flux'] is not None and isinstance(self.raw_data['theta_flux'], np.ndarray)
+
+        if times_mesh_angle_exists and isinstance(self.times_mesh_angle, np.ndarray) and raw_data_tflux_exists and datetime_array_exists:
+            needs_regeneration_angle = False
+            # Use self.raw_data['theta_flux'].shape[1] for expected_y_dim_angle to mirror psp_proton.py
+            expected_y_dim_angle = self.raw_data['theta_flux'].shape[1] if self.raw_data['theta_flux'] is not None and self.raw_data['theta_flux'].ndim == 2 else 1
+            
+            if self.times_mesh_angle.ndim != 2:
+                needs_regeneration_angle = True
+                pm.processing(f"[PROTON_HR_SET_PLOPT] times_mesh_angle is not 2D (shape: {self.times_mesh_angle.shape}). Regenerating.")
+            elif self.times_mesh_angle.shape[0] != len(self.datetime_array):
+                needs_regeneration_angle = True
+                pm.processing(f"[PROTON_HR_SET_PLOPT] times_mesh_angle shape[0] ({self.times_mesh_angle.shape[0]}) != len(datetime_array) ({len(self.datetime_array)}). Regenerating.")
+            elif self.times_mesh_angle.shape[1] != expected_y_dim_angle:
+                needs_regeneration_angle = True
+                pm.processing(f"[PROTON_HR_SET_PLOPT] times_mesh_angle shape[1] ({self.times_mesh_angle.shape[1]}) != expected data y_dim ({expected_y_dim_angle}). Regenerating.")
+
+            if needs_regeneration_angle:
+                pm.processing(f"[PROTON_HR_SET_PLOPT] Regenerating times_mesh_angle. Old shape: {self.times_mesh_angle.shape if isinstance(self.times_mesh_angle, np.ndarray) else 'N/A'}. Instance ID {id(self)}.")
+                self.times_mesh_angle = np.meshgrid(
+                    self.datetime_array,
+                    np.arange(expected_y_dim_angle), # Use the calculated expected_y_dim_angle
+                    indexing='ij'
+                )[0]
+                pm.processing(f"[PROTON_HR_SET_PLOPT] Regenerated times_mesh_angle. New shape: {self.times_mesh_angle.shape}. Instance ID {id(self)}.")
+        elif not datetime_array_exists and hasattr(self, 'times_mesh_angle'): 
+            self.times_mesh_angle = np.array([])
+            pm.warning(f"[PROTON_HR_SET_PLOPT] datetime_array is not valid, ensuring times_mesh_angle is empty. Instance ID {id(self)}.")
+
+        current_times_mesh_angle_to_pass = self.times_mesh_angle if hasattr(self, 'times_mesh_angle') else None
+        if current_times_mesh_angle_to_pass is not None and isinstance(current_times_mesh_angle_to_pass, np.ndarray):
+            shape_str_tma = str(current_times_mesh_angle_to_pass.shape)
+            time_range_str_tma = "N/A or not applicable for 0/1D"
+            if current_times_mesh_angle_to_pass.ndim == 2 and current_times_mesh_angle_to_pass.shape[0] > 0 and current_times_mesh_angle_to_pass.shape[1] > 0:
+                time_range_str_tma = f"{current_times_mesh_angle_to_pass[0,0]} to {current_times_mesh_angle_to_pass[0,-1]}"
+
+            pm.processing(f"[PROTON_HR_SET_PLOPT] plot_managers for theta/phi_flux get datetime_array (is self.times_mesh_angle, id: {id(current_times_mesh_angle_to_pass)}). Shape: {shape_str_tma}. Time range (mesh[0,:]): {time_range_str_tma}. Instance ID {id(self)}.")
+        else:
+            pm.processing(f"[PROTON_HR_SET_PLOPT] plot_managers for theta/phi_flux get datetime_array (self.times_mesh_angle) that is None or not an ndarray. Value: {current_times_mesh_angle_to_pass}. Instance ID {id(self)}.")
 
         self.theta_flux = plot_manager(
             self.raw_data['theta_flux'],
@@ -652,7 +818,7 @@ class proton_hr_class:
                 y_limit=None,
                 line_width=1,
                 line_style='-',
-                additional_data=self.theta_vals,
+                additional_data=self.raw_data['THETA_VALS'],
                 colormap='jet',
                 colorbar_scale='log'
             )
@@ -674,7 +840,7 @@ class proton_hr_class:
                 y_limit=None,
                 line_width=1,
                 line_style='-',
-                additional_data=self.phi_vals,
+                additional_data=self.raw_data['PHI_VALS'],
                 colormap='jet',
                 colorbar_scale='linear'
             )

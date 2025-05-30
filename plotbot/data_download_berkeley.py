@@ -1,3 +1,5 @@
+#plotbot/data_download_berkeley.py
+
 import os
 import re
 from datetime import datetime, timezone, timedelta
@@ -52,10 +54,12 @@ def download_berkeley_data(trange, data_type):
         return
     
     # Adjust end time if midnight
-    if (end_time.hour == 0 and end_time.minute == 0 and             # Check if time is exactly 00:00:00.000 - this needs special handling
+    if (end_time.hour == 0 and end_time.minute == 0 and             
         end_time.second == 0 and end_time.microsecond == 0):
-        end_time = end_time - timedelta(days=1)                      # Subtract 24 hours to get previous day, as midnight belongs to next day
-        print_manager.time_tracking(f"Adjusted end time to previous day: {end_time}")
+        # Midnight means "up to but not including this day"  
+        # So adjust to 23:59:59.999 of previous day
+        end_time = end_time - timedelta(microseconds=1)
+        print_manager.time_tracking(f"Adjusted midnight end time to: {end_time}")
     
     print_manager.debug(f"Downloading data for UTC time range: {start_time} to {end_time}")
     
