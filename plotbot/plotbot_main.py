@@ -380,14 +380,14 @@ def plotbot(trange, *args):
                     # Check if datetime array exists and has data
                     if var.datetime_array is None or len(var.datetime_array) == 0:
                         empty_plot = True
-                        print_manager.debug("DBG-CRITICAL: empty_plot = True - No datetime array available")
+                        print_manager.debug("empty_plot = True - No datetime array available")
                         continue
 
                     # Check if any data points fall within the specified time range
                     time_indices = time_clip(var.datetime_array, trange[0], trange[1])
                     if len(time_indices) == 0:
                         empty_plot = True
-                        print_manager.debug("DBG-CRITICAL: empty_plot = True - No valid time indices found")
+                        print_manager.debug("empty_plot = True - No valid time indices found")
                         continue
 
                     # Convert variable data to numpy array for processing
@@ -405,7 +405,7 @@ def plotbot(trange, *args):
                             data_clipped = data[time_indices]  # Slice data for time range
                             if np.all(np.isnan(data_clipped)):  # Skip if all data points are NaN
                                 empty_plot = True
-                                print_manager.debug("DBG-CRITICAL: empty_plot = True - All data points are NaN")
+                                print_manager.debug("empty_plot = True - All data points are NaN")
                                 continue
                                 
                             line, = plot_ax.plot(  # Create single line plot
@@ -449,13 +449,13 @@ def plotbot(trange, *args):
                     # DATA VERIFICATION (similar to time_series)
                     if var.datetime_array is None or len(var.datetime_array) == 0:
                         empty_plot = True
-                        print_manager.debug("DBG-CRITICAL: empty_plot = True - No datetime array available (scatter)")
+                        print_manager.debug("empty_plot = True - No datetime array available (scatter)")
                         continue
 
                     time_indices = time_clip(var.datetime_array, trange[0], trange[1])
                     if len(time_indices) == 0:
                         empty_plot = True
-                        print_manager.debug("DBG-CRITICAL: empty_plot = True - No valid time indices found (scatter)")
+                        print_manager.debug("empty_plot = True - No valid time indices found (scatter)")
                         continue
 
                     data = np.array(var) # Ensure data is numpy array
@@ -469,7 +469,7 @@ def plotbot(trange, *args):
                             data_clipped = data[time_indices]
                             if np.all(np.isnan(data_clipped)):
                                 empty_plot = True
-                                print_manager.debug("DBG-CRITICAL: empty_plot = True - All data points are NaN (scatter)")
+                                print_manager.debug("empty_plot = True - All data points are NaN (scatter)")
                                 continue
 
                             # Use scatter plot specific attributes
@@ -503,20 +503,20 @@ def plotbot(trange, *args):
                     #====================================================================
                     if var.datetime_array is None or len(var.datetime_array) == 0:
                         empty_plot = True
-                        print_manager.debug("DBG-CRITICAL: empty_plot = True - No datetime array available (spectral)")
+                        print_manager.debug("empty_plot = True - No datetime array available (spectral)")
                         continue
 
                     time_indices = time_clip(var.datetime_array, trange[0], trange[1])  # Get time range indices
                     if len(time_indices) == 0:
                         empty_plot = True
-                        print_manager.debug("DBG-CRITICAL: empty_plot = True - No valid time indices found (spectral)")
+                        print_manager.debug("empty_plot = True - No valid time indices found (spectral)")
                         continue
                     
                     data = np.array(var).view(np.ndarray)  # Convert to numpy array
                     data_clipped = data[time_indices]  # Slice data for time range
                     if np.all(np.isnan(data_clipped)):  # Check for all NaN values
                         empty_plot = True
-                        print_manager.debug("DBG-CRITICAL: empty_plot = True - All data points in time window are NaN (spectral)")
+                        print_manager.debug("empty_plot = True - All data points in time window are NaN (spectral)")
                         continue
                         
                     #====================================================================
@@ -567,14 +567,14 @@ def plotbot(trange, *args):
                     for i, var in enumerate(variables):
                         try:
                             # Single-line debug info with all critical information
-                            debug_info = f"CRITICAL DEBUG - Var {i}: {var.class_name}.{var.subclass_name} | type={var.data_type}, plot={var.plot_type}, scale={var.y_scale}"
+                            debug_info = f"Var {i}: {var.class_name}.{var.subclass_name} | type={var.data_type}, plot={var.plot_type}, scale={var.y_scale}"
                             debug_info += f"{', y_limit=' + str(var.y_limit) if hasattr(var, 'y_limit') else ''}"
                             debug_info += f" | sources=[{', '.join(src_var.class_name + '(has_data=' + str(hasattr(src_var, 'datetime_array') and len(src_var.datetime_array) > 0) + ')' for src_var in var.source_var) if hasattr(var, 'source_var') and var.source_var is not None else 'none'}]" if var.data_type == 'custom_data_type' else ''
                             time_indices = time_clip(var.datetime_array, trange[0], trange[1]) if hasattr(var, 'datetime_array') and var.datetime_array is not None else []
                             debug_info += f" | data: points={len(time_indices)}" + (f", shape={np.array(var)[time_indices].shape}, has_nans={np.isnan(np.array(var)[time_indices]).any()}" if len(time_indices) > 0 else " (no data in range)")
                             print_manager.debug(debug_info)
                         except Exception as e:
-                            print_manager.debug(f"CRITICAL DEBUG - Error inspecting variable {i}: {str(e)}")
+                            print_manager.debug(f"Error inspecting variable {i}: {str(e)}")
                 
                 ax.set_xlim(start_time, end_time)  # Set time range even if empty
                 ax.text(0.5, 0.5, 'No Data Available',  # Add centered "No Data" message

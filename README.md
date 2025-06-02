@@ -448,14 +448,8 @@ To output messages through the print manager, use the appropriate method:
 # Regular debug messages
 print_manager.debug("This is a detailed debug message")
 
-# Critical debug messages (shown even when debug is disabled)
-print_manager.debug("DBG-CRITICAL: This critical message is always shown")
-
 # Test-specific messages
 print_manager.test("This is a test-related message")
-
-# Error messages
-print_manager.error("This is an error message")
 
 # Time tracking
 print_manager.time_tracking("Time-related diagnostic information")

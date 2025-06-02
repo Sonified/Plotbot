@@ -22,7 +22,7 @@ from .data_classes.psp_proton import proton_class
 from .data_classes.psp_proton_hr import proton_hr_class
 # Note: proton_fits and ham are handled differently in get_data, so maybe not needed here?
 # from .data_classes.psp_proton_fits_classes import proton_fits_class
-# from .data_classes.psp_ham_classes import ham_class
+from .data_classes.psp_ham_classes import ham_class, ham
 
 from .data_import import DataObject # Import the type hint for raw data object
 
@@ -49,8 +49,32 @@ class data_cubby:
         'proton_hr': proton_hr_class,
         'epad': epad_strahl_class,
         'epad_hr': epad_strahl_high_res_class,
+        'ham': ham_class,
         # Add other standard CDF types here as needed
     }
+
+    def __init__(self):
+        """
+        Initialize the DataCubby instance.
+        This is where we can register pre-existing global data instances
+        that DataCubby needs to manage from the start.
+        """
+        print_manager.datacubby("DataCubby instance initializing...")
+        
+        # Stash the globally defined `ham` instance.
+        # `ham` should be imported at the module level from .data_classes.psp_ham_classes
+        # `self.stash` correctly calls the classmethod `stash`.
+        try:
+            global_ham_instance = globals().get('ham')
+            if global_ham_instance is not None and isinstance(global_ham_instance, ham_class):
+                self.stash(global_ham_instance, class_name='ham')
+                print_manager.datacubby("Successfully stashed global 'ham' instance during DataCubby initialization.")
+            else:
+                # This warning helps diagnose if `ham` wasn't imported as expected before DataCubby instantiation.
+                print_manager.warning("Global 'ham' instance for stashing not found or of incorrect type during DataCubby __init__. Expected 'ham' to be an instance of 'ham_class'.")
+        except Exception as e:
+            print_manager.error(f"CRITICAL STARTUP ERROR: Failed to stash global 'ham' instance during DataCubby __init__: {e}")
+            # Depending on application design, one might want to re-raise e or handle it more severely.
 
     @classmethod
     def _get_class_type_from_string(cls, data_type_str):
@@ -846,5 +870,5 @@ class Variable:
         return f"<Variable {self.class_name}.{self.subclass_name}, type={self.data_type}, id={self.internal_id}>"
 
 # Create global instance
-data_cubby = data_cubby() 
-print('initialized data_cubby')
+data_cubby = data_cubby()
+print('initialized data_cubby.')

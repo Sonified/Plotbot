@@ -1,3 +1,5 @@
+#plotbot/data_snapshot.py
+
 from . import print_manager
 from . import data_cubby
 import numpy as np

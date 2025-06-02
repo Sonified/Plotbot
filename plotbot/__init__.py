@@ -222,11 +222,14 @@ __all__ = [
 BLUE = '\033[94m'
 RESET = '\033[0m'
 
-# --- Version Info ---
-# Increment this version number each time significant changes are pushed.
-# Format: YYYY_MM_DD_vX.YY (X for major, YY for minor revisions on the same day)
-__version__ = "2025_05_29_v2.54"
-__commit_message__ = "v2.54 Docs: User-provided definitive clarification of br_norm dependency fix (data_cubby.py parameter omission)."
+#------------------------------------------------------------------------------
+# Version, Date, and Welcome Message for Plotbot
+#------------------------------------------------------------------------------
+__version__ = "2025_06_02_v2.55"
+__commit_message__ = "v2.55 Feature: Integrated HAM data with Data Cubby and removed critical debug"
+
+# Get current date and time
+
 # Print version information on import
 print(f"   Version: {__version__}")
 print(f"   Commit: {__commit_message__}")

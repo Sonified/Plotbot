@@ -252,107 +252,79 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             # Continue to next data_type - processing for proton_fits is done
             continue 
 
-        # --- Handle HAM CSV Data Type --- 
-        if data_type == 'ham':
-            ham_key = 'ham'
-            
-            ham_needs_refresh = False
-            if hasattr(ham, 'datetime_array') and ham.datetime_array is not None and len(ham.datetime_array) > 0:
-                try:
-                    cached_start = np.datetime64(ham.datetime_array[0])
-                    cached_end = np.datetime64(ham.datetime_array[-1])
-                    buffer = np.timedelta64(10, 's')
-                    # Use pre-converted numpy values for comparison
-                    if (cached_start - buffer) > requested_start_np or (cached_end + buffer) < requested_end_np:
-                        ham_needs_refresh = True
-                except (IndexError, TypeError, ValueError) as e:
-                    print_manager.warning(f"Could not compare ham time ranges: {e}. Assuming refresh needed.")
-                    ham_needs_refresh = True
-            else:
-                ham_needs_refresh = True # No data means refresh needed
-
-            if ham_needs_refresh:
-                print_manager.dependency_management(f"Ham data update required for {trange}.")
-                data_obj_ham = import_data_function(trange, 'ham')
-                
-                if data_obj_ham:
-                    print_manager.status(f"📥 Updating {ham_key} with CSV data...")
-                    if hasattr(ham, 'update'):
-                        ham.update(data_obj_ham)
-                        print_manager.variable_testing(f"Successfully updated {ham_key}.")
-                    else:
-                        print_manager.error(f"Error: {ham_key} instance has no 'update' method!")
-                else:
-                    print_manager.warning(f"Ham data import returned no data for {trange}.")
-            else:
-                print_manager.status(f"📤 Using existing {ham_key} data, update not needed.")
-                
-            # Continue to next data_type - processing for ham is done
-            continue
-
-        # --- Handle Standard CDF Types --- 
-        # data_type here will be e.g., 'spe_sf0_pad'
+        # --- Handle Standard CDF Types (and now HAM) --- 
+        # data_type here will be e.g., 'spe_sf0_pad' or 'ham'
         print_manager.dependency_management(f"[GET_DATA_CONFIG_CHECK] Attempting to get config for data_type FROM LOOP VAR: '{data_type}'")
-        print_manager.dependency_management(f"[GET_DATA_CONFIG_CHECK] Available keys in psp_data_types: {list(data_types.keys())}")
-        config = data_types.get(data_type) # Use original data_type for config lookup
-        if not config: 
-            print_manager.warning(f"Config not found for standard type {data_type} during processing loop.")
-            continue
-            
-        # Ensure this is not a local_csv source being processed here
-        if config.get('file_source') == 'local_csv':
-            print_manager.warning(f"Skipping standard processing for local_csv type {data_type}. Should be handled by proton_fits.")
-            continue
-            
-        # Determine the canonical key for cubby/tracker interactions
-        if data_type == 'spe_sf0_pad':
-            cubby_key = 'epad'
-        elif data_type == 'spe_af0_pad':
-            cubby_key = 'epad_hr'
-        # Add other mappings if necessary
+
+        # For 'ham', we bypass the data_types config lookup that's mainly for remote data sources.
+        # HAM data is always local CSV handled by import_data_function.
+        # We still need to set a cubby_key and proceed to DataCubby interaction.
+        if data_type == 'ham':
+            cubby_key = 'ham'
+            # Download is not applicable for HAM, so set relevant flags accordingly
+            # This ensures HAM data directly goes to import_data_function and DataCubby
+            # without attempting server downloads.
+            # The 'calculation_needed' check via global_tracker is still important.
         else:
-            cubby_key = data_type.lower() # Default to lowercase
-        
-        class_instance = data_cubby.grab(cubby_key) # Use canonical key
-        
-        # --- Check Calculation Cache ---
-        # Use canonical key here too for consistency
-        calculation_needed = global_tracker.is_calculation_needed(trange, cubby_key) # Use canonical key
-
-        # *** Corrected Logic ***
-        # Prioritize the calculation check. If calculation is NOT needed, we're done.
-        if calculation_needed:
-            # Clarify debug message
-            print_manager.dependency_management(f"Tracker indicates calculation needed for {cubby_key} (using original type {data_type}). Proceeding...")
+            # Standard path for other data types (mostly CDFs)
+            print_manager.dependency_management(f"[GET_DATA_CONFIG_CHECK] Available keys in psp_data_types: {list(data_types.keys())}")
+            config_from_psp_data_types = data_types.get(data_type) # Renamed to avoid conflict with plotbot.config
+            if not config_from_psp_data_types:
+                print_manager.warning(f"Config not found in psp_data_types for {data_type} during processing loop.")
+                continue
             
-            # Determine server mode (Berkeley or SPDF)
-            # This part uses the original data_type implicitly via config
-            server_mode = plotbot.config.data_server.lower()
-            print_manager.dependency_management(f"Server mode for {data_type}: {server_mode}")
-            download_successful = False # Reset flag
-            
-            if server_mode == 'spdf':
-                print_manager.status(f"Attempting SPDF download for {data_type}...")
-                download_successful = download_spdf_data(trange, data_type)
-            elif server_mode == 'berkeley' or server_mode == 'berkley':
-                print_manager.status(f"Attempting Berkeley download for {data_type}...")
-                download_successful = download_berkeley_data(trange, data_type)
-            elif server_mode == 'dynamic':
-                print_manager.status(f"Attempting SPDF download (dynamic mode) for {data_type}...")
-                download_successful = download_spdf_data(trange, data_type)
-                if not download_successful:
-                    print_manager.status(f"SPDF download failed/incomplete for {data_type}, falling back to Berkeley...")
-                    download_successful = download_berkeley_data(trange, data_type)
+            # Ensure this is not a local_csv source being processed here (unless it's specifically HAM, which is handled above)
+            if config_from_psp_data_types.get('file_source') == 'local_csv':
+                print_manager.warning(f"Skipping standard processing for local_csv type {data_type} (not HAM). Should be handled by proton_fits.")
+                continue
+                
+            # Determine the canonical key for cubby/tracker interactions
+            if data_type == 'spe_sf0_pad':
+                cubby_key = 'epad'
+            elif data_type == 'spe_af0_pad':
+                cubby_key = 'epad_hr'
+            # Add other mappings if necessary
             else:
-                print_manager.warning(f"Invalid config.data_server mode: '{server_mode}'. Defaulting to Berkeley (or Berkley). Handle invalid mode.")
-                download_successful = download_berkeley_data(trange, data_type)
+                cubby_key = data_type.lower() # Default to lowercase
+        
+        class_instance = data_cubby.grab(cubby_key) # Use canonical key for CDFs, 'ham' for HAM
+        
+        # --- Check Calculation Cache (Applies to HAM as well) ---
+        # Use canonical key here too for consistency (cubby_key will be 'ham' for HAM)
+        calculation_needed = global_tracker.is_calculation_needed(trange, cubby_key)
 
-            # --- Import/Update Data --- 
-            # The import logic below relies on files being present locally if needed.
-            # The download functions are responsible for ensuring this.
-            # Pass ORIGINAL data_type to import_data_function
-            print_manager.dependency_management(f"{data_type} - Import/Refresh required")
-            data_obj = import_data_function(trange, data_type)
+        if calculation_needed:
+            # For HAM, download_successful and server_mode are irrelevant as it's local.
+            # The import_data_function handles fetching it.
+            # Download logic only for non-HAM types
+            if data_type != 'ham': 
+                print_manager.dependency_management(f"Tracker indicates calculation needed for {cubby_key} (using original type {data_type}). Proceeding with download if applicable...")
+                
+                server_mode = plotbot.config.data_server.lower()
+                print_manager.dependency_management(f"Server mode for {data_type}: {server_mode}")
+                # download_successful = False # download_successful flag is not used later, can be removed
+                
+                if server_mode == 'spdf':
+                    print_manager.status(f"Attempting SPDF download for {data_type}...")
+                    download_spdf_data(trange, data_type) # download_successful = download_spdf_data(trange, data_type)
+                elif server_mode == 'berkeley' or server_mode == 'berkley':
+                    print_manager.status(f"Attempting Berkeley download for {data_type}...")
+                    download_berkeley_data(trange, data_type) # download_successful = download_berkeley_data(trange, data_type)
+                elif server_mode == 'dynamic':
+                    print_manager.status(f"Attempting SPDF download (dynamic mode) for {data_type}...")
+                    dl_success_spdf = download_spdf_data(trange, data_type)
+                    if not dl_success_spdf:
+                        print_manager.status(f"SPDF download failed/incomplete for {data_type}, falling back to Berkeley...")
+                        download_berkeley_data(trange, data_type) # download_successful = download_berkeley_data(trange, data_type)
+                else:
+                    print_manager.warning(f"Invalid config.data_server mode: '{server_mode}'. Defaulting to Berkeley. Handle invalid mode.")
+                    download_berkeley_data(trange, data_type) # download_successful = download_berkeley_data(trange, data_type)
+            else: # This is for data_type == 'ham'
+                print_manager.dependency_management(f"Tracker indicates calculation needed for {cubby_key} (HAM data). Proceeding to import_data_function.")
+
+            # --- Import/Update Data (Applies to HAM as well) --- 
+            print_manager.dependency_management(f"{cubby_key} - Import/Refresh required") # Use cubby_key
+            data_obj = import_data_function(trange, data_type) # data_type will be 'ham' for HAM
 
             if data_obj is None: 
                 print_manager.warning(f"Import returned no data for {data_type}, skipping update.")

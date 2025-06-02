@@ -158,7 +158,7 @@ class print_manager_class:
         self.pyspedas_filter_instance = None  # Instance of the PyspedasInfoFilter
         self.data_snapshot_enabled = False # <<< ADDED: Flag for snapshot messages
         self.dependency_management_enabled = False # Flag for dependency management prints
-        print(f"[RAW_PM_INIT] Initial self.processing_enabled: {self.processing_enabled}") # ADDED DIAGNOSTIC
+        # print(f"[RAW_PM_INIT] Initial self.processing_enabled: {self.processing_enabled}") # ADDED DIAGNOSTIC
         # print(f"[PM_DEBUG] __init__: Default _pyspedas_verbose = {self._pyspedas_verbose}") # Remove print
         
         # Print formatting prefixes
@@ -174,7 +174,6 @@ class print_manager_class:
         self.dependency_management_prefix = "[DEPENDENCY] " # Prefix for dependency management prints
         
         # Severity levels
-        self.level_critical = "[CRITICAL] "  # Critical errors/warnings
         self.level_warning = "[WARNING] "    # Warnings
         self.level_info = "[INFO] "          # Informational messages
         self.level_trace = "[TRACE] "        # Detailed tracing information
@@ -284,12 +283,6 @@ class print_manager_class:
         if self.debug_mode:
             prefix = self.debug_prefix if self.category_prefix_enabled else ""
             print(self._format_message(f"{prefix}{msg}"))
-        elif "CRITICAL" in str(msg) or "DBG-CRITICAL" in str(msg):
-            # Always print critical debug messages regardless of debug mode
-            if self.module_prefix_enabled:
-                print(f"[print_manager] [CRITICAL DEBUG] {msg}")
-            else:
-                print(f"[CRITICAL DEBUG] {msg}")
             
     def error(self, msg):
         """Print error message (always enabled)."""
@@ -388,9 +381,7 @@ class print_manager_class:
     
     def _get_level_prefix(self, level):
         """Get the prefix for the specified severity level."""
-        if level == "critical":
-            return self.level_critical
-        elif level == "warning":
+        if level == "warning":
             return self.level_warning
         elif level == "trace":
             return self.level_trace

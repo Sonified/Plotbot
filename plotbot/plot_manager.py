@@ -1,3 +1,4 @@
+#plotbot/plot_manager.py
 # 🎉 Extend numpy.ndarray with plotting functionality and friendly error handling 🎉
 #SAFE! 
 

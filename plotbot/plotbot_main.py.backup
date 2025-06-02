@@ -435,14 +435,14 @@ def plotbot(trange, *args):
                     # Check if datetime array exists and has data
                     if var.datetime_array is None or len(var.datetime_array) == 0:
                         empty_plot = True
-                        print_manager.debug("DBG-CRITICAL: empty_plot = True - No datetime array available")
+                        print_manager.debug("empty_plot = True - No datetime array available")
                         continue
 
                     # Check if any data points fall within the specified time range
                     time_indices = time_clip(var.datetime_array, trange[0], trange[1])
                     if len(time_indices) == 0:
                         empty_plot = True
-                        print_manager.debug("DBG-CRITICAL: empty_plot = True - No valid time indices found")
+                        print_manager.debug("empty_plot = True - No valid time indices found")
                         continue
 
                     # Convert variable data to numpy array for processing
@@ -460,7 +460,7 @@ def plotbot(trange, *args):
                             data_clipped = data[time_indices]  # Slice data for time range
                             if np.all(np.isnan(data_clipped)):  # Skip if all data points are NaN
                                 empty_plot = True
-                                print_manager.debug("DBG-CRITICAL: empty_plot = True - All data points are NaN")
+                                print_manager.debug("empty_plot = True - All data points are NaN")
                                 continue
                                 
                             line, = plot_ax.plot(  # Create single line plot
@@ -506,20 +506,20 @@ def plotbot(trange, *args):
                     #====================================================================
                     if var.datetime_array is None or len(var.datetime_array) == 0:
                         empty_plot = True
-                        print_manager.debug("DBG-CRITICAL: empty_plot = True - No datetime array available (spectral)")
+                        print_manager.debug("empty_plot = True - No datetime array available (spectral)")
                         continue
 
                     time_indices = time_clip(var.datetime_array, trange[0], trange[1])  # Get time range indices
                     if len(time_indices) == 0:
                         empty_plot = True
-                        print_manager.debug("DBG-CRITICAL: empty_plot = True - No valid time indices found (spectral)")
+                        print_manager.debug("empty_plot = True - No valid time indices found (spectral)")
                         continue
                     
                     data = np.array(var).view(np.ndarray)  # Convert to numpy array
                     data_clipped = data[time_indices]  # Slice data for time range
                     if np.all(np.isnan(data_clipped)):  # Check for all NaN values
                         empty_plot = True
-                        print_manager.debug("DBG-CRITICAL: empty_plot = True - All data points in time window are NaN (spectral)")
+                        print_manager.debug("empty_plot = True - All data points in time window are NaN (spectral)")
                         continue
                         
                     #====================================================================
@@ -563,48 +563,48 @@ def plotbot(trange, *args):
             # Handle empty plots
             # ============================================================================
             if empty_plot:
-                print_manager.debug("Creating empty plot...")
-                print_manager.debug("CRITICAL DEBUG - empty_plot is TRUE. This is why 'No Data Available' appears!")
-                print_manager.debug(f"CRITICAL DEBUG - Subplot axis_index: {axis_index}")
-                # Look through all the variables in this axis group and print their info
-                for (axis_num, is_right), variables in axis_groups.items():
-                    if axis_num != axis_index:
-                        continue
-                    print_manager.debug(f"CRITICAL DEBUG - Checking axis group {axis_num}, is_right={is_right}")
-                    for i, var in enumerate(variables):
-                        try:
-                            print_manager.debug(f"CRITICAL DEBUG - Variable {i}: {var.class_name}.{var.subclass_name}")
-                            print_manager.debug(f"CRITICAL DEBUG - Variable {i} data_type: {var.data_type}")
-                            print_manager.debug(f"CRITICAL DEBUG - Variable {i} plot_type: {var.plot_type}")
-                            print_manager.debug(f"CRITICAL DEBUG - Variable {i} y_scale: {var.y_scale}")
-                            
-                            # Enhanced debugging for custom variables
-                            if var.data_type == 'custom_data_type' or var.class_name == 'custom_class':
-                                print_manager.debug(f"CRITICAL DEBUG - CUSTOM VARIABLE DETECTED: {var.subclass_name}")
-                                print_manager.debug(f"CRITICAL DEBUG - Has source_var: {hasattr(var, 'source_var')}")
-                                if hasattr(var, 'source_var') and var.source_var is not None:
-                                    print_manager.debug(f"CRITICAL DEBUG - Number of source variables: {len(var.source_var)}")
-                                    for idx, src_var in enumerate(var.source_var):
-                                        if hasattr(src_var, 'class_name'):
-                                            print_manager.debug(f"CRITICAL DEBUG - Source var {idx} class: {src_var.class_name}")
-                                            print_manager.debug(f"CRITICAL DEBUG - Source var {idx} has data: {hasattr(src_var, 'datetime_array') and src_var.datetime_array is not None and len(src_var.datetime_array) > 0}")
-                                print_manager.debug(f"CRITICAL DEBUG - Has update method: {hasattr(var, 'update')}")
-                            
-                            if hasattr(var, 'y_limit'):
-                                print_manager.debug(f"CRITICAL DEBUG - Variable {i} y_limit: {var.y_limit}")
-                            if hasattr(var, 'datetime_array') and var.datetime_array is not None:
-                                time_indices = time_clip(var.datetime_array, trange[0], trange[1])
-                                print_manager.debug(f"CRITICAL DEBUG - Variable {i} time indices count: {len(time_indices)}")
-                                if len(time_indices) > 0:
-                                    data = np.array(var)
-                                    data_clipped = data[time_indices] if data.ndim == 1 else data[:, time_indices]
-                                    print_manager.debug(f"CRITICAL DEBUG - Variable {i} data_clipped shape: {data_clipped.shape}")
-                                    print_manager.debug(f"CRITICAL DEBUG - Variable {i} has NaNs: {np.isnan(data_clipped).any()}")
-                                    print_manager.debug(f"CRITICAL DEBUG - Variable {i} all NaNs: {np.all(np.isnan(data_clipped))}")
-                            else:
-                                print_manager.debug(f"CRITICAL DEBUG - Variable {i} has no datetime_array or it's empty")
-                        except Exception as e:
-                            print_manager.debug(f"CRITICAL DEBUG - Error inspecting variable {i}: {str(e)}")
+                print_manager.debug("empty_plot is TRUE. This is why 'No Data Available' appears!")
+                print_manager.debug(f"Subplot axis_index: {axis_index}")
+
+                # Detailed inspection of variables for the current axis_index
+                for (axis_num, is_right), variables_in_group in axis_groups.items():
+                    if axis_num == axis_index:  # Only inspect groups for the current subplot
+                        print_manager.debug(f"Checking axis group {axis_num}, is_right={is_right}")
+                        for i, var in enumerate(variables_in_group):
+                            try:
+                                print_manager.debug(f"Variable {i}: {var.class_name}.{var.subclass_name}")
+                                print_manager.debug(f"Variable {i} data_type: {var.data_type}")
+                                print_manager.debug(f"Variable {i} plot_type: {var.plot_type}")
+                                print_manager.debug(f"Variable {i} y_scale: {var.y_scale}")
+                                
+                                # Check for custom data type specific attributes
+                                if var.data_type == 'custom_data_type':
+                                    print_manager.debug(f"CUSTOM VARIABLE DETECTED: {var.subclass_name}")
+                                    print_manager.debug(f"Has source_var: {hasattr(var, 'source_var')}")
+                                    if hasattr(var, 'source_var') and var.source_var is not None:
+                                        print_manager.debug(f"Number of source variables: {len(var.source_var)}")
+                                        for idx, src_var in enumerate(var.source_var):
+                                            print_manager.debug(f"Source var {idx} class: {src_var.class_name}")
+                                            print_manager.debug(f"Source var {idx} has data: {hasattr(src_var, 'datetime_array') and src_var.datetime_array is not None and len(src_var.datetime_array) > 0}")
+                                        print_manager.debug(f"Has update method: {hasattr(var, 'update')}")
+
+                                if hasattr(var, 'y_limit'):
+                                    print_manager.debug(f"Variable {i} y_limit: {var.y_limit}")
+                                
+                                if hasattr(var, 'datetime_array') and var.datetime_array is not None:
+                                    time_indices = time_clip(var.datetime_array, trange[0], trange[1])
+                                    print_manager.debug(f"Variable {i} time indices count: {len(time_indices)}")
+                                    
+                                    if len(time_indices) > 0:
+                                        data_clipped = np.array(var)[time_indices]
+                                        print_manager.debug(f"Variable {i} data_clipped shape: {data_clipped.shape}")
+                                        print_manager.debug(f"Variable {i} has NaNs: {np.isnan(data_clipped).any()}")
+                                        print_manager.debug(f"Variable {i} all NaNs: {np.all(np.isnan(data_clipped))}")
+                                else:
+                                    print_manager.debug(f"Variable {i} has no datetime_array or it's empty")
+                                    
+                            except Exception as e:
+                                print_manager.debug(f"Error inspecting variable {i}: {str(e)}")
                 
                 ax.set_xlim(start_time, end_time)  # Set time range even if empty
                 ax.text(0.5, 0.5, 'No Data Available',  # Add centered "No Data" message
