@@ -121,6 +121,7 @@ from .multiplot import multiplot
 from .multiplot_options import MultiplotOptions
 from .get_data import get_data
 from . import data_snapshot  # Import data_snapshot
+from .simple_snapshot import save_simple_snapshot, load_simple_snapshot
 
 # --- Import the function from showda_holes.py ---
 from .showda_holes import showda_holes
@@ -214,6 +215,8 @@ __all__ = [
     'time_clip',      # ADDED time_clip helper function
     'config',         # ADDED config to __all__
     'data_snapshot',  # Add data_snapshot to __all__
+    'save_simple_snapshot',
+    'load_simple_snapshot',
     'CLASS_NAME_MAPPING',  # Add CLASS_NAME_MAPPING to __all__
     'showda_holes'      # Add showda_holes to __all__
 ]
@@ -225,8 +228,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_06_02_v2.55"
-__commit_message__ = "v2.55 Feature: Integrated HAM data with Data Cubby and removed critical debug"
+__version__ = "2025_06_02_v2.56"
+__commit_message__ = "v2.56 Fix: Refined snapshot loading logic and epad attribute handling for cleaner restores."
 
 # Get current date and time
 

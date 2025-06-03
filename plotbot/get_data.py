@@ -305,16 +305,16 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
                 # download_successful = False # download_successful flag is not used later, can be removed
                 
                 if server_mode == 'spdf':
-                    print_manager.status(f"Attempting SPDF download for {data_type}...")
+                    print_manager.status(f"Attempting SPDF acquisition path for {data_type}...")
                     download_spdf_data(trange, data_type) # download_successful = download_spdf_data(trange, data_type)
                 elif server_mode == 'berkeley' or server_mode == 'berkley':
-                    print_manager.status(f"Attempting Berkeley download for {data_type}...")
+                    print_manager.status(f"Attempting Berkeley acquisition path for {data_type}...")
                     download_berkeley_data(trange, data_type) # download_successful = download_berkeley_data(trange, data_type)
                 elif server_mode == 'dynamic':
-                    print_manager.status(f"Attempting SPDF download (dynamic mode) for {data_type}...")
+                    print_manager.status(f"Attempting SPDF acquisition path (dynamic mode) for {data_type}...")
                     dl_success_spdf = download_spdf_data(trange, data_type)
                     if not dl_success_spdf:
-                        print_manager.status(f"SPDF download failed/incomplete for {data_type}, falling back to Berkeley...")
+                        print_manager.status(f"SPDF acquisition path failed/incomplete for {data_type}, falling back to Berkeley...")
                         download_berkeley_data(trange, data_type) # download_successful = download_berkeley_data(trange, data_type)
                 else:
                     print_manager.warning(f"Invalid config.data_server mode: '{server_mode}'. Defaulting to Berkeley. Handle invalid mode.")

@@ -176,8 +176,9 @@ class DataTracker:
                     # Convert to Python datetime objects, ensuring UTC
                     if isinstance(trange[0], np.datetime64):
                         # Convert numpy.datetime64 to pandas Timestamp then to python datetime
-                        start_time = pd.Timestamp(trange[0]).to_pydatetime()
-                        end_time = pd.Timestamp(trange[1]).to_pydatetime()
+                        # Round to microsecond to avoid nanosecond truncation warning if source is finer
+                        start_time = pd.Timestamp(trange[0]).round('us').to_pydatetime()
+                        end_time = pd.Timestamp(trange[1]).round('us').to_pydatetime()
                     else: # Already datetime or pd.Timestamp
                         start_time = trange[0]
                         end_time = trange[1]
@@ -240,8 +241,8 @@ class DataTracker:
                 elif isinstance(trange[0], (datetime, pd.Timestamp, np.datetime64)):
                     # Convert to Python datetime objects, ensuring UTC
                     if isinstance(trange[0], np.datetime64):
-                        new_start = pd.Timestamp(trange[0]).to_pydatetime()
-                        new_end = pd.Timestamp(trange[1]).to_pydatetime()
+                        new_start = pd.Timestamp(trange[0]).round('us').to_pydatetime()
+                        new_end = pd.Timestamp(trange[1]).round('us').to_pydatetime()
                     else: # Already datetime or pd.Timestamp
                         new_start = trange[0]
                         new_end = trange[1]

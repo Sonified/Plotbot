@@ -121,7 +121,7 @@ class epad_strahl_class:
 
         # Allow setting known attributes
         print_manager.debug(f"Setting attribute: {name} with value: {value}")
-        if name in ['datetime', 'datetime_array', 'raw_data', 'time', 'field', 'times_mesh', 'energy_index'] or name in self.raw_data:
+        if name in ['datetime', 'datetime_array', 'raw_data', 'time', 'field', 'times_mesh', 'energy_index', 'data_type'] or name in self.raw_data:
             super().__setattr__(name, value)
         else:
             # Print friendly error message
@@ -415,7 +415,7 @@ class epad_strahl_high_res_class:
 
         # Allow setting known attributes
         print_manager.debug(f"Setting attribute: {name} with value: {value}")
-        if name in ['datetime', 'datetime_array', 'raw_data', 'time', 'field', 'times_mesh', 'energy_index'] or name in self.raw_data:
+        if name in ['datetime', 'datetime_array', 'raw_data', 'time', 'field', 'times_mesh', 'energy_index', 'data_type'] or name in self.raw_data:
             super().__setattr__(name, value)
         else:
             # Print friendly error message

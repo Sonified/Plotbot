@@ -654,6 +654,6 @@ def plotbot(trange, *args):
             print_manager.warning(f"Could not parse date from trange[0] ('{trange[0]}') for annotation: {e}")
 
     plt.show()                                                    # Display the complete figure
-    return True
+    # return True
 
 print('\n🤖 Plotbot Initialized')

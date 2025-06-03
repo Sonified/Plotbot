@@ -46,3 +46,5 @@ magnetic_hole_finder/MH_Scan_Output/
 magnetic_hole_finder/high_res_mag_data.pkl
 
 tests/archive/
+
+*.pkl

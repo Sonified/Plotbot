@@ -97,7 +97,7 @@ class print_manager_class:
         show_error: Enable/disable error messages (recommended to keep enabled)
         show_time_tracking: Enable/disable time range tracking 
         show_test: Enable/disable test output
-        show_datacubby: Enable/disable data cubby specific debug output
+        show_data_cubby: Enable/disable data cubby specific debug output
         show_module_prefix: Enable/disable showing the module name prefix (e.g., [print_manager])
         show_processing: Enable/disable data processing status messages
         show_category_prefix: Enable/disable category prefixes like [DEBUG], [PROCESS], etc.
@@ -113,7 +113,7 @@ class print_manager_class:
     VARIABLE_BASIC = False
     MULTIPLOT = False
     MAIN_DEBUG = False
-    DATACUBBY = False
+    DATA_CUBBY = False
     MANU_DATA_IN = False
     CUSTOM_DEBUG = False
     PV_TESTING = False
@@ -430,7 +430,7 @@ class print_manager_class:
         reset_code = self.RESET if color else ''
         if hasattr(self, 'debug_mode') and self.debug_mode:
             print(f"{color_code}[CUBBY] {msg}{reset_code}")
-        elif hasattr(self, 'show_datacubby') and self.show_datacubby:
+        elif hasattr(self, 'show_data_cubby') and self.show_data_cubby:
             print(f"{color_code}[CUBBY] {msg}{reset_code}")
             
     # Properties for consistent naming convention
@@ -576,8 +576,8 @@ class print_manager_class:
              # print(f"[PM_DEBUG] pyspedas_verbose.setter: Value {value} is same as current. No change needed.") # Remove print
              # pass # pass removed as else block is now empty
 
-    # Initialize show_datacubby for backward compatibility
-    show_datacubby = False
+    # Initialize show_data_cubby for backward compatibility
+    show_data_cubby = False
 
     def status(self, msg):
         """Print status message for backward compatibility."""
@@ -620,13 +620,13 @@ class print_manager_class:
         self.show_test = True
         print("Test-only mode enabled")
 
-    def enable_datacubby(self):
+    def enable_data_cubby(self):
         """
         Enable data cubby debug output.
         
-        This sets show_datacubby to True for data cubby specific debugging.
+        This sets show_data_cubby to True for data cubby specific debugging.
         """
-        self.show_datacubby = True
+        self.show_data_cubby = True
         print("Data cubby debug output enabled")
 
     def processing(self, msg):

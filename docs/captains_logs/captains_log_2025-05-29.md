@@ -90,10 +90,79 @@
     - Consequently, `_calculate_br_norm` in `psp_mag_rtn_4sa.py`, finding `_current_operation_trange` as `None`, would trigger its own internal fallback logic, deriving a wide dependency time range from the `mag_rtn_4sa` instance's full (potentially merged) `datetime_array`.
     - **Resolution:**
         1.  **Corrected `data_cubby.py`:** The call `global_instance.update()` within `data_cubby.py` was modified to correctly pass `original_requested_trange=original_requested_trange`. This was implemented within a `try-except TypeError` block to also gracefully handle other data classes that might not (yet) accept this new parameter. For `mag_rtn_4sa`, this ensures it receives the specific `trange`.
-        2.  **Strengthened `_calculate_br_norm()`:** The internal fallback logic within `_calculate_br_norm` (which used `self.datetime_array`) was removed. This ensures that if `_current_operation_trange` is `None`, an error occurs rather than incorrect data loading.
+        2.  **Strengthened `_calculate_br_norm()`:** The internal fallback logic within `_calculate_br_norm` (the one that used `self.datetime_array`) was removed. This ensures that if `_current_operation_trange` is `None`, an error occurs rather than incorrect data loading.
 
 ## Next Steps
 
 - Ensure the `try-except TypeError` block in `data_cubby.py` correctly handles all data classes, allowing those that expect `original_requested_trange` to receive it, and those that don't to update via the fallback without error.
 - Confirm `mag_rtn_4sa_class.update()` and other relevant classes correctly process the passed `original_requested_trange`.
-- Maintain test coverage for non-contiguous time ranges and `br_norm` calculations. 
+- Maintain test coverage for non-contiguous time ranges and `br_norm` calculations.
+
+## Audit of Data Class Attribute Handling and "Sticky Note" Adoption (Snapshot Context) - 2025-05-29 Continued
+
+Following an investigation into snapshot loading behaviors and `setattr` warnings, an audit of data classes was performed to clarify attribute handling and the adoption of the "sticky note" (`original_requested_trange`) logic.
+
+**1. Adoption of "Sticky Note" (`original_requested_trange`) Logic:**
+
+This "sticky note" system is crucial for ensuring that data classes, especially those with dependencies (like `mag_rtn_4sa.br_norm`), operate on the precise time range of the current user request. This prevents fetching or processing data for overly broad or incorrect time windows. The following classes have been explicitly updated to accept and utilize `original_requested_trange` in their `update` methods, primarily to set an internal `_current_operation_trange` attribute for accurate dependency fetching:
+
+*   `mag_rtn_4sa_class` (as detailed in `psp_mag_rtn_4sa.py`)
+*   `proton_class` (as detailed in `psp_proton.py`)
+*   `epad_strahl_class` (representing `epad`, in `psp_electron_classes.py`)
+*   `epad_strahl_high_res_class` (representing `epad_hr`, in `psp_electron_classes.py`)
+
+This mechanism was a key fix detailed in the log entries for 2025-05-19 and its correct functioning was re-confirmed on 2025-05-29. Data classes not yet updated to accept `original_requested_trange` will be handled by the `except TypeError` block in `data_cubby.py` (meaning their `update()` method will be called without this specific time range parameter).
+
+**2. Summary of `__getattr__` and `__setattr__` Behaviors for Key Data Classes:**
+
+The way classes handle attribute getting and setting directly impacts snapshot restoration, especially when the `load_simple_snapshot` function attempts to copy attributes from a pickled object's `__dict__`.
+
+*   **`mag_rtn_4sa_class` (`psp_mag_rtn_4sa.py`):**
+    *   `__getattr__`: If an attribute is not found directly, it provides a "friend" message suggesting valid keys from its `raw_data`.
+    *   `__setattr__`: Employs a whitelist. It allows setting for specific core attributes (like `datetime`, `datetime_array`, `raw_data`, `time`, `field`) or any key already present in its `raw_data` dictionary. Attempts to set other attributes are prevented, and a "friend" message is issued.
+
+*   **`proton_class` (`psp_proton.py`):**
+    *   `__getattr__`: If an attribute isn't found directly, it issues a warning and suggests available keys from its `raw_data`.
+    *   `__setattr__`: More permissive than `mag_rtn_4sa`. It has an extensive whitelist of explicitly settable attributes. For attributes not on this list, it prints a warning but still allows the attribute to be set using `object.__setattr__`.
+
+*   **`epad_strahl_class` & `epad_strahl_high_res_class` (`psp_electron_classes.py`):**
+    *   These classes (representing `epad` and `epad_hr` respectively) have similar, strict handlers.
+    *   `__getattr__`: Prints a "helper!" message and a "friend" error if an attribute is unrecognized, suggesting valid keys from `raw_data`.
+    *   `__setattr__`: Strict. Allows setting only for a specific list of attributes (e.g., `datetime`, `datetime_array`, `raw_data`, `time`, `field`, `times_mesh`, `energy_index`, and importantly, `data_type` after recent discussion) or keys present in `raw_data`. Attempts to set other attributes are prevented, with a "helper!" and "friend" message. The previous omission of `data_type` from this whitelist was the cause of warnings during snapshot loading.
+
+*   **`ham_class` (`psp_ham_classes.py`):**
+    *   `__getattr__`: If an attribute is not a recognized `plot_manager` instance (or an internal `_` attribute), it raises an `AttributeError` with a custom message listing available plot managers.
+    *   `__setattr__`: Most permissive among the audited classes. It simply calls `super().__setattr__(name, value)`, allowing any attribute to be set without restriction from its `__setattr__` method.
+
+**Implications for Snapshot Restoration:**
+The varied `__setattr__` behaviors are critical in the context of `load_simple_snapshot`:
+*   The generic attribute copying loop in `load_simple_snapshot` (even after being improved to only iterate over keys present in the snapshot) can still conflict with strict `__setattr__` methods if an attribute from the saved object's `__dict__` is not on the class's whitelist.
+*   This highlights the need for:
+    *   Ensuring whitelists in custom `__setattr__` methods are comprehensive for all attributes that are part of the saved state and *should* be restored (e.g., the `data_type` for `epad` classes).
+    *   Ideally, implementing robust `restore_from_snapshot(self, loaded_instance_dict)` methods within each data class. These methods would have explicit knowledge of which attributes to restore and how, potentially bypassing or carefully interacting with the class's own `__setattr__` for foundational attributes.
+
+The recent fix to `load_simple_snapshot` (iterating only over keys present in the snapshot) has correctly stopped attempts to restore data for classes not actually saved (like the `mag_rtn_4sa` example from earlier). For classes *that are* saved, managing the interaction between their `__setattr__` and the attributes in the pickled `__dict__` is crucial.
+
+## Snapshot Loading Refinement - `epad` `data_type` Warning Resolved - 2025-05-29 Continued
+
+**Problem:**
+Even after refining `load_simple_snapshot` to only process keys present in the snapshot file, a warning "`'data_type'` is not a recognized attribute, friend!" was still appearing specifically for `epad` (electron) data.
+
+**Cause Analysis:**
+*   The `epad_strahl_class` (and `epad_strahl_high_res_class`) uses a `restore_from_snapshot` method. This method iterates through the `__dict__` of the pickled object and uses `setattr(self, key, value)` to restore each attribute.
+*   The `__init__` method of these electron classes correctly sets `object.__setattr__(self, 'data_type', 'spe_sf0_pad')` (or similar for high-res), meaning `'data_type'` is part of the pickled `__dict__`.
+*   However, the custom `__setattr__` method in these electron classes had a whitelist of settable attributes that *did not* include `'data_type'`.
+*   Therefore, when `restore_from_snapshot` called `setattr(self, 'data_type', ...)` , the custom `__setattr__` rejected it, causing the warning.
+*   Other classes like `proton_class` did not show this warning because their `__setattr__` whitelist *did* include `'data_type'`, or like `ham_class`, had a permissive `__setattr__`.
+
+**Resolution:**
+*   The `__setattr__` methods within `epad_strahl_class` and `epad_strahl_high_res_class` (in `plotbot/data_classes/psp_electron_classes.py`) were modified.
+*   The string `'data_type'` was added to the list of explicitly allowed attribute names in their respective `__setattr__` whitelists.
+
+**Outcome:**
+With `'data_type'` now recognized by the `__setattr__` methods of the electron classes, the `restore_from_snapshot` process no longer triggers the warning. Snapshot loading for `epad` data is now clean. This confirms the importance of ensuring `__setattr__` whitelists are consistent with attributes intended for restoration via methods like `restore_from_snapshot`.
+
+## Git Push - 2025-06-02
+
+*   **Version:** `2025_06_02_v2.56`
+*   **Commit Message:** `v2.56 Fix: Refined snapshot loading logic and epad attribute handling for cleaner restores.` 
