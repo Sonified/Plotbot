@@ -165,4 +165,4 @@ With `'data_type'` now recognized by the `__setattr__` methods of the electron c
 ## Git Push - 2025-06-02
 
 *   **Version:** `2025_06_02_v2.56`
-*   **Commit Message:** `v2.56 Fix: Refined snapshot loading logic and epad attribute handling for cleaner restores.` 
+*   **Commit Message:** `v2.56 Fix: Refined snapshot loading logic and epad attribute handling. Add snapshot example.` 
