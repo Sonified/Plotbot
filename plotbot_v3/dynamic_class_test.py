@@ -114,6 +114,18 @@ def create_data_class(class_name_str, metadata, auto_generate_pyi=True, pyi_file
                     if len(input_data_arrays[0]) != min_len or len(input_data_arrays[1]) != min_len:
                         print(f"  Warning for '{calc_name}': Input arrays have different lengths. Truncating for operation.")
                     self_instance._raw_data_arrays[calc_name] = input_data_arrays[0][:min_len] + input_data_arrays[1][:min_len]
+                elif operation == 'magnitude' and len(input_data_arrays) >= 2:
+                    # Calculate magnitude: sqrt(x^2 + y^2 + z^2 + ...)
+                    min_len = min(len(arr) for arr in input_data_arrays)
+                    if not all(len(arr) == min_len for arr in input_data_arrays):
+                        print(f"  Warning for '{calc_name}': Input arrays have different lengths. Truncating for operation.")
+                    
+                    # Truncate all arrays to minimum length and calculate magnitude
+                    truncated_arrays = [arr[:min_len] for arr in input_data_arrays]
+                    magnitude_squared = np.zeros(min_len)
+                    for arr in truncated_arrays:
+                        magnitude_squared += arr**2
+                    self_instance._raw_data_arrays[calc_name] = np.sqrt(magnitude_squared)
                 else:
                     print(f"  Skipping calculation for '{calc_name}': unsupported operation or wrong number of inputs.")
                     self_instance._raw_data_arrays[calc_name] = np.array([])

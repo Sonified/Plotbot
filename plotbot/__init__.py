@@ -228,8 +228,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_06_06_v2.57"
-__commit_message__ = "v2.57 Fix: Enhanced conda installation script with timeout protection and intelligent error handling"
+__version__ = "2025_06_23_v2.58"
+__commit_message__ = "v2.58 Docs: Add V3 architecture vision and roadmap"
 
 # Get current date and time
 

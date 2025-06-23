@@ -23,4 +23,5 @@
 This improvement significantly enhances the user experience for Plotbot installation, especially for users with unstable internet connections or restrictive network environments.
 
 **Version:** v2.57  
-**Commit Message:** "v2.57 Fix: Enhanced conda installation script with timeout protection and intelligent error handling" 
+**Commit Message:** "v2.57 Fix: Enhanced conda installation script with timeout protection and intelligent error handling"  
+**Git Hash:** 52573d2 

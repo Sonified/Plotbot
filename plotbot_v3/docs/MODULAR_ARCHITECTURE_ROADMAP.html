@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plotbot Modular Architecture Roadmap</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        h2 {
+            color: #2c3e50;
+            font-size: 1.8rem;
+            margin: 2rem 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid #667eea;
+        }
+
+        h3 {
+            color: #34495e;
+            font-size: 1.4rem;
+            margin: 1.5rem 0 0.75rem 0;
+        }
+
+        h4 {
+            color: #5a6c7d;
+            font-size: 1.2rem;
+            margin: 1rem 0 0.5rem 0;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: #555;
+        }
+
+        ul, ol {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+            color: #555;
+        }
+
+        .code-block {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            overflow-x: auto;
+            white-space: pre-line;
+        }
+
+        .code-inline {
+            background-color: #f1f3f4;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .benefit-card {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 1.5rem;
+            border-radius: 6px;
+        }
+
+        .benefit-card h4 {
+            color: #667eea;
+            margin-top: 0;
+        }
+
+        .phases {
+            margin: 2rem 0;
+        }
+
+        .phase {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-left: 4px solid #28a745;
+        }
+
+        .phase.completed {
+            border-left-color: #28a745;
+            background-color: #d4edda;
+        }
+
+        .phase.in-progress {
+            border-left-color: #ffc107;
+            background-color: #fff3cd;
+        }
+
+        .phase.pending {
+            border-left-color: #6c757d;
+            background-color: #f8f9fa;
+        }
+
+        .phase h4 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        .checkmark {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .file-structure {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1.5rem;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            margin: 1rem 0;
+            overflow-x: auto;
+            white-space: pre-line;
+        }
+
+        .file-structure .folder {
+            color: #4fc3f7;
+        }
+
+        .file-structure .file {
+            color: #a5d6a7;
+        }
+
+        .file-structure .comment {
+            color: #888;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            border: 1px solid #dee2e6;
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .comparison-table th {
+            background-color: #667eea;
+            color: white;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .architectural-note {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-left: 4px solid #2196f3;
+            padding: 1.5rem;
+            border-radius: 6px;
+            margin: 2rem 0;
+        }
+
+        .architectural-note h4 {
+            color: #1976d2;
+            margin-top: 0;
+        }
+
+        .toc {
+            background-color: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 6px;
+            margin: 2rem 0;
+        }
+
+        .toc h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+
+        .toc ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .toc > ul > li {
+            margin-bottom: 0.5rem;
+        }
+
+        .toc a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .content {
+                padding: 1rem;
+            }
+
+            .benefits-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Plotbot Modular Architecture Roadmap</h1>
+            <p>Transition to a metadata-driven, multi-mission architecture</p>
+        </div>
+
+        <div class="content">
+            <div class="toc">
+                <h3>Table of Contents</h3>
+                <ul>
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#architecture">Current vs. Proposed Architecture</a></li>
+                    <li><a href="#benefits">Key Benefits</a></li>
+                    <li><a href="#implementation">Implementation Files</a></li>
+                    <li><a href="#metadata">Metadata Structure</a></li>
+                    <li><a href="#integration">Integration Strategy</a></li>
+                    <li><a href="#organization">File Organization</a></li>
+                    <li><a href="#usage">Usage Examples</a></li>
+                    <li><a href="#advantages">Technical Advantages</a></li>
+                    <li><a href="#next-steps">Next Steps</a></li>
+                </ul>
+            </div>
+
+            <section id="overview">
+                <h2>Overview</h2>
+                <p>This document outlines the transition from individual data class files to a modular, metadata-driven architecture that can handle multiple satellite missions efficiently.</p>
+            </section>
+
+            <section id="architecture">
+                <h2>Current vs. Proposed Architecture</h2>
+                
+                <h3>Current PSP Approach</h3>
+                <div class="code-block">psp_mag_rtn_4sa.py (683 lines)
+├── mag_rtn_4sa_class
+├── Hardcoded variable names (br, bt, bn, bmag)
+├── Custom __getattr__ and __setattr__
+├── Fixed plot options
+└── Manual calculations
+
+Usage: mag_rtn_4sa.br, mag_rtn_4sa.bmag</div>
+
+                <h3>New Modular Approach</h3>
+                <div class="code-block">dynamic_class_test.py (313 lines)
+├── create_data_class() factory
+├── Metadata-driven variables
+├── Automatic property creation
+├── Configurable calculations
+└── Auto-generated .pyi stubs
+
+Usage: wind.mfi.h0_gse.bx, wind.mfi.h0_gse.bmag</div>
+            </section>
+
+            <section id="benefits">
+                <h2>Key Benefits</h2>
+                <div class="benefits-grid">
+                    <div class="benefit-card">
+                        <h4>1. Reusability</h4>
+                        <ul>
+                            <li>Single factory works for any satellite/instrument</li>
+                            <li>Same code handles PSP, WIND, THEMIS, etc.</li>
+                            <li>Metadata defines behavior, not hardcoded logic</li>
+                        </ul>
+                    </div>
+                    <div class="benefit-card">
+                        <h4>2. Flexibility</h4>
+                        <ul>
+                            <li>Variable names from metadata, not code</li>
+                            <li>Easy to add new coordinate systems</li>
+                            <li>Configurable calculations via metadata</li>
+                        </ul>
+                    </div>
+                    <div class="benefit-card">
+                        <h4>3. Hierarchical Organization</h4>
+                        <div class="code-block"># Instead of: psp_mag_rtn_4sa, wind_mag_gse
+# Use: psp.mag.rtn_4sa, wind.mfi.h0_gse</div>
+                    </div>
+                    <div class="benefit-card">
+                        <h4>4. VS Code Support</h4>
+                        <ul>
+                            <li>Auto-generated .pyi stubs provide autocomplete</li>
+                            <li>Type hints for better development experience</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="implementation">
+                <h2>Implementation Files Created</h2>
+                
+                <h3>1. Core Components</h3>
+                
+                <h4><span class="code-inline">dynamic_class_test.py</span></h4>
+                <ul>
+                    <li>Factory function <span class="code-inline">create_data_class()</span></li>
+                    <li>Metadata-driven class creation</li>
+                    <li>Automatic property generation</li>
+                    <li>Built-in calculations (add, magnitude)</li>
+                    <li>Auto .pyi stub generation</li>
+                </ul>
+
+                <h4><span class="code-inline">modular_cdf_processor.py</span></h4>
+                <ul>
+                    <li>Generic CDF processor for any mission</li>
+                    <li>Configurable data extraction</li>
+                    <li>Multi-file handling</li>
+                    <li>Coordinate system abstraction</li>
+                </ul>
+
+                <h3>2. WIND Integration</h3>
+                
+                <h4><span class="code-inline">wind_mag_poc.py</span></h4>
+                <ul>
+                    <li>Proof of concept for WIND magnetometer</li>
+                    <li>Uses pyspedas for download</li>
+                    <li>Demonstrates metadata structure</li>
+                    <li>Shows calculated variables (bmag)</li>
+                </ul>
+
+                <h4><span class="code-inline">plotbot_wind_integration.py</span></h4>
+                <ul>
+                    <li>Integration bridge to existing plotbot</li>
+                    <li>Hierarchical namespace demo</li>
+                    <li>Comparison with current approach</li>
+                </ul>
+            </section>
+
+            <section id="metadata">
+                <h2>Metadata Structure</h2>
+                
+                <h3>Variable Definition</h3>
+                <div class="code-block">'bx_gse': {
+    'description': 'Magnetic field X component in GSE coordinates',
+    'units': 'nT',
+    'cdf_var_name': 'BGSE',
+    'component_index': 0,
+    'plot_options': {
+        'y_label': 'Bx (nT)',
+        'legend_label': '$B_X$ (GSE)',
+        'color': 'red'
+    }
+}</div>
+
+                <h3>Calculation Definition</h3>
+                <div class="code-block">'bmag': {
+    'inputs': ['bx_gse', 'by_gse', 'bz_gse'],
+    'operation': 'magnitude',
+    'plot_options': {
+        'y_label': '|B| (nT)',
+        'legend_label': '$|B|$',
+        'color': 'black'
+    }
+}</div>
+            </section>
+
+            <section id="integration">
+                <h2>Integration Strategy</h2>
+
+                <div class="architectural-note">
+                    <h4>Architectural Foundation: Leveraging PySpedas</h4>
+                    <p>Rather than reinventing data acquisition, Plotbot V3 will leverage <span class="code-inline">pyspedas</span> as the proven data loading backend while providing the interactive, object-oriented layer on top. This approach combines the best of both worlds:</p>
+                    
+                    <ul>
+                        <li><strong>PySpedas strengths:</strong> Robust data downloading, 30+ mission support, standardized CDF handling</li>
+                        <li><strong>Plotbot strengths:</strong> Interactive objects, rapid plotting, custom variables, integrated analysis tools</li>
+                    </ul>
+
+                    <div class="code-block"># pyspedas handles data acquisition
+raw_data = pyspedas.projects.wind.mfi(trange, datatype='h0')
+
+# Plotbot V3 creates the interactive hierarchical interface
+wind = create_data_class('wind', wind_metadata, raw_data)
+
+# Best of both worlds
+plotbot(trange, wind.mfi.h0_gse.bx, 1)  # Plotbot's rapid plotting
+wind.mfi.h0_gse.bx.color = 'blue'       # Plotbot's interactivity</div>
+
+                    <p>This architectural decision allows V3 to focus on what makes Plotbot unique rather than competing with established infrastructure.</p>
+                </div>
+
+                <div class="phases">
+                    <div class="phase completed">
+                        <h4><span class="checkmark">✅</span> Phase 1: WIND Proof of Concept</h4>
+                        <ul>
+                            <li><span class="checkmark">✓</span> Create modular factory</li>
+                            <li><span class="checkmark">✓</span> WIND MFI integration</li>
+                            <li><span class="checkmark">✓</span> Demonstrate hierarchical naming</li>
+                            <li><span class="checkmark">✓</span> Show metadata-driven approach</li>
+                        </ul>
+                    </div>
+
+                    <div class="phase pending">
+                        <h4>Phase 2: CDF Processing Framework</h4>
+                        <ul>
+                            <li>Generic CDF processor for multiple missions</li>
+                            <li>Extended calculation operations</li>
+                            <li>Multi-file concatenation</li>
+                            <li>Error handling and validation</li>
+                        </ul>
+                    </div>
+
+                    <div class="phase pending">
+                        <h4>Phase 3: Plotbot Integration</h4>
+                        <ul>
+                            <li>Extend <span class="code-inline">get_data.py</span> for modular classes</li>
+                            <li>Update <span class="code-inline">data_download_pyspedas.py</span> mapping</li>
+                            <li>Integrate with <span class="code-inline">data_cubby</span></li>
+                            <li>Add to <span class="code-inline">psp_data_types.py</span> pattern</li>
+                        </ul>
+                    </div>
+
+                    <div class="phase pending">
+                        <h4>Phase 4: PSP Migration</h4>
+                        <ul>
+                            <li>Convert <span class="code-inline">psp_mag_rtn_4sa.py</span> to metadata</li>
+                            <li>Migrate other PSP classes</li>
+                            <li>Implement <span class="code-inline">psp.mag.rtn_4sa</span> hierarchy</li>
+                            <li>Maintain backward compatibility</li>
+                        </ul>
+                    </div>
+
+                    <div class="phase pending">
+                        <h4>Phase 5: Multi-Mission Support</h4>
+                        <ul>
+                            <li>THEMIS integration</li>
+                            <li>MMS integration</li>
+                            <li>STEREO integration</li>
+                            <li>Generic mission template</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="organization">
+                <h2>File Organization</h2>
+                <div class="file-structure">plotbot/
+├── modular/
+│   ├── __init__.py
+│   ├── dynamic_factory.py         <span class="comment"># Core factory</span>
+│   ├── cdf_processor.py           <span class="comment"># CDF handling</span>
+│   ├── metadata/
+│   │   ├── wind_metadata.py       <span class="comment"># WIND configs</span>
+│   │   ├── psp_metadata.py        <span class="comment"># PSP configs</span>
+│   │   └── themis_metadata.py     <span class="comment"># THEMIS configs</span>
+│   └── stubs/                     <span class="comment"># Auto-generated .pyi files</span>
+├── missions/
+│   ├── wind/
+│   │   ├── __init__.py
+│   │   ├── mag.py                 <span class="comment"># wind.mag namespace</span>
+│   │   └── swe.py                 <span class="comment"># wind.swe namespace</span>
+│   └── psp/
+│       ├── __init__.py
+│       ├── mag.py                 <span class="comment"># psp.mag namespace</span>
+│       └── fields.py              <span class="comment"># psp.fields namespace</span>
+└── legacy/                        <span class="comment"># Current classes during transition</span></div>
+            </section>
+
+            <section id="usage">
+                <h2>Usage Examples</h2>
+                
+                <h3>Current PSP Usage</h3>
+                <div class="code-block">get_data(trange, mag_rtn_4sa)
+plot(mag_rtn_4sa.br, mag_rtn_4sa.bt, mag_rtn_4sa.bn)</div>
+
+                <h3>New Hierarchical Usage</h3>
+                <div class="code-block">get_data(trange, psp.mag.rtn_4sa)
+plot(psp.mag.rtn_4sa.br, psp.mag.rtn_4sa.bt, psp.mag.rtn_4sa.bn)
+
+get_data(trange, wind.mfi.h0_gse)
+plot(wind.mfi.h0_gse.bx, wind.mfi.h0_gse.by, wind.mfi.h0_gse.bz)</div>
+
+                <h3>Multi-Mission Comparison</h3>
+                <div class="code-block">get_data(trange, psp.mag.rtn_4sa, wind.mfi.h0_gse)
+plot(psp.mag.rtn_4sa.bmag, wind.mfi.h0_gse.bmag)</div>
+            </section>
+
+            <section id="advantages">
+                <h2>Technical Advantages</h2>
+                
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Aspect</th>
+                            <th>Current Approach</th>
+                            <th>Modular Approach</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Code Duplication</strong></td>
+                            <td>~680 lines per data class</td>
+                            <td>~50 lines metadata + shared factory</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Maintenance</strong></td>
+                            <td>Individual class updates</td>
+                            <td>Bug fixes in factory benefit all missions</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Development Speed</strong></td>
+                            <td>Manual class creation</td>
+                            <td>New missions require only metadata</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Consistency</strong></td>
+                            <td>Varies between classes</td>
+                            <td>Consistent behavior across instruments</td>
+                        </tr>
+                        <tr>
+                            <td><strong>IDE Support</strong></td>
+                            <td>Manual type hints</td>
+                            <td>Auto-generated .pyi stubs</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="next-steps">
+                <h2>Next Steps</h2>
+                <ol>
+                    <li><strong>Test WIND Integration:</strong> Run the proof of concept</li>
+                    <li><strong>Extend Factory:</strong> Add more calculation operations</li>
+                    <li><strong>Create Templates:</strong> Standard metadata patterns</li>
+                    <li><strong>Integrate with get_data:</strong> Add modular class support</li>
+                    <li><strong>Document Migration:</strong> Guide for converting existing classes</li>
+                </ol>
+
+                <h3>Questions to Consider</h3>
+                <ul>
+                    <li><strong>Naming Convention:</strong> Final decision on <span class="code-inline">psp.mag.rtn_4sa</span> vs alternatives</li>
+                    <li><strong>Metadata Storage:</strong> File-based vs embedded vs database</li>
+                    <li><strong>Performance:</strong> Impact of dynamic property creation</li>
+                    <li><strong>Testing:</strong> Unit test strategy for metadata-driven classes</li>
+                    <li><strong>Documentation:</strong> Auto-generated docs from metadata</li>
+                </ul>
+
+                <p><em>This modular approach positions plotbot for easy multi-mission support while maintaining the power and flexibility users expect.</em></p>
+            </section>
+        </div>
+    </div>
+</body>
+</html> 
