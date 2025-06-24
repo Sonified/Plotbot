@@ -81,8 +81,8 @@ TEST_DATE_STR_DEFAULT = '20200409'
 TEST_YEAR_DEFAULT = '2020'
 
 WORKSPACE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-psp_data_dir = os.path.join(WORKSPACE_ROOT, 'psp_data') # Define psp_data_dir here
-PYSPEDAS_ROOT_DATA_DIR = os.path.join(WORKSPACE_ROOT, 'psp_data')
+psp_data_dir = os.path.join(WORKSPACE_ROOT, 'data', 'psp') # Updated for unified data structure
+PYSPEDAS_ROOT_DATA_DIR = os.path.join(WORKSPACE_ROOT, 'data', 'psp')
 
 @pytest.fixture
 def manage_config():
@@ -783,7 +783,7 @@ def test_stardust_spdf_download_with_cleanup():
         # This might need refinement based on where download_spdf_data *actually* puts things
         # Let's base it on the 'pyspedas_subpath' logic from the other test file
         pyspedas_subpath = os.path.join('fields', 'l2', 'mag_rtn_4_per_cycle', year_str) # Specific to mag_RTN_4sa
-        expected_dir = os.path.join(WORKSPACE_ROOT, 'psp_data', pyspedas_subpath)
+        expected_dir = os.path.join(WORKSPACE_ROOT, 'data', 'psp', pyspedas_subpath)
         
         # Construct SPDF pattern from config if available, otherwise guess
         spdf_pattern_tmpl = config.get('spdf_file_pattern', # Use SPDF pattern directly

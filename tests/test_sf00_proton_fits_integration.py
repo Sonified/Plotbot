@@ -44,7 +44,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 # Construct the absolute path from the test file's location
 _test_dir = os.path.dirname(__file__)
 _project_root = os.path.abspath(os.path.join(_test_dir, '..'))
-psp_data_dir = os.path.join(_project_root, "psp_data")
+psp_data_dir = os.path.join(_project_root, "data", "psp")
 
 if not os.path.isdir(psp_data_dir):
     print(f"Warning: Default PSP data directory '{psp_data_dir}' not found. Tests requiring local data may fail.")
@@ -109,7 +109,7 @@ def find_psp_csv_files(trange, data_type):
 
     # Define base path structure and filename components based on data_type
     if data_type == 'sf00':
-        base_rel_path = Path('psp_data/sf00/p2/v00')
+        base_rel_path = Path('data/psp/sf00/p2/v00')
         prefix = 'spp_swp_spi_sf00_'
         suffix = '_v00.csv' # Based on user example path, was _v00_driftswitch.csv before
     else:

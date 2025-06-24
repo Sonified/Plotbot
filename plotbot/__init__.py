@@ -228,8 +228,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_06_24_v2.59"
-__commit_message__ = "v2.59 Fix: Solve PySpedas directory configuration with import-order solution"
+__version__ = "2025_06_24_v2.60"
+__commit_message__ = "v2.60 Migration: Complete PSP data path migration to unified data/psp structure"
 
 # Get current date and time
 

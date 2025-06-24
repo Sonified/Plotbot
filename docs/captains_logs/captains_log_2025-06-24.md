@@ -52,7 +52,39 @@
 
 **Status**: SOLVED - Ready to implement WIND data classes with proper directory organization.
 
-**Version**: v2.59  
-**Commit Message**: "v2.59 Fix: Solve PySpedas directory configuration with import-order solution"
+---
 
-**Next Steps**: Begin WIND magnetometer class implementation using unified data structure. 
+## PSP Data Path Migration to Unified Structure
+
+- **Migration Completed**: Successfully migrated all PSP data from scattered `psp_data/` directory to unified `data/psp/` structure
+- **Data Volume**: 24GB+ of PSP data (1,155 CDF files + 88 CSV files) safely transferred
+- **Migration Method**: Used `rsync` to merge existing Berkeley-downloaded data with pyspedas data
+- **Backup Strategy**: Preserved original `psp_data/` as `psp_data_ARCHIVE_DELETE/` during testing
+
+### Technical Updates Made:
+1. **Core Configuration**: Updated all 10 data types in `plotbot/data_classes/psp_data_types.py` to use new `data/psp/` structure
+2. **Test Suite Updates**: Updated hardcoded paths in critical test files:
+   - `tests/test_stardust.py`
+   - `tests/test_pyspedas_download.py` 
+   - `tests/test_sf00_proton_fits_integration.py`
+3. **Path Structure Changes**: All PSP data types now use consistent `data/psp/` base path
+
+### Verification Testing:
+- **Full Stardust Test Suite**: All tests passed (10 passed, 2 skipped)
+- **Data Access Confirmed**: System successfully finds and loads data from new location
+- **Plot Generation**: Confirmed plotting functionality works with new paths
+- **Berkeley Integration**: Verified Berkeley-downloaded data works in new structure
+
+### Key Evidence:
+```
+Checking files for date: 20200409 in data/psp/fields/l2/mag_rtn_4_per_cycle/2020
+✓ Found 1 file(s) for date 20200409
+Processing CDF file: data/psp/fields/l2/mag_rtn_4_per_cycle/2020/psp_fld_l2_mag_rtn_4_sa_per_cyc_20200409_v02.cdf
+```
+
+**Status**: COMPLETED - PSP data migration successful, all functionality verified
+
+**Version**: v2.60  
+**Commit Message**: "v2.60 Migration: Complete PSP data path migration to unified data/psp structure"
+
+**Next Steps**: Begin WIND magnetometer class implementation. Original psp_data_ARCHIVE_DELETE/ can be safely removed. 

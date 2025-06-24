@@ -91,10 +91,10 @@ TEST_DATA_TYPES = {
     },
 }
 
-# Assume pyspedas downloads to 'psp_data' relative to workspace root by default
-# This needs verification, but aligns with logs in pyspedas_code_integration.md
+# Updated to use unified data structure: data/psp/ instead of psp_data/
+# This aligns with the migration from psp_data/ to data/psp/ for consistency
 WORKSPACE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # Assumes tests/ is one level down
-PYSPEDAS_ROOT_DATA_DIR = os.path.join(WORKSPACE_ROOT, 'psp_data')
+PYSPEDAS_ROOT_DATA_DIR = os.path.join(WORKSPACE_ROOT, 'data', 'psp')
 
 # Fixture to manage config changes and ensure reset
 @pytest.fixture
@@ -1013,7 +1013,7 @@ def test_berkeley_spdf_case_conflict(manage_config): # Use config fixture
     # Define expected filenames/paths (might need refinement based on actual config)
     # Assuming standard locations relative to WORKSPACE_ROOT
     WORKSPACE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    expected_dir = os.path.join(WORKSPACE_ROOT, "psp_data/fields/l2/mag_rtn_4_per_cycle", test_year)
+    expected_dir = os.path.join(WORKSPACE_ROOT, "data/psp/fields/l2/mag_rtn_4_per_cycle", test_year)
     berkeley_filename_pattern = f"psp_fld_l2_mag_RTN_4_Sa_per_Cyc_{test_date_str}_v*.cdf" # Berkeley case
     spdf_filename_pattern = f"psp_fld_l2_mag_rtn_4_sa_per_cyc_{test_date_str}_v*.cdf" # SPDF case
     berkeley_glob_pattern = os.path.join(expected_dir, berkeley_filename_pattern)
@@ -1209,7 +1209,7 @@ def test_dynamic_mode_fallback_logic_integrated(manage_config): # Use manage_con
 def test_read_specific_cdf():
     """Tests basic reading of a known local CDF file using cdflib."""
     # Use the file found during the directory search
-    cdf_file_path_relative = "psp_data/fields/l2/mag_rtn_4_per_cycle/2023/psp_fld_l2_mag_rtn_4_sa_per_cyc_20230928_v02.cdf"
+    cdf_file_path_relative = "data/psp/fields/l2/mag_rtn_4_per_cycle/2023/psp_fld_l2_mag_rtn_4_sa_per_cyc_20230928_v02.cdf"
     cdf_file_path_absolute = os.path.join(WORKSPACE_ROOT, cdf_file_path_relative)
 
     phase(1, f"Checking existence of {os.path.basename(cdf_file_path_absolute)}")
@@ -1258,7 +1258,7 @@ def test_pyspedas_verbosity_control(caplog): # Use caplog fixture
     # --- Helper function to find and delete files for this test ---
     def find_and_delete_test_files():
         # Based on previous tests, construct path and pattern
-        expected_dir = os.path.join(WORKSPACE_ROOT, "psp_data/fields/l2/mag_rtn_4_per_cycle", test_year)
+        expected_dir = os.path.join(WORKSPACE_ROOT, "data/psp/fields/l2/mag_rtn_4_per_cycle", test_year)
         spdf_filename_pattern = f"psp_fld_l2_mag_rtn_4_sa_per_cyc_{test_date_str}_v*.cdf"
         spdf_glob_pattern = os.path.join(expected_dir, spdf_filename_pattern)
         files_to_delete = glob.glob(spdf_glob_pattern)
