@@ -1,6 +1,7 @@
 psp_data/
 ace_data/
 data_snapshots/
+data/
 .DS_Store
 .vscode/
 Thumbs.db
