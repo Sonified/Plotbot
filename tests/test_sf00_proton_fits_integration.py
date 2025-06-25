@@ -88,7 +88,7 @@ def find_psp_csv_files(trange, data_type):
     """
     Finds PSP SF00 CSV data files based on a time range,
     following the specified directory structure relative to the project root.
-    e.g., psp_data/sf00/p2/v00/YYYY/MM/spp_swp_spi_sf00_YYYY-MM-DD_v00.csv
+    e.g., data/psp/sf00/p2/v00/YYYY/MM/spp_swp_spi_sf00_YYYY-MM-DD_v00.csv
     """
     found_files = []
     try:
@@ -200,7 +200,7 @@ class TestFitsIntegration:
         """Tests finding and loading SF00 (proton) CSV files for the test trange."""
         found_files = find_psp_csv_files(self.TEST_TRANGE, 'sf00')
 
-        assert len(found_files) > 0, f"No SF00 CSV files found for trange {self.TEST_TRANGE}. Expected at least one file containing date {self.EXPECTED_DATE_STR}. Searched paths like psp_data/sf00/p2/v00/YYYY/MM/..."
+        assert len(found_files) > 0, f"No SF00 CSV files found for trange {self.TEST_TRANGE}. Expected at least one file containing date {self.EXPECTED_DATE_STR}. Searched paths like data/psp/sf00/p2/v00/YYYY/MM/..."
 
         try:
             # Load and concatenate files found

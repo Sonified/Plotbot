@@ -1387,7 +1387,7 @@ def test_pyspedas_download_with_cleanup(): # Renamed function
         # This might need refinement based on where download_spdf_data *actually* puts things
         # Let's base it on the 'pyspedas_subpath' logic from the other test file
         pyspedas_subpath = os.path.join('fields', 'l2', 'mag_rtn_4_per_cycle', year_str) # Specific to mag_RTN_4sa
-        expected_dir = os.path.join(WORKSPACE_ROOT, 'psp_data', pyspedas_subpath)
+        expected_dir = os.path.join(WORKSPACE_ROOT, 'data', 'psp', pyspedas_subpath)
         
         # Construct SPDF pattern from config if available, otherwise guess
         spdf_pattern_tmpl = config.get('spdf_file_pattern', # Use SPDF pattern directly
