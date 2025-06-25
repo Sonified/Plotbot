@@ -228,8 +228,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_06_24_v2.60"
-__commit_message__ = "v2.60 Migration: Complete PSP data path migration to unified data/psp structure"
+__version__ = "2025_06_25_v2.61"
+__commit_message__ = "v2.61 Planning: Add comprehensive WIND data integration plan with PSP styling reuse analysis"
 
 # Get current date and time
 
