@@ -168,5 +168,58 @@ data_types = {
         'class_file': 'psp_br_norm',          # New module to be created
         'class_name': 'psp_br_norm_class',  # Corrected class name
         'data_vars': ['br_norm']              # The primary variable this type produces
+    },
+    
+    # === WIND SATELLITE DATA TYPES ===
+    # NOTE: v3.x will use dynamic pyspedas calls from these fields, v2.x uses hardcoded PYSPEDAS_MAP
+    'wind_mfi_h2': {
+        'mission': 'wind',
+        'data_sources': ['spdf'],
+        'local_path': os.path.join('data', 'wind', 'mfi', 'h2'),
+        # 'pyspedas_datatype': 'mfi_h2',        # v3.x: Dynamic pyspedas integration
+        # 'pyspedas_func': 'pyspedas.wind.mfi', # v3.x: Dynamic pyspedas integration
+        'data_level': 'h2',
+        'file_time_format': 'daily',
+        'data_vars': ['BGSE', 'BF1'],  # Vector B in GSE, |B|
+    },
+    'wind_swe_h1': {
+        'mission': 'wind', 
+        'data_sources': ['spdf'],
+        'local_path': os.path.join('data', 'wind', 'swe', 'h1'),
+        # 'pyspedas_datatype': 'swe_h1',        # v3.x: Dynamic pyspedas integration
+        # 'pyspedas_func': 'pyspedas.wind.swe', # v3.x: Dynamic pyspedas integration
+        'data_level': 'h1',
+        'file_time_format': 'daily',
+        'data_vars': ['fit_flag', 'Proton_Wpar_nonlin', 'Proton_Wperp_nonlin', 'Alpha_W_Nonlin'],
+    },
+    'wind_swe_h5': {
+        'mission': 'wind',
+        'data_sources': ['spdf'], 
+        'local_path': os.path.join('data', 'wind', 'swe', 'h5'),
+        # 'pyspedas_datatype': 'swe_h5',        # v3.x: Dynamic pyspedas integration
+        # 'pyspedas_func': 'pyspedas.wind.swe', # v3.x: Dynamic pyspedas integration
+        'data_level': 'h5',
+        'file_time_format': 'daily',
+        'data_vars': ['T_elec'],  # Electron temperature
+    },
+    'wind_3dp_pm': {
+        'mission': 'wind',
+        'data_sources': ['spdf'],
+        'local_path': os.path.join('data', 'wind', '3dp', 'pm'),
+        # 'pyspedas_datatype': '3dp_pm',             # v3.x: Dynamic pyspedas integration
+        # 'pyspedas_func': 'pyspedas.wind.threedp', # v3.x: Dynamic pyspedas integration
+        'data_level': 'pm',
+        'file_time_format': 'daily',
+        'data_vars': ['VALID', 'P_VELS', 'P_DENS', 'P_TEMP', 'A_DENS', 'A_TEMP'],
+    },
+    'wind_3dp_elpd': {
+        'mission': 'wind',
+        'data_sources': ['spdf'],
+        'local_path': os.path.join('data', 'wind', '3dp', 'elpd'),
+        # 'pyspedas_datatype': '3dp_elpd',           # v3.x: Dynamic pyspedas integration
+        # 'pyspedas_func': 'pyspedas.wind.threedp', # v3.x: Dynamic pyspedas integration
+        'data_level': 'elpd',
+        'file_time_format': 'daily',
+        'data_vars': ['FLUX', 'PANGLE'],  # Electron flux and pitch angles
     }
 }
