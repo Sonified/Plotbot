@@ -15,7 +15,7 @@ from .data_download_berkeley import download_berkeley_data
 from .data_download_pyspedas import download_spdf_data
 import plotbot
 from .data_import import import_data_function, DataObject
-from .data_classes.psp_data_types import data_types
+from .data_classes.data_types import data_types
 from .config import config
 
 # Import specific data classes as needed
@@ -181,14 +181,14 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             try:
                 data_type = var.__name__
                 # Ensure it's a known type and not a local CSV source (like sf00/sf01 itself)
-                if data_type not in data_types or data_types[data_type].get('file_source') == 'local_csv':
+                if data_type not in data_types or 'local_csv' in data_types[data_type].get('data_sources', []):
                      data_type = None # Ignore sf00/sf01 passed directly, handled by proton_fits
             except (AttributeError, TypeError):
                 data_type = None
         elif hasattr(var, 'data_type'):
             dt = var.data_type
             # Ensure it's not proton_fits (handled above) and not a local CSV source
-            if dt != 'proton_fits' and data_types.get(dt, {}).get('file_source') != 'local_csv':
+            if dt != 'proton_fits' and 'local_csv' not in data_types.get(dt, {}).get('data_sources', []):
                  data_type = dt
                  subclass_name = getattr(var, 'subclass_name', '?')
         
@@ -274,7 +274,7 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
                 continue
             
             # Ensure this is not a local_csv source being processed here (unless it's specifically HAM, which is handled above)
-            if config_from_psp_data_types.get('file_source') == 'local_csv':
+            if 'local_csv' in config_from_psp_data_types.get('data_sources', []):
                 print_manager.warning(f"Skipping standard processing for local_csv type {data_type} (not HAM). Should be handled by proton_fits.")
                 continue
                 

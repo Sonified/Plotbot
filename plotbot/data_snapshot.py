@@ -17,7 +17,7 @@ from .data_cubby import data_cubby
 from .plot_manager import plot_manager
 from .data_tracker import global_tracker
 from . import mag_rtn_class, mag_sc_class # MODIFIED
-from .data_classes.psp_data_types import data_types as psp_data_types
+from .data_classes.data_types import data_types as psp_data_types
 
 # Type hint for raw data object
 from typing import Any, List, Tuple, Dict, Optional, Union

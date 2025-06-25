@@ -9,7 +9,7 @@ from dateutil.parser import parse
 
 from .print_manager import print_manager
 from .data_tracker import global_tracker
-from .data_classes.psp_data_types import data_types
+from .data_classes.data_types import data_types
 
 class ZarrStorage:
     """Zarr-based persistent storage that follows the natural cadence of PSP data"""

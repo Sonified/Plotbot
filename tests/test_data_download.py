@@ -39,7 +39,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from plotbot import mag_rtn_4sa, config, mag_sc_4sa, epad, proton # Updated imports
 from plotbot.plotbot_main import plotbot
 from plotbot.print_manager import print_manager
-from plotbot.data_classes.psp_data_types import data_types as psp_data_types_config # Added for new function
+from plotbot.data_classes.data_types import data_types as psp_data_types_config # Added for new function
 from plotbot.time_utils import daterange # Added for new function
 from plotbot.data_download_helpers import case_insensitive_file_search
 from plotbot.data_import import find_local_csvs # For local_csv deletion
@@ -64,7 +64,7 @@ def clear_downloaded_data(trange_str_list, data_type_key):
     data_level = config_entry.get('data_level')
     file_time_format = config_entry.get('file_time_format')
     file_pattern_import = config_entry.get('file_pattern_import')
-    file_source = config_entry.get('file_source') # For local_csv types
+    data_sources = config_entry.get('data_sources', []) # For all source types
 
     if not local_path_template:
         print_manager.warning(f"No 'local_path' defined for data type '{data_type_key}'. Cannot clear.")
@@ -83,7 +83,7 @@ def clear_downloaded_data(trange_str_list, data_type_key):
     base_data_dir = local_path_template.format(data_level=data_level) if data_level and "{data_level}" in local_path_template else local_path_template
     absolute_base_data_dir = os.path.abspath(base_data_dir)
 
-    if file_source == 'local_csv':
+    if 'local_csv' in data_sources:
         print_manager.test(f"Clearing local_csv type: {data_type_key} from base path: {absolute_base_data_dir}")
         # For local_csv, patterns might be a list or string
         patterns = file_pattern_import if isinstance(file_pattern_import, list) else [file_pattern_import]
@@ -143,7 +143,7 @@ def clear_downloaded_data(trange_str_list, data_type_key):
                 print_manager.warning(f"  Error deleting file {f_path}: {e}")
 
     # Attempt to remove empty year directories (only for CDF types currently)
-    if file_source != 'local_csv':
+    if 'local_csv' not in data_sources:
         for dir_path in sorted(list(dirs_to_check_for_emptiness), reverse=True): # Process deeper dirs first
             if os.path.exists(dir_path) and not os.listdir(dir_path):
                 try:
@@ -169,7 +169,7 @@ def verify_downloaded_files_exist(trange_str_list, data_type_key):
     data_level = config_entry.get('data_level')
     file_time_format = config_entry.get('file_time_format')
     file_pattern_import = config_entry.get('file_pattern_import')
-    file_source = config_entry.get('file_source')
+    data_sources = config_entry.get('data_sources', [])
 
     if not local_path_template:
         print_manager.warning(f"No 'local_path' defined for data type '{data_type_key}'. Cannot verify files.")
@@ -187,7 +187,7 @@ def verify_downloaded_files_exist(trange_str_list, data_type_key):
     base_data_dir = local_path_template.format(data_level=data_level) if data_level and "{data_level}" in local_path_template else local_path_template
     absolute_base_data_dir = os.path.abspath(base_data_dir)
 
-    if file_source == 'local_csv':
+    if 'local_csv' in data_sources:
         print_manager.test(f"Verifying local_csv type: {data_type_key} from base path: {absolute_base_data_dir}")
         patterns = file_pattern_import if isinstance(file_pattern_import, list) else [file_pattern_import]
         for single_date in daterange(start_dt, end_dt):

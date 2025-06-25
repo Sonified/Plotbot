@@ -11,7 +11,7 @@ from fnmatch import fnmatch # Import for wildcard matching
 from .print_manager import print_manager, format_datetime_for_log
 from .time_utils import daterange
 from .data_tracker import global_tracker
-from .data_classes.psp_data_types import data_types as psp_data_types # UPDATED PATH
+from .data_classes.data_types import data_types as psp_data_types # UPDATED PATH
 # from .data_cubby import data_cubby # MOVED inside import_data_function
 # from .plotbot_helpers import find_local_fits_csvs # This function is defined locally below
 

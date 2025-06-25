@@ -6,7 +6,7 @@ from dateutil.parser import parse
 from bs4 import BeautifulSoup
 from .print_manager import print_manager, format_datetime_for_log
 from .time_utils import daterange, get_needed_6hour_blocks
-from .data_classes.psp_data_types import data_types
+from .data_classes.data_types import data_types
 from .server_access import server_access
 
 #====================================================================
@@ -76,7 +76,7 @@ def check_local_files(trange: tuple, data_type: str) -> tuple[bool, list, list]:
     print_manager.debug(f"Will check these dates: {dates_to_check}")
     
     # Check if this data type uses local CSV files
-    if config.get('file_source') == 'local_csv':
+    if 'local_csv' in config.get('data_sources', []):
         print_manager.debug(f"Data type {data_type} uses local CSV source. Searching recursively.")
         base_path = config.get('local_path')
         # Ensure file_pattern_import exists and is a list (even if single pattern)

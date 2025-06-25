@@ -1,11 +1,13 @@
-#plotbot/data_classes/psp_data_types.py
+#plotbot/data_classes/data_types.py
 
 import os
 
-# CONFIGURATION: Data Types, Defines all available PSP data products
+# CONFIGURATION: Data Types, Defines all available data products for multiple missions
 #====================================================================
 data_types = {
     'mag_RTN': {
+        'mission': 'psp',
+        'data_sources': ['berkeley', 'spdf'],
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/fields/{data_level}/mag_RTN/',  # URL for data source
         'local_path': os.path.join('data', 'psp', 'fields', '{data_level}', 'mag_rtn'),  # Local path for storing data
         'password_type': 'mag',  # Type of password required
@@ -16,6 +18,8 @@ data_types = {
         'data_vars': ['psp_fld_l2_mag_RTN'],  # Variables to import
     },
     'mag_RTN_4sa': {
+        'mission': 'psp',
+        'data_sources': ['berkeley', 'spdf'],
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/fields/{data_level}/mag_RTN_4_Sa_per_Cyc/',
         'local_path': os.path.join('data', 'psp', 'fields', '{data_level}', 'mag_rtn_4_per_cycle'),
         'password_type': 'mag',
@@ -27,6 +31,8 @@ data_types = {
         'data_vars': ['psp_fld_l2_mag_RTN_4_Sa_per_Cyc'],
     },
     'mag_SC': {
+        'mission': 'psp',
+        'data_sources': ['berkeley', 'spdf'],
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/fields/{data_level}/mag_SC/',
         'local_path': os.path.join('data', 'psp', 'fields', '{data_level}', 'mag_sc'),
         'password_type': 'mag',
@@ -37,6 +43,8 @@ data_types = {
         'data_vars': ['psp_fld_l2_mag_SC'],
     },
     'mag_SC_4sa': {
+        'mission': 'psp',
+        'data_sources': ['berkeley', 'spdf'],
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/fields/{data_level}/mag_SC_4_Sa_per_Cyc/',
         'local_path': os.path.join('data', 'psp', 'fields', '{data_level}', 'mag_sc_4_per_cycle'),
         'password_type': 'mag',
@@ -48,6 +56,8 @@ data_types = {
         'data_vars': ['psp_fld_l2_mag_SC_4_Sa_per_Cyc'],
     },
     'spe_sf0_pad': {  # Electron data
+        'mission': 'psp',
+        'data_sources': ['berkeley', 'spdf'],
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/sweap/spe/L3/spe_sf0_pad/',
         'local_path': os.path.join('data', 'psp', 'sweap', 'spe', 'l3', 'spe_sf0_pad'),
         'password_type': 'sweap',
@@ -59,6 +69,8 @@ data_types = {
         'data_vars': ['EFLUX_VS_PA_E', 'PITCHANGLE'],
     },
     'spe_af0_pad': {  # High-resolution electron data
+        'mission': 'psp',
+        'data_sources': ['berkeley', 'spdf'],
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/sweap/spe/L3/spe_af0_pad/',
         'local_path': os.path.join('data', 'psp', 'sweap', 'spe', 'l3', 'spe_af0_pad'),
         'password_type': 'sweap',
@@ -69,6 +81,8 @@ data_types = {
         'data_vars': ['EFLUX_VS_PA_E', 'PITCHANGLE'],
     },
     'spi_sf00_l3_mom': {  # Proton data
+        'mission': 'psp',
+        'data_sources': ['berkeley', 'spdf'],
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/sweap/spi/L3/spi_sf00/',
         'local_path': os.path.join('data', 'psp', 'sweap', 'spi', 'l3', 'spi_sf00_l3_mom'),
         'password_type': 'sweap',
@@ -84,6 +98,8 @@ data_types = {
         ],
     },
     'spi_af00_L3_mom': {  # High-resolution proton data
+        'mission': 'psp',
+        'data_sources': ['berkeley', 'spdf'],
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/sweap/spi/L3/spi_af00/',
         'local_path': os.path.join('data', 'psp', 'sweap', 'spi', 'l3', 'spi_af00_l3_mom'),
         'password_type': 'sweap',
@@ -98,7 +114,8 @@ data_types = {
         ],
     },
     'sf00_fits': { # FITS sf00 CSV data
-        'file_source': 'local_csv',
+        'mission': 'psp',
+        'data_sources': ['local_csv'],
         'local_path': os.path.join('data', 'psp', 'sweap', 'spi_fits', 'sf00', 'p2', 'v00'), # UPDATED PATH AGAIN
         'file_pattern_import': ['spp_swp_spi_sf00_*.csv'], # More specific pattern
         'file_time_format': 'daily',
@@ -112,7 +129,8 @@ data_types = {
         ]
     },
     'sf01_fits': { # FITS sf01 CSV data
-        'file_source': 'local_csv',
+        'mission': 'psp',
+        'data_sources': ['local_csv'],
         'local_path': os.path.join('data', 'psp', 'sweap', 'spi_fits', 'sf01', 'p3', 'v00'), # UPDATED PATH
         'file_pattern_import': ['spp_swp_spi_sf01_*.csv'], # More specific pattern
         'file_time_format': 'daily',
@@ -124,7 +142,8 @@ data_types = {
         ]
     },
     'ham': { # NEW: Hammerhead CSV data
-        'file_source': 'local_csv',
+        'mission': 'psp',
+        'data_sources': ['local_csv'],
         'local_path': os.path.join('data', 'psp', 'Hamstrings'),
         'file_pattern_import': ['*_v*.csv'],
         'file_time_format': 'daily',
@@ -139,6 +158,8 @@ data_types = {
         ]
     },
     'psp_br_norm_calculated': {
+        'mission': 'psp',
+        'data_sources': ['calculated'],
         'has_dependencies': True,
         'dependencies': {
             'mag_input': 'mag_RTN_4sa',      # Key for the mag data dependency

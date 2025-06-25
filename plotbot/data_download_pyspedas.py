@@ -15,7 +15,7 @@ import numpy as np
 from dateutil.parser import parse
 
 from .print_manager import print_manager
-from .data_classes.psp_data_types import data_types # To get pyspedas datatype mapping
+from .data_classes.data_types import data_types # To get pyspedas datatype mapping
 from .time_utils import daterange
 # Add other necessary imports (time, etc.) as needed
 

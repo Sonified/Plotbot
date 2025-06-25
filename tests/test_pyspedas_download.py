@@ -761,7 +761,7 @@ def _get_internal_vars(server_mode, trange, variables_to_load):
         if hasattr(var, 'data_type'):
             data_type = var.data_type
             # Corrected check: Ensure data_type exists and is NOT a local_csv source
-            if data_type and data_types.get(data_type, {}).get('file_source') != 'local_csv':
+            if data_type and 'local_csv' not in data_types.get(data_type, {}).get('data_sources', []):
                 data_types_found.add(data_type)
                 variables_to_plot.append(var)
             else:
