@@ -82,7 +82,26 @@ Checking files for date: 20200409 in data/psp/fields/l2/mag_rtn_4_per_cycle/2020
 Processing CDF file: data/psp/fields/l2/mag_rtn_4_per_cycle/2020/psp_fld_l2_mag_rtn_4_sa_per_cyc_20200409_v02.cdf
 ```
 
-**Status**: COMPLETED - PSP data migration successful, all functionality verified
+---
+
+## FINAL RESOLUTION: PySpedas Configuration Fix
+
+- **Critical Discovery**: PySpedas was still downloading to old `psp_data/` location during tests/operations
+- **Root Cause**: Missing `SPEDAS_DATA_DIR` environment variable configuration in main codebase
+- **Solution Applied**: Added PySpedas data directory configuration to `plotbot/config.py`
+  - Set `os.environ['SPEDAS_DATA_DIR'] = 'data'` in config initialization
+  - Ensures PySpedas downloads to unified `data/` structure before any imports
+- **Verification**: Test confirmed PySpedas now downloads to `data/psp/` instead of recreating `psp_data/`
+
+### Complete Migration Summary:
+✅ **PSP Data Types Configuration**: Updated all 10 data types in `psp_data_types.py`  
+✅ **Data Migration**: 24GB+ of data moved from `psp_data/` to `data/psp/`  
+✅ **Test Files Updated**: Fixed hardcoded paths in critical test files  
+✅ **PySpedas Configuration**: Fixed download location to use unified structure  
+✅ **Full Test Verification**: All stardust tests pass with new paths  
+✅ **Documentation Updated**: Updated README.md to reflect unified data structure  
+
+**Status**: ✅ **COMPLETE** - PSP data migration to unified structure fully operational.
 
 **Version**: v2.60  
 **Commit Message**: "v2.60 Migration: Complete PSP data path migration to unified data/psp structure"

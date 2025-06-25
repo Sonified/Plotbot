@@ -177,6 +177,10 @@ By default, Plotbot now prioritizes downloading data from NASA's public CDAWeb/S
 
 This setting allows users to choose their preferred data source or rely on the dynamic fallback for maximum data availability.
 
+**PySpedas Data Directory Configuration:**
+
+Plotbot automatically configures PySpedas to use the unified `data/` directory structure. This configuration is handled in `plotbot/config.py` by setting the `SPEDAS_DATA_DIR` environment variable before PySpedas is imported. This ensures that all PySpedas downloads (including WIND, THEMIS, MMS, and other missions) are organized consistently under the `data/` directory, with mission-specific subdirectories (e.g., `data/psp/`, `data/wind_data/`) created automatically by PySpedas.
+
 ### Enhanced IDE Support with Stub Files (`.pyi`)
 
 To significantly improve the development experience within IDEs like VS Code, Plotbot now includes `.pyi` stub files for many core modules (e.g., `plot_manager.pyi` corresponds to `plot_manager.py`).
@@ -191,27 +195,34 @@ While these stubs *can* also be used by external type-checking tools, their main
 
 ## Data Structure
 
-Downloaded data is stored in:
+Downloaded data is stored in a unified directory structure:
 
 ```
-psp_data/
-  ├── fields/
-  │    ├── l2/
-  │    │    ├── mag_rtn/  <--- High Resolution
-  │    │    ├── mag_rtn_4_Sa_per_Cyc/  <--- Standard Resolution
-  │    │    ├── mag_sc/   <--- High Resolution
-  │    │    └── mag_sc_4_Sa_per_Cyc/  <--- Standard Resolution
-  ├── sweap/
-  │    ├── spe/
-  │    │    ├── l3/
-  │    │    │    ├── spe_sf0_pad/  <--- Standard Resolution
-  │    │    │    └── spe_af0_pad/  <--- High Resolution
-  │    └── spi/
-  │         └── l3/
-  │              ├── spi_sf00_l3_mom/  <--- Standard Resolution
-  │              └── spi_af00_l3_mom/  <--- High Resolution
-  └── ...
+data/
+  ├── psp/                    <--- Parker Solar Probe data
+  │    ├── fields/
+  │    │    ├── l2/
+  │    │    │    ├── mag_rtn/  <--- High Resolution
+  │    │    │    ├── mag_rtn_4_per_cycle/  <--- Standard Resolution
+  │    │    │    ├── mag_sc/   <--- High Resolution
+  │    │    │    └── mag_sc_4_per_cycle/  <--- Standard Resolution
+  │    ├── sweap/
+  │    │    ├── spe/
+  │    │    │    ├── l3/
+  │    │    │    │    ├── spe_sf0_pad/  <--- Standard Resolution
+  │    │    │    │    └── spe_af0_pad/  <--- High Resolution
+  │    │    └── spi/
+  │    │         └── l3/
+  │    │              ├── spi_sf00_l3_mom/  <--- Standard Resolution
+  │    │              └── spi_af00_l3_mom/  <--- High Resolution
+  │    ├── sf00/              <--- FITS data
+  │    └── Hamstrings/         <--- HAM data
+  ├── wind_data/              <--- WIND mission data (future)
+  ├── themis/                 <--- THEMIS mission data (future)
+  └── ...                     <--- Other missions
 ```
+
+**Note:** This unified structure organizes all space physics data under a single `data/` directory, with separate subdirectories for each mission. This approach facilitates multi-mission analysis and maintains compatibility with PySpedas download conventions.
 
 ## Using Plotbot's Data Classes
 
@@ -495,7 +506,7 @@ For those interested in contributing or understanding the internals:
     *   **`utils.py`, `time_utils.py`, `plotbot_helpers.py`, etc.**: Utility functions.
 *   **`tests/`**: Contains all `pytest` tests.
 *   **`install_scripts/`**: Scripts for setting up the Conda environment.
-*   **`psp_data/`**: Default location for downloaded data (can be configured).
+*   **`data/`**: Unified location for downloaded data from all missions (PSP, WIND, etc.).
 *   **`docs/`**: Additional documentation (if any).
 *   **`environment.yml`**: Defines the Conda environment.
 *   **`run_tests.py`**: Convenience script for running tests.
