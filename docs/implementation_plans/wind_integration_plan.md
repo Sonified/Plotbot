@@ -367,10 +367,13 @@ plotbot(trange,
 - [x] ✅ Confirm exact pyspedas datatype naming conventions
 - [x] ✅ Validate data variable names and shapes
 
-### 🔄 Phase 3: Next Steps - PYSPEDAS_MAP Integration
-- [ ] Add WIND entries to hardcoded PYSPEDAS_MAP in data_download_pyspedas.py
-- [ ] Test WIND data downloads through Plotbot infrastructure
-- [ ] Validate data import pathway
+### ✅ Phase 3.1 Complete: PYSPEDAS_MAP Integration (COMPLETED 2025-06-25)
+- [x] ✅ Add WIND entries to hardcoded PYSPEDAS_MAP in data_download_pyspedas.py
+- [x] ✅ Fix WIND-specific parameter issues (removed incompatible 'level' parameter)
+- [x] ✅ Correct 3DP datatype names ('3dp_pm', '3dp_elpd' with proper prefix)
+- [x] ✅ Test WIND data downloads through Plotbot infrastructure 
+- [x] ✅ Validate complete download pathway for all 5 WIND data types
+- [x] ✅ Comprehensive test suite validation (ALL TESTS PASSED)
 
 ### 🔄 Phase 4: WIND Classes (Pending)
 - [ ] Create wind_mfi_classes.py and .pyi
@@ -438,9 +441,10 @@ The patterns established here will make it straightforward to add:
    - Version v2.62 successfully pushed to GitHub
 
 ### 🔄 Current Status
-Ready for **Phase 3: PYSPEDAS_MAP Integration** - adding WIND entries to hardcoded download mapping.
+Ready for **Phase 4: WIND Classes** - creating WIND data classes to process downloaded CDF files.
+
+**Latest Accomplishment**: Phase 3.1 PYSPEDAS_MAP Integration completed successfully with all 5 WIND data types downloading through Plotbot infrastructure. Comprehensive test suite validation passed with 100% success rate.
 
 ---
 *Document created: 2025-01-27*  
-*Status: Phase 1 & 2 Complete - Moving to Phase 3*  
-*Latest update: 2025-01-27* 
+*Status: Phase 1, 2 & 3.1 Complete - Moving to Phase 4* 

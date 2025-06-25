@@ -44,6 +44,38 @@ PYSPEDAS_MAP = {
         'kwargs': {'level': 'l3', 'get_support_data': True}
     },
     # Add mappings for other data types as needed (e.g., high-res versions)
+    
+    # === WIND SATELLITE DATA TYPES ===
+    # Magnetic Field Investigation (MFI) - 11 samples/sec
+    'wind_mfi_h2': {
+        'pyspedas_datatype': 'h2',
+        'pyspedas_func': pyspedas.wind.mfi,
+        'kwargs': {}  # No level parameter needed
+    },
+    # Solar Wind Experiment (SWE) - proton/alpha moments, 92-sec
+    'wind_swe_h1': {
+        'pyspedas_datatype': 'h1',
+        'pyspedas_func': pyspedas.wind.swe,
+        'kwargs': {}  # No level parameter needed
+    },
+    # Solar Wind Experiment (SWE) - electron temperature
+    'wind_swe_h5': {
+        'pyspedas_datatype': 'h5',
+        'pyspedas_func': pyspedas.wind.swe,
+        'kwargs': {}  # No level parameter needed
+    },
+    # 3D Plasma Analyzer (3DP) - ion parameters, 3-sec high resolution
+    'wind_3dp_pm': {
+        'pyspedas_datatype': '3dp_pm',
+        'pyspedas_func': pyspedas.wind.threedp,
+        'kwargs': {}  # No level parameter needed
+    },
+    # 3D Plasma Analyzer (3DP) - electron pitch-angle distributions, 24-sec
+    'wind_3dp_elpd': {
+        'pyspedas_datatype': '3dp_elpd',
+        'pyspedas_func': pyspedas.wind.threedp,
+        'kwargs': {}  # No level parameter needed
+    }
 }
 
 def _get_dates_in_range(start_str, end_str):

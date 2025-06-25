@@ -228,8 +228,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_06_25_v2.63"
-__commit_message__ = "v2.63 Integration: Complete WIND data types definition and testing validation"
+__version__ = "2025_06_25_v2.64"
+__commit_message__ = "v2.64 Integration: Complete WIND PYSPEDAS_MAP integration with all 5 data types downloading successfully"
 
 # Get current date and time
 
