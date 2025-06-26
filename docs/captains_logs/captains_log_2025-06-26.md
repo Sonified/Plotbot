@@ -110,7 +110,7 @@
 - **WIND MFI**: Professional magnetic field data with 17,000x performance optimization
 - **WIND 3DP ELPD**: Scientific breakthrough in adaptive electron pitch angle measurements
 
-**Scientific Achievement**: Documented and implemented fundamental differences between WIND (1995, adaptive) and PSP (2018, fixed) electron instruments.
+**Achievement**: Documented and implemented fundamental differences between WIND (1995, adaptive) and PSP (2018, fixed) electron instruments.
 
 ---
 
@@ -143,6 +143,59 @@
 
 **STATUS**: WIND SWE H5 electron temperature is **production-ready** with data quality awareness.
 
+**Version**: v2.69
+- **Commit Message**: "v2.69 WIND SWE H5 integration + data quality discovery"
+- **Scope**: Complete WIND electron temperature integration + found negative temp (-180K) in NASA data - preserving as-is
+- **Status**: ✅ **COMMITTED & PUSHED** - 3 WIND data types now production-ready
+
 **Next**: Complete remaining WIND data types (swe_h1, 3dp_pm) using established integration checklist.
 
-*Captain's Log 2025-06-26 - UPDATED & CLOSED* 
+---
+
+## WIND SWE H1 Integration - PRODUCTION READY! 🎉
+
+### WIND Proton/Alpha Thermal Speed Integration + get_data() Architecture Discovery
+**Date**: 2025-06-26 (Final Session)  
+**Achievement**: WIND SWE H1 integration complete + resolved mysterious get_data() behavior
+
+**CRITICAL DISCOVERY - get_data() Architecture**:
+- 🔍 **Mystery Solved**: `get_data()` **ALWAYS returns `None`** - this is by design!
+- 📚 **Architecture**: `get_data()` is a side-effect function that updates global instances
+- ✅ **Not a Bug**: The test showing `"✅ Download complete: <class 'NoneType'>"` is **completely correct**
+- 🎯 **Flow**: `plotbot()` calls `get_data()` for side effects, then accesses updated global instances via `data_cubby.grab()`
+
+**WIND SWE H1 COMPLETE INTEGRATION**:
+- ✅ **Class**: `wind_swe_h1_classes.py` - complete proton/alpha thermal speed implementation  
+- ✅ **Variables**: Proton parallel/perpendicular thermal speeds, alpha thermal speeds, anisotropy, quality flags
+- ✅ **Quality Filtering**: Scientific filtering based on real NASA documentation (fit_flag allowlist approach)
+- ✅ **Data Processing**: Comprehensive fill value detection and physical limits filtering
+- ✅ **5-Panel Plot**: Working spectacular showing all thermal speed variables + quality flags
+
+**SCIENTIFIC ACCURACY CORRECTIONS**:
+- 🔬 **Real Documentation**: Used authentic WIND SWE documentation from NASA CDAWeb
+- 🎯 **Proper fit_flag Logic**: Implemented allowlist approach (`np.isin([10,9,8,7,6,5])`) instead of threshold
+- 📊 **Quality Transparency**: Clear logging of filtering decisions with adjustable parameters
+- 🚫 **No Hallucination**: Removed invented fit_flag meanings, used only documented NASA sources
+
+**INTEGRATION STATUS**:
+- ✅ **File Path Fixed**: Corrected `local_path` from `data/wind/swe/h1` to `data/wind/swe/swe_h1` 
+- ✅ **Server Config**: WIND requires `config.data_server = 'spdf'` (no Berkeley fallback)
+- ✅ **All 6 Files Updated**: data_types.py, data_cubby.py, __init__.py, classes, type hints, tests
+- ✅ **Multi-Panel Success**: 5-panel WIND SWE H1 plot working perfectly
+
+**get_data() vs plotbot() RESOLVED**:
+- **Expected**: `get_data(trange, 'wind_swe_h1')` returns `None` ✅
+- **Expected**: `plotbot(trange, wind_swe_h1.variable)` works perfectly ✅  
+- **Reason**: `get_data()` updates global instances as side effects, `plotbot()` accesses those instances
+
+**FINAL STATUS**: WIND SWE H1 proton/alpha thermal speeds are **PRODUCTION READY** - 4th of 5 WIND data types operational!
+
+**Remaining**: Only `wind_3dp_pm` (ion parameters) left to complete full WIND integration.
+
+**Version**: v2.70
+- **Commit Message**: "v2.70 Production: WIND SWE H1 proton/alpha thermal speeds + get_data() architecture discovery"  
+- **Scope**: WIND SWE H1 complete integration with scientific quality filtering
+- **Discovery**: Documented get_data() side-effect architecture pattern
+- **Status**: ✅ **READY TO COMMIT & PUSH**
+
+*Captain's Log 2025-06-26 - RE-OPENED & UPDATED* 

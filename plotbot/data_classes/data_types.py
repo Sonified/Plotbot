@@ -186,7 +186,7 @@ data_types = {
     'wind_swe_h1': {
         'mission': 'wind', 
         'data_sources': ['spdf'],
-        'local_path': os.path.join('data', 'wind', 'swe', 'h1'),
+        'local_path': os.path.join('data', 'wind', 'swe', 'swe_h1'),
         'file_pattern_import': r'wi_h1_swe_{date_str}_v*.cdf',
         # 'pyspedas_datatype': 'swe_h1',        # v3.x: Dynamic pyspedas integration
         # 'pyspedas_func': 'pyspedas.wind.swe', # v3.x: Dynamic pyspedas integration
