@@ -59,7 +59,7 @@ import plotbot # For plotbot.config
 from plotbot.plotbot_main import plotbot as plotbot_function
 from plotbot.multiplot import multiplot
 from plotbot.showdahodo import showdahodo
-from plotbot.data_classes.psp_data_types import data_types
+from plotbot.data_classes.data_types import data_types
 from plotbot.data_classes.psp_proton_fits_classes import proton_fits as proton_fits_instance
 from plotbot.data_import import find_local_csvs
 from plotbot.plot_manager import plot_manager

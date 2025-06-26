@@ -33,8 +33,8 @@ def test_wind_mfi_download():
     print_manager.test("Testing WIND MFI data download and plotting.")
     print_manager.test("========================================================================\n")
 
-    # Define a time range that is likely to have WIND data
-    trange_strings = ['2020-01-01/00:00:00.000', '2020-01-01/06:00:00.000']
+    # Define a time range that has both WIND and PSP data coverage  
+    trange_strings = ['2022/06/01 20:00:00.000', '2022/06/02 02:00:00.000']
     print_manager.test(f"Using trange for WIND MFI: {trange_strings}")
     
     # Configure server
@@ -44,12 +44,21 @@ def test_wind_mfi_download():
     print_manager.test(f"Set config.data_server to: {config.data_server}")
 
     try:
-        # Import the WIND MFI class and create a variable to plot
+        # Import WIND MFI class and PSP mag components for comprehensive comparison
         from plotbot.data_classes.wind_mfi_classes import wind_mfi_h2
+        from plotbot import mag_rtn_4sa
         
-        print_manager.test(f"Calling plotbot to trigger WIND MFI download...")
-        # Plot the Bx component
-        plotbot(trange_strings, wind_mfi_h2.bx, 1)
+        print_manager.test(f"Calling plotbot to test all WIND xyz+mag and PSP rtn+mag components...")
+        # Plot comprehensive comparison: WIND (x,y,z,mag) + PSP (r,t,n,mag)
+        plotbot(trange_strings, 
+                wind_mfi_h2.bx, 1,      # WIND Bx
+                wind_mfi_h2.by, 2,      # WIND By  
+                wind_mfi_h2.bz, 3,      # WIND Bz
+                wind_mfi_h2.bmag, 4,    # WIND |B|
+                mag_rtn_4sa.br, 5,      # PSP Br
+                mag_rtn_4sa.bt, 6,      # PSP Bt
+                mag_rtn_4sa.bn, 7,      # PSP Bn
+                mag_rtn_4sa.bmag, 8)    # PSP |B|
         print_manager.test("Plotbot call completed successfully.")
         
     except Exception as e:

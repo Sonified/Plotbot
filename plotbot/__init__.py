@@ -232,8 +232,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_06_25_v2.66"
-__commit_message__ = "v2.66 BREAKTHROUGH: Implement Numba JIT time conversion optimization - 17,000x performance improvement"
+__version__ = "2025_06_25_v2.67"
+__commit_message__ = "v2.67 Success: Complete WIND MFI integration with standardized units and comprehensive testing"
 
 # Get current date and time
 
