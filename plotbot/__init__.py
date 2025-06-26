@@ -42,6 +42,7 @@ from .data_classes.psp_ham_classes import ham, ham_class # ADDED: Import the HAM
 # WIND satellite data classes
 from .data_classes.wind_mfi_classes import wind_mfi_h2, wind_mfi_h2_class
 from .data_classes.wind_3dp_classes import wind_3dp_elpd, wind_3dp_elpd_class
+from .data_classes.wind_swe_h5_classes import wind_swe_h5, wind_swe_h5_class
 
 # --- Explicitly Register Global Instances with DataCubby --- #
 data_cubby.stash(mag_rtn_4sa, class_name='mag_rtn_4sa')
@@ -57,6 +58,7 @@ data_cubby.stash(ham, class_name='ham')
 # Register WIND satellite instances
 data_cubby.stash(wind_mfi_h2, class_name='wind_mfi_h2')
 data_cubby.stash(wind_3dp_elpd, class_name='wind_3dp_elpd')
+data_cubby.stash(wind_swe_h5, class_name='wind_swe_h5')
 print_manager.datacubby("Registered global data instances with DataCubby.")
 # ---------------------------------------------------------- #
 

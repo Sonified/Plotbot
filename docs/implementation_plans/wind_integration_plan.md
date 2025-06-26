@@ -259,6 +259,76 @@ from .data_classes.wind_3dp_classes import wind_3dp_elpd, wind_3dp_pm
 
 ## Phase 4: Integration Updates
 
+### **🎯 WIND Data Type Integration Checklist**
+**Complete checklist for adding ANY new WIND data type to Plotbot:**
+
+#### **Required Files to Update (6 files):**
+
+1. **📄 `data_types.py`** - Add data type configuration
+   ```python
+   'wind_new_datatype': {
+       'mission': 'wind',
+       'data_sources': ['spdf'],
+       'local_path': os.path.join('data', 'wind', 'instrument', 'level'),
+       'file_pattern_import': r'wi_level_instrument_{date_str}_v*.cdf',
+       'data_level': 'level',
+       'file_time_format': 'daily',
+       'data_vars': ['VAR1', 'VAR2'],  # CDF variable names
+   }
+   ```
+
+2. **📄 `data_download_pyspedas.py`** - Add PYSPEDAS_MAP entry  
+   ```python
+   'wind_new_datatype': {
+       'pyspedas_datatype': 'datatype_name',
+       'pyspedas_func': pyspedas.wind.instrument,
+       'kwargs': {}  # Remove incompatible parameters like 'level'
+   }
+   ```
+
+3. **📄 `data_cubby.py`** - Add class import + mapping
+   ```python
+   # Add import:
+   from .data_classes.wind_new_classes import wind_new_class
+   
+   # Add to _CLASS_TYPE_MAP:
+   'wind_new_datatype': wind_new_class,
+   ```
+
+4. **📄 `__init__.py`** - Add global instance import + registration
+   ```python
+   # Add import:
+   from .data_classes.wind_new_classes import wind_new, wind_new_class
+   
+   # Add registration:
+   data_cubby.stash(wind_new, class_name='wind_new_datatype')
+   ```
+
+5. **📄 `wind_new_classes.py`** - Create data class (NEW FILE)
+   - Follow wind_mfi_classes.py or wind_3dp_classes.py patterns
+   - Implement: `__init__`, `update`, `calculate_variables`, `set_ploptions`
+   - Create global instance: `wind_new = wind_new_class(None)`
+
+6. **📄 `wind_new_classes.pyi`** - Create type hints (NEW FILE)  
+   - Define class attributes and method signatures
+   - Export global instance type
+
+#### **Testing Integration:**
+- Create `tests/test_wind_new_simple.py`
+- Follow existing wind test patterns
+- Validate download → processing → plotting pipeline
+
+#### **Integration Validation Checklist:**
+- [ ] Data type downloads successfully via pyspedas
+- [ ] Class instantiates without errors 
+- [ ] Data processing completes successfully
+- [ ] Plot managers created correctly
+- [ ] Basic plotting works: `plotbot(trange, wind_new.variable)`
+- [ ] Mixed mission plotting works: `plotbot(trange, psp_var, wind_new.variable)`
+- [ ] No regression in existing functionality
+
+---
+
 ### 4.1 Update get_data.py
 **Add WIND imports:**
 ```python
@@ -416,23 +486,32 @@ plotbot(trange,
 - [x] ✅ **Multi-Mission Capability**: 6-panel WIND + PSP comparison plots demonstrating both missions
 - [x] ✅ **Production Ready**: End-to-end WIND 3DP electron integration operational with full scientific fidelity
 
-### 🎯 Phase 5: Additional WIND Data Types (Ready to Begin)
-**Remaining 4 WIND data products to implement:**
+### ✅ Phase 5.1 Complete: WIND SWE H5 Integration (COMPLETED 2025-06-26)
+**WIND Electron Temperature Integration + Data Quality Discovery**
+
+- [x] ✅ **wind_swe_h5_classes.py** - Solar Wind Experiment H5 (electron temperature)  
+  - ✅ Variables: `T_elec` (electron temperature from quadrature analysis)
+  - ✅ **Simplest**: Single time series variable implemented
+  - ✅ **Integration**: All 6 files updated following integration checklist
+  - ✅ **Testing**: Complete pipeline validated (download → processing → plotting)
+  - 🔍 **Data Quality Discovery**: Found unphysical negative temperature (-180,603 K) at `2022-06-02T00:49:09`
+  - 📊 **Quality Approach**: Preserving raw data as-is, optional filtering available but disabled
+  - ✅ **Production Ready**: WIND electron temperature operational with data quality awareness
+
+### 🎯 Phase 5.2: Additional WIND Data Types (Ready to Begin)
+**Remaining 2 WIND data products to implement (ordered by complexity):**
 
 - [ ] **wind_swe_h1_classes.py** - Solar Wind Experiment H1 (92-sec proton/alpha moments)
   - Variables: `Proton_Wpar_nonlin`, `Proton_Wperp_nonlin`, `Alpha_W_Nonlin`, `fit_flag`
+  - **Moderate**: Multiple thermal speeds + quality flag
   - New product: Alpha particle thermal speeds (not available in PSP)
-  
-- [ ] **wind_swe_h5_classes.py** - Solar Wind Experiment H5 (electron temperature)  
-  - Variables: `T_elec` (electron temperature from quadrature analysis)
-  - Similar to PSP electron data but different measurement technique
   
 - [ ] **wind_3dp_pm_classes.py** - 3D Plasma Analyzer Ion Parameters (3-sec resolution)
   - Variables: `P_VELS`, `P_DENS`, `P_TEMP`, `A_DENS`, `A_TEMP`, `VALID`  
-  - High-cadence proton moments + alpha density/temperature
+  - **Most Complex**: High-cadence proton moments + alpha density/temperature + quality flags
 
-- [ ] Test individual class functionality for all 4 remaining data types
-- [ ] Implement specialized plotting for alpha particles (major new product type)  
+- [ ] Test individual class functionality for all 3 remaining data types
+- [ ] Implement specialized plotting for alpha particles (new product type)  
 - [ ] Validate data quality flag handling (`fit_flag`, `VALID`)
 
 ### 🎯 Phase 5: Complete Multi-Instrument Integration (Future)
@@ -512,18 +591,23 @@ The patterns established here will make it straightforward to add:
    - End-to-end pipeline validated with real data
    - Regression testing confirms no PSP functionality impact
 
-### 🎯 Current Status: WIND 3DP ELECTRON PRODUCTION-READY
-**WIND 3DP electron integration is complete and production-ready**. Major scientific breakthrough achieved with:
-- 🔬 **Scientific Discovery**: Successfully implemented and explained WIND's adaptive pitch angle binning
-- ✅ **Complete Electron Pipeline**: Full WIND 3DP electron data flow operational
-- ✅ **NaN Handling**: Solved complex matplotlib/MaskedArray plotting issues
-- ✅ **Multi-Mission Capability**: WIND + PSP electron comparison plotting working seamlessly
-- ✅ **Instrument Understanding**: Documented fundamental differences between WIND (adaptive) vs PSP (fixed) electron instruments
+### 🎯 Current Status: 3 WIND DATA TYPES PRODUCTION-READY
+**Three WIND data types now operational** with major achievements:
 
-### 🔄 Next Phase: Additional WIND Data Types
-Ready for **Phase 5**: Implementing remaining WIND data types (SWE proton/alpha moments, 3DP ion parameters) using proven patterns.
+1. **WIND MFI H2** (magnetic field) - Professional B-field data with 17,000x performance boost
+2. **WIND 3DP ELPD** (electron pitch-angle) - Scientific breakthrough in adaptive binning discovery  
+3. **WIND SWE H5** (electron temperature) - Complete integration with data quality awareness
 
-**Latest Major Achievement**: Complete WIND 3DP electron integration with adaptive pitch angle discovery - second WIND data type is production-ready with full scientific fidelity! 🚀🔬
+**Latest Achievement (2025-06-26):**
+- ✅ **WIND SWE H5**: Complete electron temperature integration
+- 🔍 **Data Quality Discovery**: Found and documented unphysical negative temperature in NASA data
+- 📊 **Quality Philosophy**: Preserving raw data transparency over automatic filtering
+- ✅ **Integration Checklist**: Validated systematic 6-file integration approach
+
+### 🔄 Next Phase: Final WIND Data Types  
+Ready for **Phase 5.2**: Implementing final 2 WIND data types (SWE proton/alpha moments, 3DP ion parameters) using proven integration checklist.
+
+**Latest Major Achievement**: WIND SWE H5 electron temperature integration with data quality discovery - three WIND data types now production-ready! 🚀🔬🌡️
 
 ---
 *Document created: 2025-01-27*  
