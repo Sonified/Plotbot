@@ -25,6 +25,7 @@ from .data_classes.psp_proton_hr import proton_hr_class
 from .data_classes.psp_ham_classes import ham_class, ham
 # WIND satellite data classes
 from .data_classes.wind_mfi_classes import wind_mfi_h2_class
+from .data_classes.wind_3dp_classes import wind_3dp_elpd_class
 
 from .data_import import DataObject # Import the type hint for raw data object
 
@@ -54,6 +55,7 @@ class data_cubby:
         'ham': ham_class,
         # WIND satellite data types
         'wind_mfi_h2': wind_mfi_h2_class,
+        'wind_3dp_elpd': wind_3dp_elpd_class,
         # Add other standard CDF types here as needed
     }
 

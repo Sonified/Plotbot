@@ -181,7 +181,7 @@ data_types = {
         # 'pyspedas_func': 'pyspedas.wind.mfi', # v3.x: Dynamic pyspedas integration
         'data_level': 'h2',
         'file_time_format': 'daily',
-        'data_vars': ['BGSE', 'BF1'],  # Vector B in GSE, |B|
+        'data_vars': ['Epoch', 'BGSE', 'BF1'],  # Time, vector B in GSE, |B|
     },
     'wind_swe_h1': {
         'mission': 'wind', 
@@ -219,12 +219,12 @@ data_types = {
     'wind_3dp_elpd': {
         'mission': 'wind',
         'data_sources': ['spdf'],
-        'local_path': os.path.join('data', 'wind', '3dp', 'elpd'),
-        'file_pattern_import': r'wi_3dp_elpd_{date_str}_v*.cdf',
+        'local_path': os.path.join('data', 'wind', '3dp', '3dp_elpd'),
+        'file_pattern_import': r'wi_elpd_3dp_{date_str}_v*.cdf',
         # 'pyspedas_datatype': '3dp_elpd',           # v3.x: Dynamic pyspedas integration
         # 'pyspedas_func': 'pyspedas.wind.threedp', # v3.x: Dynamic pyspedas integration
         'data_level': 'elpd',
         'file_time_format': 'daily',
-        'data_vars': ['FLUX', 'PANGLE'],  # Electron flux and pitch angles
+        'data_vars': ['EPOCH', 'FLUX', 'PANGLE'],  # Time, electron flux and pitch angles
     }
 }

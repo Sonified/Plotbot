@@ -41,6 +41,7 @@ from .data_classes.psp_proton_fits_classes import proton_fits # Import the FITS 
 from .data_classes.psp_ham_classes import ham, ham_class # ADDED: Import the HAM class instance and class
 # WIND satellite data classes
 from .data_classes.wind_mfi_classes import wind_mfi_h2, wind_mfi_h2_class
+from .data_classes.wind_3dp_classes import wind_3dp_elpd, wind_3dp_elpd_class
 
 # --- Explicitly Register Global Instances with DataCubby --- #
 data_cubby.stash(mag_rtn_4sa, class_name='mag_rtn_4sa')
@@ -55,6 +56,7 @@ data_cubby.stash(proton_fits, class_name='proton_fits')
 data_cubby.stash(ham, class_name='ham')
 # Register WIND satellite instances
 data_cubby.stash(wind_mfi_h2, class_name='wind_mfi_h2')
+data_cubby.stash(wind_3dp_elpd, class_name='wind_3dp_elpd')
 print_manager.datacubby("Registered global data instances with DataCubby.")
 # ---------------------------------------------------------- #
 
@@ -213,6 +215,8 @@ __all__ = [
     'proton_hr',     # ADD proton_hr
     'proton_fits',   # Add proton_fits to __all__
     'ham',           # ADDED: Add ham to __all__
+    'wind_mfi_h2',   # WIND satellite magnetic field data
+    'wind_3dp_elpd', # WIND satellite electron pitch-angle distributions
     'audifier',
     'custom_variable',  # Using custom_variable instead of new_variable
     'debug_custom_variables',  # Add debug function for custom variables
@@ -232,8 +236,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_06_25_v2.67"
-__commit_message__ = "v2.67 Success: Complete WIND MFI integration with standardized units and comprehensive testing"
+__version__ = "2025_06_26_v2.68"
+__commit_message__ = "v2.68 Breakthrough: Complete WIND 3DP electron integration with adaptive pitch angle discovery"
 
 # Get current date and time
 

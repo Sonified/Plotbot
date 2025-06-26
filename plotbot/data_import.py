@@ -11,7 +11,7 @@ from fnmatch import fnmatch # Import for wildcard matching
 from .print_manager import print_manager, format_datetime_for_log
 from .time_utils import daterange
 from .data_tracker import global_tracker
-from .data_classes.data_types import data_types as psp_data_types # UPDATED PATH
+from .data_classes.data_types import data_types # UPDATED PATH
 # from .data_cubby import data_cubby # MOVED inside import_data_function
 # from .plotbot_helpers import find_local_fits_csvs # This function is defined locally below
 
@@ -236,8 +236,8 @@ def import_data_function(trange, data_type):
 
     is_fits_calculation = (data_type == FITS_CALCULATED_TRIGGER)
 
-    if not is_fits_calculation and data_type not in psp_data_types:
-        print_manager.variable_testing(f"Error: {data_type} not found in psp_data_types and is not the FITS calculation trigger.")
+    if not is_fits_calculation and data_type not in data_types:
+        print_manager.variable_testing(f"Error: {data_type} not found in data_types and is not the FITS calculation trigger.")
         print_manager.time_output("import_data_function", "error: invalid data_type")
         return None
     
@@ -245,7 +245,7 @@ def import_data_function(trange, data_type):
     # If it's the FITS calculation, we'll fetch sf00/sf01 configs later.
     if not is_fits_calculation:
         print_manager.variable_testing(f"Getting configuration for standard data type: {data_type}")
-        config = psp_data_types[data_type]
+        config = data_types[data_type]
     else:
         # config = None # Explicitly set config to None or handle later
         print_manager.variable_testing(f"Recognized request for calculated FITS data.")
@@ -274,9 +274,9 @@ def import_data_function(trange, data_type):
 
         # Get config for the required input type (sf00 only needed now)
         try:
-            sf00_config = psp_data_types['sf00_fits']
+            sf00_config = data_types['sf00_fits']
         except KeyError as e:
-            print_manager.error(f"Configuration error: Missing 'sf00_fits' data type definition in psp_data_types.py")
+            print_manager.error(f"Configuration error: Missing 'sf00_fits' data type definition in data_types.py")
             print_manager.time_output("import_data_function", "error: config error")
             return None
 
@@ -484,9 +484,9 @@ def import_data_function(trange, data_type):
         print_manager.debug(f"\n=== Starting Hammerhead CSV Data Import for {trange} ===")
 
         # Get config for the ham data type
-        config = psp_data_types['ham']
+        config = data_types['ham']
         if not config:
-            print_manager.error(f"Configuration error: Missing 'ham' data type definition in psp_data_types.py")
+            print_manager.error(f"Configuration error: Missing 'ham' data type definition in data_types.py")
             print_manager.time_output("import_data_function", "error: config error")
             return None
 
@@ -797,7 +797,9 @@ def import_data_function(trange, data_type):
             try:
                 with cdflib.CDF(file_path) as cdf_file:
                     print_manager.debug("Successfully opened CDF file")
-                    time_vars = [var for var in cdf_file.cdf_info().zVariables if 'epoch' in var.lower()]
+                    # Check for time variables in both zVariables and rVariables (WIND compatibility)
+                    all_vars = cdf_file.cdf_info().zVariables + cdf_file.cdf_info().rVariables
+                    time_vars = [var for var in all_vars if 'epoch' in var.lower()]
                     if not time_vars:
                         print_manager.warning(f"No time variable found in {os.path.basename(file_path)} - skipping")
                         continue # Skip this file if no time var
