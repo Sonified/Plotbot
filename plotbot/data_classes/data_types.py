@@ -175,7 +175,8 @@ data_types = {
     'wind_mfi_h2': {
         'mission': 'wind',
         'data_sources': ['spdf'],
-        'local_path': os.path.join('data', 'wind', 'mfi', 'h2'),
+        'local_path': os.path.join('data', 'wind', 'mfi', 'mfi_h2'),
+        'file_pattern_import': r'wi_h2_mfi_{date_str}_v*.cdf',
         # 'pyspedas_datatype': 'mfi_h2',        # v3.x: Dynamic pyspedas integration
         # 'pyspedas_func': 'pyspedas.wind.mfi', # v3.x: Dynamic pyspedas integration
         'data_level': 'h2',
@@ -186,6 +187,7 @@ data_types = {
         'mission': 'wind', 
         'data_sources': ['spdf'],
         'local_path': os.path.join('data', 'wind', 'swe', 'h1'),
+        'file_pattern_import': r'wi_h1_swe_{date_str}_v*.cdf',
         # 'pyspedas_datatype': 'swe_h1',        # v3.x: Dynamic pyspedas integration
         # 'pyspedas_func': 'pyspedas.wind.swe', # v3.x: Dynamic pyspedas integration
         'data_level': 'h1',
@@ -196,6 +198,7 @@ data_types = {
         'mission': 'wind',
         'data_sources': ['spdf'], 
         'local_path': os.path.join('data', 'wind', 'swe', 'h5'),
+        'file_pattern_import': r'wi_h5_swe_{date_str}_v*.cdf',
         # 'pyspedas_datatype': 'swe_h5',        # v3.x: Dynamic pyspedas integration
         # 'pyspedas_func': 'pyspedas.wind.swe', # v3.x: Dynamic pyspedas integration
         'data_level': 'h5',
@@ -206,6 +209,7 @@ data_types = {
         'mission': 'wind',
         'data_sources': ['spdf'],
         'local_path': os.path.join('data', 'wind', '3dp', 'pm'),
+        'file_pattern_import': r'wi_3dp_pm_{date_str}_v*.cdf',
         # 'pyspedas_datatype': '3dp_pm',             # v3.x: Dynamic pyspedas integration
         # 'pyspedas_func': 'pyspedas.wind.threedp', # v3.x: Dynamic pyspedas integration
         'data_level': 'pm',
@@ -216,6 +220,7 @@ data_types = {
         'mission': 'wind',
         'data_sources': ['spdf'],
         'local_path': os.path.join('data', 'wind', '3dp', 'elpd'),
+        'file_pattern_import': r'wi_3dp_elpd_{date_str}_v*.cdf',
         # 'pyspedas_datatype': '3dp_elpd',           # v3.x: Dynamic pyspedas integration
         # 'pyspedas_func': 'pyspedas.wind.threedp', # v3.x: Dynamic pyspedas integration
         'data_level': 'elpd',

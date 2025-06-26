@@ -5,6 +5,7 @@ channels:
 dependencies:
   - python=3.12.4
   - numpy=1.26.4
+  - numba>=0.59.0
   - pandas=2.2.2
   - zarr
   - xarray

@@ -23,6 +23,8 @@ from .data_classes.psp_proton_hr import proton_hr_class
 # Note: proton_fits and ham are handled differently in get_data, so maybe not needed here?
 # from .data_classes.psp_proton_fits_classes import proton_fits_class
 from .data_classes.psp_ham_classes import ham_class, ham
+# WIND satellite data classes
+from .data_classes.wind_mfi_classes import wind_mfi_h2_class
 
 from .data_import import DataObject # Import the type hint for raw data object
 
@@ -50,6 +52,8 @@ class data_cubby:
         'epad': epad_strahl_class,
         'epad_hr': epad_strahl_high_res_class,
         'ham': ham_class,
+        # WIND satellite data types
+        'wind_mfi_h2': wind_mfi_h2_class,
         # Add other standard CDF types here as needed
     }
 

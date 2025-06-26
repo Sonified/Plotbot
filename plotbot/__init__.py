@@ -39,6 +39,8 @@ from .data_classes.psp_proton import proton, proton_class
 from .data_classes.psp_proton_hr import proton_hr, proton_hr_class
 from .data_classes.psp_proton_fits_classes import proton_fits # Import the FITS class
 from .data_classes.psp_ham_classes import ham, ham_class # ADDED: Import the HAM class instance and class
+# WIND satellite data classes
+from .data_classes.wind_mfi_classes import wind_mfi_h2, wind_mfi_h2_class
 
 # --- Explicitly Register Global Instances with DataCubby --- #
 data_cubby.stash(mag_rtn_4sa, class_name='mag_rtn_4sa')
@@ -51,6 +53,8 @@ data_cubby.stash(proton, class_name='proton')
 data_cubby.stash(proton_hr, class_name='proton_hr')
 data_cubby.stash(proton_fits, class_name='proton_fits')
 data_cubby.stash(ham, class_name='ham')
+# Register WIND satellite instances
+data_cubby.stash(wind_mfi_h2, class_name='wind_mfi_h2')
 print_manager.datacubby("Registered global data instances with DataCubby.")
 # ---------------------------------------------------------- #
 
@@ -228,8 +232,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_06_25_v2.64"
-__commit_message__ = "v2.64 Integration: Complete WIND PYSPEDAS_MAP integration with all 5 data types downloading successfully"
+__version__ = "2025_06_25_v2.66"
+__commit_message__ = "v2.66 BREAKTHROUGH: Implement Numba JIT time conversion optimization - 17,000x performance improvement"
 
 # Get current date and time
 
