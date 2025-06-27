@@ -151,6 +151,49 @@ def _convert_cdf_epoch_to_tt2000_fallback(cdf_epoch_array):
     
     return tt2000_array
 
+# Constant for Unix to TT2000 conversion offset
+UNIX_TO_TT2000_OFFSET = -946728000000000000  # As determined by cdflib.cdfepoch.unixtime_to_tt2000(0)
+
+if NUMBA_AVAILABLE:
+    @njit(parallel=True, fastmath=True)
+    def _numba_convert_unix_to_tt2000_core(unix_epoch_array):
+        """
+        Numba JIT-compiled core conversion function for Unix time to TT2000.
+        """
+        n = len(unix_epoch_array)
+        result = np.empty(n, dtype=np.int64)
+        ns_per_s = 1000000000.0
+        
+        for i in numba.prange(n):
+            result[i] = int(unix_epoch_array[i] * ns_per_s) + UNIX_TO_TT2000_OFFSET
+            
+        return result
+
+def convert_unix_to_tt2000_vectorized(unix_epoch_array):
+    """
+    Ultra-fast conversion of Unix epoch values (seconds) to TT2000 using Numba.
+    """
+    import time
+    start_time = time.time()
+    
+    print_manager.debug(f"  Converting {len(unix_epoch_array)} Unix epoch values to TT2000 using optimized Numba method")
+    
+    if not NUMBA_AVAILABLE:
+        print_manager.warning("Numba not available, falling back to cdflib.unixtime_to_tt2000")
+        return cdflib.cdfepoch.unixtime_to_tt2000(unix_epoch_array)
+        
+    tt2000_array = _numba_convert_unix_to_tt2000_core(unix_epoch_array)
+    
+    end_time = time.time()
+    conversion_time = end_time - start_time
+    
+    print_manager.debug(f"  Numba Unix conversion completed: {len(tt2000_array)} values in {conversion_time:.3f} seconds")
+    if len(unix_epoch_array) > 1000 and conversion_time > 0:
+        rate = len(unix_epoch_array) / conversion_time
+        print_manager.debug(f"  Conversion rate: {rate:.0f} values/second")
+    
+    return tt2000_array
+
 # Function to recursively find local FITS CSV files matching patterns and date
 def find_local_csvs(base_path, file_patterns, date_str):
     """Recursively search for files matching patterns and containing date_str.
@@ -799,7 +842,7 @@ def import_data_function(trange, data_type):
                     print_manager.debug("Successfully opened CDF file")
                     # Check for time variables in both zVariables and rVariables (WIND compatibility)
                     all_vars = cdf_file.cdf_info().zVariables + cdf_file.cdf_info().rVariables
-                    time_vars = [var for var in all_vars if 'epoch' in var.lower()]
+                    time_vars = [var for var in all_vars if 'epoch' in var.lower() or var.upper() == 'TIME']
                     if not time_vars:
                         print_manager.warning(f"No time variable found in {os.path.basename(file_path)} - skipping")
                         continue # Skip this file if no time var
@@ -843,7 +886,14 @@ def import_data_function(trange, data_type):
                     epoch_type = epoch_var_info.Data_Type_Description
                     print_manager.debug(f"  Epoch type: {epoch_type}")
                     
-                    if 'CDF_EPOCH' in epoch_type and 'TT2000' not in epoch_type:
+                    if 'CDF_DOUBLE' in epoch_type or 'CDF_REAL8' in epoch_type:
+                        # Handle Unix timestamp in seconds (double)
+                        print_manager.debug("  Converting CDF_DOUBLE (Unix time) to TT2000 for boundary check")
+                        boundary_unix_epochs = np.array([file_first_raw, file_last_raw])
+                        boundary_tt2000 = convert_unix_to_tt2000_vectorized(boundary_unix_epochs)
+                        file_first_tt_val = boundary_tt2000[0]
+                        file_last_tt_val = boundary_tt2000[1]
+                    elif 'CDF_EPOCH' in epoch_type and 'TT2000' not in epoch_type:
                         # WIND uses CDF_EPOCH format - convert to TT2000 using vectorized method
                         print_manager.debug("  Converting CDF_EPOCH to TT2000 for WIND compatibility (boundary check)")
                         # Convert boundary values using vectorized function
@@ -857,9 +907,14 @@ def import_data_function(trange, data_type):
                         file_last_tt_val = file_last_raw
 
                     # Convert to datetime for display
-                    file_actual_start_dt_val = cdflib.cdfepoch.to_datetime(file_first_tt_val)[0] 
-                    file_actual_end_dt_val = cdflib.cdfepoch.to_datetime(file_last_tt_val)[0]
-                    print_manager.debug(f"  File actual TT2000 range: {file_first_tt_val} ({file_actual_start_dt_val}) to {file_last_tt_val} ({file_actual_end_dt_val})")
+                    try:
+                        file_actual_start_dt_val = cdflib.cdfepoch.to_datetime(file_first_tt_val)[0] 
+                        file_actual_end_dt_val = cdflib.cdfepoch.to_datetime(file_last_tt_val)[0]
+                        print_manager.debug(f"  File actual TT2000 range: {file_first_tt_val} ({file_actual_start_dt_val}) to {file_last_tt_val} ({file_actual_end_dt_val})")
+                    except Exception as e_conv_dt:
+                        print_manager.warning(f"Could not convert file boundary TT2000 values to datetime for logging: {e_conv_dt}")
+                        print_manager.debug(f"  Raw TT2000 vals were: {file_first_tt_val}, {file_last_tt_val}")
+
 
                     # Compare TT2000 times directly
                     file_ends_before_req_starts = file_last_tt_val < start_tt2000
@@ -873,14 +928,18 @@ def import_data_function(trange, data_type):
 
                     # Read full time data ONLY if file potentially overlaps
                     print_manager.debug("Reading full time data array...")
-                    time_data_raw = cdf_file.varget(time_var, epoch=True)
+                    time_data_raw = cdf_file.varget(time_var) # Get raw values, not epoch=True
                     if time_data_raw is None or len(time_data_raw) == 0:
                         print_manager.warning(f"Time data is empty in {os.path.basename(file_path)} - skipping")
                         continue
                     print_manager.debug(f"Read {len(time_data_raw)} time points")
 
                     # Convert time data to TT2000 if needed (WIND compatibility)
-                    if 'CDF_EPOCH' in epoch_type and 'TT2000' not in epoch_type:
+                    if 'CDF_DOUBLE' in epoch_type or 'CDF_REAL8' in epoch_type:
+                        print_manager.debug("  Converting full CDF_DOUBLE (Unix time) array to TT2000")
+                        time_data = convert_unix_to_tt2000_vectorized(time_data_raw)
+                        print_manager.debug(f"  Unix time conversion completed: {len(time_data)} time points converted to TT2000")
+                    elif 'CDF_EPOCH' in epoch_type and 'TT2000' not in epoch_type:
                         print_manager.debug("  Converting full time array from CDF_EPOCH to TT2000 using vectorized method")
                         # Convert CDF_EPOCH array to TT2000 using optimized vectorized function
                         time_data = convert_cdf_epoch_to_tt2000_vectorized(time_data_raw)

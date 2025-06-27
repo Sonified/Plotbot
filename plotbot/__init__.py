@@ -44,6 +44,7 @@ from .data_classes.wind_mfi_classes import wind_mfi_h2, wind_mfi_h2_class
 from .data_classes.wind_3dp_classes import wind_3dp_elpd, wind_3dp_elpd_class
 from .data_classes.wind_swe_h5_classes import wind_swe_h5, wind_swe_h5_class
 from .data_classes.wind_swe_h1_classes import wind_swe_h1, wind_swe_h1_class
+from .data_classes.wind_3dp_pm_classes import wind_3dp_pm, wind_3dp_pm_class
 
 # --- Explicitly Register Global Instances with DataCubby --- #
 data_cubby.stash(mag_rtn_4sa, class_name='mag_rtn_4sa')
@@ -59,6 +60,7 @@ data_cubby.stash(ham, class_name='ham')
 # Register WIND satellite instances
 data_cubby.stash(wind_mfi_h2, class_name='wind_mfi_h2')
 data_cubby.stash(wind_3dp_elpd, class_name='wind_3dp_elpd')
+data_cubby.stash(wind_3dp_pm, class_name='wind_3dp_pm')
 data_cubby.stash(wind_swe_h5, class_name='wind_swe_h5')
 data_cubby.stash(wind_swe_h1, class_name='wind_swe_h1')
 print_manager.datacubby("Registered global data instances with DataCubby.")
@@ -221,6 +223,7 @@ __all__ = [
     'ham',           # ADDED: Add ham to __all__
     'wind_mfi_h2',   # WIND satellite magnetic field data
     'wind_3dp_elpd', # WIND satellite electron pitch-angle distributions
+    'wind_3dp_pm',   # WIND satellite ion plasma moments
     'wind_swe_h5',   # WIND satellite electron temperature
     'wind_swe_h1',   # WIND satellite proton/alpha thermal speeds
     'audifier',
@@ -242,8 +245,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_06_26_v2.70"
-__commit_message__ = "v2.70 Production: WIND SWE H1 proton/alpha thermal speeds + get_data() architecture discovery"
+__version__ = "2025_06_26_v2.71"
+__commit_message__ = "v2.71 HISTORIC: Complete WIND integration - all 5 data types production-ready + critical bug fixes"
 
 # Get current date and time
 

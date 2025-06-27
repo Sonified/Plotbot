@@ -208,13 +208,12 @@ data_types = {
     'wind_3dp_pm': {
         'mission': 'wind',
         'data_sources': ['spdf'],
-        'local_path': os.path.join('data', 'wind', '3dp', 'pm'),
-        'file_pattern_import': r'wi_3dp_pm_{date_str}_v*.cdf',
+        'local_path': os.path.join('data', 'wind', '3dp', '3dp_pm'),
+        'file_pattern_import': r'wi_pm_3dp_{date_str}_v*.cdf',
         # 'pyspedas_datatype': '3dp_pm',             # v3.x: Dynamic pyspedas integration
-        # 'pyspedas_func': 'pyspedas.wind.threedp', # v3.x: Dynamic pyspedas integration
         'data_level': 'pm',
         'file_time_format': 'daily',
-        'data_vars': ['VALID', 'P_VELS', 'P_DENS', 'P_TEMP', 'A_DENS', 'A_TEMP'],
+        'data_vars': ['TIME', 'VALID', 'P_VELS', 'P_DENS', 'P_TEMP', 'A_DENS', 'A_TEMP'],
     },
     'wind_3dp_elpd': {
         'mission': 'wind',
