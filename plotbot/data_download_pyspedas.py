@@ -43,6 +43,11 @@ PYSPEDAS_MAP = {
         'pyspedas_func': pyspedas.psp.spe,
         'kwargs': {'level': 'l3', 'get_support_data': True}
     },
+    'spi_sf0a_l3_mom': {
+        'pyspedas_datatype': 'spi_sf0a_l3_mom',
+        'pyspedas_func': pyspedas.psp.spi,
+        'kwargs': {'level': 'l3'}
+    },
     # Add mappings for other data types as needed (e.g., high-res versions)
     
     # === WIND SATELLITE DATA TYPES ===
@@ -188,6 +193,9 @@ def download_spdf_data(trange, plotbot_key):
                                 temp_name = spdf_basename.replace('L3', 'l3')
                                 if temp_name != spdf_basename: spdf_basename, rename_needed = temp_name, True
                             elif plotbot_key == 'spe_sf0_pad':
+                                temp_name = spdf_basename.replace('L3', 'l3')
+                                if temp_name != spdf_basename: spdf_basename, rename_needed = temp_name, True
+                            elif plotbot_key == 'spi_sf0a_l3_mom':
                                 temp_name = spdf_basename.replace('L3', 'l3')
                                 if temp_name != spdf_basename: spdf_basename, rename_needed = temp_name, True
                             # Add more rules if needed for other keys

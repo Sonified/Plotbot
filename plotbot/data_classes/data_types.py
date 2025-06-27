@@ -113,6 +113,23 @@ data_types = {
             'ENERGY_VALS', 'THETA_VALS', 'PHI_VALS'
         ],
     },
+    'spi_sf0a_l3_mom': {  # Alpha particle data
+        'mission': 'psp',
+        'data_sources': ['berkeley', 'spdf'],
+        'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/sweap/spi/L3/spi_sf0a/',
+        'local_path': os.path.join('data', 'psp', 'sweap', 'spi', 'l3', 'spi_sf0a_l3_mom'),
+        'password_type': 'sweap',
+        'file_pattern': r'psp_swp_spi_sf0a_L3_mom_{date_str}_v(\d{{2}})\.cdf',
+        'file_pattern_import': r'psp_swp_spi_sf0a_L3_mom_{date_str}_v*.cdf',
+        'spdf_file_pattern': r'psp_swp_spi_sf0a_l3_mom_{date_str}_v*.cdf',   # SPDF case (lowercase l3)
+        'data_level': 'l3',
+        'file_time_format': 'daily',
+        'data_vars': [
+            'VEL_INST', 'VEL_SC', 'VEL_RTN_SUN', 'DENS', 'TEMP', 'MAGF_INST', 'T_TENSOR_INST',
+            'EFLUX_VS_ENERGY', 'EFLUX_VS_THETA', 'EFLUX_VS_PHI',
+            'ENERGY_VALS', 'THETA_VALS', 'PHI_VALS', 'SUN_DIST'
+        ],
+    },
     'sf00_fits': { # FITS sf00 CSV data
         'mission': 'psp',
         'data_sources': ['local_csv'],

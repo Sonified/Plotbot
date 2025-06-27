@@ -27,6 +27,7 @@ from .data_classes.psp_ham_classes import ham_class, ham
 from .data_classes.wind_mfi_classes import wind_mfi_h2_class
 from .data_classes.wind_3dp_classes import wind_3dp_elpd_class
 from .data_classes.wind_3dp_pm_classes import wind_3dp_pm_class
+from .data_classes.psp_alpha_classes import psp_alpha_class
 from .data_classes.wind_swe_h5_classes import wind_swe_h5_class
 from .data_classes.wind_swe_h1_classes import wind_swe_h1_class
 
@@ -60,6 +61,7 @@ class data_cubby:
         'wind_mfi_h2': wind_mfi_h2_class,
         'wind_3dp_elpd': wind_3dp_elpd_class,
         'wind_3dp_pm': wind_3dp_pm_class,
+    'spi_sf0a_l3_mom': psp_alpha_class,
         'wind_swe_h5': wind_swe_h5_class,
         'wind_swe_h1': wind_swe_h1_class,
         # Add other standard CDF types here as needed

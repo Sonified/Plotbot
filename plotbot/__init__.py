@@ -45,6 +45,7 @@ from .data_classes.wind_3dp_classes import wind_3dp_elpd, wind_3dp_elpd_class
 from .data_classes.wind_swe_h5_classes import wind_swe_h5, wind_swe_h5_class
 from .data_classes.wind_swe_h1_classes import wind_swe_h1, wind_swe_h1_class
 from .data_classes.wind_3dp_pm_classes import wind_3dp_pm, wind_3dp_pm_class
+from .data_classes.psp_alpha_classes import psp_alpha, psp_alpha_class
 
 # --- Explicitly Register Global Instances with DataCubby --- #
 data_cubby.stash(mag_rtn_4sa, class_name='mag_rtn_4sa')
@@ -61,6 +62,7 @@ data_cubby.stash(ham, class_name='ham')
 data_cubby.stash(wind_mfi_h2, class_name='wind_mfi_h2')
 data_cubby.stash(wind_3dp_elpd, class_name='wind_3dp_elpd')
 data_cubby.stash(wind_3dp_pm, class_name='wind_3dp_pm')
+data_cubby.stash(psp_alpha, class_name='psp_alpha')
 data_cubby.stash(wind_swe_h5, class_name='wind_swe_h5')
 data_cubby.stash(wind_swe_h1, class_name='wind_swe_h1')
 print_manager.datacubby("Registered global data instances with DataCubby.")
@@ -226,6 +228,7 @@ __all__ = [
     'wind_3dp_pm',   # WIND satellite ion plasma moments
     'wind_swe_h5',   # WIND satellite electron temperature
     'wind_swe_h1',   # WIND satellite proton/alpha thermal speeds
+    'psp_alpha',     # PSP alpha particle moments
     'audifier',
     'custom_variable',  # Using custom_variable instead of new_variable
     'debug_custom_variables',  # Add debug function for custom variables
@@ -245,8 +248,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_06_26_v2.71"
-__commit_message__ = "v2.71 HISTORIC: Complete WIND integration - all 5 data types production-ready + critical bug fixes"
+__version__ = "2025_06_27_v2.72"
+__commit_message__ = "v2.72 BREAKTHROUGH: Complete PSP alpha particle integration - production ready"
 
 # Get current date and time
 
