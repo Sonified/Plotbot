@@ -55,6 +55,19 @@ data_types = {
         'file_time_format': 'daily',
         'data_vars': ['psp_fld_l2_mag_SC_4_Sa_per_Cyc'],
     },
+    'sqtn_rfs_v1v2': {  # QTN (Quasi-Thermal Noise) data
+        'mission': 'psp',
+        'data_sources': ['berkeley', 'spdf'],
+        'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/fields/{data_level}/sqtn_rfs_V1V2/',  # Berkeley uses uppercase URL
+        'local_path': os.path.join('data', 'psp', 'fields', '{data_level}', 'sqtn_rfs_v1v2'),
+        'password_type': 'mag',  # FIELDS instrument uses mag password type
+        'file_pattern': r'psp_fld_{data_level}_sqtn_rfs_V1V2_{date_str}_v(\d{{2}})\.cdf',  # Berkeley uses uppercase
+        'file_pattern_import': r'psp_fld_{data_level}_sqtn_rfs_V1V2_{date_str}_v*.cdf',   # Berkeley uses uppercase
+        'spdf_file_pattern': r'psp_fld_{data_level}_sqtn_rfs_v1v2_{date_str}_v*.cdf',   # SPDF uses lowercase
+        'data_level': 'l3',
+        'file_time_format': 'daily',
+        'data_vars': ['electron_density', 'electron_core_temperature'],  # Primary QTN variables
+    },
     'spe_sf0_pad': {  # Electron data
         'mission': 'psp',
         'data_sources': ['berkeley', 'spdf'],

@@ -58,6 +58,7 @@ from . import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
 from .data_classes.psp_electron_classes import epad, epad_hr
 from .data_classes.psp_proton import proton
 from .data_classes.psp_proton_hr import proton_hr
+from .data_classes.psp_qtn_classes import psp_qtn
 from .get_encounter import get_encounter_number
 from .time_utils import get_needed_6hour_blocks, daterange
 from .plotbot_helpers import time_clip, parse_axis_spec, resample, debug_plot_variable

@@ -46,6 +46,7 @@ from .data_classes.wind_swe_h5_classes import wind_swe_h5, wind_swe_h5_class
 from .data_classes.wind_swe_h1_classes import wind_swe_h1, wind_swe_h1_class
 from .data_classes.wind_3dp_pm_classes import wind_3dp_pm, wind_3dp_pm_class
 from .data_classes.psp_alpha_classes import psp_alpha, psp_alpha_class
+from .data_classes.psp_qtn_classes import psp_qtn, psp_qtn_class
 
 # --- Explicitly Register Global Instances with DataCubby --- #
 data_cubby.stash(mag_rtn_4sa, class_name='mag_rtn_4sa')
@@ -65,6 +66,7 @@ data_cubby.stash(wind_3dp_pm, class_name='wind_3dp_pm')
 data_cubby.stash(psp_alpha, class_name='psp_alpha')
 data_cubby.stash(wind_swe_h5, class_name='wind_swe_h5')
 data_cubby.stash(wind_swe_h1, class_name='wind_swe_h1')
+data_cubby.stash(psp_qtn, class_name='psp_qtn')
 print_manager.datacubby("Registered global data instances with DataCubby.")
 # ---------------------------------------------------------- #
 
@@ -196,6 +198,12 @@ CLASS_NAME_MAPPING = {
         'components': ['hamogram_30s'],
         'primary_component': 'hamogram_30s'
     },
+    'psp_qtn': {
+        'data_type': 'sqtn_rfs_v1v2',
+        'class_type': psp_qtn_class,
+        'components': ['density', 'temperature'],
+        'primary_component': 'density'
+    },
 }
 
 # Specify what gets imported with `from plotbot import *`
@@ -229,6 +237,7 @@ __all__ = [
     'wind_swe_h5',   # WIND satellite electron temperature
     'wind_swe_h1',   # WIND satellite proton/alpha thermal speeds
     'psp_alpha',     # PSP alpha particle moments
+    'psp_qtn',       # PSP quasi-thermal noise (electron density and temperature)
     'audifier',
     'custom_variable',  # Using custom_variable instead of new_variable
     'debug_custom_variables',  # Add debug function for custom variables
@@ -248,8 +257,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_06_27_v2.73"
-__commit_message__ = "v2.73 Update: WIND 3DP electron energy bin 4 (255 eV) selection"
+__version__ = "2025_06_30_v2.74"
+__commit_message__ = "v2.74 BREAKTHROUGH: PSP QTN class implementation - most reliable electron density measurements"
 
 # Get current date and time
 

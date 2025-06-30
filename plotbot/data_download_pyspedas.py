@@ -48,6 +48,11 @@ PYSPEDAS_MAP = {
         'pyspedas_func': pyspedas.psp.spi,
         'kwargs': {'level': 'l3'}
     },
+    'sqtn_rfs_v1v2': {
+        'pyspedas_datatype': 'sqtn_rfs_V1V2',  # Pyspedas still expects uppercase datatype
+        'pyspedas_func': pyspedas.psp.fields,
+        'kwargs': {'level': 'l3', 'get_support_data': True}
+    },
     # Add mappings for other data types as needed (e.g., high-res versions)
     
     # === WIND SATELLITE DATA TYPES ===
@@ -197,6 +202,9 @@ def download_spdf_data(trange, plotbot_key):
                                 if temp_name != spdf_basename: spdf_basename, rename_needed = temp_name, True
                             elif plotbot_key == 'spi_sf0a_l3_mom':
                                 temp_name = spdf_basename.replace('L3', 'l3')
+                                if temp_name != spdf_basename: spdf_basename, rename_needed = temp_name, True
+                            elif plotbot_key == 'sqtn_rfs_v1v2':
+                                temp_name = spdf_basename.replace('V1V2', 'v1v2')
                                 if temp_name != spdf_basename: spdf_basename, rename_needed = temp_name, True
                             # Add more rules if needed for other keys
 

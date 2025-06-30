@@ -28,6 +28,7 @@ from .data_classes.wind_mfi_classes import wind_mfi_h2_class
 from .data_classes.wind_3dp_classes import wind_3dp_elpd_class
 from .data_classes.wind_3dp_pm_classes import wind_3dp_pm_class
 from .data_classes.psp_alpha_classes import psp_alpha_class
+from .data_classes.psp_qtn_classes import psp_qtn_class
 from .data_classes.wind_swe_h5_classes import wind_swe_h5_class
 from .data_classes.wind_swe_h1_classes import wind_swe_h1_class
 
@@ -57,6 +58,7 @@ class data_cubby:
         'epad': epad_strahl_class,
         'epad_hr': epad_strahl_high_res_class,
         'ham': ham_class,
+        'sqtn_rfs_v1v2': psp_qtn_class,  # QTN (Quasi-Thermal Noise) electron density and temperature
         # WIND satellite data types
         'wind_mfi_h2': wind_mfi_h2_class,
         'wind_3dp_elpd': wind_3dp_elpd_class,
