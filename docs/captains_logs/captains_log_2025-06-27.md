@@ -93,6 +93,19 @@ As discussed during integration:
 - **Commit Message**: "v2.72 BREAKTHROUGH: Complete PSP alpha particle integration - production ready"
 - **Scope**: Full PSP alpha particle data type integration with comprehensive testing and notebook examples
 - **Achievement**: PSP multi-species analysis capabilities now operational
-- **Status**: ✅ **READY TO COMMIT & PUSH**
+- **Status**: ✅ **COMMITTED & PUSHED** - Git hash: `cab5a8e`
+
+## WIND 3DP Electron Data Energy Bin Update
+**Date**: 2025-06-27  
+**Update**: Updated WIND 3DP electron pitch-angle distribution class to use energy bin 4 (255 eV) instead of bin 7 for better energy selection and consistency with typical electron analysis.
+
+**Technical Details**:
+- **File Modified**: `plotbot/data_classes/wind_3dp_classes.py`
+- **Change**: `energy_index` changed from 7 to 4 (corresponds to 255 eV channel)
+- **Impact**: Better energy channel selection for electron pitch-angle analysis
+- **Reason**: Energy bin 4 provides more representative mid-range electron energies
+
+**Version**: v2.73
+- **Commit Message**: "v2.73 Update: WIND 3DP electron energy bin 4 (255 eV) selection"
 
 *Captain's Log 2025-06-27 - PSP Alpha Particle Mission Accomplished! 🌟🚀* 

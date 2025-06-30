@@ -248,8 +248,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_06_27_v2.72"
-__commit_message__ = "v2.72 BREAKTHROUGH: Complete PSP alpha particle integration - production ready"
+__version__ = "2025_06_27_v2.73"
+__commit_message__ = "v2.73 Update: WIND 3DP electron energy bin 4 (255 eV) selection"
 
 # Get current date and time
 

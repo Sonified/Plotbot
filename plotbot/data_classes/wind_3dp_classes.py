@@ -29,7 +29,7 @@ class wind_3dp_elpd_class:
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
         object.__setattr__(self, 'times_mesh', [])
-        object.__setattr__(self, 'energy_index', 7)  # Default energy index for WIND (mid-range of 0-14)
+        object.__setattr__(self, 'energy_index', 4)  # Channel 4 corresponds to 255 eV
         object.__setattr__(self, '_current_operation_trange', None)
 
         print_manager.dependency_management(f"*** WIND_3DP_ELPD_CLASS_INIT (wind_3dp_elpd_class) ID:{id(self)}: imported_data ID: {id(imported_data) if imported_data is not None else 'None'}. ***")
