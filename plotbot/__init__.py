@@ -260,8 +260,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_07_v2.76"
-__commit_message__ = "v2.76 Planning: Corrected alpha/proton implementation plan to target right classes (psp_alpha not alpha_fits)"
+__version__ = "2025_07_07_v2.77"
+__commit_message__ = "v2.77 COMPLETE: Alpha/proton derived variables fully implemented - na_div_np, ap_drift, ap_drift_va production ready"
 
 # Get current date and time
 

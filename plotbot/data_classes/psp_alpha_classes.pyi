@@ -59,6 +59,11 @@ class psp_alpha_class:
     pressure: plot_manager         # Total pressure
     bmag: plot_manager            # Magnetic field magnitude
     
+    # Plot managers for alpha/proton derived variables
+    na_div_np: plot_manager       # Alpha/proton density ratio
+    ap_drift: plot_manager        # Alpha-proton drift speed |V_alpha - V_proton|
+    ap_drift_va: plot_manager     # Drift speed normalized by Alfvén speed
+    
     # Plot managers for spectral data
     energy_flux: plot_manager  # Energy flux spectrogram
     theta_flux: plot_manager   # Theta flux spectrogram
@@ -70,6 +75,7 @@ class psp_alpha_class:
     def calculate_variables(self, imported_data: Any) -> None: ...
     def set_ploptions(self) -> None: ...
     def _calculate_temperature_anisotropy(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]: ...
+    def _calculate_alpha_proton_derived(self) -> bool: ...
     def restore_from_snapshot(self, snapshot_data: Any) -> None: ...
 
 # Global instance

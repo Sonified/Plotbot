@@ -42,7 +42,11 @@ class psp_alpha_class:
             'sun_dist_rsun': None,  # Distance from Sun in solar radii
             'ENERGY_VALS': None,    # Energy bin values
             'THETA_VALS': None,     # Theta bin values
-            'PHI_VALS': None        # Phi bin values
+            'PHI_VALS': None,       # Phi bin values
+            # --- NEW: Alpha/Proton Derived Variables ---
+            'na_div_np': None,      # Alpha/proton density ratio
+            'ap_drift': None,       # Alpha-proton drift speed |VEL_alpha - VEL_proton|
+            'ap_drift_va': None,    # Drift speed normalized by Alfvén speed
         })
         object.__setattr__(self, 'datetime_array', None)
         object.__setattr__(self, 'times_mesh', [])
@@ -51,6 +55,7 @@ class psp_alpha_class:
         object.__setattr__(self, 'theta_vals', None)
         object.__setattr__(self, 'phi_vals', None)
         object.__setattr__(self, 'data_type', 'spi_sf0a_l3_mom')
+        # --- ADD: Dependency Management Infrastructure ---
         object.__setattr__(self, '_current_operation_trange', None)
 
         if imported_data is None:
@@ -66,6 +71,7 @@ class psp_alpha_class:
 
     def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
         """Method to update class with new data."""
+        # --- ADD: Store dependency management trange ---
         if original_requested_trange is not None:
             object.__setattr__(self, '_current_operation_trange', original_requested_trange)
             print_manager.dependency_management(f"[{self.__class__.__name__}] Updated _current_operation_trange to: {self._current_operation_trange}")
@@ -282,7 +288,10 @@ class psp_alpha_class:
             'sun_dist_rsun': sun_dist_rsun,
             'ENERGY_VALS': self.energy_vals,
             'THETA_VALS': self.theta_vals,
-            'PHI_VALS': self.phi_vals
+            'PHI_VALS': self.phi_vals,
+            'na_div_np': None,      # Alpha/proton density ratio
+            'ap_drift': None,       # Alpha-proton drift speed |VEL_alpha - VEL_proton|
+            'ap_drift_va': None,    # Drift speed normalized by Alfvén speed
         }
 
     def _calculate_temperature_anisotropy(self):
@@ -532,6 +541,315 @@ class psp_alpha_class:
         """Restore all relevant fields from a snapshot dictionary/object."""
         for key, value in snapshot_data.__dict__.items():
             setattr(self, key, value)
+
+    # --- ADD: Alpha/Proton Derived Variables as Properties ---
+    
+    @property
+    def na_div_np(self):
+        """Alpha/proton density ratio with lazy loading and dependency management."""
+        print_manager.dependency_management(f"[NA_DIV_NP_PROPERTY ENTRY] Accessing na_div_np for instance ID: {id(self)}")
+        
+        # Store the plot_manager in a private attribute
+        if not hasattr(self, '_na_div_np_manager'):
+            print_manager.dependency_management("[NA_DIV_NP_PROPERTY] Creating initial placeholder manager")
+            # Create an empty placeholder initially
+            self._na_div_np_manager = plot_manager(
+                np.array([]),
+                plot_options=ploptions(
+                    var_name='na_div_np',
+                    data_type='spi_sf0a_l3_mom',
+                    class_name='psp_alpha',
+                    subclass_name='na_div_np',
+                    plot_type='time_series',
+                    datetime_array=self.datetime_array,
+                    y_label=r'$n_\alpha / n_p$',
+                    legend_label=r'$n_\alpha / n_p$',
+                    color='purple',
+                    y_scale='linear',
+                    y_limit=None,
+                    line_width=1,
+                    line_style='-'
+                )
+            )
+
+        # If alpha data is available, try to calculate
+        alpha_density_exists = (hasattr(self, 'raw_data') and 'density' in self.raw_data and 
+                               self.raw_data['density'] is not None and len(self.raw_data['density']) > 0)
+        
+        if alpha_density_exists:
+            print_manager.dependency_management("[NA_DIV_NP_PROPERTY] Alpha density exists. Attempting calculation.")
+            success = self._calculate_alpha_proton_derived()
+            if success and self.raw_data.get('na_div_np') is not None:
+                print_manager.dependency_management("[NA_DIV_NP_PROPERTY] Calculation successful, updating manager.")
+                options = self._na_div_np_manager.plot_options
+                
+                # Ensure the plot_options uses the PARENT's datetime_array
+                if hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0:
+                    options.datetime_array = self.datetime_array
+                else:
+                    options.datetime_array = np.array([])
+
+                self._na_div_np_manager = plot_manager(
+                    self.raw_data['na_div_np'],
+                    plot_options=options 
+                )
+                print_manager.dependency_management(f"[NA_DIV_NP_PROPERTY] Updated manager with data shape: {self.raw_data['na_div_np'].shape}")
+            else:
+                print_manager.dependency_management(f"[NA_DIV_NP_PROPERTY] Calculation failed or data is None. Success: {success}")
+        else:
+            print_manager.dependency_management("[NA_DIV_NP_PROPERTY] Alpha density MISSING or EMPTY. Not attempting calculation.")
+        
+        return self._na_div_np_manager
+
+    @property  
+    def ap_drift(self):
+        """Alpha-proton drift speed with lazy loading and dependency management."""
+        print_manager.dependency_management(f"[AP_DRIFT_PROPERTY ENTRY] Accessing ap_drift for instance ID: {id(self)}")
+        
+        # Store the plot_manager in a private attribute
+        if not hasattr(self, '_ap_drift_manager'):
+            print_manager.dependency_management("[AP_DRIFT_PROPERTY] Creating initial placeholder manager")
+            # Create an empty placeholder initially
+            self._ap_drift_manager = plot_manager(
+                np.array([]),
+                plot_options=ploptions(
+                    var_name='ap_drift',
+                    data_type='spi_sf0a_l3_mom',
+                    class_name='psp_alpha',
+                    subclass_name='ap_drift',
+                    plot_type='time_series',
+                    datetime_array=self.datetime_array,
+                    y_label=r'$|V_\alpha - V_p|$ (km/s)',
+                    legend_label=r'$|V_\alpha - V_p|$',
+                    color='red',
+                    y_scale='linear',
+                    y_limit=None,
+                    line_width=1,
+                    line_style='-'
+                )
+            )
+
+        # If alpha velocity data is available, try to calculate
+        alpha_velocity_exists = (hasattr(self, 'raw_data') and 'vr' in self.raw_data and 'vt' in self.raw_data and 'vn' in self.raw_data and
+                                self.raw_data['vr'] is not None and len(self.raw_data['vr']) > 0)
+        
+        if alpha_velocity_exists:
+            print_manager.dependency_management("[AP_DRIFT_PROPERTY] Alpha velocity data exists. Attempting calculation.")
+            success = self._calculate_alpha_proton_derived()
+            if success and self.raw_data.get('ap_drift') is not None:
+                print_manager.dependency_management("[AP_DRIFT_PROPERTY] Calculation successful, updating manager.")
+                options = self._ap_drift_manager.plot_options
+                
+                # Ensure the plot_options uses the PARENT's datetime_array
+                if hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0:
+                    options.datetime_array = self.datetime_array
+                else:
+                    options.datetime_array = np.array([])
+
+                self._ap_drift_manager = plot_manager(
+                    self.raw_data['ap_drift'],
+                    plot_options=options 
+                )
+                print_manager.dependency_management(f"[AP_DRIFT_PROPERTY] Updated manager with data shape: {self.raw_data['ap_drift'].shape}")
+            else:
+                print_manager.dependency_management(f"[AP_DRIFT_PROPERTY] Calculation failed or data is None. Success: {success}")
+        else:
+            print_manager.dependency_management("[AP_DRIFT_PROPERTY] Alpha velocity data MISSING or EMPTY. Not attempting calculation.")
+        
+        return self._ap_drift_manager
+
+    @property
+    def ap_drift_va(self):
+        """Drift speed normalized by Alfvén speed with lazy loading and dependency management."""
+        print_manager.dependency_management(f"[AP_DRIFT_VA_PROPERTY ENTRY] Accessing ap_drift_va for instance ID: {id(self)}")
+        
+        # Store the plot_manager in a private attribute
+        if not hasattr(self, '_ap_drift_va_manager'):
+            print_manager.dependency_management("[AP_DRIFT_VA_PROPERTY] Creating initial placeholder manager")
+            # Create an empty placeholder initially
+            self._ap_drift_va_manager = plot_manager(
+                np.array([]),
+                plot_options=ploptions(
+                    var_name='ap_drift_va',
+                    data_type='spi_sf0a_l3_mom',
+                    class_name='psp_alpha',
+                    subclass_name='ap_drift_va',
+                    plot_type='time_series',
+                    datetime_array=self.datetime_array,
+                    y_label=r'$|V_\alpha - V_p| / V_A$',
+                    legend_label=r'$|V_\alpha - V_p| / V_A$',
+                    color='orange',
+                    y_scale='linear',
+                    y_limit=None,
+                    line_width=1,
+                    line_style='-'
+                )
+            )
+
+        # If alpha velocity data is available, try to calculate
+        alpha_velocity_exists = (hasattr(self, 'raw_data') and 'vr' in self.raw_data and 'vt' in self.raw_data and 'vn' in self.raw_data and
+                                self.raw_data['vr'] is not None and len(self.raw_data['vr']) > 0)
+        
+        if alpha_velocity_exists:
+            print_manager.dependency_management("[AP_DRIFT_VA_PROPERTY] Alpha velocity data exists. Attempting calculation.")
+            success = self._calculate_alpha_proton_derived()
+            if success and self.raw_data.get('ap_drift_va') is not None:
+                print_manager.dependency_management("[AP_DRIFT_VA_PROPERTY] Calculation successful, updating manager.")
+                options = self._ap_drift_va_manager.plot_options
+                
+                # Ensure the plot_options uses the PARENT's datetime_array
+                if hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0:
+                    options.datetime_array = self.datetime_array
+                else:
+                    options.datetime_array = np.array([])
+
+                self._ap_drift_va_manager = plot_manager(
+                    self.raw_data['ap_drift_va'],
+                    plot_options=options 
+                )
+                print_manager.dependency_management(f"[AP_DRIFT_VA_PROPERTY] Updated manager with data shape: {self.raw_data['ap_drift_va'].shape}")
+            else:
+                print_manager.dependency_management(f"[AP_DRIFT_VA_PROPERTY] Calculation failed or data is None. Success: {success}")
+        else:
+            print_manager.dependency_management("[AP_DRIFT_VA_PROPERTY] Alpha velocity data MISSING or EMPTY. Not attempting calculation.")
+        
+        return self._ap_drift_va_manager
+    
+    def _calculate_alpha_proton_derived(self):
+        """Calculate alpha-proton derived variables using dependency best practices."""
+        from plotbot.get_data import get_data
+        from plotbot import proton  # Use regular proton class (CDF data) - RTN coordinates
+        
+        print_manager.dependency_management(f"[ALPHA_PROTON_CALC] Starting calculation for derived variables")
+        
+        # CRITICAL: Use the stored operation trange for dependencies
+        trange_for_dependencies = None
+        if hasattr(self, '_current_operation_trange') and self._current_operation_trange is not None:
+            trange_for_dependencies = self._current_operation_trange
+            print_manager.dependency_management(f"[ALPHA_PROTON_CALC] Using _current_operation_trange: {trange_for_dependencies}")
+        else:
+            print_manager.error("[ALPHA_PROTON_CALC] Cannot determine time range for dependencies: _current_operation_trange is None")
+            print_manager.warning("[ALPHA_PROTON_CALC] The derived variable calculation now STRICTLY requires _current_operation_trange.")
+            self.raw_data.update({'na_div_np': None, 'ap_drift': None, 'ap_drift_va': None})
+            return False
+
+        # Fetch proton data with correct time range (using regular CDF proton data)
+        print_manager.dependency_management(f"[ALPHA_PROTON_CALC] Fetching proton dependencies for trange: {trange_for_dependencies}")
+        
+        # Get required proton data for calculations from regular proton class
+        get_data(trange_for_dependencies, proton.density)   # Proton density from CDF
+        get_data(trange_for_dependencies, proton.vr)        # Velocity components from VEL_RTN_SUN
+        get_data(trange_for_dependencies, proton.vt)
+        get_data(trange_for_dependencies, proton.vn)
+        get_data(trange_for_dependencies, proton.bmag)      # Magnetic field magnitude
+        
+        # Validation
+        required_attrs = ['density', 'vr', 'vt', 'vn', 'bmag']
+        missing_attrs = []
+        for attr in required_attrs:
+            if not hasattr(proton, attr):
+                missing_attrs.append(f"proton.{attr}")
+                continue
+            proton_var = getattr(proton, attr)
+            if not hasattr(proton_var, 'data') or proton_var.data is None or len(proton_var.data) == 0:
+                missing_attrs.append(f"proton.{attr}.data")
+        
+        if missing_attrs:
+            print_manager.error(f"[ALPHA_PROTON_CALC] Missing proton dependency data: {missing_attrs} for trange {trange_for_dependencies}")
+            self.raw_data.update({'na_div_np': None, 'ap_drift': None, 'ap_drift_va': None})
+            return False
+
+        # Check if we have alpha data
+        if (self.raw_data.get('density') is None or 
+            self.raw_data.get('vr') is None or 
+            self.raw_data.get('vt') is None or 
+            self.raw_data.get('vn') is None):
+            print_manager.error("[ALPHA_PROTON_CALC] Missing essential alpha data for derived calculations")
+            self.raw_data.update({'na_div_np': None, 'ap_drift': None, 'ap_drift_va': None})
+            return False
+
+        try:
+            # Get alpha data arrays
+            alpha_density = self.raw_data['density']
+            alpha_vr = self.raw_data['vr']
+            alpha_vt = self.raw_data['vt'] 
+            alpha_vn = self.raw_data['vn']
+            alpha_times = self.datetime_array
+            
+            # Get proton data arrays from regular proton class (CDF data)
+            proton_density = proton.density.data
+            proton_vr = proton.vr.data
+            proton_vt = proton.vt.data
+            proton_vn = proton.vn.data
+            proton_bmag = proton.bmag.data
+            proton_times = proton.datetime_array
+            
+            print_manager.dependency_management(f"[ALPHA_PROTON_CALC] Alpha data length: {len(alpha_density)}, Proton data length: {len(proton_density)}")
+            
+            # Interpolate proton data to alpha cadence
+            import pandas as pd
+            
+            alpha_df = pd.DataFrame({'time': alpha_times})
+            proton_df = pd.DataFrame({
+                'time': proton_times,
+                'density': proton_density,
+                'vr': proton_vr,
+                'vt': proton_vt,
+                'vn': proton_vn,
+                'bmag': proton_bmag
+            })
+            
+            # Merge and interpolate
+            merged = pd.merge_asof(alpha_df.sort_values('time'), 
+                                   proton_df.sort_values('time'), 
+                                   on='time', 
+                                   direction='nearest')
+            
+            # Extract interpolated proton data
+            proton_density_interp = merged['density'].values
+            proton_vr_interp = merged['vr'].values
+            proton_vt_interp = merged['vt'].values
+            proton_vn_interp = merged['vn'].values
+            proton_bmag_interp = merged['bmag'].values
+            
+            # Calculate derived variables
+            with np.errstate(all='ignore'):
+                
+                # 1. na_div_np - Alpha/proton density ratio
+                na_div_np = alpha_density / proton_density_interp
+                
+                # 2. ap_drift - Alpha-proton drift speed (vector magnitude)
+                # Use VEL_RTN_SUN coordinate system for both species
+                vel_diff_r = alpha_vr - proton_vr_interp
+                vel_diff_t = alpha_vt - proton_vt_interp
+                vel_diff_n = alpha_vn - proton_vn_interp
+                ap_drift = np.sqrt(vel_diff_r**2 + vel_diff_t**2 + vel_diff_n**2)
+                
+                # 3. ap_drift_va - Drift speed normalized by Alfvén speed
+                # v_alfven = 21.8 * |MAGF_INST| / sqrt(DENS_proton + DENS_alpha)
+                total_density = proton_density_interp + alpha_density
+                total_density_safe = np.where(total_density > 0, total_density, np.nan)
+                v_alfven = 21.8 * proton_bmag_interp / np.sqrt(total_density_safe)
+                v_alfven_safe = np.where(v_alfven > 0, v_alfven, np.nan)
+                ap_drift_va = ap_drift / v_alfven_safe
+                
+                print_manager.dependency_management(f"[ALPHA_PROTON_CALC] Calculated values - na_div_np median: {np.nanmedian(na_div_np):.4f}, ap_drift median: {np.nanmedian(ap_drift):.2f} km/s, ap_drift_va median: {np.nanmedian(ap_drift_va):.4f}")
+                
+                # Store results
+                self.raw_data.update({
+                    'na_div_np': na_div_np,
+                    'ap_drift': ap_drift,
+                    'ap_drift_va': ap_drift_va
+                })
+                
+                return True
+                
+        except Exception as e:
+            print_manager.error(f"[ALPHA_PROTON_CALC] Error during calculation: {e}")
+            import traceback
+            print_manager.error(f"[ALPHA_PROTON_CALC] Traceback: {traceback.format_exc()}")
+            self.raw_data.update({'na_div_np': None, 'ap_drift': None, 'ap_drift_va': None})
+            return False
 
 # Initialize the class with no data
 psp_alpha = psp_alpha_class(None)
