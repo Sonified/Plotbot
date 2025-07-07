@@ -53,6 +53,12 @@ This document outlines the implementation plan for two interconnected PSP data a
 - **Magnetic Field** - Use `|MAGF_INST|` for Alfvén speed calculations
 - **Density Sources** - Combine proton core + beam densities vs alpha density
 
+**CRITICAL DATA SOURCE CLARIFICATION (CORRECTED):**
+- **Alpha Data**: Use `psp_alpha` (CDF data from `psp_alpha_classes.py`) **NOT** `alpha_fits` (CSV data)
+- **Proton Data**: Use `proton` (CDF data from `psp_proton.py`) **NOT** `proton_fits` (CSV data)
+- **Why**: BOTH regular classes contain `VEL_RTN_SUN` components (`vr`, `vt`, `vn`) needed for consistent vector calculations
+- **Coordinate System**: Both classes use RTN coordinates for proper vector math
+
 **Dependencies Integration (CRITICAL):**
 - **Follow the "Sticky Note" System** from `dependencies_best_practices_plan.md`
 - **Data Class Initialization:** Add `object.__setattr__(self, '_current_operation_trange', None)` in `__init__`
@@ -67,7 +73,7 @@ This document outlines the implementation plan for two interconnected PSP data a
 
 **Option A: Extend Existing Alpha Classes (RECOMMENDED)**
 ```python
-# In psp_alpha_classes.py or psp_alpha_fits_classes.py
+# In psp_alpha_classes.py (CORRECT TARGET)
 # Following dependencies_best_practices_plan.md patterns
 
 @property
@@ -124,10 +130,10 @@ def ap_drift_va(self):
     
     return self._ap_drift_va_manager
 
-def _calculate_alpha_proton_derived(self):
-    """Calculate alpha-proton derived variables using dependency best practices."""
-    from plotbot.get_data import get_data
-    from plotbot import proton  # or proton_fits, depending on source
+        def _calculate_alpha_proton_derived(self):
+            """Calculate alpha-proton derived variables using dependency best practices."""
+            from plotbot.get_data import get_data
+            from plotbot import proton  # Use regular proton class (CDF data) - RTN coordinates
     
     # CRITICAL: Use the stored operation trange for dependencies
     trange_for_dependencies = None
@@ -139,12 +145,12 @@ def _calculate_alpha_proton_derived(self):
         self.raw_data.update({'na_div_np': None, 'ap_drift': None, 'ap_drift_va': None})
         return False
     
-    # Fetch proton data with correct time range
-    get_data(trange_for_dependencies, proton.density)
-    get_data(trange_for_dependencies, proton.vr)  # or VEL_RTN_SUN components
-    get_data(trange_for_dependencies, proton.vt)
-    get_data(trange_for_dependencies, proton.vn)
-    get_data(trange_for_dependencies, proton.bmag)  # for Alfvén speed
+                # Fetch proton data with correct time range (CDF data, not CSV FITS)
+            get_data(trange_for_dependencies, proton.density)  # From spi_sf00_l3_mom CDF
+            get_data(trange_for_dependencies, proton.vr)       # VEL_RTN_SUN components from CDF
+            get_data(trange_for_dependencies, proton.vt)
+            get_data(trange_for_dependencies, proton.vn)
+            get_data(trange_for_dependencies, proton.bmag)     # Magnetic field magnitude
     
     # Validation
     if not proton.density.data or len(proton.density.data) == 0:
@@ -411,10 +417,10 @@ print_manager.show_debug = True
 
 # Import the classes we'll be testing
 try:
-    from plotbot import alpha_fits, proton, mag_rtn_4sa, plt as plotbot_plt, plotbot
+    from plotbot import psp_alpha, proton, mag_rtn_4sa, plt as plotbot_plt, plotbot
     # For Phase 2: from plotbot import psp_dfb
 except ImportError as e:
-    alpha_fits = None
+    psp_alpha = None
     proton = None
     plotbot = None
     plotbot_plt = plt
@@ -427,34 +433,34 @@ log_file = os.path.join(os.path.dirname(__file__), "test_logs", "test_alpha_prot
 # ============================================================================
 
 @pytest.mark.mission("Alpha/Proton Dependency Management")
-def test_alpha_fits_dependency_infrastructure():
-    """Test that alpha_fits class has proper dependency management infrastructure."""
-    if alpha_fits is None:
-        pytest.skip("alpha_fits not importable.")
+def test_psp_alpha_dependency_infrastructure():
+    """Test that psp_alpha class has proper dependency management infrastructure."""
+    if psp_alpha is None:
+        pytest.skip("psp_alpha not importable.")
     
     # Create minimal test instance
     TRANGE = ['2023-09-28/06:00:00.000', '2023-09-28/07:00:00.000']
     
     # Test that _current_operation_trange is properly initialized
     # This test should FAIL initially, then PASS after implementation
-    alpha_instance = alpha_fits  # Get the global instance
+    alpha_instance = psp_alpha  # Get the global instance
     assert hasattr(alpha_instance, '_current_operation_trange'), \
-        "alpha_fits must have _current_operation_trange attribute for dependency management"
+        "psp_alpha must have _current_operation_trange attribute for dependency management"
     
-    print(f"alpha_fits._current_operation_trange: {getattr(alpha_instance, '_current_operation_trange', 'NOT_FOUND')}")
+    print(f"psp_alpha._current_operation_trange: {getattr(alpha_instance, '_current_operation_trange', 'NOT_FOUND')}")
 
 @pytest.mark.mission("Alpha/Proton na_div_np Property")
 def test_na_div_np_property_lazy_loading():
     """Test na_div_np property exists and implements lazy loading correctly."""
-    if alpha_fits is None:
-        pytest.skip("alpha_fits not importable.")
+    if psp_alpha is None:
+        pytest.skip("psp_alpha not importable.")
     
     # Test property existence
-    assert hasattr(alpha_fits, 'na_div_np'), "alpha_fits must have na_div_np property"
+    assert hasattr(psp_alpha, 'na_div_np'), "psp_alpha must have na_div_np property"
     
     # Test that it returns a plot_manager instance
-    na_div_np_attr = alpha_fits.na_div_np
-    assert na_div_np_attr is not None, "alpha_fits.na_div_np should not be None"
+    na_div_np_attr = psp_alpha.na_div_np
+    assert na_div_np_attr is not None, "psp_alpha.na_div_np should not be None"
     assert hasattr(na_div_np_attr, 'data'), "na_div_np should have .data attribute (plot_manager pattern)"
     
     print(f"na_div_np type: {type(na_div_np_attr)}")
@@ -463,13 +469,13 @@ def test_na_div_np_property_lazy_loading():
 @pytest.mark.mission("Alpha/Proton ap_drift Property") 
 def test_ap_drift_property_lazy_loading():
     """Test ap_drift property exists and implements lazy loading correctly."""
-    if alpha_fits is None:
-        pytest.skip("alpha_fits not importable.")
+    if psp_alpha is None:
+        pytest.skip("psp_alpha not importable.")
     
-    assert hasattr(alpha_fits, 'ap_drift'), "alpha_fits must have ap_drift property"
+    assert hasattr(psp_alpha, 'ap_drift'), "psp_alpha must have ap_drift property"
     
-    ap_drift_attr = alpha_fits.ap_drift
-    assert ap_drift_attr is not None, "alpha_fits.ap_drift should not be None"
+    ap_drift_attr = psp_alpha.ap_drift
+    assert ap_drift_attr is not None, "psp_alpha.ap_drift should not be None"
     assert hasattr(ap_drift_attr, 'data'), "ap_drift should have .data attribute (plot_manager pattern)"
     
     print(f"ap_drift type: {type(ap_drift_attr)}")
@@ -478,13 +484,13 @@ def test_ap_drift_property_lazy_loading():
 @pytest.mark.mission("Alpha/Proton ap_drift_va Property")
 def test_ap_drift_va_property_lazy_loading():
     """Test ap_drift_va property exists and implements lazy loading correctly."""
-    if alpha_fits is None:
-        pytest.skip("alpha_fits not importable.")
+    if psp_alpha is None:
+        pytest.skip("psp_alpha not importable.")
     
-    assert hasattr(alpha_fits, 'ap_drift_va'), "alpha_fits must have ap_drift_va property"
+    assert hasattr(psp_alpha, 'ap_drift_va'), "psp_alpha must have ap_drift_va property"
     
-    ap_drift_va_attr = alpha_fits.ap_drift_va  
-    assert ap_drift_va_attr is not None, "alpha_fits.ap_drift_va should not be None"
+    ap_drift_va_attr = psp_alpha.ap_drift_va  
+    assert ap_drift_va_attr is not None, "psp_alpha.ap_drift_va should not be None"
     assert hasattr(ap_drift_va_attr, 'data'), "ap_drift_va should have .data attribute (plot_manager pattern)"
     
     print(f"ap_drift_va type: {type(ap_drift_va_attr)}")
@@ -493,7 +499,7 @@ def test_ap_drift_va_property_lazy_loading():
 @pytest.mark.mission("Alpha/Proton Integration Test")
 def test_plotbot_alpha_proton_integration(capsys):
     """Integration test: plot alpha/proton derived variables with plotbot and verify data."""
-    if alpha_fits is None or proton is None or plotbot is None:
+    if psp_alpha is None or proton is None or plotbot is None:
         pytest.skip("Required classes not importable for integration test.")
     
     TRANGE = ['2023-09-28/06:00:00.000', '2023-09-28/07:00:00.000']
@@ -501,16 +507,16 @@ def test_plotbot_alpha_proton_integration(capsys):
     fig = None
     
     print(f"\nRequesting alpha/proton derived variables for trange: {TRANGE}")
-    print("Panel 1: alpha_fits.na_div_np")
-    print("Panel 2: alpha_fits.ap_drift") 
-    print("Panel 3: alpha_fits.ap_drift_va")
+    print("Panel 1: psp_alpha.na_div_np")
+    print("Panel 2: psp_alpha.ap_drift") 
+    print("Panel 3: psp_alpha.ap_drift_va")
     
     try:
         # Request plotbot to load/plot the derived variables
         plotbot(TRANGE, 
-                alpha_fits.na_div_np, 1,
-                alpha_fits.ap_drift, 2, 
-                alpha_fits.ap_drift_va, 3)
+                psp_alpha.na_div_np, 1,
+                psp_alpha.ap_drift, 2, 
+                psp_alpha.ap_drift_va, 3)
         
         fig_num = plt.gcf().number
         fig = plt.figure(fig_num)
@@ -521,7 +527,7 @@ def test_plotbot_alpha_proton_integration(capsys):
         print("\nVerifying computed alpha/proton derived variables...")
         
         # Test na_div_np data
-        na_div_np_data = alpha_fits.na_div_np.data
+        na_div_np_data = psp_alpha.na_div_np.data
         assert isinstance(na_div_np_data, np.ndarray), "na_div_np.data should be numpy array"
         assert len(na_div_np_data) > 0, "na_div_np.data should not be empty"
         
@@ -535,7 +541,7 @@ def test_plotbot_alpha_proton_integration(capsys):
             assert 0.001 <= ratio_median <= 0.5, f"na_div_np median {ratio_median} outside expected range [0.001, 0.5]"
         
         # Test ap_drift data  
-        ap_drift_data = alpha_fits.ap_drift.data
+        ap_drift_data = psp_alpha.ap_drift.data
         assert isinstance(ap_drift_data, np.ndarray), "ap_drift.data should be numpy array"
         assert len(ap_drift_data) > 0, "ap_drift.data should not be empty"
         
@@ -547,7 +553,7 @@ def test_plotbot_alpha_proton_integration(capsys):
             assert 0 <= drift_median <= 1000, f"ap_drift median {drift_median} km/s outside expected range [0, 1000]"
         
         # Test ap_drift_va data
-        ap_drift_va_data = alpha_fits.ap_drift_va.data
+        ap_drift_va_data = psp_alpha.ap_drift_va.data
         assert isinstance(ap_drift_va_data, np.ndarray), "ap_drift_va.data should be numpy array"
         assert len(ap_drift_va_data) > 0, "ap_drift_va.data should not be empty"
         
@@ -589,7 +595,7 @@ def test_plotbot_alpha_proton_integration(capsys):
 @pytest.mark.mission("Alpha/Proton Dependency Time Range")
 def test_dependency_time_range_isolation():
     """Test that derived variables use _current_operation_trange correctly (no contamination)."""
-    if alpha_fits is None or proton is None or plotbot is None:
+    if psp_alpha is None or proton is None or plotbot is None:
         pytest.skip("Required classes not importable for dependency test.")
     
     # Test different time ranges to ensure no contamination
@@ -599,12 +605,12 @@ def test_dependency_time_range_isolation():
     print(f"Testing dependency isolation between {TRANGE1} and {TRANGE2}")
     
     # Load first time range
-    plotbot(TRANGE1, alpha_fits.na_div_np, 1)
-    data1 = alpha_fits.na_div_np.data.copy() if hasattr(alpha_fits.na_div_np, 'data') else None
+    plotbot(TRANGE1, psp_alpha.na_div_np, 1)
+    data1 = psp_alpha.na_div_np.data.copy() if hasattr(psp_alpha.na_div_np, 'data') else None
     
     # Load second time range  
-    plotbot(TRANGE2, alpha_fits.na_div_np, 1)
-    data2 = alpha_fits.na_div_np.data.copy() if hasattr(alpha_fits.na_div_np, 'data') else None
+    plotbot(TRANGE2, psp_alpha.na_div_np, 1)
+    data2 = psp_alpha.na_div_np.data.copy() if hasattr(psp_alpha.na_div_np, 'data') else None
     
     # Verify data changed (no contamination)
     if data1 is not None and data2 is not None:
@@ -723,7 +729,7 @@ tail -f tests/test_logs/test_alpha_proton_electric_field.txt
 ### 🎯 Phase 1: Alpha/Proton Variables (IMPLEMENTATION-FIRST)
 **Why Priority:** Self-contained, unlocks other analysis capabilities, builds on existing infrastructure
 
-**EXTEND EXISTING CLASS FILE: `plotbot/data_classes/psp_alpha_fits_classes.py`**
+**EXTEND EXISTING CLASS FILE: `plotbot/data_classes/psp_alpha_classes.py`**
 *Add derived variables to existing alpha particle class, following wind_3dp/wind_mfi patterns*
 
 **Steps:**
@@ -832,7 +838,7 @@ tail -f tests/test_logs/test_alpha_proton_electric_field.txt
 **Run Tests:** `python -m pytest tests/test_alpha_proton_electric_field.py -v -s` (after implementation)
 
 - [ ] **🏗️ Infrastructure Tests PASS:**
-  - [ ] `test_alpha_fits_dependency_infrastructure()` - `_current_operation_trange` properly implemented
+  - [ ] `test_psp_alpha_dependency_infrastructure()` - `_current_operation_trange` properly implemented
   - [ ] `test_na_div_np_property_lazy_loading()` - Property exists with plot_manager structure
   - [ ] `test_ap_drift_property_lazy_loading()` - Property exists with plot_manager structure  
   - [ ] `test_ap_drift_va_property_lazy_loading()` - Property exists with plot_manager structure
@@ -883,7 +889,7 @@ tail -f tests/test_logs/test_alpha_proton_electric_field.txt
 ### 📁 **Files to be Modified/Created:**
 
 **Phase 1 - Alpha/Proton Variables:**
-- **MODIFY:** `plotbot/data_classes/psp_alpha_fits_classes.py` 
+- **MODIFY:** `plotbot/data_classes/psp_alpha_classes.py` 
   - Add `na_div_np`, `ap_drift`, `ap_drift_va` properties 
   - Add `_calculate_alpha_proton_derived()` method
   - Add dependency management infrastructure
@@ -902,7 +908,7 @@ tail -f tests/test_logs/test_alpha_proton_electric_field.txt
 ### 🔧 **Step 1: Implement Alpha/Proton Derived Variables (START HERE)**
 ```bash
 # Target: Add na_div_np, ap_drift, ap_drift_va properties to alpha class
-# Focus on: plotbot/data_classes/psp_alpha_fits_classes.py
+# Focus on: plotbot/data_classes/psp_alpha_classes.py (CORRECTED TARGET)
 # Follow: dependencies_best_practices_plan.md "Sticky Note" patterns
 ```
 
@@ -938,7 +944,7 @@ python -m pytest tests/test_alpha_proton_electric_field.py -v -s  # Should mostl
 
 ---
 
-*Created: 2025-01-XX*  
+*Created: 2025-07-07*  
 *Status: Implementation Plan - Ready for Implementation-First Development*  
 *Priority: Phase 1 (Alpha/Proton Variables) → Phase 2 (Electric Field Classes)*  
 *Next Action: Implement alpha/proton derived variables following dependencies best practices* 

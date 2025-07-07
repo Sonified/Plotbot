@@ -38,6 +38,7 @@ from .data_classes.psp_electron_classes import epad, epad_hr, epad_strahl_class,
 from .data_classes.psp_proton import proton, proton_class
 from .data_classes.psp_proton_hr import proton_hr, proton_hr_class
 from .data_classes.psp_proton_fits_classes import proton_fits # Import the FITS class
+from .data_classes.psp_alpha_fits_classes import alpha_fits, alpha_fits_class # Import the alpha FITS class
 from .data_classes.psp_ham_classes import ham, ham_class # ADDED: Import the HAM class instance and class
 # WIND satellite data classes
 from .data_classes.wind_mfi_classes import wind_mfi_h2, wind_mfi_h2_class
@@ -58,6 +59,7 @@ data_cubby.stash(epad_hr, class_name='epad_hr')
 data_cubby.stash(proton, class_name='proton')
 data_cubby.stash(proton_hr, class_name='proton_hr')
 data_cubby.stash(proton_fits, class_name='proton_fits')
+data_cubby.stash(alpha_fits, class_name='alpha_fits')
 data_cubby.stash(ham, class_name='ham')
 # Register WIND satellite instances
 data_cubby.stash(wind_mfi_h2, class_name='wind_mfi_h2')
@@ -230,6 +232,7 @@ __all__ = [
     'proton',
     'proton_hr',     # ADD proton_hr
     'proton_fits',   # Add proton_fits to __all__
+    'alpha_fits',    # Add alpha_fits to __all__
     'ham',           # ADDED: Add ham to __all__
     'wind_mfi_h2',   # WIND satellite magnetic field data
     'wind_3dp_elpd', # WIND satellite electron pitch-angle distributions
@@ -257,8 +260,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_07_v2.75"
-__commit_message__ = "v2.75 Planning: Alpha/proton derived variables & electric field spectra implementation plan complete"
+__version__ = "2025_07_07_v2.76"
+__commit_message__ = "v2.76 Planning: Corrected alpha/proton implementation plan to target right classes (psp_alpha not alpha_fits)"
 
 # Get current date and time
 
