@@ -257,8 +257,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_06_30_v2.74"
-__commit_message__ = "v2.74 BREAKTHROUGH: PSP QTN class implementation - most reliable electron density measurements"
+__version__ = "2025_07_07_v2.75"
+__commit_message__ = "v2.75 Planning: Alpha/proton derived variables & electric field spectra implementation plan complete"
 
 # Get current date and time
 

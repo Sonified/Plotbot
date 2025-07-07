@@ -49,3 +49,6 @@ magnetic_hole_finder/high_res_mag_data.pkl
 tests/archive/
 
 *.pkl
+
+.specstory/
+
