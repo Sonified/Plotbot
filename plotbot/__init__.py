@@ -48,6 +48,7 @@ from .data_classes.wind_swe_h1_classes import wind_swe_h1, wind_swe_h1_class
 from .data_classes.wind_3dp_pm_classes import wind_3dp_pm, wind_3dp_pm_class
 from .data_classes.psp_alpha_classes import psp_alpha, psp_alpha_class
 from .data_classes.psp_qtn_classes import psp_qtn, psp_qtn_class
+from .data_classes.psp_dfb_classes import psp_dfb, psp_dfb_class
 
 # --- Explicitly Register Global Instances with DataCubby --- #
 data_cubby.stash(mag_rtn_4sa, class_name='mag_rtn_4sa')
@@ -69,6 +70,11 @@ data_cubby.stash(psp_alpha, class_name='psp_alpha')
 data_cubby.stash(wind_swe_h5, class_name='wind_swe_h5')
 data_cubby.stash(wind_swe_h1, class_name='wind_swe_h1')
 data_cubby.stash(psp_qtn, class_name='psp_qtn')
+data_cubby.stash(psp_dfb, class_name='psp_dfb')
+# Register individual DFB data types to the same psp_dfb instance
+data_cubby.stash(psp_dfb, class_name='dfb_ac_spec_dv12hg')
+data_cubby.stash(psp_dfb, class_name='dfb_ac_spec_dv34hg')
+data_cubby.stash(psp_dfb, class_name='dfb_dc_spec_dv12hg')
 print_manager.datacubby("Registered global data instances with DataCubby.")
 # ---------------------------------------------------------- #
 
@@ -206,6 +212,31 @@ CLASS_NAME_MAPPING = {
         'components': ['density', 'temperature'],
         'primary_component': 'density'
     },
+    'psp_dfb': {
+        'data_type': 'dfb_ac_spec_dv12hg',  # Primary data type (AC spectra dv12)
+        'class_type': psp_dfb_class,
+        'components': ['ac_spec_dv12', 'ac_spec_dv34', 'dc_spec_dv12'],
+        'primary_component': 'ac_spec_dv12'
+    },
+    # Map all DFB data types to the same psp_dfb class instance
+    'dfb_ac_spec_dv12hg': {
+        'data_type': 'dfb_ac_spec_dv12hg',
+        'class_type': psp_dfb_class,
+        'components': ['ac_spec_dv12'],
+        'primary_component': 'ac_spec_dv12'
+    },
+    'dfb_ac_spec_dv34hg': {
+        'data_type': 'dfb_ac_spec_dv34hg',
+        'class_type': psp_dfb_class,
+        'components': ['ac_spec_dv34'],
+        'primary_component': 'ac_spec_dv34'
+    },
+    'dfb_dc_spec_dv12hg': {
+        'data_type': 'dfb_dc_spec_dv12hg',
+        'class_type': psp_dfb_class,
+        'components': ['dc_spec_dv12'],
+        'primary_component': 'dc_spec_dv12'
+    },
 }
 
 # Specify what gets imported with `from plotbot import *`
@@ -241,6 +272,7 @@ __all__ = [
     'wind_swe_h1',   # WIND satellite proton/alpha thermal speeds
     'psp_alpha',     # PSP alpha particle moments
     'psp_qtn',       # PSP quasi-thermal noise (electron density and temperature)
+    'psp_dfb',       # PSP FIELDS electric field AC/DC spectra
     'audifier',
     'custom_variable',  # Using custom_variable instead of new_variable
     'debug_custom_variables',  # Add debug function for custom variables
@@ -260,17 +292,16 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_07_v2.77"
-__commit_message__ = "v2.77 COMPLETE: Alpha/proton derived variables fully implemented - na_div_np, ap_drift, ap_drift_va production ready"
+__version__ = "2025_07_07_v2.78"
+__commit__ = "v2.78 Feat: Integrate precise DFB download logic into main plotbot routine"
 
-# Get current date and time
-
-# Print version information on import
-print(f"   Version: {__version__}")
-print(f"   Commit: {__commit_message__}")
-
-# --- Final Print Message ---
-print(f"\n{BLUE}🤖 Plotbot Initialized{RESET}")
+# Print the version and commit message
+print(f"""
+🤖 Plotbot Initialized
+📈📉 Multiplot Initialized
+   Version: {__version__}
+   Commit: {__commit__}
+""")
 
 # Note: Previous logic had this at the end of plotbot_main.py, moved here 
 #       to ensure it prints after all imports in __init__ are processed.

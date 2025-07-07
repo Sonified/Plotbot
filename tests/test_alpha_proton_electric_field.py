@@ -16,12 +16,14 @@ print_manager.show_debug = True
 # Import the classes we'll be testing
 try:
     from plotbot import psp_alpha, proton, mag_rtn_4sa, plt as plotbot_plt, plotbot
-    # For Phase 2: from plotbot import psp_dfb
+    from plotbot import psp_dfb  # Phase 2: PSP DFB electric field spectra classes
+    from plotbot import config  # Import the config object directly
 except ImportError as e:
     psp_alpha = None
     proton = None
     plotbot = None
     plotbot_plt = plt
+    psp_dfb = None
 
 # Test log file path
 log_file = os.path.join(os.path.dirname(__file__), "test_logs", "test_alpha_proton_electric_field.txt")
@@ -251,10 +253,8 @@ def test_data_source_consistency():
 @pytest.mark.mission("Electric Field DFB Class Structure")
 def test_psp_dfb_class_initialization():
     """Test PSP DFB class initialization and variable structure (space_cowboi42 convention)."""
-    try:
-        from plotbot import psp_dfb
-    except ImportError:
-        pytest.skip("psp_dfb not yet implemented (Phase 2)")
+    if psp_dfb is None:
+        pytest.skip("psp_dfb not importable.")
     
     # Test class structure following space_cowboi42's naming convention
     assert hasattr(psp_dfb, 'ac_spec_dv12'), "DFB should have ac_spec_dv12 variable"
@@ -268,35 +268,88 @@ def test_psp_dfb_class_initialization():
 
 @pytest.mark.mission("Electric Field DFB Integration")  
 def test_psp_dfb_plotbot_integration():
-    """Test PSP DFB integration with plotbot for electric field spectra."""
-    try:
-        from plotbot import psp_dfb
-    except ImportError:
-        pytest.skip("psp_dfb not yet implemented (Phase 2)")
+    """Test PSP DFB integration with PURE PLOTBOT behavior - let plotbot handle everything."""
+    if psp_dfb is None:
+        pytest.skip("psp_dfb not importable.")
     
     TRANGE = ['2021-11-25/00:00:00.000', '2021-11-26/00:00:00.000']
     plotbot_plt.close('all')
     
-    print(f"Testing DFB spectra for trange: {TRANGE}")
+    print(f"Testing PURE PLOTBOT behavior for DFB spectra: {TRANGE}")
+    print("This test lets plotbot handle ALL downloading/processing through its normal pipeline")
     
+    # Save the original server setting
+    original_server = config.data_server
     try:
-        # Test plotting AC and DC spectra (following e10_iaw.ipynb implementation)
-        # Using space_cowboi42's naming convention with exact data access pattern
+        # ✅ SET SERVER TO SPDF FOR THIS TEST
+        print(f"Setting config.data_server to 'spdf' for this test...")
+        config.data_server = 'spdf'
+
+        # ✅ PURE PLOTBOT TEST - Let plotbot handle everything
+        print("Calling plotbot with DFB spectra - plotbot should handle all downloading...")
         plotbot(TRANGE, 
-                psp_dfb.ac_spec_dv12, 1,  # Maps to 'psp_fld_l2_dfb_ac_spec_dV12hg'
-                psp_dfb.ac_spec_dv34, 2,  # Maps to 'psp_fld_l2_dfb_ac_spec_dV34hg'
-                psp_dfb.dc_spec_dv12, 3)  # Maps to 'psp_fld_l2_dfb_dc_spec_dV12hg'
+                psp_dfb.ac_spec_dv12, 1,  # plotbot downloads dfb_ac_spec_dv12hg
+                psp_dfb.ac_spec_dv34, 2,  # plotbot downloads dfb_ac_spec_dv34hg  
+                psp_dfb.dc_spec_dv12, 3)  # plotbot downloads dfb_dc_spec_dv12hg
         
         fig = plt.gcf()
         assert fig is not None, "plotbot should create figure for DFB spectra"
         assert len(fig.axes) == 3, "Should have 3 panels for AC dv12, AC dv34, DC dv12"
         
-        print("✅ PSP DFB plotbot integration successful")
+        # === Verify Variables Have Real Data ===
+        print("\n=== Verifying plotbot retrieved real spectral data ===")
+        
+        # Check AC dv12
+        print(f"Checking psp_dfb.ac_spec_dv12...")
+        var = psp_dfb.ac_spec_dv12
+        print(f"  Data type: {var.plot_options.data_type}")
+        print(f"  Data shape: {var.data.shape}")
+        print(f"  Datetime array type: {type(var.datetime_array)}")
+        if var.data.size > 0:
+            print(f"  ✅ AC dv12 has real data: {var.data.shape}")
+        else:
+            print(f"  ❌ AC dv12 has no data")
+        
+        # Check AC dv34
+        print(f"Checking psp_dfb.ac_spec_dv34...")
+        var = psp_dfb.ac_spec_dv34
+        print(f"  Data type: {var.plot_options.data_type}")
+        print(f"  Data shape: {var.data.shape}")
+        print(f"  Datetime array type: {type(var.datetime_array)}")
+        if var.data.size > 0:
+            print(f"  ✅ AC dv34 has real data: {var.data.shape}")
+        else:
+            print(f"  ⚠️  AC dv34 has no data (may be normal for this time range)")
+        
+        # Check DC dv12
+        print(f"Checking psp_dfb.dc_spec_dv12...")
+        var = psp_dfb.dc_spec_dv12
+        print(f"  Data type: {var.plot_options.data_type}")
+        print(f"  Data shape: {var.data.shape}")
+        print(f"  Datetime array type: {type(var.datetime_array)}")
+        if var.data.size > 0:
+            print(f"  ✅ DC dv12 has real data: {var.data.shape}")
+        else:
+            print(f"  ❌ DC dv12 has no data")
+        
+        # At least one spectrum should have data for successful test
+        total_data_points = (psp_dfb.ac_spec_dv12.data.size + 
+                           psp_dfb.ac_spec_dv34.data.size + 
+                           psp_dfb.dc_spec_dv12.data.size)
+        
+        assert total_data_points > 0, "At least one DFB spectrum should have real data"
+        
+        print("✅ PSP DFB pure plotbot integration successful")
         
     except Exception as e:
-        print(f"DFB integration test error: {e}")
-        pytest.fail(f"DFB integration failed: {e}")
+        print(f"DFB pure plotbot integration error: {e}")
+        import traceback
+        print(f"Full traceback: {traceback.format_exc()}")
+        pytest.fail(f"DFB pure plotbot integration failed: {e}")
     finally:
+        # Restore the original server setting
+        config.data_server = original_server
+        print(f"\nRestored config.data_server to '{original_server}'")
         plotbot_plt.close('all')
 
 # ============================================================================

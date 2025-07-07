@@ -143,6 +143,51 @@ data_types = {
             'ENERGY_VALS', 'THETA_VALS', 'PHI_VALS', 'SUN_DIST'
         ],
     },
+    'dfb_ac_spec_dv12hg': {  # PSP FIELDS Electric Field AC Spectra dV12hg
+        'mission': 'psp',
+        'data_sources': ['berkeley', 'spdf'],
+        'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/fields/{data_level}/dfb_ac_spec/dv12hg/',
+        'local_path': os.path.join('data', 'psp', 'fields', '{data_level}', 'dfb_ac_spec', 'dv12hg'),
+        'password_type': 'mag',  # FIELDS instrument uses mag password type
+        'file_pattern': r'psp_fld_{data_level}_dfb_ac_spec_dv12hg_{date_str}_v(\d{{2}})\.cdf',
+        'file_pattern_import': r'psp_fld_{data_level}_dfb_ac_spec_dv12hg_{date_str}_v*.cdf',
+        'data_level': 'l2',
+        'file_time_format': 'daily',
+        'data_vars': [
+            'psp_fld_l2_dfb_ac_spec_dV12hg',               # AC spectrum dv12 data
+            'psp_fld_l2_dfb_ac_spec_dV12hg_frequency_bins'  # AC spectrum dv12 frequencies
+        ],
+    },
+    'dfb_ac_spec_dv34hg': {  # PSP FIELDS Electric Field AC Spectra dV34hg
+        'mission': 'psp',
+        'data_sources': ['berkeley', 'spdf'],
+        'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/fields/{data_level}/dfb_ac_spec/dv34hg/',
+        'local_path': os.path.join('data', 'psp', 'fields', '{data_level}', 'dfb_ac_spec', 'dv34hg'),
+        'password_type': 'mag',  # FIELDS instrument uses mag password type
+        'file_pattern': r'psp_fld_{data_level}_dfb_ac_spec_dv34hg_{date_str}_v(\d{{2}})\.cdf',
+        'file_pattern_import': r'psp_fld_{data_level}_dfb_ac_spec_dv34hg_{date_str}_v*.cdf',
+        'data_level': 'l2',
+        'file_time_format': 'daily',
+        'data_vars': [
+            'psp_fld_l2_dfb_ac_spec_dV34hg',               # AC spectrum dv34 data  
+            'psp_fld_l2_dfb_ac_spec_dV34hg_frequency_bins'  # AC spectrum dv34 frequencies
+        ],
+    },
+    'dfb_dc_spec_dv12hg': {  # PSP FIELDS Electric Field DC Spectra dV12hg
+        'mission': 'psp',
+        'data_sources': ['berkeley', 'spdf'],
+        'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/fields/{data_level}/dfb_dc_spec/dv12hg/',
+        'local_path': os.path.join('data', 'psp', 'fields', '{data_level}', 'dfb_dc_spec', 'dv12hg'),
+        'password_type': 'mag',  # FIELDS instrument uses mag password type
+        'file_pattern': r'psp_fld_{data_level}_dfb_dc_spec_dv12hg_{date_str}_v(\d{{2}})\.cdf',
+        'file_pattern_import': r'psp_fld_{data_level}_dfb_dc_spec_dv12hg_{date_str}_v*.cdf',
+        'data_level': 'l2',
+        'file_time_format': 'daily',
+        'data_vars': [
+            'psp_fld_l2_dfb_dc_spec_dV12hg',               # DC spectrum dv12 data (only available)
+            'psp_fld_l2_dfb_dc_spec_dV12hg_frequency_bins'  # DC spectrum dv12 frequencies
+        ],
+    },
     'sf00_fits': { # FITS sf00 CSV data
         'mission': 'psp',
         'data_sources': ['local_csv'],

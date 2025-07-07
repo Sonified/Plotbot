@@ -29,6 +29,7 @@ from .data_classes.wind_3dp_classes import wind_3dp_elpd_class
 from .data_classes.wind_3dp_pm_classes import wind_3dp_pm_class
 from .data_classes.psp_alpha_classes import psp_alpha_class
 from .data_classes.psp_qtn_classes import psp_qtn_class
+from .data_classes.psp_dfb_classes import psp_dfb_class
 from .data_classes.wind_swe_h5_classes import wind_swe_h5_class
 from .data_classes.wind_swe_h1_classes import wind_swe_h1_class
 
@@ -59,6 +60,10 @@ class data_cubby:
         'epad_hr': epad_strahl_high_res_class,
         'ham': ham_class,
         'sqtn_rfs_v1v2': psp_qtn_class,  # QTN (Quasi-Thermal Noise) electron density and temperature
+        # PSP FIELDS DFB electric field spectra data types
+        'dfb_ac_spec_dv12hg': psp_dfb_class,  # AC spectrum dv12 
+        'dfb_ac_spec_dv34hg': psp_dfb_class,  # AC spectrum dv34
+        'dfb_dc_spec_dv12hg': psp_dfb_class,  # DC spectrum dv12
         # WIND satellite data types
         'wind_mfi_h2': wind_mfi_h2_class,
         'wind_3dp_elpd': wind_3dp_elpd_class,
@@ -335,7 +340,14 @@ class data_cubby:
                          # If new data doesn't have the key, pad with NaNs or appropriate fill value
                          fill_value = np.nan if np.issubdtype(existing_comp.dtype, np.number) else None
                          if fill_value is not None:
-                             padding = np.full(len(new_times), fill_value, dtype=existing_comp.dtype)
+                             # Create padding with same shape as existing_comp but for new_times length
+                             if existing_comp.ndim > 1:
+                                 # For multi-dimensional data (e.g., spectral data: time x frequency)
+                                 padding_shape = (len(new_times),) + existing_comp.shape[1:]
+                                 padding = np.full(padding_shape, fill_value, dtype=existing_comp.dtype)
+                             else:
+                                 # For 1D data (traditional time series)
+                                 padding = np.full(len(new_times), fill_value, dtype=existing_comp.dtype)
                              combined_comp = np.concatenate((existing_comp, padding))
                          else:
                              print_manager.datacubby(f"MERGE ARRAYS WARNING - Cannot determine fill value for key '{key}' (existing only). Skipping.")
@@ -348,7 +360,14 @@ class data_cubby:
                          # If existing data doesn't have the key, pad with NaNs
                          fill_value = np.nan if np.issubdtype(new_comp.dtype, np.number) else None
                          if fill_value is not None:
-                             padding = np.full(len(existing_times), fill_value, dtype=new_comp.dtype)
+                             # Create padding with same shape as new_comp but for existing_times length
+                             if new_comp.ndim > 1:
+                                 # For multi-dimensional data (e.g., spectral data: time x frequency)
+                                 padding_shape = (len(existing_times),) + new_comp.shape[1:]
+                                 padding = np.full(padding_shape, fill_value, dtype=new_comp.dtype)
+                             else:
+                                 # For 1D data (traditional time series)
+                                 padding = np.full(len(existing_times), fill_value, dtype=new_comp.dtype)
                              combined_comp = np.concatenate((padding, new_comp))
                          else:
                               print_manager.datacubby(f"MERGE ARRAYS WARNING - Cannot determine fill value for key '{key}' (new only). Skipping.")

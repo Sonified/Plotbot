@@ -19,6 +19,12 @@ from .data_classes.data_types import data_types # To get pyspedas datatype mappi
 from .time_utils import daterange
 # Add other necessary imports (time, etc.) as needed
 
+# Import the precise download function for efficiency
+try:
+    from pyspedas import download as pyspedas_download
+except ImportError:
+    pyspedas_download = None
+
 # Define the mapping from Plotbot keys to pyspedas specifics
 # (Borrowed from tests/test_pyspedas_download.py - may need refinement)
 # TODO: Formalize this mapping, potentially move to psp_data_types.py?
@@ -52,6 +58,33 @@ PYSPEDAS_MAP = {
         'pyspedas_datatype': 'sqtn_rfs_V1V2',  # Pyspedas still expects uppercase datatype
         'pyspedas_func': pyspedas.psp.fields,
         'kwargs': {'level': 'l3', 'get_support_data': True}
+    },
+    'dfb_ac_spec_dv12hg': {  # PSP FIELDS AC spectrum dv12 - PRECISE DOWNLOAD WITH FALLBACK
+        'pyspedas_datatype': 'dfb_ac_spec',        # Regular PySpedas fallback
+        'pyspedas_func': pyspedas.psp.fields,      # Regular PySpedas fallback
+        'kwargs': {'level': 'l2', 'time_clip': True}, # Regular PySpedas fallback
+        'download_method': 'precise',              # NEW: Use precise method first
+        'remote_path': 'https://spdf.gsfc.nasa.gov/pub/data/psp/fields/l2/dfb_ac_spec/dv12hg/',
+        'local_path': 'data/psp/fields/l2/dfb_ac_spec/dv12hg/',
+        'expected_var': 'psp_fld_l2_dfb_ac_spec_dV12hg'
+    },
+    'dfb_ac_spec_dv34hg': {  # PSP FIELDS AC spectrum dv34 - PRECISE DOWNLOAD WITH FALLBACK
+        'pyspedas_datatype': 'dfb_ac_spec',        # Regular PySpedas fallback (same as dv12hg)
+        'pyspedas_func': pyspedas.psp.fields,      # Regular PySpedas fallback
+        'kwargs': {'level': 'l2', 'time_clip': True}, # Regular PySpedas fallback
+        'download_method': 'precise',              # NEW: Use precise method first
+        'remote_path': 'https://spdf.gsfc.nasa.gov/pub/data/psp/fields/l2/dfb_ac_spec/dv34hg/',
+        'local_path': 'data/psp/fields/l2/dfb_ac_spec/dv34hg/',
+        'expected_var': 'psp_fld_l2_dfb_ac_spec_dV34hg'
+    },
+    'dfb_dc_spec_dv12hg': {  # PSP FIELDS DC spectrum dv12 - PRECISE DOWNLOAD WITH FALLBACK
+        'pyspedas_datatype': 'dfb_dc_spec',        # Regular PySpedas fallback
+        'pyspedas_func': pyspedas.psp.fields,      # Regular PySpedas fallback
+        'kwargs': {'level': 'l2', 'time_clip': True}, # Regular PySpedas fallback
+        'download_method': 'precise',              # NEW: Use precise method first
+        'remote_path': 'https://spdf.gsfc.nasa.gov/pub/data/psp/fields/l2/dfb_dc_spec/dv12hg/',
+        'local_path': 'data/psp/fields/l2/dfb_dc_spec/dv12hg/',
+        'expected_var': 'psp_fld_l2_dfb_dc_spec_dV12hg'
     },
     # Add mappings for other data types as needed (e.g., high-res versions)
     
@@ -87,6 +120,96 @@ PYSPEDAS_MAP = {
         'kwargs': {}  # No level parameter needed
     }
 }
+
+def _get_dates_for_download(start_str, end_str):
+    """Helper to get list of date strings formatted for file downloads (YYYYMMDD)."""
+    dates = []
+    try:
+        # Use the more robust dateutil.parser to handle various formats
+        start_date = parse(start_str).date()
+        end_date = parse(end_str).date()
+
+        delta = timedelta(days=1)
+        current_date = start_date
+        while current_date <= end_date:
+            dates.append(current_date.strftime('%Y%m%d'))
+            current_date += delta
+    except Exception as e:
+        print_manager.warning(f"Could not parse dates from trange for download: {start_str}, {end_str}. Error: {e}")
+    return dates
+
+def download_dfb_precise(trange, plotbot_key, config):
+    """
+    Download DFB data using precise pyspedas.download() for maximum efficiency.
+    
+    This approach downloads only the exact files needed, avoiding the inefficiency
+    of regular pyspedas.psp.fields() which downloads many extra files.
+    
+    Args:
+        trange (list): Time range ['start', 'end']
+        plotbot_key (str): The Plotbot data type key (e.g., 'dfb_ac_spec_dv12hg')
+        config (dict): Configuration with remote_path, local_path, etc.
+    
+    Returns:
+        list: List of relative paths to downloaded files or empty list if failed
+    """
+    print_manager.debug(f"[DFB_PRECISE_DOWNLOAD] Starting precise download for {plotbot_key}")
+    
+    if pyspedas_download is None:
+        print_manager.error("pyspedas.download not available - falling back to regular method")
+        return []
+    
+    # Get the dates we need to download
+    dates = _get_dates_for_download(trange[0], trange[1])
+    if not dates:
+        print_manager.error(f"Could not parse dates from trange: {trange}")
+        return []
+    
+    downloaded_files = []
+    
+    for date_str in dates:
+        year = date_str[:4]
+        
+        # Construct remote and local paths
+        remote_path = config['remote_path'] + year + '/'
+        local_path = os.path.join(config['local_path'], year + '/')
+        
+        # File pattern for this specific date
+        file_pattern = f'*{date_str}*.cdf'
+        
+        print_manager.debug(f"Precise download: {plotbot_key} for {date_str}")
+        print_manager.debug(f"  Remote: {remote_path}")
+        print_manager.debug(f"  Local: {local_path}")
+        print_manager.debug(f"  Pattern: {file_pattern}")
+        
+        try:
+            files = pyspedas_download(
+                remote_path=remote_path,
+                remote_file=[file_pattern],
+                local_path=local_path,
+                last_version=True
+            )
+            
+            if files:
+                downloaded_files.extend(files)
+                print_manager.debug(f"  ✅ Downloaded {len(files)} file(s) for {date_str}")
+                for file in files:
+                    file_size = os.path.getsize(file) / (1024*1024) if os.path.exists(file) else 0
+                    print_manager.debug(f"    - {os.path.basename(file)} ({file_size:.1f} MB)")
+            else:
+                print_manager.debug(f"  ❌ No files found for {date_str}")
+                
+        except Exception as e:
+            print_manager.warning(f"Precise download failed for {plotbot_key} date {date_str}: {e}")
+            # Continue with other dates
+    
+    if downloaded_files:
+        print_manager.debug(f"[DFB_PRECISE_DOWNLOAD] Successfully downloaded {len(downloaded_files)} files for {plotbot_key}")
+        print_manager.debug(f"Efficiency gain: Downloaded only needed files (vs ~4-8 extra files with regular method)")
+    else:
+        print_manager.warning(f"[DFB_PRECISE_DOWNLOAD] No files downloaded for {plotbot_key}")
+    
+    return downloaded_files
 
 def _get_dates_in_range(start_str, end_str):
     """Helper to get list of YYYYMMDD strings for a date range."""
@@ -137,6 +260,25 @@ def download_spdf_data(trange, plotbot_key):
     if plotbot_key not in PYSPEDAS_MAP:
         print_manager.warning(f"Pyspedas mapping not defined for {plotbot_key}. Cannot download from SPDF.")
         return []
+    
+    map_config = PYSPEDAS_MAP[plotbot_key]
+    
+    # Check if this is a DFB data type that should use precise download
+    if map_config.get('download_method') == 'precise':
+        print_manager.debug(f"Attempting PRECISE download method for {plotbot_key} (efficiency optimized)")
+        precise_result = download_dfb_precise(trange, plotbot_key, map_config)
+        
+        # If precise download succeeded, return it
+        if precise_result and len(precise_result) > 0:
+            print_manager.debug(f"✅ Precise download succeeded for {plotbot_key}: {len(precise_result)} files")
+            return precise_result
+        else:
+            print_manager.warning(f"❌ Precise download failed for {plotbot_key}, falling back to regular PySpedas method")
+            # Continue to regular PySpedas download below
+    
+    # Use regular PySpedas download method (either as primary method or as fallback)
+    method_type = "FALLBACK" if map_config.get('download_method') == 'precise' else "REGULAR"
+    print_manager.debug(f"Using {method_type} PySpedas download method for {plotbot_key}")
         
     # --- Pre-emptive Rename Logic for Berkeley->SPDF Case Conflict ---
     server_mode = plotbot.config.data_server
@@ -232,7 +374,6 @@ def download_spdf_data(trange, plotbot_key):
             print_manager.warning(f"Error during pre-emptive rename check: {e}")
     # --- End Pre-emptive Rename Logic ---
         
-    map_config = PYSPEDAS_MAP[plotbot_key]
     pyspedas_func = map_config['pyspedas_func']
     pyspedas_datatype = map_config['pyspedas_datatype']
     kwargs = map_config['kwargs']
@@ -264,7 +405,6 @@ def download_spdf_data(trange, plotbot_key):
             no_update=False, # Always check online / download if needed
             downloadonly=True,
             notplot=True,
-            time_clip=True,
             **kwargs
         )
         # Removed redundant assignment to file_path
