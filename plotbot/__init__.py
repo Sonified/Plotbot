@@ -292,8 +292,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_07_v2.81"
-__commit__ = "v2.81 CONFIG: Set default server to 'dynamic' for optimal performance with Berkeley fallback"
+__version__ = "2025_07_07_v2.82"
+__commit__ = "v2.82 DOCS: Update electric field example notebook (plotbot_dfb_electric_field_examples.ipynb)"
 
 # Print the version and commit message
 print(f"""
