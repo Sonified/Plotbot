@@ -292,8 +292,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_07_v2.80"
-__commit__ = "v2.80 FIX: DFB plotting mystery solved - data availability issue, all tests updated with working time ranges"
+__version__ = "2025_07_07_v2.81"
+__commit__ = "v2.81 CONFIG: Set default server to 'dynamic' for optimal performance with Berkeley fallback"
 
 # Print the version and commit message
 print(f"""

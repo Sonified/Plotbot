@@ -822,10 +822,58 @@ result = plotbot(['2022-06-01/00:00:00.000', '2022-06-02/00:00:00.000'],
 
 **Version**: v2.80
 - **Commit Message**: "v2.80 FIX: DFB plotting mystery solved - data availability issue, all tests updated with working time ranges"
-- **Git Hash**: _pending_
+- **Git Hash**: `ccb8d51`
 - **Scope**: DFB debugging breakthrough - solved "random works" mystery
 - **Achievement**: All DFB variables confirmed operational, test suite fixed, stardust integration complete
-- **Status**: ✅ **READY TO DEPLOY - BUG RESOLUTION COMPLETE**
+- **Status**: ✅ **DEPLOYED TO GITHUB - BUG RESOLUTION COMPLETE**
+
+---
+
+## ⚙️ **SMART SERVER DEFAULT CONFIGURATION UPDATE**
+
+**Date**: 2025-07-07 **CONFIGURATION IMPROVEMENT**: **Default Server Set to Dynamic**
+
+### 🔧 **Configuration Optimization**
+
+**CHANGE APPLIED**: Updated default `data_server` setting from `'berkeley'` to `'dynamic'`
+
+**RATIONALE**:
+- ✅ **Best Performance**: Automatically uses SPDF efficiency improvements (75% fewer downloads for DFB)
+- ✅ **Full Compatibility**: Automatic fallback to Berkeley when SPDF unavailable
+- ✅ **Zero Configuration**: Users get optimal behavior out of the box
+- ✅ **Colleague-Friendly**: No setup required for Berkeley data access
+
+### 📊 **New Default Behavior**
+
+```python
+# Updated default configuration:
+config.data_server = 'dynamic'  # Try SPDF first, fallback to Berkeley
+
+# Behavior:
+# 1. Attempt SPDF/CDAWeb via PySpedas (efficient downloads)
+# 2. If data unavailable → automatic Berkeley fallback  
+# 3. User gets best of both worlds without configuration
+```
+
+### 🎯 **User Benefits**
+
+**FOR COLLEAGUES**:
+- 🚀 **Automatic efficiency**: Get DFB download improvements without setup
+- 🛡️ **Berkeley compatibility**: All existing Berkeley data still accessible
+- 🔧 **No learning curve**: Default behavior handles server selection
+
+**FOR ADVANCED USERS**:
+- Still can override: `config.data_server = 'berkeley'` or `'spdf'` if needed
+- Smart fallback ensures reliability while maximizing performance
+
+**STATUS**: **PRODUCTION READY** - Optimal default configuration deployed for all users
+
+**Version**: v2.81
+- **Commit Message**: "v2.81 CONFIG: Set default server to 'dynamic' for optimal performance with Berkeley fallback"
+- **Git Hash**: _pending_
+- **Scope**: Configuration optimization for better default user experience
+- **Achievement**: Smart server selection as default behavior
+- **Status**: ✅ **READY TO DEPLOY - CONFIGURATION IMPROVEMENT**
 
 ---
 

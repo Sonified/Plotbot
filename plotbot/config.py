@@ -24,7 +24,7 @@ class PlotbotConfig:
         self._configure_pyspedas_data_directory()
         
         # --- Data Server Selection ---
-        self.data_server = 'berkeley'
+        self.data_server = 'dynamic'
         """
 Controls which data source is prioritized.
 Options:
