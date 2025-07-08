@@ -927,6 +927,271 @@ def test_stardust_spectral_plotting():
 
 # === End Spectral Plotting Test ===
 
+# === PSP Alpha Integration Test (from plotbot_alpha_integration_examples.ipynb) ===
+
+@pytest.mark.mission("Stardust Test: PSP Alpha vs Proton Comparison")
+def test_stardust_alpha_integration():
+    """Test PSP alpha particle integration with density and temperature comparison."""
+    print("\n=== Testing PSP Alpha Integration (stardust) ===")
+    
+    # Use a time range known to have alpha data
+    ALPHA_TRANGE = ['2023-09-28/06:00:00.000', '2023-09-28/07:30:00.000']
+    fig = None
+    fig_num = None
+    
+    try:
+        # Import PSP alpha class
+        from plotbot import psp_alpha, proton
+        
+        phase(1, "Calling plotbot with alpha vs proton comparison (stardust)")
+        print(f"Testing alpha vs proton with trange: {ALPHA_TRANGE}")
+        print("Variables: psp_alpha.density (panel 1), proton.density (panel 2)")
+        
+        plotbot_function(ALPHA_TRANGE, 
+                        psp_alpha.density, 1,
+                        proton.density, 2)
+        
+        phase(2, "Verifying alpha integration plotbot call (stardust)")
+        fig_num = plt.gcf().number
+        fig = plt.figure(fig_num)
+        
+        system_check("Stardust Alpha Integration Plot Completed", True, "plotbot call with alpha data should complete without error.")
+        system_check("Stardust Alpha Integration Figure Exists", fig is not None and fig_num is not None, "plotbot should have created a figure for alpha data.")
+        
+        # Verify data availability
+        assert hasattr(psp_alpha, 'density') and psp_alpha.density.data is not None, "Alpha density data should be available"
+        assert hasattr(proton, 'density') and proton.density.data is not None, "Proton density data should be available"
+        
+        print("✅ PSP Alpha vs Proton comparison test completed successfully")
+        
+    except Exception as e:
+        pytest.fail(f"Stardust PSP Alpha Integration test failed: {e}")
+    finally:
+        if fig_num is not None:
+            try:
+                plt.close(fig_num)
+                print(f"--- Explicitly closed alpha integration figure {fig_num} in finally block ---")
+            except Exception as close_err:
+                print(f"--- Error closing alpha integration figure {fig_num} in finally block: {close_err} ---")
+
+# === PSP Alpha-Proton Derived Variables Test ===
+
+@pytest.mark.mission("Stardust Test: Alpha-Proton Derived Variables")
+def test_stardust_alpha_proton_derived():
+    """Test PSP alpha-proton derived variables (na_div_np, ap_drift, ap_drift_va)."""
+    print("\n=== Testing Alpha-Proton Derived Variables (stardust) ===")
+    
+    # Use time range from successful alpha/proton implementation
+    DERIVED_TRANGE = ['2023-09-28/06:00:00.000', '2023-09-28/07:00:00.000']
+    fig = None
+    fig_num = None
+    
+    try:
+        # Import PSP alpha class with derived variables
+        from plotbot import psp_alpha
+        
+        phase(1, "Calling plotbot with alpha-proton derived variables (stardust)")
+        print(f"Testing derived variables with trange: {DERIVED_TRANGE}")
+        print("Variables: na_div_np (panel 1), ap_drift (panel 2), ap_drift_va (panel 3)")
+        
+        plotbot_function(DERIVED_TRANGE,
+                        psp_alpha.na_div_np, 1,     # Alpha/proton density ratio
+                        psp_alpha.ap_drift, 2,      # Alpha-proton drift speed
+                        psp_alpha.ap_drift_va, 3)   # Drift normalized by Alfvén speed
+        
+        phase(2, "Verifying derived variables plotbot call (stardust)")
+        fig_num = plt.gcf().number
+        fig = plt.figure(fig_num)
+        
+        system_check("Stardust Derived Variables Plot Completed", True, "plotbot call with derived variables should complete without error.")
+        system_check("Stardust Derived Variables Figure Exists", fig is not None and fig_num is not None, "plotbot should have created a figure for derived variables.")
+        
+        # Verify derived variable data availability
+        assert hasattr(psp_alpha, 'na_div_np') and psp_alpha.na_div_np.data is not None, "na_div_np derived variable should be available"
+        assert hasattr(psp_alpha, 'ap_drift') and psp_alpha.ap_drift.data is not None, "ap_drift derived variable should be available"
+        assert hasattr(psp_alpha, 'ap_drift_va') and psp_alpha.ap_drift_va.data is not None, "ap_drift_va derived variable should be available"
+        
+        print("✅ Alpha-proton derived variables test completed successfully")
+        
+    except Exception as e:
+        pytest.fail(f"Stardust Alpha-Proton Derived Variables test failed: {e}")
+    finally:
+        if fig_num is not None:
+            try:
+                plt.close(fig_num)
+                print(f"--- Explicitly closed derived variables figure {fig_num} in finally block ---")
+            except Exception as close_err:
+                print(f"--- Error closing derived variables figure {fig_num} in finally block: {close_err} ---")
+
+# === PSP DFB Electric Field Test ===
+
+@pytest.mark.mission("Stardust Test: PSP DFB Electric Field Spectra")
+def test_stardust_dfb_electric_field():
+    """Test PSP DFB electric field spectral data."""
+    print("\n=== Testing PSP DFB Electric Field Spectra (stardust) ===")
+    
+    # Use working time range with actual DFB data
+    DFB_TRANGE = ['2022-06-01/00:00:00.000', '2022-06-02/00:00:00.000']
+    fig = None
+    fig_num = None
+    
+    try:
+        # Import PSP DFB class
+        from plotbot import psp_dfb, config
+        
+        # Set server to SPDF for DFB data
+        original_server = config.data_server
+        config.data_server = 'spdf'
+        
+        phase(1, "Calling plotbot with DFB electric field spectra (stardust)")
+        print(f"Testing DFB electric field with trange: {DFB_TRANGE}")
+        print("Variables: AC dV12 (panel 1), AC dV34 (panel 2), DC dV12 (panel 3)")
+        
+        plotbot_function(DFB_TRANGE,
+                        psp_dfb.ac_spec_dv12, 1,  # AC electric field spectrum dV12
+                        psp_dfb.ac_spec_dv34, 2,  # AC electric field spectrum dV34
+                        psp_dfb.dc_spec_dv12, 3)  # DC electric field spectrum dV12
+        
+        phase(2, "Verifying DFB electric field plotbot call (stardust)")
+        fig_num = plt.gcf().number
+        fig = plt.figure(fig_num)
+        
+        system_check("Stardust DFB Plot Completed", True, "plotbot call with DFB data should complete without error.")
+        system_check("Stardust DFB Figure Exists", fig is not None and fig_num is not None, "plotbot should have created a figure for DFB data.")
+        
+        # Verify DFB data availability (at least AC dV12 should have data)
+        assert hasattr(psp_dfb, 'ac_spec_dv12') and psp_dfb.ac_spec_dv12.data is not None, "AC dV12 DFB data should be available"
+        total_data_points = (psp_dfb.ac_spec_dv12.data.size + 
+                           psp_dfb.ac_spec_dv34.data.size + 
+                           psp_dfb.dc_spec_dv12.data.size)
+        assert total_data_points > 0, "At least one DFB spectrum should have real data"
+        
+        print("✅ PSP DFB electric field spectra test completed successfully")
+        
+    except Exception as e:
+        pytest.fail(f"Stardust PSP DFB Electric Field test failed: {e}")
+    finally:
+        # Restore original server setting
+        config.data_server = original_server
+        if fig_num is not None:
+            try:
+                plt.close(fig_num)
+                print(f"--- Explicitly closed DFB figure {fig_num} in finally block ---")
+            except Exception as close_err:
+                print(f"--- Error closing DFB figure {fig_num} in finally block: {close_err} ---")
+
+# === PSP QTN Data Test ===
+
+@pytest.mark.mission("Stardust Test: PSP QTN Data")
+def test_stardust_qtn_data():
+    """Test PSP QTN (Quasi-Thermal Noise) electron density and temperature data."""
+    print("\n=== Testing PSP QTN Data (stardust) ===")
+    
+    # Use time range from QTN examples
+    QTN_TRANGE = ['2022-06-01/20:00:00.000', '2022-06-02/02:00:00.000']
+    fig = None
+    fig_num = None
+    
+    try:
+        # Import PSP QTN class
+        from plotbot import psp_qtn, config
+        
+        # Set server to dynamic for QTN data
+        original_server = config.data_server
+        config.data_server = 'dynamic'
+        
+        phase(1, "Calling plotbot with QTN density and temperature (stardust)")
+        print(f"Testing QTN data with trange: {QTN_TRANGE}")
+        print("Variables: psp_qtn.density (panel 1), psp_qtn.temperature (panel 2)")
+        
+        plotbot_function(QTN_TRANGE,
+                        psp_qtn.density, 1,     # Electron density
+                        psp_qtn.temperature, 2) # Electron temperature
+        
+        phase(2, "Verifying QTN data plotbot call (stardust)")
+        fig_num = plt.gcf().number
+        fig = plt.figure(fig_num)
+        
+        system_check("Stardust QTN Plot Completed", True, "plotbot call with QTN data should complete without error.")
+        system_check("Stardust QTN Figure Exists", fig is not None and fig_num is not None, "plotbot should have created a figure for QTN data.")
+        
+        # Verify QTN data availability
+        assert hasattr(psp_qtn, 'density') and psp_qtn.density.data is not None, "QTN density data should be available"
+        assert hasattr(psp_qtn, 'temperature') and psp_qtn.temperature.data is not None, "QTN temperature data should be available"
+        
+        print("✅ PSP QTN data test completed successfully")
+        
+    except Exception as e:
+        pytest.fail(f"Stardust PSP QTN Data test failed: {e}")
+    finally:
+        # Restore original server setting
+        config.data_server = original_server
+        if fig_num is not None:
+            try:
+                plt.close(fig_num)
+                print(f"--- Explicitly closed QTN figure {fig_num} in finally block ---")
+            except Exception as close_err:
+                print(f"--- Error closing QTN figure {fig_num} in finally block: {close_err} ---")
+
+# === WIND Data Test ===
+
+@pytest.mark.mission("Stardust Test: WIND MFI Magnetic Field")
+def test_stardust_wind_mfi():
+    """Test WIND MFI magnetic field data."""
+    print("\n=== Testing WIND MFI Magnetic Field (stardust) ===")
+    
+    # Use time range from WIND examples
+    WIND_TRANGE = ['2022-06-01/20:00:00', '2022-06-02/02:00:00']
+    fig = None
+    fig_num = None
+    
+    try:
+        # Import WIND MFI class
+        from plotbot import wind_mfi_h2, config
+        
+        # Set server to SPDF for WIND data
+        original_server = config.data_server
+        config.data_server = 'spdf'
+        
+        phase(1, "Calling plotbot with WIND MFI magnetic field (stardust)")
+        print(f"Testing WIND MFI with trange: {WIND_TRANGE}")
+        print("Variables: Bx (panel 1), By (panel 2), Bz (panel 3), |B| (panel 4)")
+        
+        plotbot_function(WIND_TRANGE,
+                        wind_mfi_h2.bx, 1,    # Magnetic field X component
+                        wind_mfi_h2.by, 2,    # Magnetic field Y component
+                        wind_mfi_h2.bz, 3,    # Magnetic field Z component
+                        wind_mfi_h2.bmag, 4)  # Magnetic field magnitude
+        
+        phase(2, "Verifying WIND MFI plotbot call (stardust)")
+        fig_num = plt.gcf().number
+        fig = plt.figure(fig_num)
+        
+        system_check("Stardust WIND MFI Plot Completed", True, "plotbot call with WIND MFI data should complete without error.")
+        system_check("Stardust WIND MFI Figure Exists", fig is not None and fig_num is not None, "plotbot should have created a figure for WIND MFI data.")
+        
+        # Verify WIND MFI data availability
+        assert hasattr(wind_mfi_h2, 'bx') and wind_mfi_h2.bx.data is not None, "WIND MFI Bx data should be available"
+        assert hasattr(wind_mfi_h2, 'by') and wind_mfi_h2.by.data is not None, "WIND MFI By data should be available"
+        assert hasattr(wind_mfi_h2, 'bz') and wind_mfi_h2.bz.data is not None, "WIND MFI Bz data should be available"
+        assert hasattr(wind_mfi_h2, 'bmag') and wind_mfi_h2.bmag.data is not None, "WIND MFI |B| data should be available"
+        
+        print("✅ WIND MFI magnetic field test completed successfully")
+        
+    except Exception as e:
+        pytest.fail(f"Stardust WIND MFI test failed: {e}")
+    finally:
+        # Restore original server setting
+        config.data_server = original_server
+        if fig_num is not None:
+            try:
+                plt.close(fig_num)
+                print(f"--- Explicitly closed WIND MFI figure {fig_num} in finally block ---")
+            except Exception as close_err:
+                print(f"--- Error closing WIND MFI figure {fig_num} in finally block: {close_err} ---")
+
+# === End Example Integration Tests ===
+
 # Ensure any necessary cleanup of plotbot module state if tests modify it globally
 @pytest.fixture(scope="module", autouse=True)
 def cleanup_plotbot_module_state():

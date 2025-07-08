@@ -272,7 +272,7 @@ def test_psp_dfb_plotbot_integration():
     if psp_dfb is None:
         pytest.skip("psp_dfb not importable.")
 
-    TRANGE = ['2021-11-25/00:00:00.000', '2021-11-26/00:00:00.000']
+    TRANGE = ['2022-06-01/00:00:00.000', '2022-06-02/00:00:00.000']  # Use dates with actual DFB data
     plotbot_plt.close('all')
 
     print(f"Testing PURE PLOTBOT behavior for DFB spectra: {TRANGE}")
@@ -285,17 +285,20 @@ def test_psp_dfb_plotbot_integration():
         print(f"Setting config.data_server to 'spdf' for this test...")
         config.data_server = 'spdf'
 
-        # ✅ PURE PLOTBOT TEST - FOCUS ON JUST ONE WORKING DATA PRODUCT
-        print("Calling plotbot with JUST AC dv12 spectrum - the one with known working data...")
-        result = plotbot(TRANGE, psp_dfb.ac_spec_dv12, 1)  # ONLY test the AC dv12 spectrum
+        # ✅ PURE PLOTBOT TEST - TEST ALL THREE DFB VARIABLES
+        print("Calling plotbot with ALL THREE DFB spectra - testing complete integration...")
+        result = plotbot(TRANGE,
+                        psp_dfb.ac_spec_dv12, 1,
+                        psp_dfb.ac_spec_dv34, 2, 
+                        psp_dfb.dc_spec_dv12, 3)  # Test ALL three DFB variables
 
         # Check that plotbot didn't return False (which indicates failure)
         assert result is not False, "plotbot should not return False (indicating failure)"
 
-        # === Verify AC dv12 Has Real Data ===
-        print("\n=== Verifying plotbot retrieved real AC dv12 spectral data ===")
+        # === Verify ALL THREE DFB Variables Have Real Data ===
+        print("\n=== Verifying plotbot retrieved real data for ALL DFB spectral variables ===")
 
-        # Check AC dv12 only
+        # Check AC dv12
         print(f"Checking psp_dfb.ac_spec_dv12...")
         var = psp_dfb.ac_spec_dv12
         print(f"  Data type: {var.plot_options.data_type}")
@@ -308,13 +311,42 @@ def test_psp_dfb_plotbot_integration():
 
         assert var.data.size > 0, "AC dv12 spectrum should have real data"
         
-        # Verify the data structure matches EPAD pattern
-        assert var.datetime_array.ndim == 2, "datetime_array should be 2D mesh like EPAD"
-        assert var.additional_data.ndim == 2, "additional_data should be 2D like EPAD"
-        assert var.data.shape == var.datetime_array.shape, "data and datetime_array should have same shape"
-        assert var.data.shape == var.additional_data.shape, "data and additional_data should have same shape"
+        # Verify the data structure matches EPAD pattern for AC dv12
+        assert var.datetime_array.ndim == 2, "AC dv12 datetime_array should be 2D mesh like EPAD"
+        assert var.additional_data.ndim == 2, "AC dv12 additional_data should be 2D like EPAD"
+        assert var.data.shape == var.datetime_array.shape, "AC dv12 data and datetime_array should have same shape"
+        assert var.data.shape == var.additional_data.shape, "AC dv12 data and additional_data should have same shape"
 
-        print("✅ PSP DFB AC dv12 pure plotbot integration successful")
+        # Check AC dv34
+        print(f"Checking psp_dfb.ac_spec_dv34...")
+        var = psp_dfb.ac_spec_dv34
+        print(f"  Data type: {var.plot_options.data_type}")
+        print(f"  Data shape: {var.data.shape}")
+        print(f"  Datetime array type: {type(var.datetime_array)}")
+        if var.data.size > 0:
+            print(f"  ✅ AC dv34 has real data: {var.data.shape}")
+        else:
+            print(f"  ⚠️  AC dv34 has no data (may be normal for this time range)")
+
+        # Check DC dv12
+        print(f"Checking psp_dfb.dc_spec_dv12...")
+        var = psp_dfb.dc_spec_dv12
+        print(f"  Data type: {var.plot_options.data_type}")
+        print(f"  Data shape: {var.data.shape}")
+        print(f"  Datetime array type: {type(var.datetime_array)}")
+        if var.data.size > 0:
+            print(f"  ✅ DC dv12 has real data: {var.data.shape}")
+        else:
+            print(f"  ⚠️  DC dv12 has no data (may be normal for this time range)")
+
+        # At least AC dv12 should have data for successful test
+        total_data_points = (psp_dfb.ac_spec_dv12.data.size + 
+                           psp_dfb.ac_spec_dv34.data.size + 
+                           psp_dfb.dc_spec_dv12.data.size)
+        
+        assert total_data_points > 0, "At least one DFB spectrum should have real data"
+
+        print("✅ PSP DFB integration test successful - all three variables tested")
 
     except Exception as e:
         print(f"DFB pure plotbot integration error: {e}")
