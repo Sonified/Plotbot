@@ -301,92 +301,52 @@ class data_cubby:
         # Since we determined a merge is needed (new unique times exist)
         print_manager.datacubby("MERGE ARRAYS ACTION - New unique timestamps found. Performing merge...")
         try:
-            # We already combined the times, just need to sort and apply indices
-            sort_indices = np.argsort(combined_times, kind='stable')
-            merged_times = combined_times[sort_indices]
+            final_merged_times = unique_times
 
-            # Find indices to remove duplicates, preferring newer data if timestamps collide.
-            # np.unique returns the *first* occurrence index by default.
-            # To prefer *newer* data, we reverse, find unique on reversed, then un-reverse.
-            _, unique_indices_rev = np.unique(merged_times[::-1], return_index=True)
-            # Correct the indices to point to the original combined_times array before reversal
-            unique_indices = len(merged_times) - 1 - unique_indices_rev
-            # Ensure unique_indices are sorted
-            unique_indices = np.sort(unique_indices)
-
-            # Apply unique indices to the sorted times
-            final_merged_times = merged_times[unique_indices]
-
-            # Apply sorting and uniqueness to data arrays
             merged_raw_data = {}
             all_keys = set(existing_raw_data.keys()) | set(new_raw_data.keys())
+            
+            # Create mapping from timestamps to indices for efficiency
+            merged_time_to_idx = {time: i for i, time in enumerate(final_merged_times)}
+
             for key in all_keys:
-                 if key == 'all': continue # Skip 'all', reconstruct later
+                if key == 'all': continue
 
-                 existing_comp = existing_raw_data.get(key)
-                 new_comp = new_raw_data.get(key)
+                existing_comp = existing_raw_data.get(key)
+                new_comp = new_raw_data.get(key)
 
-                 # Combine components, handling potential Nones or missing keys
-                 combined_comp = None
-                 if existing_comp is not None and new_comp is not None:
-                     # Ensure compatible lengths before concatenating
-                     if len(existing_comp) == len(existing_times) and len(new_comp) == len(new_times):
-                         combined_comp = np.concatenate((existing_comp, new_comp))
-                     else:
-                         print_manager.datacubby(f"MERGE ARRAYS WARNING - Length mismatch for key '{key}' during combine. Skipping merge for this key.")
-                         continue # Skip this key
-                 elif existing_comp is not None:
-                     if len(existing_comp) == len(existing_times):
-                         # If new data doesn't have the key, pad with NaNs or appropriate fill value
-                         fill_value = np.nan if np.issubdtype(existing_comp.dtype, np.number) else None
-                         if fill_value is not None:
-                             # Create padding with same shape as existing_comp but for new_times length
-                             if existing_comp.ndim > 1:
-                                 # For multi-dimensional data (e.g., spectral data: time x frequency)
-                                 padding_shape = (len(new_times),) + existing_comp.shape[1:]
-                                 padding = np.full(padding_shape, fill_value, dtype=existing_comp.dtype)
-                             else:
-                                 # For 1D data (traditional time series)
-                                 padding = np.full(len(new_times), fill_value, dtype=existing_comp.dtype)
-                             combined_comp = np.concatenate((existing_comp, padding))
-                         else:
-                             print_manager.datacubby(f"MERGE ARRAYS WARNING - Cannot determine fill value for key '{key}' (existing only). Skipping.")
-                             continue
-                     else:
-                         print_manager.datacubby(f"MERGE ARRAYS WARNING - Length mismatch for existing key '{key}'. Skipping.")
-                         continue
-                 elif new_comp is not None:
-                     if len(new_comp) == len(new_times):
-                         # If existing data doesn't have the key, pad with NaNs
-                         fill_value = np.nan if np.issubdtype(new_comp.dtype, np.number) else None
-                         if fill_value is not None:
-                             # Create padding with same shape as new_comp but for existing_times length
-                             if new_comp.ndim > 1:
-                                 # For multi-dimensional data (e.g., spectral data: time x frequency)
-                                 padding_shape = (len(existing_times),) + new_comp.shape[1:]
-                                 padding = np.full(padding_shape, fill_value, dtype=new_comp.dtype)
-                             else:
-                                 # For 1D data (traditional time series)
-                                 padding = np.full(len(existing_times), fill_value, dtype=new_comp.dtype)
-                             combined_comp = np.concatenate((padding, new_comp))
-                         else:
-                              print_manager.datacubby(f"MERGE ARRAYS WARNING - Cannot determine fill value for key '{key}' (new only). Skipping.")
-                              continue
-                     else:
-                         print_manager.datacubby(f"MERGE ARRAYS WARNING - Length mismatch for new key '{key}'. Skipping.")
-                         continue
-                 else:
-                     # Should not happen if all_keys is derived correctly, but handle defensively
-                     print_manager.datacubby(f"MERGE ARRAYS WARNING - Key '{key}' not found in either dataset?")
-                     continue
+                # Determine the correct dtype and shape for the final merged array
+                if existing_comp is not None:
+                    final_dtype = existing_comp.dtype
+                    y_shape = existing_comp.shape[1:] if existing_comp.ndim > 1 else ()
+                elif new_comp is not None:
+                    final_dtype = new_comp.dtype
+                    y_shape = new_comp.shape[1:] if new_comp.ndim > 1 else ()
+                else:
+                    continue # Should not happen
 
-                 # Apply the sorting and unique indices
-                 if combined_comp is not None:
-                     sorted_comp = combined_comp[sort_indices]
-                     final_merged_comp = sorted_comp[unique_indices]
-                     merged_raw_data[key] = final_merged_comp
-                 else:
-                      print_manager.datacubby(f"MERGE ARRAYS WARNING - combined_comp was None for key '{key}' after padding logic?")
+                # Create an empty (NaN-filled) container for the final merged data
+                final_shape = (len(final_merged_times),) + y_shape
+                fill_value = np.nan if np.issubdtype(final_dtype, np.number) else None
+                final_array = np.full(final_shape, fill_value, dtype=final_dtype)
+
+                # --- Place existing data into the final array ---
+                if existing_comp is not None and len(existing_comp) == len(existing_times):
+                    try:
+                        existing_indices_in_final = [merged_time_to_idx[t] for t in existing_times]
+                        final_array[existing_indices_in_final] = existing_comp
+                    except KeyError:
+                        print_manager.warning(f"MERGE ARRAYS WARNING: A timestamp from existing_times was not found in merged_time_to_idx for key '{key}'.")
+
+                # --- Place new data into the final array (overwriting if necessary) ---
+                if new_comp is not None and len(new_comp) == len(new_times):
+                    try:
+                        new_indices_in_final = [merged_time_to_idx[t] for t in new_times]
+                        final_array[new_indices_in_final] = new_comp
+                    except KeyError:
+                        print_manager.warning(f"MERGE ARRAYS WARNING: A timestamp from new_times was not found in merged_time_to_idx for key '{key}'.")
+                
+                merged_raw_data[key] = final_array
 
             # Reconstruct 'all' if possible
             if 'br' in merged_raw_data and 'bt' in merged_raw_data and 'bn' in merged_raw_data:

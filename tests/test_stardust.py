@@ -884,6 +884,49 @@ def test_stardust_spdf_download_with_cleanup():
 
     print_manager.show_debug = False # Disable debug after test
 
+# === End SPDF Download Test ===
+
+@pytest.mark.mission("Stardust Test: Spectral Plotting (EPAD Strahl)")
+def test_stardust_spectral_plotting():
+    """Test spectral plotting with EPAD strahl data alongside magnetic field data."""
+    print("\n=== Testing Spectral Plotting (stardust) ===")
+    
+    TRANGE = ['2023-09-28/00:00:00.000', '2023-09-29/00:00:00.000']
+    fig = None
+    fig_num = None
+    
+    try:
+        # Import epad if not already imported
+        from plotbot import epad
+        
+        phase(1, "Calling plotbot with mag and spectral data (stardust)")
+        print(f"Testing spectral plotting with trange: {TRANGE}")
+        print("Variables: mag_rtn_4sa.br (panel 1), epad.strahl (panel 2)")
+        
+        plotbot_function(TRANGE, mag_rtn_4sa.br, 1, epad.strahl, 2)
+        
+        phase(2, "Verifying spectral plotbot call completed (stardust)")
+        fig_num = plt.gcf().number
+        fig = plt.figure(fig_num)
+        
+        system_check("Stardust Spectral Plot Completed", True, "plotbot call with spectral data should complete without error.")
+        system_check("Stardust Spectral Figure Exists", fig is not None and fig_num is not None, "plotbot should have created a figure for spectral data.")
+        
+        print("✅ Spectral plotting test completed successfully")
+        
+    except Exception as e:
+        pytest.fail(f"Stardust Spectral Plotting test failed: {e}")
+    finally:
+        # Always try to close the figure using its number
+        if fig_num is not None:
+            try:
+                plt.close(fig_num)
+                print(f"--- Explicitly closed spectral figure {fig_num} in finally block ---")
+            except Exception as close_err:
+                print(f"--- Error closing spectral figure {fig_num} in finally block: {close_err} ---")
+
+# === End Spectral Plotting Test ===
+
 # Ensure any necessary cleanup of plotbot module state if tests modify it globally
 @pytest.fixture(scope="module", autouse=True)
 def cleanup_plotbot_module_state():

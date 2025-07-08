@@ -292,8 +292,8 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_07_v2.78"
-__commit__ = "v2.78 Feat: Integrate precise DFB download logic into main plotbot routine"
+__version__ = "2025_07_07_v2.79"
+__commit__ = "v2.79 COMPLETE: PSP electric field spectral data fully integrated with plotbot - AC/DC spectra operational"
 
 # Print the version and commit message
 print(f"""

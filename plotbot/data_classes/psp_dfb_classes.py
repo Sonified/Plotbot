@@ -59,218 +59,177 @@ class psp_dfb_class:
             print_manager.warning("No DFB data provided for update.")
 
     def calculate_variables(self, imported_data):
-        """Extract electric field spectra from PySpedas CDF data."""
-        # ⭐️ THIS IS THE SPECIAL MATH FROM e10_iaw.ipynb ⭐️
+        """Calculate and store DFB spectral variables following EPAD pattern"""
+        print_manager.processing(f"[DFB_CALC_VARS ENTRY] id(self): {id(self)}")
         
-        print_manager.debug("Starting DFB electric field spectra calculation...")
+        # Store TT2000 times as numpy array (EPAD pattern)
+        self.time = np.asarray(imported_data.times)
+        self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time))
+        print_manager.processing(f"[DFB_CALC_VARS] self.datetime_array (id: {id(self.datetime_array)}) len: {len(self.datetime_array) if self.datetime_array is not None else 'None'}. Range: {self.datetime_array[0]} to {self.datetime_array[-1]}" if self.datetime_array is not None and len(self.datetime_array) > 0 else "[DFB_CALC_VARS] self.datetime_array is empty/None")
+
+        # Extract and process AC dv12 data if present
+        ac_vals_dv12 = imported_data.data.get('psp_fld_l2_dfb_ac_spec_dV12hg')
+        ac_freq_vals_dv12 = imported_data.data.get('psp_fld_l2_dfb_ac_spec_dV12hg_frequency_bins')
         
-        # Import required functions for data processing
-        try:
-            from pytplot import get_data, time_datetime
-        except ImportError:
-            print_manager.error("Cannot import pytplot functions. Make sure pytplot is installed.")
-            return
-        
-        # Extract CDF data from imported_data
-        data = imported_data.data
-        times = imported_data.times
-        
-        # Convert TT2000 timestamps to datetime objects
-        self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(times))
-        
-        # STEP 1: Extract raw spectral data from PySpedas variables
-        # Following exact e10_iaw.ipynb implementation patterns:
-        
-        # AC Spectrum Processing (dv12 and dv34):
-        ac_times_dv12 = None
-        ac_freq_vals_dv12 = None
-        ac_vals_dv12 = None
-        times_ac_repeat_dv12 = None
-        
-        if 'psp_fld_l2_dfb_ac_spec_dV12hg' in data:
-            print_manager.debug("Processing AC spectrum dv12 data...")
-            # Extract AC dv12 data
-            ac_spec_dv12_data = data['psp_fld_l2_dfb_ac_spec_dV12hg']
-            ac_freq_dv12_data = data.get('psp_fld_l2_dfb_ac_spec_dV12hg_frequency_bins')
-            
-            if ac_spec_dv12_data is not None and len(ac_spec_dv12_data) > 0:
-                ac_vals_dv12 = np.asarray(ac_spec_dv12_data)
-                if ac_freq_dv12_data is not None:
-                    ac_freq_vals_dv12 = np.asarray(ac_freq_dv12_data)
-                else:
-                    # Default frequency bins if not available (54 bins as per e10_iaw.ipynb)
-                    ac_freq_vals_dv12 = np.arange(54)
-                
-                # Time mesh creation for spectral plotting (following e10_iaw.ipynb):
-                datetime_ac_dv12 = self.datetime_array
-                if len(datetime_ac_dv12) > 0 and ac_vals_dv12.ndim >= 2:
-                    freq_bins = ac_vals_dv12.shape[1] if ac_vals_dv12.ndim > 1 else len(ac_freq_vals_dv12)
-                    times_ac_repeat_dv12 = np.repeat(np.expand_dims(datetime_ac_dv12, 1), freq_bins, 1)
-                    print_manager.debug(f"Created AC dv12 time mesh with shape: {times_ac_repeat_dv12.shape}")
-        
-        # AC dv34 processing
-        ac_times_dv34 = None
-        ac_freq_vals_dv34 = None
-        ac_vals_dv34 = None
-        times_ac_repeat_dv34 = None
-        
-        if 'psp_fld_l2_dfb_ac_spec_dV34hg' in data:
-            print_manager.debug("Processing AC spectrum dv34 data...")
-            # Extract AC dv34 data
-            ac_spec_dv34_data = data['psp_fld_l2_dfb_ac_spec_dV34hg']
-            ac_freq_dv34_data = data.get('psp_fld_l2_dfb_ac_spec_dV34hg_frequency_bins')
-            
-            if ac_spec_dv34_data is not None and len(ac_spec_dv34_data) > 0:
-                ac_vals_dv34 = np.asarray(ac_spec_dv34_data)
-                if ac_freq_dv34_data is not None:
-                    ac_freq_vals_dv34 = np.asarray(ac_freq_dv34_data)
-                else:
-                    # Default frequency bins if not available
-                    ac_freq_vals_dv34 = np.arange(54)
-                
-                # Time mesh creation for AC dv34:
-                datetime_ac_dv34 = self.datetime_array
-                if len(datetime_ac_dv34) > 0 and ac_vals_dv34.ndim >= 2:
-                    freq_bins = ac_vals_dv34.shape[1] if ac_vals_dv34.ndim > 1 else len(ac_freq_vals_dv34)
-                    times_ac_repeat_dv34 = np.repeat(np.expand_dims(datetime_ac_dv34, 1), freq_bins, 1)
-                    print_manager.debug(f"Created AC dv34 time mesh with shape: {times_ac_repeat_dv34.shape}")
-            
-        # DC Spectrum Processing (dv12 only - dv34 not available):
-        dc_times_dv12 = None
-        dc_freq_vals_dv12 = None
-        dc_vals_dv12 = None
-        times_dc_repeat_dv12 = None
-        
-        if 'psp_fld_l2_dfb_dc_spec_dV12hg' in data:
-            print_manager.debug("Processing DC spectrum dv12 data...")
-            # Extract DC dv12 data
-            dc_spec_dv12_data = data['psp_fld_l2_dfb_dc_spec_dV12hg']
-            dc_freq_dv12_data = data.get('psp_fld_l2_dfb_dc_spec_dV12hg_frequency_bins')
-            
-            if dc_spec_dv12_data is not None and len(dc_spec_dv12_data) > 0:
-                dc_vals_dv12 = np.asarray(dc_spec_dv12_data)
-                if dc_freq_dv12_data is not None:
-                    dc_freq_vals_dv12 = np.asarray(dc_freq_dv12_data)
-                else:
-                    # Default frequency bins if not available
-                    dc_freq_vals_dv12 = np.arange(54)
-                
-                # Time mesh for DC plotting:
-                datetime_dc_dv12 = self.datetime_array
-                if len(datetime_dc_dv12) > 0 and dc_vals_dv12.ndim >= 2:
-                    freq_bins = dc_vals_dv12.shape[1] if dc_vals_dv12.ndim > 1 else len(dc_freq_vals_dv12)
-                    times_dc_repeat_dv12 = np.repeat(np.expand_dims(datetime_dc_dv12, 1), freq_bins, 1)
-                    print_manager.debug(f"Created DC dv12 time mesh with shape: {times_dc_repeat_dv12.shape}")
-            
-        # STEP 2: Update only the keys that have real data (don't overwrite entire dict)
         if ac_vals_dv12 is not None:
-            self.raw_data['ac_spec_dv12'] = ac_vals_dv12
-            self.raw_data['ac_freq_bins_dv12'] = ac_freq_vals_dv12
+            # Convert to log scale (following EPAD pattern)
+            ac_vals_dv12 = np.where(ac_vals_dv12 == 0, 1e-10, ac_vals_dv12)
+            log_ac_vals_dv12 = np.log10(ac_vals_dv12)
             
+            # Create times_mesh for spectral plotting (EXACT EPAD pattern)
+            self.times_mesh_ac_dv12 = np.meshgrid(
+                self.datetime_array,
+                np.arange(log_ac_vals_dv12.shape[1]),
+                indexing='ij'
+            )[0]
+            
+            # Store spectral data in raw_data
+            self.raw_data['ac_spec_dv12'] = log_ac_vals_dv12
+            
+            # Store frequency bins as 2D array (EXACT EPAD PATTERN)
+            # Repeat frequency bins for each time step, just like EPAD does with pitch angles
+            freq_bins_1d = ac_freq_vals_dv12[0,:]  # Get first row (all rows are identical)
+            freq_bins_2d = np.tile(freq_bins_1d, (len(self.datetime_array), 1))  # Repeat for each time step
+            self.raw_data['ac_freq_bins_dv12'] = freq_bins_2d
+            
+            print_manager.processing(f"[DFB_CALC_VARS] AC dv12: stored spectral data {log_ac_vals_dv12.shape} and frequency bins {freq_bins_2d.shape}")
+
+        # Extract and process AC dv34 data if present
+        ac_vals_dv34 = imported_data.data.get('psp_fld_l2_dfb_ac_spec_dV34hg')
+        ac_freq_vals_dv34 = imported_data.data.get('psp_fld_l2_dfb_ac_spec_dV34hg_frequency_bins')
+        
         if ac_vals_dv34 is not None:
-            self.raw_data['ac_spec_dv34'] = ac_vals_dv34
-            self.raw_data['ac_freq_bins_dv34'] = ac_freq_vals_dv34
+            ac_vals_dv34 = np.where(ac_vals_dv34 == 0, 1e-10, ac_vals_dv34)
+            log_ac_vals_dv34 = np.log10(ac_vals_dv34)
             
+            self.times_mesh_ac_dv34 = np.meshgrid(
+                self.datetime_array,
+                np.arange(log_ac_vals_dv34.shape[1]),
+                indexing='ij'
+            )[0]
+            
+            self.raw_data['ac_spec_dv34'] = log_ac_vals_dv34
+            
+            # Store frequency bins as 2D array (EXACT EPAD PATTERN)
+            freq_bins_1d = ac_freq_vals_dv34[0,:]  # Get first row (all rows are identical)
+            freq_bins_2d = np.tile(freq_bins_1d, (len(self.datetime_array), 1))  # Repeat for each time step
+            self.raw_data['ac_freq_bins_dv34'] = freq_bins_2d
+            
+            print_manager.processing(f"[DFB_CALC_VARS] AC dv34: stored spectral data {log_ac_vals_dv34.shape} and frequency bins {freq_bins_2d.shape}")
+
+        # Extract and process DC dv12 data if present
+        dc_vals_dv12 = imported_data.data.get('psp_fld_l2_dfb_dc_spec_dV12hg')
+        dc_freq_vals_dv12 = imported_data.data.get('psp_fld_l2_dfb_dc_spec_dV12hg_frequency_bins')
+        
         if dc_vals_dv12 is not None:
-            self.raw_data['dc_spec_dv12'] = dc_vals_dv12
-            self.raw_data['dc_freq_bins_dv12'] = dc_freq_vals_dv12
-        
-        # STEP 3: Store time meshes for spectral plotting (only if created)
-        if times_ac_repeat_dv12 is not None:
-            self.times_mesh_ac_dv12 = times_ac_repeat_dv12
+            dc_vals_dv12 = np.where(dc_vals_dv12 == 0, 1e-10, dc_vals_dv12)
+            log_dc_vals_dv12 = np.log10(dc_vals_dv12)
             
-        if times_ac_repeat_dv34 is not None:
-            self.times_mesh_ac_dv34 = times_ac_repeat_dv34
+            self.times_mesh_dc_dv12 = np.meshgrid(
+                self.datetime_array,
+                np.arange(log_dc_vals_dv12.shape[1]),
+                indexing='ij'
+            )[0]
             
-        if times_dc_repeat_dv12 is not None:
-            self.times_mesh_dc_dv12 = times_dc_repeat_dv12
-        
-        print_manager.debug("DFB electric field spectra calculation completed.")
-        
+            self.raw_data['dc_spec_dv12'] = log_dc_vals_dv12
+            
+            # Store frequency bins as 2D array (EXACT EPAD PATTERN)
+            freq_bins_1d = dc_freq_vals_dv12[0,:]  # Get first row (all rows are identical)
+            freq_bins_2d = np.tile(freq_bins_1d, (len(self.datetime_array), 1))  # Repeat for each time step
+            self.raw_data['dc_freq_bins_dv12'] = freq_bins_2d
+            
+            print_manager.processing(f"[DFB_CALC_VARS] DC dv12: stored spectral data {log_dc_vals_dv12.shape} and frequency bins {freq_bins_2d.shape}")
+
+        # Set default None values for missing data types (only for spectral data, not frequency bins)
+        if ac_vals_dv12 is None:
+            self.raw_data['ac_spec_dv12'] = None
+            self.ac_freq_bins_dv12 = None
+        if ac_vals_dv34 is None:
+            self.raw_data['ac_spec_dv34'] = None
+            self.ac_freq_bins_dv34 = None
+        if dc_vals_dv12 is None:
+            self.raw_data['dc_spec_dv12'] = None
+            self.dc_freq_bins_dv12 = None
+
+        if ac_vals_dv12 is None and ac_vals_dv34 is None and dc_vals_dv12 is None:
+            print_manager.processing("No DFB data provided; initialized with empty attributes.")
+
     def set_ploptions(self):
-        """Set up plotting options - follow electron classes pattern for spectral data"""
+        """Set up plotting options for DFB spectral data following EPAD pattern"""
+        print_manager.processing(f"[DFB_SET_PLOPT ENTRY] id(self): {id(self)}")
         
-        # FOLLOW ELECTRON PATTERN: Use 2D time mesh + 1D frequency arrays
+        # Always create plot_manager instances, even if no data (following EPAD pattern)
         
-        # AC Spectrum dv12 - Use 1D time array for filtering, 2D mesh for plotting
+        # AC dv12 spectrum
+        datetime_array = getattr(self, 'times_mesh_ac_dv12', self.datetime_array)
+        ac_data = self.raw_data.get('ac_spec_dv12', None)
         self.ac_spec_dv12 = plot_manager(
-            self.raw_data['ac_spec_dv12'] if self.raw_data['ac_spec_dv12'] is not None else np.array([]),
+            ac_data,
             plot_options=ploptions(
                 data_type='dfb_ac_spec_dv12hg',
                 var_name='ac_spec_dv12',
                 class_name='psp_dfb',
                 subclass_name='ac_spec_dv12',
                 plot_type='spectral',
-                datetime_array=self.datetime_array,  # ✅ 1D time array for filtering
-                y_label='AC Spec dV12\nFrequency (Hz)',
+                datetime_array=datetime_array,  # Use times_mesh like EPAD
+                y_label='Frequency (Hz)',
                 legend_label='AC Spectrum dV12',
-                color='blue',
+                color=None,
                 y_scale='log',
                 y_limit=None,
                 line_width=1,
                 line_style='-',
-                additional_data=self.raw_data['ac_freq_bins_dv12'],  # 1D frequency array
-                colormap='jet',
-                colorbar_scale='log'
+                additional_data=self.raw_data.get('ac_freq_bins_dv12', None),  # Use 2D frequency bins from raw_data
             )
         )
-        # Store 2D time mesh separately for spectral plotting
-        if hasattr(self, 'times_mesh_ac_dv12') and self.times_mesh_ac_dv12 is not None:
-            self.ac_spec_dv12.times_mesh = self.times_mesh_ac_dv12
-        
-        # AC Spectrum dv34 - Use 1D time array for filtering, 2D mesh for plotting  
+
+        # AC dv34 spectrum
+        datetime_array = getattr(self, 'times_mesh_ac_dv34', self.datetime_array)
+        ac_data = self.raw_data.get('ac_spec_dv34', None)
         self.ac_spec_dv34 = plot_manager(
-            self.raw_data['ac_spec_dv34'] if self.raw_data['ac_spec_dv34'] is not None else np.array([]),
+            ac_data,
             plot_options=ploptions(
                 data_type='dfb_ac_spec_dv34hg',
                 var_name='ac_spec_dv34',
                 class_name='psp_dfb',
                 subclass_name='ac_spec_dv34',
                 plot_type='spectral',
-                datetime_array=self.datetime_array,  # ✅ 1D time array for filtering
-                y_label='AC Spec dV34\nFrequency (Hz)',
+                datetime_array=datetime_array,  # Use times_mesh like EPAD
+                y_label='Frequency (Hz)',
                 legend_label='AC Spectrum dV34',
-                color='green',
+                color=None,
                 y_scale='log',
                 y_limit=None,
                 line_width=1,
                 line_style='-',
-                additional_data=self.raw_data['ac_freq_bins_dv34'],  # 1D frequency array
-                colormap='jet',
-                colorbar_scale='log'
+                additional_data=self.raw_data.get('ac_freq_bins_dv34', None),  # Use 2D frequency bins from raw_data
             )
         )
-        # Store 2D time mesh separately for spectral plotting
-        if hasattr(self, 'times_mesh_ac_dv34') and self.times_mesh_ac_dv34 is not None:
-            self.ac_spec_dv34.times_mesh = self.times_mesh_ac_dv34
-        
-        # DC Spectrum dv12 - Use 1D time array for filtering, 2D mesh for plotting
+
+        # DC dv12 spectrum
+        datetime_array = getattr(self, 'times_mesh_dc_dv12', self.datetime_array)
+        dc_data = self.raw_data.get('dc_spec_dv12', None)
         self.dc_spec_dv12 = plot_manager(
-            self.raw_data['dc_spec_dv12'] if self.raw_data['dc_spec_dv12'] is not None else np.array([]),
+            dc_data,
             plot_options=ploptions(
                 data_type='dfb_dc_spec_dv12hg',
                 var_name='dc_spec_dv12',
                 class_name='psp_dfb',
                 subclass_name='dc_spec_dv12',
                 plot_type='spectral',
-                datetime_array=self.datetime_array,  # ✅ 1D time array for filtering
-                y_label='DC Spec dV12\nFrequency (Hz)',
+                datetime_array=datetime_array,  # Use times_mesh like EPAD
+                y_label='Frequency (Hz)',
                 legend_label='DC Spectrum dV12',
-                color='red',
+                color=None,
                 y_scale='log',
                 y_limit=None,
                 line_width=1,
                 line_style='-',
-                additional_data=self.raw_data['dc_freq_bins_dv12'],  # 1D frequency array
-                colormap='jet',
-                colorbar_scale='log'
+                additional_data=self.raw_data.get('dc_freq_bins_dv12', None),  # Use 2D frequency bins from raw_data
             )
         )
-        # Store 2D time mesh separately for spectral plotting
-        if hasattr(self, 'times_mesh_dc_dv12') and self.times_mesh_dc_dv12 is not None:
-            self.dc_spec_dv12.times_mesh = self.times_mesh_dc_dv12
-        
-        print_manager.debug("DFB plotting options set successfully.")
+
+        print_manager.processing(f"[DFB_SET_PLOPT] Plot managers created for all DFB variables")
 
     def get_subclass(self, subclass_name):
         """Get a specific subclass by name."""
@@ -281,21 +240,38 @@ class psp_dfb_class:
             return None
 
     def __getattr__(self, name):
-        """Handle attribute access for unknown attributes."""
+        """Handle attribute access for unknown attributes following EPAD pattern."""
+        # Allow direct access to dunder OR single underscore methods/attributes
+        if name.startswith('_'):
+            try:
+                return object.__getattribute__(self, name)
+            except AttributeError:
+                raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+        if 'raw_data' not in self.__dict__:
+            raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
+        
+        print_manager.debug('psp_dfb getattr helper!')
+        available_attrs = list(self.raw_data.keys())
+        print_manager.debug(f'psp_dfb available attrs: {available_attrs}')
+        
+        # Check if the requested attribute exists in raw_data
         if name in self.raw_data:
             return self.raw_data[name]
-        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+        else:
+            # Provide helpful error message
+            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'. Available attributes: {available_attrs}")
 
     def __setattr__(self, name, value):
-        """Control attribute setting to maintain consistency."""
-        if name.startswith('_') or name in ['class_name', 'data_type', 'subclass_name', 'raw_data', 'datetime', 'datetime_array', 'times_mesh_ac_dv12', 'times_mesh_ac_dv34', 'times_mesh_dc_dv12']:
+        """Handle attribute setting following EPAD pattern."""
+        # Allow setting of private attributes and known class attributes
+        if name.startswith('_') or name in ['raw_data', 'datetime_array', 'time', 'times_mesh_ac_dv12', 'times_mesh_ac_dv34', 'times_mesh_dc_dv12', 'ac_spec_dv12', 'ac_spec_dv34', 'dc_spec_dv12']:
             object.__setattr__(self, name, value)
         else:
-            # For plot_manager attributes, allow direct setting
-            if isinstance(value, plot_manager):
-                object.__setattr__(self, name, value)
+            # For other attributes, store in raw_data if it exists
+            if hasattr(self, 'raw_data'):
+                self.raw_data[name] = value
             else:
-                print_manager.warning(f"Attempting to set non-plot_manager attribute '{name}' on {self.__class__.__name__}")
                 object.__setattr__(self, name, value)
 
 
