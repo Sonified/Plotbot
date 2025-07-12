@@ -127,9 +127,9 @@ def test_environment():
 
 # === Basic Plotting Tests (from test_all_plot_basics.py) ===
 
-# Use a shorter, common time range for stardust tests
-STARDUST_TRANGE = ['2020-04-09/06:00:00.000', '2020-04-09/07:00:00.000'] 
-STARDUST_CENTER_TIME = '2020-04-09/06:30:00.000'
+# Use E10 perihelion time range for stardust tests (5 days around perihelion)
+STARDUST_TRANGE = ['2021-11-19/00:00:00.000', '2021-11-24/00:00:00.000'] 
+STARDUST_CENTER_TIME = '2021-11-21/12:00:00.000'
 
 @pytest.fixture(autouse=True)
 def setup_stardust_test_plots():
@@ -1191,6 +1191,51 @@ def test_stardust_wind_mfi():
                 print(f"--- Error closing WIND MFI figure {fig_num} in finally block: {close_err} ---")
 
 # === End Example Integration Tests ===
+
+# === Orbital Data Tests ===
+
+@pytest.mark.mission("Stardust Test: PSP Orbit Data")
+def test_stardust_psp_orbit_data():
+    """Comprehensive test for PSP orbit data including main and derived variables."""
+    print("\n=== Testing PSP Orbit Data (stardust) ===")
+    fig = None
+    fig_num = None
+    try:
+        from plotbot import psp_orbit
+        
+        phase(1, "Calling plotbot with PSP orbit variables (stardust)")
+        print("Variables: r_sun (panel 1), orbital_speed (panel 2), carrington_lon (panel 3)")
+        
+        plotbot_function(STARDUST_TRANGE, 
+                        psp_orbit.r_sun, 1,                    # Distance from Sun
+                        psp_orbit.orbital_speed, 2,            # Orbital speed
+                        psp_orbit.carrington_lon, 3)           # Carrington longitude
+
+        phase(2, "Verifying orbit plotbot call completed (stardust)")
+        fig_num = plt.gcf().number
+        fig = plt.figure(fig_num)
+
+        system_check("Stardust Orbit Call Completed", True, "orbit plotbot call should complete without error.")
+        system_check("Stardust Orbit Figure Exists", fig is not None and fig_num is not None, "orbit plotbot should have created a figure.")
+        
+        # Verify orbit data availability
+        assert hasattr(psp_orbit, 'r_sun') and psp_orbit.r_sun.data is not None, "PSP r_sun orbit data should be available"
+        assert hasattr(psp_orbit, 'orbital_speed') and psp_orbit.orbital_speed.data is not None, "PSP orbital_speed orbit data should be available"
+        assert hasattr(psp_orbit, 'carrington_lon') and psp_orbit.carrington_lon.data is not None, "PSP carrington_lon orbit data should be available"
+        
+        print("✅ PSP orbit data test completed successfully")
+
+    except Exception as e:
+        pytest.fail(f"Stardust PSP Orbit Data test failed: {e}")
+    finally:
+        if fig_num is not None:
+            try:
+                plt.close(fig_num)
+                print(f"--- Explicitly closed orbit figure {fig_num} in finally block ---")
+            except Exception as close_err:
+                print(f"--- Error closing orbit figure {fig_num} in finally block: {close_err} ---")
+
+# === End Orbital Data Tests ===
 
 # Ensure any necessary cleanup of plotbot module state if tests modify it globally
 @pytest.fixture(scope="module", autouse=True)

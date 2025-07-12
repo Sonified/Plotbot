@@ -450,7 +450,7 @@ data=NpzFile '/Users/robertalexander/GitHub/Plotbot/support_data/trajectories/ps
 ---
 
 ## Version: v2.85
-- **Git Hash**: `[TO BE GENERATED]`
+- **Git Hash**: `3eec066`
 - **Branch**: `orbit-integration`
 - **Commit Message**: "v2.85 ROBUSTNESS FIX: Bulletproof path resolution for orbit data - works from any directory"
 - **Scope**: Enhanced local support data path resolution with project root detection
