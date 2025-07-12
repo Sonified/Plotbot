@@ -11,7 +11,7 @@ def timer_decorator(timer_name):
             result = func(*args, **kwargs)
             end_time = timer.perf_counter()
             duration_ms = (end_time - start_time) * 1000
-            print(f"⏱️ [{timer_name}] {func.__name__}: {duration_ms:.2f}ms")
+            print_manager.speed_test(f"⏱️ [{timer_name}] {func.__name__}: {duration_ms:.2f}ms")
             return result
         return wrapper
     return decorator
@@ -277,27 +277,27 @@ def plotbot(trange, *args):
 
     # NEW: Smart caching check
     if regular_vars:
-        # Check if we already have data for this time range
+        # Data Cache Check - see if we already have data for this time range
         timer_entry = timer.perf_counter()
         timer_start = timer.perf_counter()  # <-- Ensure timer_start is always initialized
         if regular_vars and hasattr(regular_vars[0], 'data_type'):
             if regular_vars[0].data_type == 'mag_RTN_4sa':
-                print(f'⏱️ [TIMER_MAG_2] Early optimization check: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
+                print_manager.speed_test(f'[TIMER_MAG_2] Data Cache Check: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
             elif regular_vars[0].data_type == 'psp_orbit_data':
-                print(f'⏱️ [TIMER_ORBIT_2] Early optimization check: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
+                print_manager.speed_test(f'[TIMER_ORBIT_2] Data Cache Check: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
         need_data_loading = False
         
         for var in regular_vars:
             data_type = var.data_type
             # DEBUGGING: Check tracker state for each variable
-            print(f"EARLY OPTIMIZATION CHECK: var={var.class_name}.{var.subclass_name}, data_type={data_type}")
-            print(f"TRACKER STATE: {global_tracker.calculated_ranges}")
+            print_manager.speed_test(f"DATA CACHE CHECK: var={var.class_name}.{var.subclass_name}, data_type={data_type}")
+            print_manager.speed_test(f"TRACKER STATE: {global_tracker.calculated_ranges}")
             
             # Construct a unique identifier for the variable instance for tracker
             # This should align with how it's stored/checked elsewhere if instance-specific tracking is used
             # For now, assuming data_type and trange is enough for global_tracker.is_calculation_needed
             calculation_needed = global_tracker.is_calculation_needed(trange, data_type)
-            print(f"EARLY OPTIMIZATION RESULT: data_type={data_type}, calculation_needed={calculation_needed}")
+            print_manager.speed_test(f"DATA CACHE CHECK RESULT: data_type={data_type}, calculation_needed={calculation_needed}")
             
             if not calculation_needed:
                 print_manager.variable_testing(f"Data for {data_type} in trange {trange} already exists according to global_tracker.")
@@ -309,20 +309,20 @@ def plotbot(trange, *args):
         
         timer_end = timer.perf_counter()
         duration_ms = (timer_end - timer_start) * 1000
-        print(f"⏱️ [TIMER_EARLY_OPTIMIZATION] Early optimization check: {duration_ms:.2f}ms")
+        print_manager.speed_test(f"[TIMER_EARLY_OPTIMIZATION] Data Cache Check: {duration_ms:.2f}ms")
         
         if need_data_loading:
             if regular_vars and hasattr(regular_vars[0], 'data_type'):
                 if regular_vars[0].data_type == 'mag_RTN_4sa':
-                    print(f'⏱️ [TIMER_MAG_3] get_data() call: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
+                    print_manager.speed_test(f'[TIMER_MAG_3] get_data() call: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
                 elif regular_vars[0].data_type == 'psp_orbit_data':
-                    print(f'⏱️ [TIMER_ORBIT_3] get_data() call: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
+                    print_manager.speed_test(f'[TIMER_ORBIT_3] get_data() call: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
             print_manager.status(f"📥 Acquiring data for {len(regular_vars)} regular variables...")
             timer_start = timer.perf_counter()
             get_data(trange, *regular_vars)
             timer_end = timer.perf_counter()
             duration_ms = (timer_end - timer_start) * 1000
-            print(f"⏱️ [TIMER_GET_DATA_CALL] get_data() call: {duration_ms:.2f}ms")
+            print_manager.speed_test(f"[TIMER_GET_DATA_CALL] get_data() call: {duration_ms:.2f}ms")
         else:
             print_manager.status(f"✅ All data already cached for {len(regular_vars)} regular variables in the specified trange.")
 
@@ -379,9 +379,9 @@ def plotbot(trange, *args):
     timer_start = timer.perf_counter()
     if args and hasattr(args[0], 'data_type'):
         if args[0].data_type == 'mag_RTN_4sa':
-            print(f'⏱️ [TIMER_MAG_6] Plotting section: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
+            print_manager.speed_test(f'[TIMER_MAG_6] Plotting section: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
         elif args[0].data_type == 'psp_orbit_data':
-            print(f'⏱️ [TIMER_ORBIT_6] Plotting section: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
+            print_manager.speed_test(f'[TIMER_ORBIT_6] Plotting section: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
     for axis_index in range(1, num_subplots + 1):  # Iterate through each subplot (1-based indexing)
         ax = axs[axis_index - 1]                   # Get current subplot axis (0-based array indexing)
         ax_right = None                            # Secondary y-axis for dual-scale plots
@@ -713,7 +713,7 @@ def plotbot(trange, *args):
 
     timer_end = timer.perf_counter()
     duration_ms = (timer_end - timer_start) * 1000
-    print(f"⏱️ [TIMER_PLOTTING] Plotting section: {duration_ms:.2f}ms")
+    print_manager.speed_test(f"[TIMER_PLOTTING] Plotting section: {duration_ms:.2f}ms")
     
     plt.show()                                                    # Display the complete figure
     # return True

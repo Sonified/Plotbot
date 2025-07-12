@@ -18,7 +18,7 @@ def timer_decorator(timer_name):
             result = func(*args, **kwargs)
             end_time = timer.perf_counter()
             duration_ms = (end_time - start_time) * 1000
-            print(f"⏱️ [{timer_name}] {func.__name__}: {duration_ms:.2f}ms")
+            print_manager.speed_test(f"⏱️ [{timer_name}] {func.__name__}: {duration_ms:.2f}ms")
             return result
         return wrapper
     return decorator
@@ -32,6 +32,25 @@ import plotbot
 from .data_import import import_data_function, DataObject
 from .data_classes.data_types import data_types
 from .config import config
+
+# Add global step counter for dynamic numbering
+_global_step_counter = 0
+def next_step(step_name: str, data_type: str = None) -> tuple:
+    """Generate next step number and start timing."""
+    global _global_step_counter
+    _global_step_counter += 1
+    step_key = f"Step {_global_step_counter}: {step_name}"
+    if data_type:
+        step_key += f" ({data_type})"
+    step_start = timer.perf_counter()
+    print_manager.speed_test(f"🚀 {step_key}")
+    return step_key, step_start
+
+def end_step(step_key: str, step_start: float, metadata: dict = None) -> None:
+    """End timing for a step."""
+    duration_ms = (timer.perf_counter() - step_start) * 1000
+    metadata_str = f" - {metadata}" if metadata else ""
+    print_manager.speed_test(f"✅ {step_key}: {duration_ms:.2f}ms{metadata_str}")
 
 # Import specific data classes as needed
 from . import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
@@ -97,6 +116,10 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
     get_data(trange, pb.proton_fits.abs_qz_p, skip_refresh_check=True)
     """
     pm = print_manager # Local alias
+    
+    # Step: Initialize get_data
+    step_key, step_start = next_step("Initialize get_data", "get_data")
+    
     # Temporary debug for test_proton_trange_updates.py - RE-ADDING BLOCK
     if 'tests.test_proton_trange_updates' in sys.modules:
         test_module = sys.modules['tests.test_proton_trange_updates']
@@ -137,6 +160,8 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             variable_names_for_log.append(str(var_tuple)) 
 
     print_manager.dependency_management(f"[GET_DATA_ENTRY] Original trange: {trange}, variables: {variable_names_for_log}")
+    
+    end_step(step_key, step_start, {"variables": len(variables), "trange": f"{trange[0]} to {trange[1]}"})
 
     # STRATEGIC PRINT GET_DATA_ENTRY
     if variables:
@@ -150,6 +175,9 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
         elif isinstance(first_var_spec, str): # It's a data_type string
             pm.dependency_management(f"[GET_DATA_ENTRY] Called with data_type string: {first_var_spec}")
 
+    # Step: Validate time range
+    step_key, step_start = next_step("Validate time range")
+    
     # Validate time range and ensure UTC timezone
     try:
         # Use dateutil.parser.parse instead of strptime - much more flexible!
@@ -174,9 +202,15 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
 
     print_manager.variable_testing(f"Getting data for time range: {trange[0]} to {trange[1]}")
     
+    end_step(step_key, step_start, {"start": trange[0], "end": trange[1]})
+
     #====================================================================
     # STEP 1: IDENTIFY REQUIRED DATA TYPES
     #====================================================================
+    
+    # Step: Identify required data types
+    step_key, step_start = next_step("Identify required data types")
+    
     required_data_types = set()     # Tracks unique data types needed
     subclasses_by_type = {}         # Store subclass names requested for status prints
 
@@ -220,6 +254,8 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
 
     print_manager.dependency_management(f"[GET_DATA PRE-LOOP] required_data_types set: {required_data_types}")
     
+    end_step(step_key, step_start, {"data_types": list(required_data_types), "count": len(required_data_types)})
+    
     # Print status summary
     for dt in required_data_types:
         subclasses = subclasses_by_type.get(dt, [])
@@ -238,6 +274,9 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
         print_manager.dependency_management(f"[GET_DATA IN-LOOP] Current data_type from set: '{data_type}' (Type: {type(data_type)})")
         print_manager.dependency_management(f"Processing Data Type: {data_type}...")
         
+        # Step: Process data type
+        step_key, step_start = next_step("Process data type", data_type)
+        
         # --- Handle FITS Calculation Type --- 
         if data_type == 'proton_fits':
             fits_calc_key = 'proton_fits'
@@ -246,12 +285,18 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             calculation_needed_by_tracker = global_tracker.is_calculation_needed(trange, fits_calc_key)
 
             if calculation_needed_by_tracker:
+                # Step: Calculate FITS data
+                fits_step_key, fits_step_start = next_step("Calculate FITS data", data_type)
+                
                 # print_manager.dependency_management(f"FITS Calculation required for {trange} (Triggered by {data_type}).")
                 start_time = timer.perf_counter()
                 data_obj_fits = import_data_function(trange, fits_calc_trigger)
                 end_time = timer.perf_counter()
                 duration_ms = (end_time - start_time) * 1000
-                print(f"⏱️ [TIMER_IMPORT_DATA_FITS] import_data_function (FITS): {duration_ms:.2f}ms")
+                print_manager.speed_test(f"⏱️ import_data_function (FITS): {duration_ms:.2f}ms")
+                
+                end_step(fits_step_key, fits_step_start, {"duration_ms": duration_ms, "success": data_obj_fits is not None})
+                
                 if data_obj_fits:
                     print_manager.status(f"📥 Updating {fits_calc_key} with calculated data...")
                     if hasattr(proton_fits, 'update'):
@@ -269,6 +314,7 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
                     print_manager.warning(f"[DEBUG] Tracker says calculation is NOT needed, but in-memory proton_fits object is empty or missing data. This may indicate a problem with the snapshot or tracker.")
                 print_manager.status(f"📤 Using existing {fits_calc_key} data, calculation not needed.")
 
+            end_step(step_key, step_start, {"calculation_needed": calculation_needed_by_tracker})
             # Continue to next data_type - processing for proton_fits is done
             continue 
 
@@ -291,11 +337,13 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             config_from_psp_data_types = data_types.get(data_type) # Renamed to avoid conflict with plotbot.config
             if not config_from_psp_data_types:
                 print_manager.warning(f"Config not found in psp_data_types for {data_type} during processing loop.")
+                end_step(step_key, step_start, {"error": "config not found"})
                 continue
             
             # Ensure this is not a local_csv source being processed here (unless it's specifically HAM, which is handled above)
             if 'local_csv' in config_from_psp_data_types.get('data_sources', []):
                 print_manager.warning(f"Skipping standard processing for local_csv type {data_type} (not HAM). Should be handled by proton_fits.")
+                end_step(step_key, step_start, {"skipped": "local_csv type"})
                 continue
                 
             # Determine the canonical key for cubby/tracker interactions
@@ -309,18 +357,28 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             else:
                 cubby_key = data_type.lower() # Default to lowercase
         
+        # Step: Request data from data cubby
+        cubby_step_key, cubby_step_start = next_step("Request data from data cubby", cubby_key)
+        
         class_instance = data_cubby.grab(cubby_key) # Use canonical key for CDFs, 'ham' for HAM
+        
+        end_step(cubby_step_key, cubby_step_start, {"cubby_key": cubby_key, "found": class_instance is not None})
         
         # --- Check Calculation Cache (Applies to HAM as well) ---
         # Use canonical key here too for consistency (cubby_key will be 'ham' for HAM)
         
+        # Step: Check calculation cache
+        cache_step_key, cache_step_start = next_step("Check calculation cache", data_type)
+        
         # DEBUGGING: Print tracker state before check
-        print(f"TRACKER STATE BEFORE CHECK: {global_tracker.calculated_ranges}")
+        print_manager.speed_test(f"TRACKER STATE BEFORE CHECK: {global_tracker.calculated_ranges}")
         
         calculation_needed = global_tracker.is_calculation_needed(trange, data_type)
         
         # DEBUGGING: Print actual tracker check result
-        print(f"TRACKER CHECK: data_type={data_type}, calculation_needed={calculation_needed}")
+        print_manager.speed_test(f"TRACKER CHECK: data_type={data_type}, calculation_needed={calculation_needed}")
+        
+        end_step(cache_step_key, cache_step_start, {"calculation_needed": calculation_needed})
 
         if calculation_needed:
             # Check if this is local support data (like NPZ files)
@@ -332,6 +390,9 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             # Download logic only for non-HAM and non-support-data types
             elif data_type != 'ham': 
                 print_manager.dependency_management(f"Tracker indicates calculation needed for {data_type} (using original type {data_type}). Proceeding with download if applicable...")
+                
+                # Step: Download data
+                download_step_key, download_step_start = next_step("Download data", data_type)
                 
                 server_mode = plotbot.config.data_server.lower()
                 print_manager.dependency_management(f"Server mode for {data_type}: {server_mode}")
@@ -352,20 +413,27 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
                 else:
                     print_manager.warning(f"Invalid config.data_server mode: '{server_mode}'. Defaulting to Berkeley. Handle invalid mode.")
                     download_berkeley_data(trange, data_type) # download_successful = download_berkeley_data(trange, data_type)
+                
+                end_step(download_step_key, download_step_start, {"server_mode": server_mode})
             else: # This is for data_type == 'ham'
                 print_manager.dependency_management(f"Tracker indicates calculation needed for {data_type} (HAM data). Proceeding to import_data_function.")
 
             # --- Import/Update Data (Applies to HAM as well) --- 
+            # Step: Import/refresh data
+            import_step_key, import_step_start = next_step("Import/refresh data", data_type)
+            
             print_manager.dependency_management(f"{data_type} - Import/Refresh required") # Use data_type
             start_time = timer.perf_counter()
             if data_type == 'mag_RTN_4sa':
-                print(f'⏱️ [TIMER_MAG_4] CDF download/import: {(timer.perf_counter())*1000:.2f}ms')
+                print_manager.speed_test(f'[TIMER_MAG_4] CDF download/import: {(timer.perf_counter())*1000:.2f}ms')
             if data_type == 'psp_orbit_data':
-                print(f'⏱️ [TIMER_ORBIT_4] NPZ file load: {(timer.perf_counter())*1000:.2f}ms')
+                print_manager.speed_test(f'[TIMER_ORBIT_4] NPZ file load: {(timer.perf_counter())*1000:.2f}ms')
             data_obj = import_data_function(trange, data_type) # data_type will be 'ham' for HAM
             end_time = timer.perf_counter()
             duration_ms = (end_time - start_time) * 1000
-            print(f"⏱️ [TIMER_IMPORT_DATA_STANDARD] import_data_function ({data_type}): {duration_ms:.2f}ms")
+            print_manager.speed_test(f"[TIMER_IMPORT_DATA_FUNCTION] import_data_function ({data_type}): {duration_ms:.2f}ms")
+            
+            end_step(import_step_key, import_step_start, {"duration_ms": duration_ms, "success": data_obj is not None})
 
             if data_obj is None: 
                 print_manager.warning(f"Import returned no data for {data_type}, skipping update.")
@@ -373,8 +441,12 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
                 # If get_data is called for multiple types in *variables, it will proceed to the next
                 # If only one type was requested and it failed, get_data effectively does nothing more for it.
                 # The overall_success in the test script will depend on save_data_snapshot failing if data isn't loaded.
+                end_step(step_key, step_start, {"error": "import returned no data"})
                 continue # This skips the DataCubby update for THIS data_type and trange
 
+            # Step: Update data cubby
+            cubby_update_step_key, cubby_update_step_start = next_step("Update data cubby", cubby_key)
+            
             # Tell DataCubby to handle the update/merge for the global instance
             # Use canonical key for cubby update
             print_manager.status(f"📥 Requesting DataCubby to update/merge global instance for {cubby_key}...")
@@ -388,14 +460,16 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             )
             end_time = timer.perf_counter()
             duration_ms = (end_time - start_time) * 1000
-            print(f"⏱️ [TIMER_DATA_CUBBY_UPDATE] data_cubby.update_global_instance ({cubby_key}): {duration_ms:.2f}ms")
+            print_manager.speed_test(f"[TIMER_UPDATE_GLOBAL_INSTANCE] update_global_instance: {duration_ms:.2f}ms")
+            
+            end_step(cubby_update_step_key, cubby_update_step_start, {"duration_ms": duration_ms, "success": update_success})
 
             if update_success:
                 pm.status(f"✅ DataCubby processed update for {cubby_key}.")
                 global_tracker.update_calculated_range(trange, data_type) # Use data_type for tracker consistency
                 # DEBUGGING: Verify tracker was updated
-                print(f"TRACKER UPDATED: {data_type} for {trange}")
-                print(f"TRACKER STATE AFTER UPDATE: {global_tracker.calculated_ranges}")
+                print_manager.speed_test(f"TRACKER UPDATED: {data_type} for {trange}")
+                print_manager.speed_test(f"TRACKER STATE AFTER UPDATE: {global_tracker.calculated_ranges}")
             else:
                 pm.warning(f"DataCubby failed to process update for {cubby_key}. Tracker not updated.")
             # --- End Import/Update Data --- 
@@ -403,9 +477,18 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
         else: # Calculation NOT needed
              # Use canonical key in status message
             print_manager.status(f"📤 Using existing {data_type} data, calculation/import not needed.")
+        
+        end_step(step_key, step_start, {"calculation_needed": calculation_needed})
     
     #====================================================================
     # STEP 3: FINALIZATION
     #====================================================================
+    
+    # Step: Finalize get_data
+    final_step_key, final_step_start = next_step("Finalize get_data")
+    
     print_manager.status("✅ Complete")
+    
+    end_step(final_step_key, final_step_start, {"total_data_types": len(required_data_types)})
+    
     return None 

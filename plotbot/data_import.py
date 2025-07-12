@@ -19,7 +19,7 @@ def timer_decorator(timer_name):
             result = func(*args, **kwargs)
             end_time = timer.perf_counter()
             duration_ms = (end_time - start_time) * 1000
-            print(f"⏱️ [{timer_name}] {func.__name__}: {duration_ms:.2f}ms")
+            print_manager.speed_test(f"⏱️ [{timer_name}] {func.__name__}: {duration_ms:.2f}ms")
             return result
         return wrapper
     return decorator
@@ -268,6 +268,11 @@ DataObject = namedtuple('DataObject', ['times', 'data'])  # Define DataObject st
 @timer_decorator("TIMER_IMPORT_DATA_FUNCTION")
 def import_data_function(trange, data_type):
     """Import data function that reads CDF or calculates FITS CSV data within the specified time range."""
+    
+    # Step: Initialize import_data_function
+    from .get_data import next_step, end_step
+    step_key, step_start = next_step("Initialize import_data_function", data_type)
+    
     data_type_requested_at_start = data_type # Capture for final debug print
     data_obj_to_return = None # Initialize a variable to hold the object to be returned
     
@@ -282,6 +287,11 @@ def import_data_function(trange, data_type):
     
     # Add time tracking for function entry
     print_manager.time_input("import_data_function", trange)
+    
+    end_step(step_key, step_start, {"data_type": data_type, "trange": trange_str})
+    
+    # Step: Determine data source type
+    step_key, step_start = next_step("Determine data source type", data_type)
     
     # Determine if this is a request for calculated FITS data
     # We'll use a placeholder data_type like 'fits_calculated' for now
@@ -299,6 +309,7 @@ def import_data_function(trange, data_type):
     if not is_fits_calculation and data_type not in data_types:
         print_manager.variable_testing(f"Error: {data_type} not found in data_types and is not the FITS calculation trigger.")
         print_manager.time_output("import_data_function", "error: invalid data_type")
+        end_step(step_key, step_start, {"error": "invalid data_type"})
         return None
     
     # Get config - if it's a standard type, get its config.
@@ -310,6 +321,11 @@ def import_data_function(trange, data_type):
         # config = None # Explicitly set config to None or handle later
         print_manager.variable_testing(f"Recognized request for calculated FITS data.")
     
+    end_step(step_key, step_start, {"is_fits_calculation": is_fits_calculation, "config_found": not is_fits_calculation})
+    
+    # Step: Parse time range
+    step_key, step_start = next_step("Parse time range")
+    
     # Parse times using flexible parser and ensure UTC timezone
     try:
         start_time = parse(trange[0]).replace(tzinfo=timezone.utc) # Ensure UTC
@@ -318,11 +334,14 @@ def import_data_function(trange, data_type):
     except ValueError as e:
         print(f"Error parsing time range: {e}")
         print_manager.time_output("import_data_function", "error: time parsing failed")
+        end_step(step_key, step_start, {"error": "time parsing failed"})
         return None
     
     # Format the original trange list using the helper for the next print statement
     formatted_trange_list = [format_datetime_for_log(t) for t in trange]
     print_manager.debug(f"\nImporting data for UTC time range: {formatted_trange_list}")
+    
+    end_step(step_key, step_start, {"start_time": format_datetime_for_log(start_time), "end_time": format_datetime_for_log(end_time)})
 
     #====================================================================
     # CHECK DATA SOURCE TYPE (FITS Calculation vs CDF vs Other Local CSV)
@@ -330,6 +349,10 @@ def import_data_function(trange, data_type):
 
     if is_fits_calculation:
         # --- FITS Data Loading Logic (Modified) ---
+        
+        # Step: Load FITS raw data
+        step_key, step_start = next_step("Load FITS raw data", data_type)
+        
         print_manager.debug(f"\n=== Starting FITS Raw Data Import for {trange} ===")
 
         # Get config for the required input type (sf00 only needed now)
@@ -338,11 +361,13 @@ def import_data_function(trange, data_type):
         except KeyError as e:
             print_manager.error(f"Configuration error: Missing 'sf00_fits' data type definition in data_types.py")
             print_manager.time_output("import_data_function", "error: config error")
+            end_step(step_key, step_start, {"error": "config error"})
             return None
 
         if not sf00_config:
             print_manager.error(f"Configuration error: Could not load config for sf00_fits.")
             print_manager.time_output("import_data_function", "error: config error")
+            end_step(step_key, step_start, {"error": "config error"})
             return None
 
         sf00_base_path = sf00_config.get('local_path')
@@ -351,6 +376,7 @@ def import_data_function(trange, data_type):
         if not sf00_base_path or not sf00_patterns:
             print_manager.error(f"Configuration error: Missing 'local_path' or 'file_pattern_import' for sf00.")
             print_manager.time_output("import_data_function", "error: config error")
+            end_step(step_key, step_start, {"error": "config error"})
             return None
 
         # Define the raw columns needed by proton_fits_class internal calculation
@@ -430,6 +456,7 @@ def import_data_function(trange, data_type):
         if not all_raw_data_list:
             print_manager.warning(f"No raw FITS data could be loaded for the time range {trange}. Missing files for dates: {dates_missing_files}")
             print_manager.time_output("import_data_function", "no raw data loaded")
+            end_step(step_key, step_start, {"error": "no raw data loaded"})
             return None
 
         # Consolidate raw data
@@ -438,6 +465,7 @@ def import_data_function(trange, data_type):
             final_raw_df = pd.concat(all_raw_data_list, ignore_index=True)
         except Exception as concat_e:
             print_manager.error(f"Error concatenating raw FITS DataFrames: {concat_e}")
+            end_step(step_key, step_start, {"error": "concatenation error"})
             return None
 
         # Convert time to datetime objects, then to TT2000
@@ -456,6 +484,7 @@ def import_data_function(trange, data_type):
             print_manager.debug(f"Converted final times to TT2000 (Length: {len(tt2000_array)})")
         except Exception as time_e:
             print_manager.error(f"Error converting FITS time column to TT2000: {time_e}")
+            end_step(step_key, step_start, {"error": "time conversion error"})
             return None
 
         # Create final data dictionary with NumPy arrays
@@ -497,6 +526,7 @@ def import_data_function(trange, data_type):
                      data_sorted[var_name] = None # Keep None if it was None
         except Exception as sort_e:
             print_manager.error(f"Error during sorting of raw FITS data: {sort_e}")
+            end_step(step_key, step_start, {"error": "sorting error"})
             return None
 
         print_manager.debug(f"Sorted all raw FITS data based on time.")
@@ -537,10 +567,15 @@ def import_data_function(trange, data_type):
         # === END DIAGNOSTIC PRINT ===
 
         data_obj_to_return = data_object # data_object is used in FITS path
+        end_step(step_key, step_start, {"data_object": data_object})
         return data_obj_to_return
 
     # --- Handle Local Support Data (various file types: NPZ, CSV, JSON, HDF5, etc.) ---
     elif config and 'local_support_data' in config.get('data_sources', []):
+        
+        # Step: Load local support data
+        step_key, step_start = next_step("Load local support data", data_type)
+        
         print_manager.debug(f"\n=== Starting Local Support Data Import for {trange} ===")
         
         support_base_path = config.get('local_path')
@@ -549,6 +584,7 @@ def import_data_function(trange, data_type):
         if not support_base_path or not file_pattern:
             print_manager.error(f"Configuration error: Missing 'local_path' or 'file_pattern_import' for {data_type}.")
             print_manager.time_output("import_data_function", "error: config error")
+            end_step(step_key, step_start, {"error": "config error"})
             return None
         
         # Search for the file in support_data and subfolders
@@ -564,6 +600,7 @@ def import_data_function(trange, data_type):
         if not support_file_path:
             print_manager.error(f"Could not find {file_pattern} in {support_base_path} or its subfolders.")
             print_manager.time_output("import_data_function", "error: file not found")
+            end_step(step_key, step_start, {"error": "file not found"})
             return None
         
         print_manager.debug(f"Found support data file: {support_file_path}")
@@ -609,6 +646,7 @@ def import_data_function(trange, data_type):
             else:
                 print_manager.error(f"Unsupported file type: {file_extension} for {support_file_path}")
                 print_manager.time_output("import_data_function", "error: unsupported file type")
+                end_step(step_key, step_start, {"error": "unsupported file type"})
                 return None
             
             # For support data, we typically don't need time filtering since they often contain 
@@ -627,6 +665,7 @@ def import_data_function(trange, data_type):
                 print_manager.debug(f"    CSV shape: {loaded_data.shape}, columns: {list(loaded_data.columns)}")
             
             data_obj_to_return = data_object
+            end_step(step_key, step_start, {"data_object": data_object})
             return data_obj_to_return
             
         except Exception as e:
@@ -634,10 +673,15 @@ def import_data_function(trange, data_type):
             import traceback
             print_manager.debug(traceback.format_exc())
             print_manager.time_output("import_data_function", f"error: {file_extension} loading failed")
+            end_step(step_key, step_start, {"error": f"{file_extension} loading failed"})
             return None
     
     # --- Handle Hammerhead (ham) CSV Loading ---
     elif data_type == 'ham':
+        
+        # Step: Load HAM CSV data
+        step_key, step_start = next_step("Load HAM CSV data", data_type)
+        
         print_manager.debug(f"\n=== Starting Hammerhead CSV Data Import for {trange} ===")
 
         # Get config for the ham data type
@@ -645,6 +689,7 @@ def import_data_function(trange, data_type):
         if not config:
             print_manager.error(f"Configuration error: Missing 'ham' data type definition in data_types.py")
             print_manager.time_output("import_data_function", "error: config error")
+            end_step(step_key, step_start, {"error": "config error"})
             return None
 
         ham_base_path = config.get('local_path')
@@ -654,6 +699,7 @@ def import_data_function(trange, data_type):
         if not ham_base_path:
             print_manager.error(f"Configuration error: Missing 'local_path' for ham.")
             print_manager.time_output("import_data_function", "error: config error")
+            end_step(step_key, step_start, {"error": "config error"})
             return None
 
         # List to store all loaded data
@@ -794,6 +840,7 @@ def import_data_function(trange, data_type):
         if not all_times: # Check if all_times list is empty
              print_manager.warning(f"No Hammerhead data found within time range after processing files.")
              print_manager.time_output("import_data_function", "error: no ham data found")
+             end_step(step_key, step_start, {"error": "no ham data found"})
              return None
 
         # Ensure all_times is a numpy array for sorting
@@ -846,6 +893,7 @@ def import_data_function(trange, data_type):
         # === END DIAGNOSTIC PRINT ===
 
         data_obj_to_return = data_obj # data_obj is used in HAM path
+        end_step(step_key, step_start, {"data_object": data_obj})
         return data_obj_to_return
         
     else:
@@ -870,6 +918,7 @@ def import_data_function(trange, data_type):
             print_manager.time_output("import_data_function", f"*** IDF_DEBUG: Computed end_tt2000: {end_tt2000} ***")
         except Exception as e_tt2000_conv:
             print_manager.time_output("import_data_function", f"*** IDF_DEBUG: ERROR during start/end TT2000 conversion for req range: {e_tt2000_conv} ***")
+            end_step(step_key, step_start, {"error": "TT2000 conversion error"})
             return None 
 
         try:
@@ -880,6 +929,7 @@ def import_data_function(trange, data_type):
         except Exception as e_to_datetime_conv:
             print_manager.time_output("import_data_function", f"*** IDF_DEBUG: ERROR converting TT2000 req range to datetime: {e_to_datetime_conv} ***")
             print_manager.time_output("import_data_function", f"      start_tt2000 was: {start_tt2000}, end_tt2000 was: {end_tt2000}")
+            end_step(step_key, step_start, {"error": "datetime conversion error"})
             return None
 
         variables = config.get('data_vars', [])     # Get list of variables to extract
@@ -940,6 +990,7 @@ def import_data_function(trange, data_type):
         if not found_files:
             print_manager.warning(f"No CDF data files found for {data_type} in the specified time range using root path {config.get('local_path')}. Searched for patterns like '{file_pattern if 'file_pattern' in locals() else 'N/A'}'.") # Enhanced warning
             print_manager.time_output("import_data_function", "no files found")
+            end_step(step_key, step_start, {"error": "no files found"})
             return None
 
         found_files = sorted(list(set(found_files))) # Get unique sorted list
@@ -1125,6 +1176,7 @@ def import_data_function(trange, data_type):
         if not times_list:
             print_manager.warning(f"No CDF data found in the specified time range after processing files for {data_type}.")
             print_manager.time_output("import_data_function", "no data found")
+            end_step(step_key, step_start, {"error": "no data found"})
             return None
 
         times = np.concatenate(times_list)
@@ -1203,6 +1255,7 @@ def import_data_function(trange, data_type):
         # === END DIAGNOSTIC PRINT ===
 
         data_obj_to_return = data_object # data_object is used in CDF path
+        end_step(step_key, step_start, {"data_object": data_obj_to_return})
         return data_obj_to_return
 
     # Fallback for any paths that might have been missed, or error returns
@@ -1219,4 +1272,5 @@ def import_data_function(trange, data_type):
 
     # If data_obj_to_return is still None here, it means an error path was taken that didn't assign to it.
     # The function would return None in those cases based on existing logic (e.g., error in time parsing, no files found etc.)
+    end_step(step_key, step_start, {"data_obj_to_return": data_obj_to_return})
     return data_obj_to_return # This will be None if an error path already returned None

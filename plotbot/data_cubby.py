@@ -20,7 +20,7 @@ def timer_decorator(timer_name):
             result = func(*args, **kwargs)
             end_time = timer.perf_counter()
             duration_ms = (end_time - start_time) * 1000
-            print(f"⏱️ [{timer_name}] {func.__name__}: {duration_ms:.2f}ms")
+            print_manager.speed_test(f"⏱️ [{timer_name}] {func.__name__}: {duration_ms:.2f}ms")
             return result
         return wrapper
     return decorator
@@ -590,9 +590,9 @@ class data_cubby:
 
         timer_entry = timer.perf_counter()
         if data_type_str == 'mag_RTN_4sa':
-            print(f'⏱️ [TIMER_MAG_5] DataCubby update: 0.00ms')
+            print_manager.speed_test(f'[TIMER_MAG_5] DataCubby update: 0.00ms')
         elif data_type_str == 'psp_orbit_data':
-            print(f'⏱️ [TIMER_ORBIT_5] DataCubby update: 0.00ms')
+            print_manager.speed_test(f'[TIMER_ORBIT_5] DataCubby update: 0.00ms')
 
         # --- Helper for time range validation (NEW) ---
         def _validate_trange_elements(trange_to_validate, context_msg=""):
@@ -720,7 +720,7 @@ class data_cubby:
                             raise te
                     end_time = timer.perf_counter()
                     duration_ms = (end_time - start_time) * 1000
-                    print(f"⏱️ [TIMER_INSTANCE_UPDATE] global_instance.update() for {data_type_str}: {duration_ms:.2f}ms")
+                    print_manager.speed_test(f"[TIMER_INSTANCE_UPDATE] global_instance.update() for {data_type_str}: {duration_ms:.2f}ms")
                     
                     # STRATEGIC PRINT H2
                     dt_len_after_instance_update = len(global_instance.datetime_array) if hasattr(global_instance, 'datetime_array') and global_instance.datetime_array is not None else "None_or_NoAttr"
@@ -743,6 +743,34 @@ class data_cubby:
                 
         # 4. Handle Instance with Existing Data (Merge Logic)
         else:
+            # SPECIAL CASE: Orbit data should always be re-sliced to the requested trange
+            # It's not downloaded CDF data that needs merging - it's a static lookup table
+            if data_type_str.lower() == 'psp_orbit_data' or data_type_str.lower() == 'psp_orbit':
+                pm.datacubby("Orbit data detected - forcing re-slice to requested trange instead of merge...")
+                if hasattr(global_instance, 'update'):
+                    try:
+                        start_time = timer.perf_counter()
+                        try:
+                            # Force orbit data to re-slice by calling update with trange
+                            global_instance.update(imported_data_obj, original_requested_trange=original_requested_trange)
+                            pm.datacubby(f"Successfully re-sliced orbit data to trange: {original_requested_trange}")
+                        except TypeError as te:
+                            if "unexpected keyword argument" in str(te) or "takes" in str(te):
+                                pm.datacubby(f"Falling back to simple update() signature for orbit data")
+                                global_instance.update(imported_data_obj)
+                            else:
+                                raise te
+                        end_time = timer.perf_counter()
+                        duration_ms = (end_time - start_time) * 1000
+                        print_manager.speed_test(f"[TIMER_ORBIT_SLICE] orbit data re-slice: {duration_ms:.2f}ms")
+                        return True
+                    except Exception as e:
+                        pm.error(f"UPDATE ORBIT ERROR - Error re-slicing orbit data: {e}")
+                        return False
+                else:
+                    pm.error(f"UPDATE ORBIT ERROR - Orbit instance has no update method!")
+                    return False
+            
             pm.datacubby("Global instance has existing data. Attempting merge...")
             CorrectClass = cls._get_class_type_from_string(data_type_str)
             if not CorrectClass:
@@ -791,7 +819,7 @@ class data_cubby:
             )
             end_time = timer.perf_counter()
             duration_ms = (end_time - start_time) * 1000
-            print(f"⏱️ [TIMER_MERGE_ARRAYS] _merge_arrays for {data_type_str}: {duration_ms:.2f}ms")
+            print_manager.speed_test(f"[TIMER_MERGE_ARRAYS] _merge_arrays for {data_type_str}: {duration_ms:.2f}ms")
             
             # Update the global instance ONLY if merge returned new data
             if merged_times is not None and merged_raw_data is not None:

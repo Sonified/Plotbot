@@ -110,6 +110,11 @@ class psp_orbit_class:
             except AttributeError:
                 raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
+        # Handle special case for 'time' attribute
+        if name == 'time':
+            # Return None if time attribute doesn't exist yet
+            return self.__dict__.get('time', None)
+
         if 'raw_data' not in self.__dict__:
             raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
         print_manager.dependency_management('psp_orbit getattr helper!')
@@ -125,7 +130,7 @@ class psp_orbit_class:
 
         # Allow setting known attributes
         print_manager.dependency_management(_format_setattr_debug(name, value))
-        if name in ['datetime', 'datetime_array', 'raw_data', 'times', 'npz_data'] or name in self.raw_data:
+        if name in ['datetime', 'datetime_array', 'raw_data', 'times', 'time', 'npz_data'] or name in self.raw_data:
             super().__setattr__(name, value)
         else:
             # Print friendly error message
@@ -374,7 +379,7 @@ class psp_orbit_class:
                 subclass_name='r_sun',
                 plot_type='time_series',
                 datetime_array=self.datetime_array,
-                y_label='Distance (R☉)',
+                y_label='Distance (R$\odot$)',
                 legend_label='Heliocentric Distance',
                 color='orange',
                 y_scale='linear',
@@ -470,7 +475,7 @@ class psp_orbit_class:
                 subclass_name='icrf_x',
                 plot_type='time_series',
                 datetime_array=self.datetime_array,
-                y_label='ICRF X (R☉)',
+                y_label='ICRF X (R$\odot$)',
                 legend_label='ICRF X Coordinate',
                 color='darkred',
                 y_scale='linear',
@@ -489,7 +494,7 @@ class psp_orbit_class:
                 subclass_name='icrf_y',
                 plot_type='time_series',
                 datetime_array=self.datetime_array,
-                y_label='ICRF Y (R☉)',
+                y_label='ICRF Y (R$\odot$)',
                 legend_label='ICRF Y Coordinate',
                 color='darkgreen',
                 y_scale='linear',
@@ -508,7 +513,7 @@ class psp_orbit_class:
                 subclass_name='icrf_z',
                 plot_type='time_series',
                 datetime_array=self.datetime_array,
-                y_label='ICRF Z (R☉)',
+                y_label='ICRF Z (R$\odot$)',
                 legend_label='ICRF Z Coordinate',
                 color='darkblue',
                 y_scale='linear',

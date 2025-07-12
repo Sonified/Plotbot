@@ -7,14 +7,12 @@ import numpy as np
 
 # Set global font settings for consistent plotting appearance
 mpl_plt.rcParams.update({
-    'font.family': 'Arial',
-    'font.sans-serif': ['Arial'],
+    'font.family': 'sans-serif',
+    'font.sans-serif': ['Arial', 'Helvetica', 'sans-serif'],
     'axes.labelweight': 'normal',
     'font.weight': 'normal',
     'mathtext.fontset': 'stix',
-    'mathtext.rm': 'Arial',
-    'mathtext.it': 'Arial:italic',
-    'mathtext.bf': 'Arial:bold'
+    'mathtext.default': 'regular'
 })
 
 # Import core components
@@ -301,10 +299,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_11_v2.83"
+__version__ = "2025_07_11_v2.84"
 
 # Commit message for this version
-__commit_message__ = "v2.83 PERF: Major PSP orbit optimization - eliminated vis-viva calculations, vectorized loops, 3-10x faster processing"
+__commit_message__ = "v2.84 CRITICAL FIX: Orbit data time range slicing bug - 1000x performance improvement"
 
 # Print the version and commit message
 print(f"""

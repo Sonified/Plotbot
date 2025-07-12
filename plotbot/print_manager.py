@@ -105,7 +105,7 @@ class print_manager_class:
         pyspedas_verbose: Enable/disable verbose INFO messages from pyspedas library (default: True)
     """
     
-    # Turn on/off by type
+    # Add speed_test category to class constants
     DEBUG = False
     WARNING = False
     ERROR = True     # Keep error enabled for safety
@@ -119,6 +119,7 @@ class print_manager_class:
     PV_TESTING = False
     ZARR_INTEGRATION = False  # Disabled by default; enable for Zarr debugging
     DEPENDENCY_MANAGEMENT = False # New style for dependency management prints
+    SPEED_TEST = False # New category for performance timing tests
     
     # Colors for class-level access
     BLACK = '\033[30m'
@@ -158,6 +159,7 @@ class print_manager_class:
         self.pyspedas_filter_instance = None  # Instance of the PyspedasInfoFilter
         self.data_snapshot_enabled = False # <<< ADDED: Flag for snapshot messages
         self.dependency_management_enabled = False # Flag for dependency management prints
+        self.speed_test_enabled = False # Flag for performance timing tests
         # print(f"[RAW_PM_INIT] Initial self.processing_enabled: {self.processing_enabled}") # ADDED DIAGNOSTIC
         # print(f"[PM_DEBUG] __init__: Default _pyspedas_verbose = {self._pyspedas_verbose}") # Remove print
         
@@ -172,6 +174,7 @@ class print_manager_class:
         self.processing_prefix = "[PROCESS] "  # Processing status prefix
         self.snapshot_prefix = "[SNAPSHOT] " # <<< ADDED: Prefix for snapshot messages
         self.dependency_management_prefix = "[DEPENDENCY] " # Prefix for dependency management prints
+        self.speed_test_prefix = "[SPEED] " # Prefix for performance timing tests
         
         # Severity levels
         self.level_warning = "[WARNING] "    # Warnings
@@ -666,6 +669,12 @@ class print_manager_class:
             prefix = self.dependency_management_prefix if self.category_prefix_enabled else ""
             print(self._format_message(f"{prefix}{msg}"))
 
+    def speed_test(self, msg):
+        """Print performance timing test messages if enabled."""
+        if self.speed_test_enabled:
+            prefix = self.speed_test_prefix if self.category_prefix_enabled else ""
+            print(self._format_message(f"{prefix}{msg}"))
+
     @property
     def show_dependency_management(self):
         """Get the current state of dependency management output."""
@@ -678,6 +687,16 @@ class print_manager_class:
             print("[PRINT_MANAGER_WARNING] show_dependency_management must be set to True or False.")
             return
         self.dependency_management_enabled = value
+
+    @property
+    def show_speed_test(self):
+        """Get the current state of speed test output."""
+        return self.speed_test_enabled
+
+    @show_speed_test.setter
+    def show_speed_test(self, value):
+        """Set whether speed test output is enabled."""
+        self.speed_test_enabled = value
 
 # Create a singleton instance
 print_manager = print_manager_class()
