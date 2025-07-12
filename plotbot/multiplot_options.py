@@ -248,10 +248,10 @@ class MultiplotOptions:
         try:
             # Use try-except for __file__ which might not exist in all contexts
             _current_dir = pathlib.Path(__file__).parent.resolve()
-            self.positional_data_path = str(_current_dir / "../support_data/trajectories/Parker_positional_data.npz")
+            self.positional_data_path = str(_current_dir / "../support_data/trajectories/psp_positional_data.npz")
         except NameError:
             # Fallback if __file__ is not defined (e.g., interactive session)
-            self.positional_data_path = "../support_data/trajectories/Parker_positional_data.npz"
+            self.positional_data_path = "../support_data/trajectories/psp_positional_data.npz"
             print_manager.warning("__file__ not defined, using basic relative path for positional_data_path")
         
         # Tick density for x-axis when using positional data
@@ -680,10 +680,10 @@ class MultiplotOptions:
     @property
     def positional_data_path(self) -> str:
         """Path to the NPZ file containing Parker Solar Probe positional data."""
-        _default_path = "../support_data/trajectories/Parker_positional_data.npz" # Basic default
+        _default_path = "../support_data/trajectories/psp_positional_data.npz" # Basic default
         try:
             _current_dir = pathlib.Path(__file__).parent.resolve()
-            _default_path = str(_current_dir / "../support_data/trajectories/Parker_positional_data.npz")
+            _default_path = str(_current_dir / "../support_data/trajectories/psp_positional_data.npz")
         except NameError:
             pass
         return self.__dict__.get('_positional_data_path', _default_path)

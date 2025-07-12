@@ -49,6 +49,7 @@ from .data_classes.wind_3dp_pm_classes import wind_3dp_pm, wind_3dp_pm_class
 from .data_classes.psp_alpha_classes import psp_alpha, psp_alpha_class
 from .data_classes.psp_qtn_classes import psp_qtn, psp_qtn_class
 from .data_classes.psp_dfb_classes import psp_dfb, psp_dfb_class
+from .data_classes.psp_orbit import psp_orbit, psp_orbit_class
 
 # --- Explicitly Register Global Instances with DataCubby --- #
 data_cubby.stash(mag_rtn_4sa, class_name='mag_rtn_4sa')
@@ -71,6 +72,7 @@ data_cubby.stash(wind_swe_h5, class_name='wind_swe_h5')
 data_cubby.stash(wind_swe_h1, class_name='wind_swe_h1')
 data_cubby.stash(psp_qtn, class_name='psp_qtn')
 data_cubby.stash(psp_dfb, class_name='psp_dfb')
+data_cubby.stash(psp_orbit, class_name='psp_orbit')
 # Register individual DFB data types to the same psp_dfb instance
 data_cubby.stash(psp_dfb, class_name='dfb_ac_spec_dv12hg')
 data_cubby.stash(psp_dfb, class_name='dfb_ac_spec_dv34hg')
@@ -212,6 +214,12 @@ CLASS_NAME_MAPPING = {
         'components': ['density', 'temperature'],
         'primary_component': 'density'
     },
+    'psp_orbit': {
+        'data_type': 'psp_orbit_data',
+        'class_type': psp_orbit_class,
+        'components': ['r_sun', 'carrington_lon', 'carrington_lat', 'heliocentric_distance_au', 'orbital_speed'],
+        'primary_component': 'r_sun'
+    },
     'psp_dfb': {
         'data_type': 'dfb_ac_spec_dv12hg',  # Primary data type (AC spectra dv12)
         'class_type': psp_dfb_class,
@@ -273,6 +281,7 @@ __all__ = [
     'psp_alpha',     # PSP alpha particle moments
     'psp_qtn',       # PSP quasi-thermal noise (electron density and temperature)
     'psp_dfb',       # PSP FIELDS electric field AC/DC spectra
+    'psp_orbit',     # PSP orbital/positional data
     'audifier',
     'custom_variable',  # Using custom_variable instead of new_variable
     'debug_custom_variables',  # Add debug function for custom variables
@@ -292,15 +301,17 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_07_v2.82"
-__commit__ = "v2.82 DOCS: Update electric field example notebook (plotbot_dfb_electric_field_examples.ipynb)"
+__version__ = "2025_07_11_v2.83"
+
+# Commit message for this version
+__commit_message__ = "v2.83 PERF: Major PSP orbit optimization - eliminated vis-viva calculations, vectorized loops, 3-10x faster processing"
 
 # Print the version and commit message
 print(f"""
 🤖 Plotbot Initialized
 📈📉 Multiplot Initialized
    Version: {__version__}
-   Commit: {__commit__}
+   Commit: {__commit_message__}
 """)
 
 # Note: Previous logic had this at the end of plotbot_main.py, moved here 

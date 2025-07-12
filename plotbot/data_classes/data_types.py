@@ -244,6 +244,17 @@ data_types = {
         'class_name': 'psp_br_norm_class',  # Corrected class name
         'data_vars': ['br_norm']              # The primary variable this type produces
     },
+    'psp_orbit_data': {
+        'mission': 'psp',
+        'data_sources': ['local_support_data'],  # Local support files (NPZ, CSV, JSON, HDF5, etc.)
+        'local_path': 'support_data',  # Base folder to search recursively
+        'file_pattern_import': 'psp_positional_data.npz',  # Exact filename to find
+        'file_time_format': 'local_support_data',  # Support data files don't follow standard time formats
+        'data_vars': ['times', 'r_sun', 'carrington_lon', 'carrington_lat', 'icrf_x', 'icrf_y', 'icrf_z'],
+        'class_file': 'psp_orbit',
+        'class_name': 'psp_orbit_class',
+        'description': 'Parker Solar Probe orbital/positional data including heliocentric distance, Carrington coordinates, and derived quantities'
+    },
     
     # === WIND SATELLITE DATA TYPES ===
     # NOTE: v3.x will use dynamic pyspedas calls from these fields, v2.x uses hardcoded PYSPEDAS_MAP

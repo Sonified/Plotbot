@@ -26,10 +26,10 @@ except ImportError as e:
 log_file = os.path.join(os.path.dirname(__file__), "test_logs", "test_psp_mag_br_norm.txt")
 
 def test_mag_rtn_4sa_br_norm_initialization():
-    # Try to use real Parker_positional_data.npz if available
-    npz_path = pathlib.Path(__file__).parent.parent / "support_data" / "trajectories" / "Parker_positional_data.npz"
+    # Try to use real psp_positional_data.npz if available
+    npz_path = pathlib.Path(__file__).parent.parent / "support_data" / "trajectories" / "psp_positional_data.npz"
     if not npz_path.exists():
-        pytest.skip(f"Parker_positional_data.npz not found at {npz_path}, skipping real Rsun test.")
+        pytest.skip(f"psp_positional_data.npz not found at {npz_path}, skipping real Rsun test.")
 
     # Load Rsun times and values
     with np.load(npz_path) as data:

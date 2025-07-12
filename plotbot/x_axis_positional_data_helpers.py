@@ -305,7 +305,7 @@ def test_positional_mapping(data_path=None, date_str=None, data_type='carrington
     else:
         # Use default path
         current_dir = pathlib.Path(__file__).parent.resolve()
-        default_path = str(current_dir / "../support_data/trajectories/Parker_positional_data.npz")
+        default_path = str(current_dir / "../support_data/trajectories/psp_positional_data.npz")
         mapper = XAxisPositionalDataMapper(default_path)
     
     if not mapper.data_loaded:

@@ -206,6 +206,17 @@ class DataTracker:
             print_manager.debug(f"[DataTracker][EPAD_DEBUG]   Converted requested start_dt: {start_time}, end_dt: {end_time}")
 
         for existing_start, existing_end in ranges_dict.get(data_type, []):
+            # --- CRITICAL DEBUG FOR ORBIT/MAG COMPARISON IN LOOP ---
+            if data_type in ['psp_orbit_data', 'mag_RTN_4sa']:
+                print_manager.processing(f"[TRACKER_DEBUG] {data_type} checking against existing range:")
+                print_manager.processing(f"[TRACKER_DEBUG]   Existing start: {existing_start}")
+                print_manager.processing(f"[TRACKER_DEBUG]   Existing end: {existing_end}")
+                is_after_start = start_time >= existing_start
+                is_before_end = end_time <= existing_end
+                print_manager.processing(f"[TRACKER_DEBUG]   start_time >= existing_start? {is_after_start}")
+                print_manager.processing(f"[TRACKER_DEBUG]   end_time <= existing_end? {is_before_end}")
+                print_manager.processing(f"[TRACKER_DEBUG]   Would return False (no action)? {is_after_start and is_before_end}")
+
             # --- Specific EPAD Debugging ---
             if data_type == 'epad':
                 print_manager.debug(f"[DataTracker][EPAD_DEBUG]     Comparing with existing range: [{existing_start}, {existing_end}]")
@@ -215,10 +226,18 @@ class DataTracker:
                 print_manager.debug(f"[DataTracker][EPAD_DEBUG]       end_request_dt ({end_time}) <= existing_end ({existing_end})? {is_before_end}")
 
             if start_time >= existing_start and end_time <= existing_end:
+                # --- CRITICAL DEBUG FOR ORBIT/MAG COMPARISON WHEN RETURNING FALSE ---
+                if data_type in ['psp_orbit_data', 'mag_RTN_4sa']:
+                    print_manager.processing(f"[TRACKER_DEBUG] {data_type} FOUND MATCH - returning False (no action needed)")
+
                 # --- Specific EPAD Debugging ---
                 if data_type == 'epad':
                     print_manager.debug(f"[DataTracker][EPAD_DEBUG]   Fully contained in existing range. Returning False (no action needed).")
                 return False  # Requested range is fully contained within an existing range
+
+        # --- CRITICAL DEBUG FOR ORBIT/MAG COMPARISON WHEN RETURNING TRUE ---
+        if data_type in ['psp_orbit_data', 'mag_RTN_4sa']:
+            print_manager.processing(f"[TRACKER_DEBUG] {data_type} NO MATCH FOUND - returning True (action needed)")
 
         # --- Specific EPAD Debugging ---
         if data_type == 'epad':

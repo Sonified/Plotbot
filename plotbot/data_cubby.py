@@ -9,6 +9,21 @@ import inspect
 import copy
 import cdflib
 from typing import Optional, List
+import time as timer
+from functools import wraps
+
+def timer_decorator(timer_name):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            start_time = timer.perf_counter()
+            result = func(*args, **kwargs)
+            end_time = timer.perf_counter()
+            duration_ms = (end_time - start_time) * 1000
+            print(f"⏱️ [{timer_name}] {func.__name__}: {duration_ms:.2f}ms")
+            return result
+        return wrapper
+    return decorator
 
 # --- Import Data Class Types for Mapping ---
 # Assuming these classes are defined elsewhere and accessible
@@ -30,6 +45,7 @@ from .data_classes.wind_3dp_pm_classes import wind_3dp_pm_class
 from .data_classes.psp_alpha_classes import psp_alpha_class
 from .data_classes.psp_qtn_classes import psp_qtn_class
 from .data_classes.psp_dfb_classes import psp_dfb_class
+from .data_classes.psp_orbit import psp_orbit_class
 from .data_classes.wind_swe_h5_classes import wind_swe_h5_class
 from .data_classes.wind_swe_h1_classes import wind_swe_h1_class
 
@@ -60,6 +76,8 @@ class data_cubby:
         'epad_hr': epad_strahl_high_res_class,
         'ham': ham_class,
         'sqtn_rfs_v1v2': psp_qtn_class,  # QTN (Quasi-Thermal Noise) electron density and temperature
+        'psp_orbit_data': psp_orbit_class,   # PSP orbital/positional data
+        'psp_orbit': psp_orbit_class,        # PSP orbital/positional data (cubby_key mapping)
         # PSP FIELDS DFB electric field spectra data types
         'dfb_ac_spec_dv12hg': psp_dfb_class,  # AC spectrum dv12 
         'dfb_ac_spec_dv34hg': psp_dfb_class,  # AC spectrum dv34
@@ -547,6 +565,7 @@ class data_cubby:
             return variable
 
     @classmethod
+    @timer_decorator("TIMER_UPDATE_GLOBAL_INSTANCE")
     def update_global_instance(cls, 
                                data_type_str: str, 
                                imported_data_obj: DataObject, 
@@ -568,6 +587,12 @@ class data_cubby:
         """
         pm = print_manager # Local alias
         pm.dependency_management(f"[CUBBY_UPDATE_ENTRY] Received call for '{data_type_str}'. Original trange: '{original_requested_trange}', type(original_requested_trange[0])='{type(original_requested_trange[0]) if original_requested_trange and len(original_requested_trange)>0 else 'N/A'}'")
+
+        timer_entry = timer.perf_counter()
+        if data_type_str == 'mag_RTN_4sa':
+            print(f'⏱️ [TIMER_MAG_5] DataCubby update: 0.00ms')
+        elif data_type_str == 'psp_orbit_data':
+            print(f'⏱️ [TIMER_ORBIT_5] DataCubby update: 0.00ms')
 
         # --- Helper for time range validation (NEW) ---
         def _validate_trange_elements(trange_to_validate, context_msg=""):
@@ -679,6 +704,7 @@ class data_cubby:
                     
                     print_manager.datacubby(f"Calling update() on global instance of {data_type_str} (ID: {id(global_instance)}). is_segment_merge={is_segment_merge}")
                     
+                    start_time = timer.perf_counter()
                     try:
                         # Try the new signature first (with original_requested_trange)
                         global_instance.update(imported_data_obj, original_requested_trange=original_requested_trange)
@@ -692,6 +718,9 @@ class data_cubby:
                         else:
                             # Re-raise if it's a different TypeError
                             raise te
+                    end_time = timer.perf_counter()
+                    duration_ms = (end_time - start_time) * 1000
+                    print(f"⏱️ [TIMER_INSTANCE_UPDATE] global_instance.update() for {data_type_str}: {duration_ms:.2f}ms")
                     
                     # STRATEGIC PRINT H2
                     dt_len_after_instance_update = len(global_instance.datetime_array) if hasattr(global_instance, 'datetime_array') and global_instance.datetime_array is not None else "None_or_NoAttr"
@@ -755,10 +784,14 @@ class data_cubby:
                 
             # Perform the array merge
             pm.datacubby("Calling _merge_arrays...")
+            start_time = timer.perf_counter()
             merged_times, merged_raw_data = cls._merge_arrays(
                 global_instance.datetime_array, global_instance.raw_data,
                 new_times, new_raw_data
             )
+            end_time = timer.perf_counter()
+            duration_ms = (end_time - start_time) * 1000
+            print(f"⏱️ [TIMER_MERGE_ARRAYS] _merge_arrays for {data_type_str}: {duration_ms:.2f}ms")
             
             # Update the global instance ONLY if merge returned new data
             if merged_times is not None and merged_raw_data is not None:

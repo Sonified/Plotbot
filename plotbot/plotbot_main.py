@@ -1,5 +1,21 @@
 #plotbot_main.py
 
+import time as timer
+from functools import wraps
+
+def timer_decorator(timer_name):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            start_time = timer.perf_counter()
+            result = func(*args, **kwargs)
+            end_time = timer.perf_counter()
+            duration_ms = (end_time - start_time) * 1000
+            print(f"⏱️ [{timer_name}] {func.__name__}: {duration_ms:.2f}ms")
+            return result
+        return wrapper
+    return decorator
+
 print("\nImporting libraries, this may take a moment. Hold tight... \n")
 
 # --- STANDARD LIBRARIES AND UTILITIES ---
@@ -66,6 +82,7 @@ from .plotbot_helpers import time_clip, parse_axis_spec, resample, debug_plot_va
 #====================================================================
 # FUNCTION: plotbot - Core plotting function for time series data
 #====================================================================
+@timer_decorator("TIMER_PLOTBOT_ENTRY")
 def plotbot(trange, *args):
     """Plot multiple time series with shared x-axis and optional right y-axes."""
     from collections import defaultdict
@@ -76,13 +93,13 @@ def plotbot(trange, *args):
     
     # Validate time range using dateutil.parser for flexibility
     try:
-        start_time = dateutil_parse(trange[0]).replace(tzinfo=timezone.utc)
-        end_time = dateutil_parse(trange[1]).replace(tzinfo=timezone.utc)
+        plot_start_time = dateutil_parse(trange[0]).replace(tzinfo=timezone.utc)
+        plot_end_time = dateutil_parse(trange[1]).replace(tzinfo=timezone.utc)
     except Exception as e:
         print(f"Oops! 🤗 Could not parse time range strings: {trange}. Error: {e}")
         return False
 
-    if start_time >= end_time:    # Validate time range order
+    if plot_start_time >= plot_end_time:    # Validate time range order
         print(f"Oops! 🤗 Start time ({trange[0]}) must be before end time ({trange[1]})")
         return False
 
@@ -261,14 +278,28 @@ def plotbot(trange, *args):
     # NEW: Smart caching check
     if regular_vars:
         # Check if we already have data for this time range
+        timer_entry = timer.perf_counter()
+        timer_start = timer.perf_counter()  # <-- Ensure timer_start is always initialized
+        if regular_vars and hasattr(regular_vars[0], 'data_type'):
+            if regular_vars[0].data_type == 'mag_RTN_4sa':
+                print(f'⏱️ [TIMER_MAG_2] Early optimization check: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
+            elif regular_vars[0].data_type == 'psp_orbit_data':
+                print(f'⏱️ [TIMER_ORBIT_2] Early optimization check: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
         need_data_loading = False
         
         for var in regular_vars:
             data_type = var.data_type
+            # DEBUGGING: Check tracker state for each variable
+            print(f"EARLY OPTIMIZATION CHECK: var={var.class_name}.{var.subclass_name}, data_type={data_type}")
+            print(f"TRACKER STATE: {global_tracker.calculated_ranges}")
+            
             # Construct a unique identifier for the variable instance for tracker
             # This should align with how it's stored/checked elsewhere if instance-specific tracking is used
             # For now, assuming data_type and trange is enough for global_tracker.is_calculation_needed
-            if not global_tracker.is_calculation_needed(trange, data_type):
+            calculation_needed = global_tracker.is_calculation_needed(trange, data_type)
+            print(f"EARLY OPTIMIZATION RESULT: data_type={data_type}, calculation_needed={calculation_needed}")
+            
+            if not calculation_needed:
                 print_manager.variable_testing(f"Data for {data_type} in trange {trange} already exists according to global_tracker.")
                 continue  # Data exists, skip this variable
             else:
@@ -276,9 +307,22 @@ def plotbot(trange, *args):
                 need_data_loading = True
                 break
         
+        timer_end = timer.perf_counter()
+        duration_ms = (timer_end - timer_start) * 1000
+        print(f"⏱️ [TIMER_EARLY_OPTIMIZATION] Early optimization check: {duration_ms:.2f}ms")
+        
         if need_data_loading:
+            if regular_vars and hasattr(regular_vars[0], 'data_type'):
+                if regular_vars[0].data_type == 'mag_RTN_4sa':
+                    print(f'⏱️ [TIMER_MAG_3] get_data() call: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
+                elif regular_vars[0].data_type == 'psp_orbit_data':
+                    print(f'⏱️ [TIMER_ORBIT_3] get_data() call: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
             print_manager.status(f"📥 Acquiring data for {len(regular_vars)} regular variables...")
+            timer_start = timer.perf_counter()
             get_data(trange, *regular_vars)
+            timer_end = timer.perf_counter()
+            duration_ms = (timer_end - timer_start) * 1000
+            print(f"⏱️ [TIMER_GET_DATA_CALL] get_data() call: {duration_ms:.2f}ms")
         else:
             print_manager.status(f"✅ All data already cached for {len(regular_vars)} regular variables in the specified trange.")
 
@@ -322,9 +366,22 @@ def plotbot(trange, *args):
             fig.suptitle(plt.options.single_title_text) 
             print_manager.debug(f"Setting title from plt.options: {plt.options.single_title_text}")
     
+    # After parsing trange:
+    # plot_start_time = dateutil_parse(trange[0]).replace(tzinfo=timezone.utc)
+    # plot_end_time = dateutil_parse(trange[1]).replace(tzinfo=timezone.utc)
+    # Use plot_start_time/plot_end_time everywhere for datetime logic
+    # In ax.set_xlim and date_format, use plot_start_time/plot_end_time
+    # Remove any use of start_time/end_time for datetime logic in the plotting section
+
     #====================================================================
     # PLOT VARIABLES ON APPROPRIATE AXES
     #====================================================================
+    timer_start = timer.perf_counter()
+    if args and hasattr(args[0], 'data_type'):
+        if args[0].data_type == 'mag_RTN_4sa':
+            print(f'⏱️ [TIMER_MAG_6] Plotting section: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
+        elif args[0].data_type == 'psp_orbit_data':
+            print(f'⏱️ [TIMER_ORBIT_6] Plotting section: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
     for axis_index in range(1, num_subplots + 1):  # Iterate through each subplot (1-based indexing)
         ax = axs[axis_index - 1]                   # Get current subplot axis (0-based array indexing)
         ax_right = None                            # Secondary y-axis for dual-scale plots
@@ -577,7 +634,7 @@ def plotbot(trange, *args):
                         except Exception as e:
                             print_manager.debug(f"Error inspecting variable {i}: {str(e)}")
                 
-                ax.set_xlim(start_time, end_time)  # Set time range even if empty
+                ax.set_xlim(plot_start_time, plot_end_time)  # Set time range even if empty
                 ax.text(0.5, 0.5, 'No Data Available',  # Add centered "No Data" message
                     horizontalalignment='center',
                     verticalalignment='center',
@@ -631,7 +688,7 @@ def plotbot(trange, *args):
             dt = mdates.num2date(x)
             
             # Calculate the total time range in minutes
-            time_range_minutes = (end_time - start_time).total_seconds() / 60
+            time_range_minutes = (plot_end_time - plot_start_time).total_seconds() / 60
             
             if dt.hour == 0 and dt.minute == 0:
                 return dt.strftime('%b-%d').upper()                   # Format: MMM-DD
@@ -654,6 +711,10 @@ def plotbot(trange, *args):
         except Exception as e:
             print_manager.warning(f"Could not parse date from trange[0] ('{trange[0]}') for annotation: {e}")
 
+    timer_end = timer.perf_counter()
+    duration_ms = (timer_end - timer_start) * 1000
+    print(f"⏱️ [TIMER_PLOTTING] Plotting section: {duration_ms:.2f}ms")
+    
     plt.show()                                                    # Display the complete figure
     # return True
 

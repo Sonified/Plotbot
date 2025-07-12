@@ -8,6 +8,22 @@ from collections import namedtuple
 from datetime import datetime, timezone, timedelta
 from dateutil.parser import parse
 from fnmatch import fnmatch # Import for wildcard matching
+import time as timer
+from functools import wraps
+
+def timer_decorator(timer_name):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            start_time = timer.perf_counter()
+            result = func(*args, **kwargs)
+            end_time = timer.perf_counter()
+            duration_ms = (end_time - start_time) * 1000
+            print(f"⏱️ [{timer_name}] {func.__name__}: {duration_ms:.2f}ms")
+            return result
+        return wrapper
+    return decorator
+
 from .print_manager import print_manager, format_datetime_for_log
 from .time_utils import daterange
 from .data_tracker import global_tracker
@@ -49,14 +65,14 @@ def convert_cdf_epoch_to_tt2000_vectorized(cdf_epoch_array):
         numpy array of TT2000 values (nanoseconds since J2000)
     """
     import time
-    start_time = time.time()
+    start_time = timer.time()
     
     print_manager.debug(f"  Converting {len(cdf_epoch_array)} CDF_EPOCH values to TT2000 using optimized Numba method")
     
     # Use the optimized Numba conversion
     tt2000_array = _convert_cdf_epoch_to_tt2000_numba_optimized(cdf_epoch_array)
     
-    end_time = time.time()
+    end_time = timer.time()
     conversion_time = end_time - start_time
     
     print_manager.debug(f"  Numba conversion completed: {len(tt2000_array)} values converted in {conversion_time:.3f} seconds")
@@ -174,7 +190,7 @@ def convert_unix_to_tt2000_vectorized(unix_epoch_array):
     Ultra-fast conversion of Unix epoch values (seconds) to TT2000 using Numba.
     """
     import time
-    start_time = time.time()
+    start_time = timer.time()
     
     print_manager.debug(f"  Converting {len(unix_epoch_array)} Unix epoch values to TT2000 using optimized Numba method")
     
@@ -184,7 +200,7 @@ def convert_unix_to_tt2000_vectorized(unix_epoch_array):
         
     tt2000_array = _numba_convert_unix_to_tt2000_core(unix_epoch_array)
     
-    end_time = time.time()
+    end_time = timer.time()
     conversion_time = end_time - start_time
     
     print_manager.debug(f"  Numba Unix conversion completed: {len(tt2000_array)} values in {conversion_time:.3f} seconds")
@@ -249,6 +265,7 @@ def find_local_csvs(base_path, file_patterns, date_str):
 
 DataObject = namedtuple('DataObject', ['times', 'data'])  # Define DataObject structure earlier
 
+@timer_decorator("TIMER_IMPORT_DATA_FUNCTION")
 def import_data_function(trange, data_type):
     """Import data function that reads CDF or calculates FITS CSV data within the specified time range."""
     data_type_requested_at_start = data_type # Capture for final debug print
@@ -522,6 +539,103 @@ def import_data_function(trange, data_type):
         data_obj_to_return = data_object # data_object is used in FITS path
         return data_obj_to_return
 
+    # --- Handle Local Support Data (various file types: NPZ, CSV, JSON, HDF5, etc.) ---
+    elif config and 'local_support_data' in config.get('data_sources', []):
+        print_manager.debug(f"\n=== Starting Local Support Data Import for {trange} ===")
+        
+        support_base_path = config.get('local_path')
+        file_pattern = config.get('file_pattern_import')
+        
+        if not support_base_path or not file_pattern:
+            print_manager.error(f"Configuration error: Missing 'local_path' or 'file_pattern_import' for {data_type}.")
+            print_manager.time_output("import_data_function", "error: config error")
+            return None
+        
+        # Search for the file in support_data and subfolders
+        support_file_path = None
+        for root, dirs, files in os.walk(support_base_path):
+            for filename in files:
+                if filename == file_pattern:  # Exact match for support files
+                    support_file_path = os.path.join(root, filename)
+                    break
+            if support_file_path:
+                break
+        
+        if not support_file_path:
+            print_manager.error(f"Could not find {file_pattern} in {support_base_path} or its subfolders.")
+            print_manager.time_output("import_data_function", "error: file not found")
+            return None
+        
+        print_manager.debug(f"Found support data file: {support_file_path}")
+        
+        try:
+            # Determine file type and load accordingly
+            file_extension = os.path.splitext(support_file_path)[1].lower()
+            
+            if file_extension == '.npz':
+                # Handle NPZ files (e.g., Parker positional data)
+                print_manager.debug(f"Loading NPZ file: {os.path.basename(support_file_path)}")
+                loaded_data = np.load(support_file_path)
+                print_manager.debug(f"NPZ file loaded successfully. Contains: {list(loaded_data.files)}")
+                
+                # Create a DataObject with the NPZ data structure
+                # This ensures compatibility with the caching system while preserving the NPZ interface
+                data_object = DataObject(times=loaded_data.get('times', []), data=loaded_data)
+                
+            elif file_extension == '.csv':
+                # Handle CSV files
+                print_manager.debug(f"Loading CSV file: {os.path.basename(support_file_path)}")
+                loaded_data = pd.read_csv(support_file_path)
+                print_manager.debug(f"CSV file loaded successfully. Shape: {loaded_data.shape}")
+                data_object = loaded_data  # Return DataFrame
+                
+            elif file_extension == '.json':
+                # Handle JSON files
+                import json
+                print_manager.debug(f"Loading JSON file: {os.path.basename(support_file_path)}")
+                with open(support_file_path, 'r') as f:
+                    loaded_data = json.load(f)
+                print_manager.debug(f"JSON file loaded successfully.")
+                data_object = loaded_data  # Return dict/list
+                
+            elif file_extension in ['.h5', '.hdf5']:
+                # Handle HDF5 files
+                import h5py
+                print_manager.debug(f"Loading HDF5 file: {os.path.basename(support_file_path)}")
+                loaded_data = h5py.File(support_file_path, 'r')
+                print_manager.debug(f"HDF5 file opened successfully.")
+                data_object = loaded_data  # Return h5py file object
+                
+            else:
+                print_manager.error(f"Unsupported file type: {file_extension} for {support_file_path}")
+                print_manager.time_output("import_data_function", "error: unsupported file type")
+                return None
+            
+            # For support data, we typically don't need time filtering since they often contain 
+            # full mission datasets. The respective data classes handle time clipping internally.
+            global_tracker.update_imported_range(trange, data_type)
+            print_manager.status(f"✅ - Local support data import complete for {data_type}.\n")
+            
+            print_manager.time_output("import_data_function", f"success - loaded {file_pattern}")
+            
+            # === DIAGNOSTIC PRINT BEFORE RETURN ===
+            print_manager.debug(f"*** IMPORT_DATA_DEBUG (Local Support Data Path) for data_type '{data_type}' ***")
+            print_manager.debug(f"    File type: {file_extension}, File: {os.path.basename(support_file_path)}")
+            if file_extension == '.npz':
+                print_manager.debug(f"    NPZ contents: {list(loaded_data.files)}")
+            elif file_extension == '.csv':
+                print_manager.debug(f"    CSV shape: {loaded_data.shape}, columns: {list(loaded_data.columns)}")
+            
+            data_obj_to_return = data_object
+            return data_obj_to_return
+            
+        except Exception as e:
+            print_manager.error(f"Error loading support data file {support_file_path}: {e}")
+            import traceback
+            print_manager.debug(traceback.format_exc())
+            print_manager.time_output("import_data_function", f"error: {file_extension} loading failed")
+            return None
+    
     # --- Handle Hammerhead (ham) CSV Loading ---
     elif data_type == 'ham':
         print_manager.debug(f"\n=== Starting Hammerhead CSV Data Import for {trange} ===")
@@ -1102,7 +1216,6 @@ def import_data_function(trange, data_type):
     # This is a safeguard, ideally the prints are closer to the actual return statements of each path.
     # However, given the complexity, this ensures we see something.
     # This specific print block might be redundant if all return paths are covered above.
-    # For now, let's remove it to avoid duplication and rely on the path-specific prints.
 
     # If data_obj_to_return is still None here, it means an error path was taken that didn't assign to it.
     # The function would return None in those cases based on existing logic (e.g., error in time parsing, no files found etc.)

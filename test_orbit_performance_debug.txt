@@ -1,0 +1,147 @@
+initialized server_access
+initialized global_tracker
+initialized ploptions
+initialized plot_manager
+initialized epad class
+initialized epad_hr class
+initialized proton class
+initialized proton_hr class
+initialized ham_class
+initialized psp_alpha class
+initialized psp_qtn class
+initialized psp_orbit class
+initialized data_cubby.
+initialized proton_fits class
+initialized alpha_fits class
+🔉 initialized audifier
+
+Importing libraries, this may take a moment. Hold tight... 
+
+✅ Imported standard libraries and utilities.
+✅ Imported numpy, pandas, and scipy libraries.
+✅ Imported matplotlib libraries.
+✅ Imported cdflib, BeautifulSoup, requests, dateutil, and datetime libraries.
+
+🤖 Plotbot Initialized
+✨ Showdahodo initialized
+Positional Data Helper Initialized
+📈📉 Multiplot Initialized
+
+🤖 Plotbot Initialized
+📈📉 Multiplot Initialized
+   Version: 2025_07_07_v2.82
+   Commit: v2.82 DOCS: Update electric field example notebook (plotbot_dfb_electric_field_examples.ipynb)
+
+--- Testing mag_rtn_4sa caching performance (BASELINE) ---
+=== Mag First run ===
+🤖 Plotbot starting...
+🛰️ mag_RTN_4sa - acquiring variables: br
+ 
+⏱️ [TIMER_MAG_2] Early optimization check: 0.00ms
+EARLY OPTIMIZATION CHECK: var=mag_rtn_4sa.br, data_type=mag_RTN_4sa
+TRACKER STATE: {}
+EARLY OPTIMIZATION RESULT: data_type=mag_RTN_4sa, calculation_needed=True
+⏱️ [TIMER_EARLY_OPTIMIZATION] Early optimization check: 0.08ms
+⏱️ [TIMER_MAG_3] get_data() call: 0.08ms
+📥 Acquiring data for 1 regular variables...
+🛰️ mag_RTN_4sa - acquiring variables: br
+TRACKER STATE BEFORE CHECK: {}
+TRACKER CHECK: data_type=mag_RTN_4sa, calculation_needed=True
+Attempting SPDF acquisition path (dynamic mode) for mag_RTN_4sa...
+⏱️ [TIMER_MAG_4] CDF download/import: 65493262.40ms
+☑️ - CDF Data import complete for mag_RTN_4sa range ['2021-11-19/00:00:00', '2021-11-24/00:00:00'].
+
+⏱️ [TIMER_IMPORT_DATA_FUNCTION] import_data_function: 205.44ms
+⏱️ [TIMER_IMPORT_DATA_STANDARD] import_data_function (mag_RTN_4sa): 205.46ms
+📥 Requesting DataCubby to update/merge global instance for mag_rtn_4sa...
+⏱️ [TIMER_INSTANCE_UPDATE] global_instance.update() for mag_rtn_4sa: 431.74ms
+⏱️ [TIMER_UPDATE_GLOBAL_INSTANCE] update_global_instance: 431.76ms
+⏱️ [TIMER_DATA_CUBBY_UPDATE] data_cubby.update_global_instance (mag_rtn_4sa): 431.77ms
+✅ DataCubby processed update for mag_rtn_4sa.
+TRACKER UPDATED: mag_RTN_4sa for ['2021-11-19/00:00:00.000', '2021-11-24/00:00:00.000']
+TRACKER STATE AFTER UPDATE: {'mag_RTN_4sa': [(datetime.datetime(2021, 11, 19, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 11, 24, 0, 0, tzinfo=datetime.timezone.utc))]}
+✅ Complete
+⏱️ [TIMER_GET_DATA_ENTRY] get_data: 2193.62ms
+⏱️ [TIMER_GET_DATA_CALL] get_data() call: 2193.62ms
+⏱️ [TIMER_MAG_6] Plotting section: 2337.38ms
+📈 Plotting mag_rtn_4sa.br
+⏱️ [TIMER_PLOTTING] Plotting section: 68.20ms
+⏱️ [TIMER_PLOTBOT_ENTRY] plotbot: 4152.39ms
+Mag First run time: 4.15s
+
+=== Mag Second run ===
+🤖 Plotbot starting...
+🛰️ mag_RTN_4sa - acquiring variables: br
+ 
+⏱️ [TIMER_MAG_2] Early optimization check: 0.00ms
+EARLY OPTIMIZATION CHECK: var=mag_rtn_4sa.br, data_type=mag_RTN_4sa
+TRACKER STATE: {'mag_RTN_4sa': [(datetime.datetime(2021, 11, 19, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 11, 24, 0, 0, tzinfo=datetime.timezone.utc))]}
+mag_RTN_4sa already calculated for the time range: 2021-11-19/00:00:00.000 to 2021-11-24/00:00:00.000
+EARLY OPTIMIZATION RESULT: data_type=mag_RTN_4sa, calculation_needed=False
+⏱️ [TIMER_EARLY_OPTIMIZATION] Early optimization check: 0.09ms
+✅ All data already cached for 1 regular variables in the specified trange.
+⏱️ [TIMER_MAG_6] Plotting section: 20.50ms
+📈 Plotting mag_rtn_4sa.br
+⏱️ [TIMER_PLOTTING] Plotting section: 67.92ms
+⏱️ [TIMER_PLOTBOT_ENTRY] plotbot: 504.62ms
+Mag Second run time: 0.50s
+Mag Speedup: 8.2x faster
+--- End Baseline Test ---
+
+
+--- Testing psp_orbit caching performance ---
+=== Orbit First run ===
+🤖 Plotbot starting...
+🛰️ psp_orbit_data - acquiring variables: orbital_speed
+ 
+⏱️ [TIMER_ORBIT_2] Early optimization check: 0.00ms
+EARLY OPTIMIZATION CHECK: var=psp_orbit.orbital_speed, data_type=psp_orbit_data
+TRACKER STATE: {'mag_RTN_4sa': [(datetime.datetime(2021, 11, 19, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 11, 24, 0, 0, tzinfo=datetime.timezone.utc))]}
+EARLY OPTIMIZATION RESULT: data_type=psp_orbit_data, calculation_needed=True
+⏱️ [TIMER_EARLY_OPTIMIZATION] Early optimization check: 0.08ms
+⏱️ [TIMER_ORBIT_3] get_data() call: 0.09ms
+📥 Acquiring data for 1 regular variables...
+🛰️ psp_orbit_data - acquiring variables: orbital_speed
+TRACKER STATE BEFORE CHECK: {'mag_RTN_4sa': [(datetime.datetime(2021, 11, 19, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 11, 24, 0, 0, tzinfo=datetime.timezone.utc))]}
+TRACKER CHECK: data_type=psp_orbit_data, calculation_needed=True
+⏱️ [TIMER_ORBIT_4] NPZ file load: 65496363.39ms
+✅ - Local support data import complete for psp_orbit_data.
+
+⏱️ [TIMER_IMPORT_DATA_FUNCTION] import_data_function: 3.65ms
+⏱️ [TIMER_IMPORT_DATA_STANDARD] import_data_function (psp_orbit_data): 3.66ms
+📥 Requesting DataCubby to update/merge global instance for psp_orbit...
+Sliced psp_orbit data to 121 points for trange: ['2021-11-19/00:00:00.000', '2021-11-24/00:00:00.000']
+⏱️ [TIMER_INSTANCE_UPDATE] global_instance.update() for psp_orbit: 32.69ms
+⏱️ [TIMER_UPDATE_GLOBAL_INSTANCE] update_global_instance: 32.73ms
+⏱️ [TIMER_DATA_CUBBY_UPDATE] data_cubby.update_global_instance (psp_orbit): 32.74ms
+✅ DataCubby processed update for psp_orbit.
+TRACKER UPDATED: psp_orbit_data for ['2021-11-19/00:00:00.000', '2021-11-24/00:00:00.000']
+TRACKER STATE AFTER UPDATE: {'mag_RTN_4sa': [(datetime.datetime(2021, 11, 19, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 11, 24, 0, 0, tzinfo=datetime.timezone.utc))], 'psp_orbit_data': [(datetime.datetime(2021, 11, 19, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 11, 24, 0, 0, tzinfo=datetime.timezone.utc))]}
+✅ Complete
+⏱️ [TIMER_GET_DATA_ENTRY] get_data: 36.76ms
+⏱️ [TIMER_GET_DATA_CALL] get_data() call: 36.76ms
+⏱️ [TIMER_ORBIT_6] Plotting section: 50.15ms
+📈 Plotting psp_orbit.orbital_speed
+⏱️ [TIMER_PLOTTING] Plotting section: 6.61ms
+⏱️ [TIMER_PLOTBOT_ENTRY] plotbot: 501.78ms
+Orbit First run time: 0.50s
+
+=== Orbit Second run ===
+🤖 Plotbot starting...
+🛰️ psp_orbit_data - acquiring variables: orbital_speed
+ 
+⏱️ [TIMER_ORBIT_2] Early optimization check: 0.00ms
+EARLY OPTIMIZATION CHECK: var=psp_orbit.orbital_speed, data_type=psp_orbit_data
+TRACKER STATE: {'mag_RTN_4sa': [(datetime.datetime(2021, 11, 19, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 11, 24, 0, 0, tzinfo=datetime.timezone.utc))], 'psp_orbit_data': [(datetime.datetime(2021, 11, 19, 0, 0, tzinfo=datetime.timezone.utc), datetime.datetime(2021, 11, 24, 0, 0, tzinfo=datetime.timezone.utc))]}
+psp_orbit_data already calculated for the time range: 2021-11-19/00:00:00.000 to 2021-11-24/00:00:00.000
+EARLY OPTIMIZATION RESULT: data_type=psp_orbit_data, calculation_needed=False
+⏱️ [TIMER_EARLY_OPTIMIZATION] Early optimization check: 0.09ms
+✅ All data already cached for 1 regular variables in the specified trange.
+⏱️ [TIMER_ORBIT_6] Plotting section: 13.42ms
+📈 Plotting psp_orbit.orbital_speed
+⏱️ [TIMER_PLOTTING] Plotting section: 1.43ms
+⏱️ [TIMER_PLOTBOT_ENTRY] plotbot: 466.63ms
+Orbit Second run time: 0.47s
+
+Orbit Speedup: 1.1x faster
+Orbit Cache working (>10x): NO

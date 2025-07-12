@@ -7,6 +7,21 @@ from datetime import datetime, timezone
 from typing import List, Union, Optional, Dict, Any, Tuple
 from dateutil.parser import parse
 import pandas as pd
+import time as timer
+from functools import wraps
+
+def timer_decorator(timer_name):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            start_time = timer.perf_counter()
+            result = func(*args, **kwargs)
+            end_time = timer.perf_counter()
+            duration_ms = (end_time - start_time) * 1000
+            print(f"⏱️ [{timer_name}] {func.__name__}: {duration_ms:.2f}ms")
+            return result
+        return wrapper
+    return decorator
 
 from .print_manager import print_manager
 from .data_tracker import global_tracker
@@ -48,6 +63,7 @@ def debug_object(obj, prefix=""):
     if hasattr(obj, 'var_name'):
         print_manager.variable_testing(f"{prefix}var_name: {obj.var_name}")
 
+@timer_decorator("TIMER_GET_DATA_ENTRY")
 def get_data(trange: List[str], *variables, skip_refresh_check=False):
     """
     Get data for specified time range and variables. This function checks if data is available locally,
@@ -231,7 +247,11 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
 
             if calculation_needed_by_tracker:
                 # print_manager.dependency_management(f"FITS Calculation required for {trange} (Triggered by {data_type}).")
+                start_time = timer.perf_counter()
                 data_obj_fits = import_data_function(trange, fits_calc_trigger)
+                end_time = timer.perf_counter()
+                duration_ms = (end_time - start_time) * 1000
+                print(f"⏱️ [TIMER_IMPORT_DATA_FITS] import_data_function (FITS): {duration_ms:.2f}ms")
                 if data_obj_fits:
                     print_manager.status(f"📥 Updating {fits_calc_key} with calculated data...")
                     if hasattr(proton_fits, 'update'):
@@ -283,6 +303,8 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
                 cubby_key = 'epad'
             elif data_type == 'spe_af0_pad':
                 cubby_key = 'epad_hr'
+            elif data_type == 'psp_orbit_data':
+                cubby_key = 'psp_orbit'
             # Add other mappings if necessary
             else:
                 cubby_key = data_type.lower() # Default to lowercase
@@ -291,14 +313,25 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
         
         # --- Check Calculation Cache (Applies to HAM as well) ---
         # Use canonical key here too for consistency (cubby_key will be 'ham' for HAM)
-        calculation_needed = global_tracker.is_calculation_needed(trange, cubby_key)
+        
+        # DEBUGGING: Print tracker state before check
+        print(f"TRACKER STATE BEFORE CHECK: {global_tracker.calculated_ranges}")
+        
+        calculation_needed = global_tracker.is_calculation_needed(trange, data_type)
+        
+        # DEBUGGING: Print actual tracker check result
+        print(f"TRACKER CHECK: data_type={data_type}, calculation_needed={calculation_needed}")
 
         if calculation_needed:
+            # Check if this is local support data (like NPZ files)
+            config_from_psp_data_types = data_types.get(data_type)
+            if config_from_psp_data_types and 'local_support_data' in config_from_psp_data_types.get('data_sources', []):
+                print_manager.dependency_management(f"Tracker indicates calculation needed for {data_type} (local support data). Skipping download, proceeding to import_data_function.")
             # For HAM, download_successful and server_mode are irrelevant as it's local.
             # The import_data_function handles fetching it.
-            # Download logic only for non-HAM types
-            if data_type != 'ham': 
-                print_manager.dependency_management(f"Tracker indicates calculation needed for {cubby_key} (using original type {data_type}). Proceeding with download if applicable...")
+            # Download logic only for non-HAM and non-support-data types
+            elif data_type != 'ham': 
+                print_manager.dependency_management(f"Tracker indicates calculation needed for {data_type} (using original type {data_type}). Proceeding with download if applicable...")
                 
                 server_mode = plotbot.config.data_server.lower()
                 print_manager.dependency_management(f"Server mode for {data_type}: {server_mode}")
@@ -320,11 +353,19 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
                     print_manager.warning(f"Invalid config.data_server mode: '{server_mode}'. Defaulting to Berkeley. Handle invalid mode.")
                     download_berkeley_data(trange, data_type) # download_successful = download_berkeley_data(trange, data_type)
             else: # This is for data_type == 'ham'
-                print_manager.dependency_management(f"Tracker indicates calculation needed for {cubby_key} (HAM data). Proceeding to import_data_function.")
+                print_manager.dependency_management(f"Tracker indicates calculation needed for {data_type} (HAM data). Proceeding to import_data_function.")
 
             # --- Import/Update Data (Applies to HAM as well) --- 
-            print_manager.dependency_management(f"{cubby_key} - Import/Refresh required") # Use cubby_key
+            print_manager.dependency_management(f"{data_type} - Import/Refresh required") # Use data_type
+            start_time = timer.perf_counter()
+            if data_type == 'mag_RTN_4sa':
+                print(f'⏱️ [TIMER_MAG_4] CDF download/import: {(timer.perf_counter())*1000:.2f}ms')
+            if data_type == 'psp_orbit_data':
+                print(f'⏱️ [TIMER_ORBIT_4] NPZ file load: {(timer.perf_counter())*1000:.2f}ms')
             data_obj = import_data_function(trange, data_type) # data_type will be 'ham' for HAM
+            end_time = timer.perf_counter()
+            duration_ms = (end_time - start_time) * 1000
+            print(f"⏱️ [TIMER_IMPORT_DATA_STANDARD] import_data_function ({data_type}): {duration_ms:.2f}ms")
 
             if data_obj is None: 
                 print_manager.warning(f"Import returned no data for {data_type}, skipping update.")
@@ -338,23 +379,30 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             # Use canonical key for cubby update
             print_manager.status(f"📥 Requesting DataCubby to update/merge global instance for {cubby_key}...")
             print_manager.dependency_management(f"[GET_DATA PRE-CUBBY CALL] Passing to DataCubby: cubby_key='{cubby_key}', original_requested_trange='{trange}', type(original_requested_trange[0])='{type(trange[0]) if trange and len(trange)>0 else 'N/A'}'")
+            start_time = timer.perf_counter()
             update_success = data_cubby.update_global_instance(
                 data_type_str=cubby_key, # Use canonical cubby_key
                 imported_data_obj=data_obj,
                 # is_segment_merge can use default False if not explicitly determined earlier
                 original_requested_trange=trange # Pass the original trange
             )
+            end_time = timer.perf_counter()
+            duration_ms = (end_time - start_time) * 1000
+            print(f"⏱️ [TIMER_DATA_CUBBY_UPDATE] data_cubby.update_global_instance ({cubby_key}): {duration_ms:.2f}ms")
 
             if update_success:
                 pm.status(f"✅ DataCubby processed update for {cubby_key}.")
-                global_tracker.update_calculated_range(trange, cubby_key) # Use cubby_key and correct method name
+                global_tracker.update_calculated_range(trange, data_type) # Use data_type for tracker consistency
+                # DEBUGGING: Verify tracker was updated
+                print(f"TRACKER UPDATED: {data_type} for {trange}")
+                print(f"TRACKER STATE AFTER UPDATE: {global_tracker.calculated_ranges}")
             else:
                 pm.warning(f"DataCubby failed to process update for {cubby_key}. Tracker not updated.")
             # --- End Import/Update Data --- 
 
         else: # Calculation NOT needed
              # Use canonical key in status message
-            print_manager.status(f"📤 Using existing {cubby_key} data, calculation/import not needed.")
+            print_manager.status(f"📤 Using existing {data_type} data, calculation/import not needed.")
     
     #====================================================================
     # STEP 3: FINALIZATION
