@@ -50,6 +50,28 @@ from .data_classes.data_types import data_types # UPDATED PATH
 # Global flag for test-only mode
 TEST_ONLY_MODE = False
 
+# Utility function to get project root
+def get_project_root():
+    """Get the absolute path to the project root directory.
+    
+    This function works regardless of where the script is run from by using
+    __file__ to locate the plotbot package directory and going up one level
+    to find the project root.
+    
+    Returns:
+        str: Absolute path to the project root directory
+    """
+    try:
+        # Get the directory containing this file (plotbot/data_import.py)
+        current_file_dir = os.path.dirname(os.path.abspath(__file__))
+        # Go up one level to get the project root (from plotbot/ to Plotbot/)
+        project_root = os.path.dirname(current_file_dir)
+        return project_root
+    except:
+        # Fallback: use current working directory
+        print_manager.warning("Could not determine project root from __file__, using current working directory as fallback")
+        return os.getcwd()
+
 # Optimized function to convert CDF_EPOCH array to TT2000 array using Numba JIT
 def convert_cdf_epoch_to_tt2000_vectorized(cdf_epoch_array):
     """
@@ -586,6 +608,12 @@ def import_data_function(trange, data_type):
             print_manager.time_output("import_data_function", "error: config error")
             end_step(step_key, step_start, {"error": "config error"})
             return None
+        
+        # Resolve support_base_path relative to project root for robust path resolution
+        if not os.path.isabs(support_base_path):
+            project_root = get_project_root()
+            support_base_path = os.path.join(project_root, support_base_path)
+            print_manager.debug(f"Resolved support_base_path to: {support_base_path}")
         
         # Search for the file in support_data and subfolders
         support_file_path = None

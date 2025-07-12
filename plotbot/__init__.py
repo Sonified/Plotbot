@@ -299,10 +299,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_11_v2.84"
+__version__ = "2025_07_11_v2.85"
 
 # Commit message for this version
-__commit_message__ = "v2.84 CRITICAL FIX: Orbit data time range slicing bug - 1000x performance improvement"
+__commit_message__ = "v2.85 ROBUSTNESS FIX: Bulletproof path resolution for orbit data - works from any directory"
 
 # Print the version and commit message
 print(f"""
