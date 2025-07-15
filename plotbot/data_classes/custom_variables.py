@@ -74,16 +74,17 @@ class CustomVariablesContainer:
         # Keep the existing y_label and legend_label values
         # They should already be set by the custom_variable function
         
-        # Add an update method that routes to this container
+                # Add an update method that routes to this container
         def update_method(self, trange):
             """Update method that routes to container"""
+            from ..data_cubby import data_cubby
             custom_container = data_cubby.grab('custom_class')
             if custom_container:
                 result = custom_container.update(name, trange)
                 if result is not None:
                     return result
             return self
-            
+        
         object.__setattr__(variable, 'update', types.MethodType(update_method, variable))
         
         # Make the variable globally accessible
@@ -137,6 +138,7 @@ class CustomVariablesContainer:
         for src in sources:
             if hasattr(src, 'class_name') and hasattr(src, 'subclass_name'):
                 # Get fresh reference from data_cubby
+                from ..data_cubby import data_cubby
                 fresh_src = data_cubby.grab_component(src.class_name, src.subclass_name)
                 if fresh_src is not None:
                     # Ensure the source variable has data for this timerange
@@ -181,8 +183,13 @@ class CustomVariablesContainer:
                     print_manager.custom_debug(f"Could not get fresh data for {src.class_name}.{src.subclass_name}")
                     return variable
         
-        if len(fresh_sources) < 2:
-            print_manager.custom_debug(f"Not enough fresh sources for {name}")
+        # Check if we have the right number of sources for the operation
+        # Scalar operations (like variable + 10) need 1 source, binary operations need 2
+        expected_sources = 1 if operation in ['add', 'sub', 'mul', 'div'] and hasattr(variable, 'scalar_value') else 2
+        
+        if len(fresh_sources) < expected_sources:
+            print_manager.custom_debug(f"Not enough fresh sources for {name}: got {len(fresh_sources)}, expected {expected_sources}")
+            print_manager.custom_debug(f"Operation: {operation}, has scalar_value: {hasattr(variable, 'scalar_value')}")
             return variable
             
         # Import time_clip for time range handling
@@ -194,7 +201,7 @@ class CustomVariablesContainer:
             req_start = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f')
             req_end = datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f')
             
-            # Check if both sources have data specifically in this time range
+            # Check if sources have data specifically in this time range
             source1_indices = None
             source2_indices = None
             
@@ -202,13 +209,21 @@ class CustomVariablesContainer:
                 source1_indices = time_clip(fresh_sources[0].datetime_array, trange[0], trange[1])
                 print_manager.custom_debug(f"Source 1 has {len(source1_indices)} data points in requested time range")
             
-            if hasattr(fresh_sources[1], 'datetime_array') and fresh_sources[1].datetime_array is not None:
-                source2_indices = time_clip(fresh_sources[1].datetime_array, trange[0], trange[1])
-                print_manager.custom_debug(f"Source 2 has {len(source2_indices)} data points in requested time range")
+            # For scalar operations, we only need to check the first source
+            if len(fresh_sources) > 1:
+                if hasattr(fresh_sources[1], 'datetime_array') and fresh_sources[1].datetime_array is not None:
+                    source2_indices = time_clip(fresh_sources[1].datetime_array, trange[0], trange[1])
+                    print_manager.custom_debug(f"Source 2 has {len(source2_indices)} data points in requested time range")
             
             # Only proceed if we have data points for the operation
-            if source1_indices is None or len(source1_indices) == 0 or source2_indices is None or len(source2_indices) == 0:
-                print_manager.custom_debug(f"⚠️ Not enough data points in requested time range for operation")
+            # For scalar operations, only check source 1; for binary operations, check both
+            if source1_indices is None or len(source1_indices) == 0:
+                print_manager.custom_debug(f"⚠️ Source 1 has no data points in requested time range")
+                print_manager.custom_debug(f"Using original variable - cannot update for new time range")
+                return variable
+            
+            if len(fresh_sources) > 1 and (source2_indices is None or len(source2_indices) == 0):
+                print_manager.custom_debug(f"⚠️ Source 2 has no data points in requested time range")
                 print_manager.custom_debug(f"Using original variable - cannot update for new time range")
                 return variable
         except Exception as e:
@@ -217,14 +232,32 @@ class CustomVariablesContainer:
         # Apply the operation with fresh data
         result = None
         try:
-            if operation == 'add':
-                result = fresh_sources[0] + fresh_sources[1]
-            elif operation == 'sub':
-                result = fresh_sources[0] - fresh_sources[1]
-            elif operation == 'mul':
-                result = fresh_sources[0] * fresh_sources[1]
-            elif operation == 'div':
-                result = fresh_sources[0] / fresh_sources[1]
+            # Handle scalar operations (1 source + scalar value) vs binary operations (2 sources)
+            if hasattr(variable, 'scalar_value') and len(fresh_sources) == 1:
+                # Scalar operation: apply scalar to the source variable
+                scalar_val = variable.scalar_value
+                print_manager.custom_debug(f"Applying scalar operation: {operation} with scalar value {scalar_val}")
+                
+                if operation == 'add':
+                    result = fresh_sources[0] + scalar_val
+                elif operation == 'sub':
+                    result = fresh_sources[0] - scalar_val
+                elif operation == 'mul':
+                    result = fresh_sources[0] * scalar_val
+                elif operation == 'div':
+                    result = fresh_sources[0] / scalar_val
+            else:
+                # Binary operation: apply between two source variables
+                print_manager.custom_debug(f"Applying binary operation: {operation} between two variables")
+                
+                if operation == 'add':
+                    result = fresh_sources[0] + fresh_sources[1]
+                elif operation == 'sub':
+                    result = fresh_sources[0] - fresh_sources[1]
+                elif operation == 'mul':
+                    result = fresh_sources[0] * fresh_sources[1]
+                elif operation == 'div':
+                    result = fresh_sources[0] / fresh_sources[1]
                 
             if result is None:
                 print_manager.custom_debug(f"Operation failed for {name}")
@@ -254,10 +287,13 @@ class CustomVariablesContainer:
         else:
             print_manager.custom_debug(f"Source 1 has no datetime_array or it's empty")
             
-        if hasattr(fresh_sources[1], 'datetime_array') and fresh_sources[1].datetime_array is not None and len(fresh_sources[1].datetime_array) > 0:
-            print_manager.custom_debug(f"Source 2 datetime_array start: {fresh_sources[1].datetime_array[0]}")
+        if len(fresh_sources) > 1:
+            if hasattr(fresh_sources[1], 'datetime_array') and fresh_sources[1].datetime_array is not None and len(fresh_sources[1].datetime_array) > 0:
+                print_manager.custom_debug(f"Source 2 datetime_array start: {fresh_sources[1].datetime_array[0]}")
+            else:
+                print_manager.custom_debug(f"Source 2 has no datetime_array or it's empty")
         else:
-            print_manager.custom_debug(f"Source 2 has no datetime_array or it's empty")
+            print_manager.custom_debug(f"Scalar operation - no second source variable")
             
         if hasattr(result, 'datetime_array') and result.datetime_array is not None and len(result.datetime_array) > 0:
             print_manager.custom_debug(f"Result datetime_array start: {result.datetime_array[0]}")
@@ -279,6 +315,7 @@ class CustomVariablesContainer:
         # Add an update method that routes to this container
         def update_method(self, trange):
             """Update method that routes to container"""
+            from ..data_cubby import data_cubby
             custom_container = data_cubby.grab('custom_class')
             if custom_container:
                 result = custom_container.update(name, trange)
@@ -415,7 +452,8 @@ def custom_variable(name, expression):
                 print_manager.debug(f"Source var type: {type(expression.source_var)}")
                 print_manager.debug(f"Source var length: {len(expression.source_var)}")
     
-    # Get the container
+    # Get the container (import data_cubby locally to avoid circular imports)
+    from ..data_cubby import data_cubby
     container = data_cubby.grab('custom_class')
     if container is None:
         container = CustomVariablesContainer()
