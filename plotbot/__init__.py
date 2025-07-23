@@ -75,6 +75,41 @@ data_cubby.stash(psp_orbit, class_name='psp_orbit')
 data_cubby.stash(psp_dfb, class_name='dfb_ac_spec_dv12hg')
 data_cubby.stash(psp_dfb, class_name='dfb_ac_spec_dv34hg')
 data_cubby.stash(psp_dfb, class_name='dfb_dc_spec_dv12hg')
+
+# --- Auto-register Custom CDF Classes --- #
+def _auto_register_custom_classes():
+    """Automatically scan and register all classes in data_classes/custom_classes/"""
+    import os
+    import importlib
+    from pathlib import Path
+    
+    custom_classes_dir = Path(__file__).parent / "data_classes" / "custom_classes"
+    
+    if not custom_classes_dir.exists():
+        return
+    
+    # Find all .py files in custom_classes directory
+    for py_file in custom_classes_dir.glob("*.py"):
+        if py_file.name.startswith("__"):
+            continue  # Skip __init__.py etc.
+            
+        module_name = py_file.stem
+        try:
+            # Import the module
+            module = importlib.import_module(f"plotbot.data_classes.custom_classes.{module_name}")
+            
+            # Look for class instance (follows pattern: module_name = module_name_class(None))
+            if hasattr(module, module_name):
+                class_instance = getattr(module, module_name)
+                data_cubby.stash(class_instance, class_name=module_name)
+                print_manager.datacubby(f"Auto-registered custom class: {module_name}")
+                
+        except Exception as e:
+            print_manager.warning(f"Failed to auto-register {module_name}: {e}")
+
+# Auto-register any custom CDF classes
+_auto_register_custom_classes()
+
 print_manager.datacubby("Registered global data instances with DataCubby.")
 # ---------------------------------------------------------- #
 
@@ -149,6 +184,9 @@ from .simple_snapshot import save_simple_snapshot, load_simple_snapshot
 
 # --- Import the function from showda_holes.py ---
 from .showda_holes import showda_holes
+
+# --- Import CDF functions for direct access ---
+from .data_import_cdf import cdf_to_plotbot, scan_cdf_directory
 
 # --- CLASS_NAME_MAPPING for test utilities and data integrity checks ---
 CLASS_NAME_MAPPING = {
@@ -288,6 +326,8 @@ __all__ = [
     'data_snapshot',  # Add data_snapshot to __all__
     'save_simple_snapshot',
     'load_simple_snapshot',
+    'cdf_to_plotbot',       # CDF class generation function
+    'scan_cdf_directory',   # CDF directory scanning function
     'CLASS_NAME_MAPPING',  # Add CLASS_NAME_MAPPING to __all__
     'showda_holes'      # Add showda_holes to __all__
 ]
@@ -299,10 +339,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_14_v2.86"
+__version__ = "2025_07_23_v2.88"
 
 # Commit message for this version
-__commit_message__ = "v2.86 CUSTOM VARIABLES FIX: Scalar operations now work - enables proton.anisotropy + 10 syntax"
+__commit_message__ = "v2.88 CDF INTEGRATION v1 COMPLETE: Single-file cdf_to_plotbot pipeline working - classes auto-register, data loads, plotting functional"
 
 # Print the version and commit message
 print(f"""

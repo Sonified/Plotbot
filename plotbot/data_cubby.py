@@ -92,6 +92,49 @@ class data_cubby:
         # Add other standard CDF types here as needed
     }
 
+    @classmethod
+    def _add_cdf_classes_to_map(cls):
+        """
+        Dynamically add CDF classes from custom_classes to the _CLASS_TYPE_MAP.
+        This is called during module initialization to register auto-generated CDF classes.
+        """
+        try:
+            import os
+            from pathlib import Path
+            import importlib
+            
+            # Get path to custom_classes directory
+            current_dir = Path(__file__).parent
+            custom_classes_dir = current_dir / "data_classes" / "custom_classes"
+            
+            if not custom_classes_dir.exists():
+                return
+            
+            # Find all Python files in custom_classes (auto-generated CDF classes)
+            cdf_class_files = list(custom_classes_dir.glob("*.py"))
+            cdf_class_files = [f for f in cdf_class_files if not f.name.startswith("__")]
+            
+            for py_file in cdf_class_files:
+                class_name = py_file.stem  # e.g., 'psp_waves_auto'
+                
+                try:
+                    # Import the module dynamically
+                    module = importlib.import_module(f"plotbot.data_classes.custom_classes.{class_name}")
+                    
+                    # Get the class (follows pattern: class_name + '_class')
+                    class_type = getattr(module, f"{class_name}_class", None)
+                    
+                    if class_type:
+                        # Add to the class type map
+                        cls._CLASS_TYPE_MAP[class_name] = class_type
+                        print_manager.datacubby(f"Added CDF class to type map: {class_name} -> {class_type.__name__}")
+                    
+                except Exception as e:
+                    print_manager.warning(f"Failed to add CDF class {class_name} to type map: {e}")
+                    
+        except Exception as e:
+            print_manager.warning(f"Failed to scan for CDF classes: {e}")
+
     def __init__(self):
         """
         Initialize the DataCubby instance.
@@ -928,3 +971,7 @@ class Variable:
 # Create global instance
 data_cubby = data_cubby()
 print('initialized data_cubby.')
+
+# Add CDF classes to the type map after initialization
+data_cubby._add_cdf_classes_to_map()
+print('CDF classes added to data_cubby type map.')

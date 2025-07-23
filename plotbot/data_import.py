@@ -324,11 +324,17 @@ def import_data_function(trange, data_type):
     # Let's refine this trigger logic. How should plotbot request this calculation?
     #
     # --> TEMPORARY APPROACH: Define a specific data_type trigger
-    FITS_CALCULATED_TRIGGER = 'fits_calculated' # Define a trigger name
+    FITS_CALCULATED_TRIGGER = 'fits_calculated'
 
     is_fits_calculation = (data_type == FITS_CALCULATED_TRIGGER)
+    
+    # Check if this is a CDF data type (from custom_classes)
+    is_cdf_data_type = False
+    if not is_fits_calculation and data_type in data_types:
+        config = data_types[data_type]
+        is_cdf_data_type = config.get('data_sources', [None])[0] == 'local_cdf'
 
-    if not is_fits_calculation and data_type not in data_types:
+    if not is_fits_calculation and not is_cdf_data_type and data_type not in data_types:
         print_manager.variable_testing(f"Error: {data_type} not found in data_types and is not the FITS calculation trigger.")
         print_manager.time_output("import_data_function", "error: invalid data_type")
         end_step(step_key, step_start, {"error": "invalid data_type"})
@@ -337,7 +343,7 @@ def import_data_function(trange, data_type):
     # Get config - if it's a standard type, get its config.
     # If it's the FITS calculation, we'll fetch sf00/sf01 configs later.
     if not is_fits_calculation:
-        print_manager.variable_testing(f"Getting configuration for standard data type: {data_type}")
+        print_manager.variable_testing(f"Getting configuration for {'CDF' if is_cdf_data_type else 'standard'} data type: {data_type}")
         config = data_types[data_type]
     else:
         # config = None # Explicitly set config to None or handle later
@@ -923,6 +929,212 @@ def import_data_function(trange, data_type):
         data_obj_to_return = data_obj # data_obj is used in HAM path
         end_step(step_key, step_start, {"data_object": data_obj})
         return data_obj_to_return
+        
+    # --- Handle Custom CDF Data Types (auto-generated classes) ---
+    elif is_cdf_data_type:
+        
+        # Step: Load custom CDF data
+        step_key, step_start = next_step("Load custom CDF data", data_type)
+        
+        print_manager.debug(f"\n=== Starting Custom CDF Data Import for {data_type} ===")
+        
+        # Get the CDF file path from configuration
+        cdf_base_path = config.get('local_path')
+        file_pattern = config.get('file_pattern_import', '*.cdf')
+        
+        # Check if we should get the path from class metadata
+        original_cdf_file = None
+        if cdf_base_path == 'FROM_CLASS_METADATA':
+            print_manager.debug("Getting CDF file path from class metadata...")
+            
+            # Get the class instance from data_cubby to read metadata
+            from .data_cubby import data_cubby
+            class_name = config.get('cdf_class_name', data_type)
+            class_instance = data_cubby.grab(class_name)
+            
+            if class_instance and hasattr(class_instance, '_original_cdf_file_path'):
+                original_cdf_file = class_instance._original_cdf_file_path
+                cdf_base_path = os.path.dirname(original_cdf_file)
+                print_manager.debug(f"Using CDF file path from metadata: {original_cdf_file}")
+                print_manager.debug(f"CDF directory: {cdf_base_path}")
+            else:
+                # Fallback to default path if metadata is not available
+                fallback_path = config.get('default_cdf_path')
+                if fallback_path and os.path.exists(fallback_path):
+                    cdf_base_path = fallback_path
+                    print_manager.debug(f"Metadata not available, using fallback path: {fallback_path}")
+                else:
+                    print_manager.error(f"Could not get CDF file path from class metadata for {data_type} and no valid fallback path")
+                    end_step(step_key, step_start, {"error": "no metadata path"})
+                    return None
+        
+        if not cdf_base_path:
+            print_manager.error(f"Configuration error: Missing 'local_path' for CDF data type {data_type}.")
+            print_manager.time_output("import_data_function", "error: config error")
+            end_step(step_key, step_start, {"error": "config error"})
+            return None
+        
+        # Resolve CDF base path
+        if not os.path.isabs(cdf_base_path):
+            project_root = get_project_root()
+            cdf_base_path = os.path.join(project_root, cdf_base_path)
+            print_manager.debug(f"Resolved CDF base path to: {cdf_base_path}")
+        
+        # Find CDF files
+        cdf_files = []
+        if original_cdf_file and os.path.exists(original_cdf_file):
+            # Use the exact file from metadata
+            cdf_files = [original_cdf_file]
+            print_manager.debug(f"Using exact CDF file from metadata: {os.path.basename(original_cdf_file)}")
+        elif cdf_base_path and os.path.exists(cdf_base_path):
+            # Search for CDF files in directory (either resolved from metadata or fallback)
+            for file in os.listdir(cdf_base_path):
+                if file.endswith('.cdf'):
+                    cdf_files.append(os.path.join(cdf_base_path, file))
+            print_manager.debug(f"Found {len(cdf_files)} CDF files in directory: {cdf_base_path}")
+        
+        if not cdf_files:
+            print_manager.error(f"No CDF files found for {data_type}")
+            print_manager.time_output("import_data_function", "error: no cdf files")
+            end_step(step_key, step_start, {"error": "no cdf files"})
+            return None
+        
+        # Use the first (or only) CDF file found
+        cdf_file_path = cdf_files[0]
+        print_manager.debug(f"Using CDF file: {os.path.basename(cdf_file_path)}")
+        
+        try:
+            # Load CDF data using cdflib
+            with cdflib.CDF(cdf_file_path) as cdf_file:
+                print_manager.debug(f"Successfully opened CDF file: {os.path.basename(cdf_file_path)}")
+                
+                # Get list of all variables
+                cdf_info = cdf_file.cdf_info()
+                all_variables = cdf_info.zVariables + cdf_info.rVariables
+                
+                # Find time variable
+                time_var = None
+                for var_name in all_variables:
+                    if any(keyword in var_name.lower() for keyword in ['epoch', 'time', 'fft_time']):
+                        time_var = var_name
+                        break
+                
+                if not time_var:
+                    print_manager.error(f"No time variable found in CDF file")
+                    end_step(step_key, step_start, {"error": "no time variable"})
+                    return None
+                
+                print_manager.debug(f"Using time variable: {time_var}")
+                
+                # Load time data
+                times = cdf_file.varget(time_var)
+                print_manager.debug(f"Loaded {len(times)} time points")
+                
+                # CRITICAL FIX: Add time range filtering (like Standard CDF Processing)
+                # Convert requested time range to same format as CDF times
+                try:
+                    # Convert trange to TT2000 for comparison
+                    start_tt2000 = cdflib.cdfepoch.compute_tt2000(
+                        [start_time.year, start_time.month, start_time.day,
+                         start_time.hour, start_time.minute, start_time.second,
+                         int(start_time.microsecond/1000)]
+                    )
+                    end_tt2000 = cdflib.cdfepoch.compute_tt2000(
+                        [end_time.year, end_time.month, end_time.day,
+                         end_time.hour, end_time.minute, end_time.second,
+                         int(end_time.microsecond/1000)]
+                    )
+                    
+                    # Check epoch type and convert CDF times if needed
+                    epoch_var_info = cdf_file.varinq(time_var)
+                    epoch_type = epoch_var_info.Data_Type_Description
+                    print_manager.debug(f"CDF time variable type: {epoch_type}")
+                    
+                    # Convert CDF times to TT2000 if needed (for comparison)
+                    if 'TT2000' in epoch_type:
+                        times_tt2000 = times
+                    elif 'CDF_EPOCH' in epoch_type:
+                        print_manager.debug("Converting CDF_EPOCH to TT2000 for filtering")
+                        times_tt2000 = np.array([cdflib.cdfepoch.to_datetime(t) for t in times])
+                        times_tt2000 = np.array([cdflib.cdfepoch.compute_tt2000(
+                            [dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.microsecond//1000]
+                        ) for dt in times_tt2000])
+                    else:
+                        # Assume already compatible format
+                        times_tt2000 = times
+                    
+                    # Find time range indices
+                    start_idx = np.searchsorted(times_tt2000, start_tt2000, side='left')
+                    end_idx = np.searchsorted(times_tt2000, end_tt2000, side='right')
+                    
+                    print_manager.debug(f"Time range filtering: indices {start_idx} to {end_idx} out of {len(times)}")
+                    
+                    if start_idx >= end_idx or start_idx >= len(times):
+                        print_manager.warning(f"No data in requested time range for {data_type}")
+                        end_step(step_key, step_start, {"error": "no data in range"})
+                        return None
+                    
+                    # Filter times to requested range
+                    times_filtered = times[start_idx:end_idx]
+                    print_manager.debug(f"Filtered to {len(times_filtered)} time points in requested range")
+                    
+                except Exception as e:
+                    print_manager.warning(f"Time filtering failed, loading all data: {e}")
+                    start_idx = 0
+                    end_idx = len(times)
+                    times_filtered = times
+                
+                # Load all other variables with time filtering
+                data_dict = {time_var: times_filtered}
+                for var_name in all_variables:
+                    if var_name != time_var:
+                        try:
+                            # Check if this is a frequency/metadata variable (1D, doesn't change with time)
+                            var_info = cdf_file.varinq(var_name)
+                            var_shape = var_info.Dim_Sizes
+                            
+                            # If variable is 1D (like frequencies), load without time filtering
+                            if len(var_shape) == 0 or (len(var_shape) == 1 and var_shape[0] <= 1000):
+                                print_manager.debug(f"Loading {var_name} as metadata variable (no time filtering)")
+                                var_data = cdf_file.varget(var_name)
+                            else:
+                                # FIXED: Use time range filtering for time-dependent variables
+                                if start_idx < end_idx and end_idx <= len(times):
+                                    var_data = cdf_file.varget(var_name, startrec=start_idx, endrec=end_idx-1)
+                                    print_manager.debug(f"Loaded {var_name} with time filtering: shape {var_data.shape}")
+                                else:
+                                    var_data = cdf_file.varget(var_name)
+                                    print_manager.debug(f"Loaded {var_name} without filtering (fallback): shape {var_data.shape}")
+                            
+                            data_dict[var_name] = var_data
+                            
+                        except Exception as e:
+                            print_manager.warning(f"Failed to load variable {var_name}: {e}")
+                            # Add placeholder for missing variables to prevent KeyError
+                            data_dict[var_name] = None
+                
+                # Create DataObject
+                data_object = DataObject(times=times_filtered, data=data_dict)
+                
+                # Update tracker
+                global_tracker.update_imported_range(trange, data_type)
+                print_manager.status(f"✅ Custom CDF data import complete for {data_type}")
+                
+                # Debug output
+                print_manager.debug(f"*** IMPORT_DATA_DEBUG (Custom CDF Path) for data_type '{data_type}' ***")
+                print_manager.debug(f"    Loaded {len(data_dict)} variables from {os.path.basename(cdf_file_path)}")
+                print_manager.debug(f"    Time range: {len(times_filtered)} points")
+                
+                data_obj_to_return = data_object
+                end_step(step_key, step_start, {"data_object": data_object})
+                return data_obj_to_return
+                
+        except Exception as e:
+            print_manager.error(f"Failed to load CDF file {cdf_file_path}: {e}")
+            import traceback
+            traceback.print_exc()
+            end_step(step_key, step_start, {"error": "cdf load failed"})
+            return None
         
     else:
         # --- Existing CDF Processing Logic ---
