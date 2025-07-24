@@ -188,6 +188,7 @@ class plot_manager(np.ndarray):
 
     @y_label.setter
     def y_label(self, value):
+        self._plot_state['y_label'] = value
         self.plot_options.y_label = value
         
     @property

@@ -32,8 +32,8 @@ def test_cdf_to_plotbot_generation():
     trange = ['2021-04-29/06:00:00', '2021-04-29/07:00:00']
     print(f"📅 Time range: {trange[0]} to {trange[1]}")
     
-    # Provide CDF file paths - exactly as user described
-    cdf_dir = Path(__file__).parent.parent / "docs" / "implementation_plans" / "CDF_Integration" / "KP_wavefiles"
+    # Provide CDF file paths - corrected to data/cdf_files
+    cdf_dir = Path(__file__).parent.parent / "data" / "cdf_files"
     spectral_file = cdf_dir / "PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf"
     timeseries_file = cdf_dir / "PSP_wavePower_2021-04-29_v1.3.cdf"
     
@@ -74,95 +74,48 @@ def test_cdf_to_plotbot_generation():
     
     # Check if metadata cache files were created
     cache_dir = Path(__file__).parent.parent / "plotbot" / "cache" / "cdf_metadata"
-    spectral_cache = cache_dir / f"{spectral_file.stem}_metadata.json"
-    timeseries_cache = cache_dir / f"{timeseries_file.stem}_metadata.json"
+    spectral_cache = cache_dir / f"{spectral_file.name}.metadata.json"
+    timeseries_cache = cache_dir / f"{timeseries_file.name}.metadata.json"
     
     if spectral_cache.exists():
-        print(f"✅ Spectral metadata cached: {spectral_cache}")
+        print(f"✅ Spectral metadata cached: {spectral_cache.name}")
     else:
-        print(f"⚠️  Spectral metadata cache not found: {spectral_cache}")
+        print(f"⚠️  Spectral metadata cache not found: {spectral_cache.name}")
     
     if timeseries_cache.exists():
-        print(f"✅ Time series metadata cached: {timeseries_cache}")
+        print(f"✅ Time series metadata cached: {timeseries_cache.name}")
     else:
-        print(f"⚠️  Time series metadata cache not found: {timeseries_cache}")
+        print(f"⚠️  Time series metadata cache not found: {timeseries_cache.name}")
     
-    # Run plotbot calls with variables - exactly as user described
-    print(f"\n🎨 Testing plotbot calls with CDF variables...")
+    # Run plotbot calls with variables - new simplified approach
+    print(f"\n🎨 Testing plotbot calls with CDF variables using direct access...")
     
     try:
-        # Get the generated class instances
-        spectral_class = data_cubby.grab("psp_waves_spectral")
-        timeseries_class = data_cubby.grab("psp_waves_timeseries")
+        # The new simplified workflow: after cdf_to_plotbot(), the classes
+        # should be globally available and work just like built-in classes.
+        # No more data_cubby.grab(), get_data(), or get_subclass().
         
-        if spectral_class is None:
-            print("❌ Could not retrieve spectral class from data_cubby")
-            return False
-            
-        if timeseries_class is None:
-            print("❌ Could not retrieve time series class from data_cubby")
-            return False
+        print(f"\n🎯 Calling: plotbot(trange, psp_waves_timeseries.wavePower_LH, 1, ...)")
         
-        print("✅ Retrieved both classes from data_cubby")
-        
-        # CRITICAL: Load data into the classes first!
-        print(f"\n📥 Loading CDF data into classes...")
-        try:
-            # Load data for both classes using get_data
-            get_data(trange, spectral_class)
-            get_data(trange, timeseries_class) 
-            print("✅ Data loaded successfully")
-        except Exception as e:
-            print(f"❌ Failed to load data: {e}")
-            return False
-        
-        # Test plotbot calls with 5 variables (2 time series + 3 spectral) as user mentioned
-        print(f"\n🚀 Making plotbot calls with variables...")
-        
-        # Time series variables (2)
-        lh_var = timeseries_class.get_subclass('wavePower_LH')
-        rh_var = timeseries_class.get_subclass('wavePower_RH')
-        
-        # Spectral variables (3) - using successfully tested variable names from examples
-        ellipticity_var = spectral_class.get_subclass('ellipticity_b')      # Ellipticity (Bfield)
-        b_power_var = spectral_class.get_subclass('B_power_para')           # Bfield Power Compressional  
-        wave_normal_var = spectral_class.get_subclass('wave_normal_b')      # Wave Normal Angle (Bfield)
-        
-
-        # Check variables more explicitly (avoid potential plot_manager list context issues)
-        missing_vars = []
-        if lh_var is None:
-            missing_vars.append("wavePower_LH")
-        if rh_var is None:
-            missing_vars.append("wavePower_RH") 
-        if ellipticity_var is None:
-            missing_vars.append("ellipticity_b")
-        if b_power_var is None:
-            missing_vars.append("B_power_para")
-        if wave_normal_var is None:
-            missing_vars.append("wave_normal_b")
-        
-        if missing_vars:
-            print(f"❌ Variables not found: {missing_vars}")
-            return False
-        
-        print("✅ All 5 variables found")
-        
-        # Make the plotbot call - exactly as user described: plotbot(trange, class.subclass1, 1, class.subclass2, 2...)
-        print(f"\n🎯 Calling: plotbot(trange, lh_var, 1, rh_var, 2, ellipticity_var, 3, b_power_var, 4, wave_normal_var, 5)")
-        
+        # Make the plotbot call - new simple, direct syntax
         plotbot(trange, 
-                lh_var, 1,              # Time series LH
-                rh_var, 2,              # Time series RH  
-                ellipticity_var, 3,     # Spectral ellipticity
-                b_power_var, 4,         # Spectral B power
-                wave_normal_var, 5)     # Spectral wave normal
+                psp_waves_timeseries.wavePower_LH, 1,      # Time series LH
+                psp_waves_timeseries.wavePower_RH, 2,      # Time series RH  
+                psp_waves_spectral.ellipticity_b, 3,       # Spectral ellipticity
+                psp_waves_spectral.B_power_para, 4,        # Spectral B power
+                psp_waves_spectral.wave_normal_b, 5)       # Spectral wave normal
         
         print("🎉 SUCCESS! Plotbot call completed with all 5 CDF variables!")
-        print("✅ CDF-to-plotbot integration fully functional")
+        print("✅ CDF-to-plotbot integration uses the simple, direct-access workflow.")
         
         return True
         
+    except NameError as e:
+        print(f"❌ Plotbot call failed: {e}")
+        print("   This likely means the generated CDF classes were not made globally accessible.")
+        import traceback
+        traceback.print_exc()
+        return False
     except Exception as e:
         print(f"❌ Plotbot call failed: {e}")
         import traceback

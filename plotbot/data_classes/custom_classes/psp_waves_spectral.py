@@ -1,7 +1,7 @@
 """
 Auto-generated plotbot class for PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf
-Generated on: 2025-07-23T12:36:55.152135
-Source: /Users/robertalexander/GitHub/Plotbot/docs/implementation_plans/CDF_Integration/KP_wavefiles/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf
+Generated on: 2025-07-23T17:45:54.886181
+Source: data/cdf_files/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf
 
 This class contains 96 variables from the CDF file.
 """
@@ -229,22 +229,22 @@ class psp_waves_spectral_class:
         object.__setattr__(self, 'variable_meshes', {})
         
         # Store original CDF file path AND smart pattern for multi-file loading
-        object.__setattr__(self, '_original_cdf_file_path', '/Users/robertalexander/GitHub/Plotbot/docs/implementation_plans/CDF_Integration/KP_wavefiles/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf')
+        object.__setattr__(self, '_original_cdf_file_path', 'data/cdf_files/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf')
         object.__setattr__(self, '_cdf_file_pattern', 'PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf')
 
         if imported_data is None:
             self.set_ploptions()
             print_manager.dependency_management("No data provided; initialized with empty attributes.")
         else:
-            print_manager.dependency_management("Calculating psp_waves_spectral variables...")
+            print_manager.dependency_management(f"Calculating psp_waves_spectral variables...")
             self.calculate_variables(imported_data)
             self.set_ploptions()
-            print_manager.status("Successfully calculated psp_waves_spectral variables.")
+            print_manager.status(f"Successfully calculated psp_waves_spectral variables.")
         
         # Auto-register with data_cubby (following plotbot pattern)
         from plotbot.data_cubby import data_cubby
         data_cubby.stash(self, class_name='psp_waves_spectral')
-        print_manager.dependency_management("Registered psp_waves_spectral with data_cubby")
+        print_manager.dependency_management(f"Registered psp_waves_spectral with data_cubby")
     
     def update(self, imported_data, original_requested_trange=None):
         """Method to update class with new data."""
@@ -307,7 +307,7 @@ class psp_waves_spectral_class:
         if 'raw_data' not in self.__dict__:
             raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
         
-        print_manager.dependency_management('psp_waves_spectral getattr helper!')
+        print_manager.dependency_management(f'psp_waves_spectral getattr helper!')
         available_attrs = list(self.raw_data.keys()) if self.raw_data else []
         print(f"'{name}' is not a recognized attribute, friend!")                
         print(f"Try one of these: {', '.join(available_attrs)}")
@@ -324,7 +324,7 @@ class psp_waves_spectral_class:
         if name in allowed_attrs or name in self.raw_data:
             super().__setattr__(name, value)
         else:
-            print_manager.dependency_management('psp_waves_spectral setattr helper!')
+            print_manager.dependency_management(f'psp_waves_spectral setattr helper!')
             print(f"'{name}' is not a recognized attribute, friend!")
             available_attrs = list(self.raw_data.keys()) if self.raw_data else []
             print(f"Try one of these: {', '.join(available_attrs)}")
@@ -1298,7 +1298,6 @@ class psp_waves_spectral_class:
         """Set up plotting options for all variables"""
         print_manager.dependency_management("Setting up plot options for psp_waves_spectral variables")
         
-
         self.FFT_time_1 = plot_manager(
             self.raw_data['FFT_time_1'],
             plot_options=ploptions(
@@ -1317,7 +1316,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies = plot_manager(
             self.raw_data['Frequencies'],
             plot_options=ploptions(
@@ -1336,7 +1334,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up ellipticity_b (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: ellipticity_b ===")
         ellipticity_b_data = self.raw_data.get('ellipticity_b')
@@ -1380,7 +1377,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_2 = plot_manager(
             self.raw_data['FFT_time_2'],
             plot_options=ploptions(
@@ -1399,7 +1395,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_1 = plot_manager(
             self.raw_data['Frequencies_1'],
             plot_options=ploptions(
@@ -1418,7 +1413,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up wave_normal_b (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: wave_normal_b ===")
         wave_normal_b_data = self.raw_data.get('wave_normal_b')
@@ -1462,7 +1456,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_3 = plot_manager(
             self.raw_data['FFT_time_3'],
             plot_options=ploptions(
@@ -1481,7 +1474,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_2 = plot_manager(
             self.raw_data['Frequencies_2'],
             plot_options=ploptions(
@@ -1500,7 +1492,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up coherency_b (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: coherency_b ===")
         coherency_b_data = self.raw_data.get('coherency_b')
@@ -1544,7 +1535,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_4 = plot_manager(
             self.raw_data['FFT_time_4'],
             plot_options=ploptions(
@@ -1563,7 +1553,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_3 = plot_manager(
             self.raw_data['Frequencies_3'],
             plot_options=ploptions(
@@ -1582,7 +1571,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up B_power_para (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: B_power_para ===")
         B_power_para_data = self.raw_data.get('B_power_para')
@@ -1626,7 +1614,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_5 = plot_manager(
             self.raw_data['FFT_time_5'],
             plot_options=ploptions(
@@ -1645,7 +1632,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_4 = plot_manager(
             self.raw_data['Frequencies_4'],
             plot_options=ploptions(
@@ -1664,7 +1650,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up B_power_perp (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: B_power_perp ===")
         B_power_perp_data = self.raw_data.get('B_power_perp')
@@ -1708,7 +1693,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_6 = plot_manager(
             self.raw_data['FFT_time_6'],
             plot_options=ploptions(
@@ -1727,7 +1711,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_5 = plot_manager(
             self.raw_data['Frequencies_5'],
             plot_options=ploptions(
@@ -1746,7 +1729,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up Wave_Power_b (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: Wave_Power_b ===")
         Wave_Power_b_data = self.raw_data.get('Wave_Power_b')
@@ -1790,7 +1772,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_7 = plot_manager(
             self.raw_data['FFT_time_7'],
             plot_options=ploptions(
@@ -1809,7 +1790,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_6 = plot_manager(
             self.raw_data['Frequencies_6'],
             plot_options=ploptions(
@@ -1828,7 +1808,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up S_mag (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: S_mag ===")
         S_mag_data = self.raw_data.get('S_mag')
@@ -1872,7 +1851,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_8 = plot_manager(
             self.raw_data['FFT_time_8'],
             plot_options=ploptions(
@@ -1891,7 +1869,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_7 = plot_manager(
             self.raw_data['Frequencies_7'],
             plot_options=ploptions(
@@ -1910,7 +1887,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up S_Theta (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: S_Theta ===")
         S_Theta_data = self.raw_data.get('S_Theta')
@@ -1954,7 +1930,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_9 = plot_manager(
             self.raw_data['FFT_time_9'],
             plot_options=ploptions(
@@ -1973,7 +1948,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_8 = plot_manager(
             self.raw_data['Frequencies_8'],
             plot_options=ploptions(
@@ -1992,7 +1966,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up S_Phi (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: S_Phi ===")
         S_Phi_data = self.raw_data.get('S_Phi')
@@ -2036,7 +2009,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_10 = plot_manager(
             self.raw_data['FFT_time_10'],
             plot_options=ploptions(
@@ -2055,7 +2027,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_9 = plot_manager(
             self.raw_data['Frequencies_9'],
             plot_options=ploptions(
@@ -2074,7 +2045,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up Sn (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: Sn ===")
         Sn_data = self.raw_data.get('Sn')
@@ -2118,7 +2088,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_11 = plot_manager(
             self.raw_data['FFT_time_11'],
             plot_options=ploptions(
@@ -2137,7 +2106,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_10 = plot_manager(
             self.raw_data['Frequencies_10'],
             plot_options=ploptions(
@@ -2156,7 +2124,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up Sp (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: Sp ===")
         Sp_data = self.raw_data.get('Sp')
@@ -2200,7 +2167,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_12 = plot_manager(
             self.raw_data['FFT_time_12'],
             plot_options=ploptions(
@@ -2219,7 +2185,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_11 = plot_manager(
             self.raw_data['Frequencies_11'],
             plot_options=ploptions(
@@ -2238,7 +2203,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up Sq (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: Sq ===")
         Sq_data = self.raw_data.get('Sq')
@@ -2282,7 +2246,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.Bfield_time = plot_manager(
             self.raw_data['Bfield_time'],
             plot_options=ploptions(
@@ -2301,7 +2264,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Bn = plot_manager(
             self.raw_data['Bn'],
             plot_options=ploptions(
@@ -2320,7 +2282,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Bfield_time_1 = plot_manager(
             self.raw_data['Bfield_time_1'],
             plot_options=ploptions(
@@ -2339,7 +2300,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Bp = plot_manager(
             self.raw_data['Bp'],
             plot_options=ploptions(
@@ -2358,7 +2318,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Bfield_time_2 = plot_manager(
             self.raw_data['Bfield_time_2'],
             plot_options=ploptions(
@@ -2377,7 +2336,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Bq = plot_manager(
             self.raw_data['Bq'],
             plot_options=ploptions(
@@ -2396,7 +2354,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.FFT_time_13 = plot_manager(
             self.raw_data['FFT_time_13'],
             plot_options=ploptions(
@@ -2415,7 +2372,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_12 = plot_manager(
             self.raw_data['Frequencies_12'],
             plot_options=ploptions(
@@ -2434,7 +2390,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up Bn_fft (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: Bn_fft ===")
         Bn_fft_data = self.raw_data.get('Bn_fft')
@@ -2478,7 +2433,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_14 = plot_manager(
             self.raw_data['FFT_time_14'],
             plot_options=ploptions(
@@ -2497,7 +2451,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_13 = plot_manager(
             self.raw_data['Frequencies_13'],
             plot_options=ploptions(
@@ -2516,7 +2469,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up Bp_fft (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: Bp_fft ===")
         Bp_fft_data = self.raw_data.get('Bp_fft')
@@ -2560,7 +2512,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_15 = plot_manager(
             self.raw_data['FFT_time_15'],
             plot_options=ploptions(
@@ -2579,7 +2530,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_14 = plot_manager(
             self.raw_data['Frequencies_14'],
             plot_options=ploptions(
@@ -2598,7 +2548,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up Bq_fft (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: Bq_fft ===")
         Bq_fft_data = self.raw_data.get('Bq_fft')
@@ -2642,7 +2591,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_16 = plot_manager(
             self.raw_data['FFT_time_16'],
             plot_options=ploptions(
@@ -2661,7 +2609,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_15 = plot_manager(
             self.raw_data['Frequencies_15'],
             plot_options=ploptions(
@@ -2680,7 +2627,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up ellipticity_e (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: ellipticity_e ===")
         ellipticity_e_data = self.raw_data.get('ellipticity_e')
@@ -2724,7 +2670,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_17 = plot_manager(
             self.raw_data['FFT_time_17'],
             plot_options=ploptions(
@@ -2743,7 +2688,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_16 = plot_manager(
             self.raw_data['Frequencies_16'],
             plot_options=ploptions(
@@ -2762,7 +2706,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up wave_normal_e (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: wave_normal_e ===")
         wave_normal_e_data = self.raw_data.get('wave_normal_e')
@@ -2806,7 +2749,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_18 = plot_manager(
             self.raw_data['FFT_time_18'],
             plot_options=ploptions(
@@ -2825,7 +2767,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_17 = plot_manager(
             self.raw_data['Frequencies_17'],
             plot_options=ploptions(
@@ -2844,7 +2785,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up coherency_e (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: coherency_e ===")
         coherency_e_data = self.raw_data.get('coherency_e')
@@ -2888,7 +2828,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_19 = plot_manager(
             self.raw_data['FFT_time_19'],
             plot_options=ploptions(
@@ -2907,7 +2846,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_18 = plot_manager(
             self.raw_data['Frequencies_18'],
             plot_options=ploptions(
@@ -2926,7 +2864,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up E_power_para (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: E_power_para ===")
         E_power_para_data = self.raw_data.get('E_power_para')
@@ -2970,7 +2907,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_20 = plot_manager(
             self.raw_data['FFT_time_20'],
             plot_options=ploptions(
@@ -2989,7 +2925,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_19 = plot_manager(
             self.raw_data['Frequencies_19'],
             plot_options=ploptions(
@@ -3008,7 +2943,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up E_power_perp (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: E_power_perp ===")
         E_power_perp_data = self.raw_data.get('E_power_perp')
@@ -3052,7 +2986,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_21 = plot_manager(
             self.raw_data['FFT_time_21'],
             plot_options=ploptions(
@@ -3071,7 +3004,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_20 = plot_manager(
             self.raw_data['Frequencies_20'],
             plot_options=ploptions(
@@ -3090,7 +3022,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up Wave_Power_e (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: Wave_Power_e ===")
         Wave_Power_e_data = self.raw_data.get('Wave_Power_e')
@@ -3134,7 +3065,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_22 = plot_manager(
             self.raw_data['FFT_time_22'],
             plot_options=ploptions(
@@ -3153,7 +3083,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_21 = plot_manager(
             self.raw_data['Frequencies_21'],
             plot_options=ploptions(
@@ -3172,7 +3101,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up En_fft (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: En_fft ===")
         En_fft_data = self.raw_data.get('En_fft')
@@ -3216,7 +3144,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_23 = plot_manager(
             self.raw_data['FFT_time_23'],
             plot_options=ploptions(
@@ -3235,7 +3162,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_22 = plot_manager(
             self.raw_data['Frequencies_22'],
             plot_options=ploptions(
@@ -3254,7 +3180,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up Ep_fft (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: Ep_fft ===")
         Ep_fft_data = self.raw_data.get('Ep_fft')
@@ -3298,7 +3223,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_24 = plot_manager(
             self.raw_data['FFT_time_24'],
             plot_options=ploptions(
@@ -3317,7 +3241,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_23 = plot_manager(
             self.raw_data['Frequencies_23'],
             plot_options=ploptions(
@@ -3336,7 +3259,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up Eq_fft (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: Eq_fft ===")
         Eq_fft_data = self.raw_data.get('Eq_fft')
@@ -3380,7 +3302,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_25 = plot_manager(
             self.raw_data['FFT_time_25'],
             plot_options=ploptions(
@@ -3399,7 +3320,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_24 = plot_manager(
             self.raw_data['Frequencies_24'],
             plot_options=ploptions(
@@ -3418,7 +3338,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up kx_B (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: kx_B ===")
         kx_B_data = self.raw_data.get('kx_B')
@@ -3462,7 +3381,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_26 = plot_manager(
             self.raw_data['FFT_time_26'],
             plot_options=ploptions(
@@ -3481,7 +3399,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_25 = plot_manager(
             self.raw_data['Frequencies_25'],
             plot_options=ploptions(
@@ -3500,7 +3417,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up ky_B (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: ky_B ===")
         ky_B_data = self.raw_data.get('ky_B')
@@ -3544,7 +3460,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_27 = plot_manager(
             self.raw_data['FFT_time_27'],
             plot_options=ploptions(
@@ -3563,7 +3478,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_26 = plot_manager(
             self.raw_data['Frequencies_26'],
             plot_options=ploptions(
@@ -3582,7 +3496,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up kz_B (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: kz_B ===")
         kz_B_data = self.raw_data.get('kz_B')
@@ -3626,7 +3539,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_28 = plot_manager(
             self.raw_data['FFT_time_28'],
             plot_options=ploptions(
@@ -3645,7 +3557,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_27 = plot_manager(
             self.raw_data['Frequencies_27'],
             plot_options=ploptions(
@@ -3664,7 +3575,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up kx_E (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: kx_E ===")
         kx_E_data = self.raw_data.get('kx_E')
@@ -3708,7 +3618,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_29 = plot_manager(
             self.raw_data['FFT_time_29'],
             plot_options=ploptions(
@@ -3727,7 +3636,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_28 = plot_manager(
             self.raw_data['Frequencies_28'],
             plot_options=ploptions(
@@ -3746,7 +3654,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up ky_E (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: ky_E ===")
         ky_E_data = self.raw_data.get('ky_E')
@@ -3790,7 +3697,6 @@ class psp_waves_spectral_class:
         )
         print_manager.dependency_management("=== END PLOPTIONS DEBUG ===")
 
-
         self.FFT_time_30 = plot_manager(
             self.raw_data['FFT_time_30'],
             plot_options=ploptions(
@@ -3809,7 +3715,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         self.Frequencies_29 = plot_manager(
             self.raw_data['Frequencies_29'],
             plot_options=ploptions(
@@ -3828,7 +3733,6 @@ class psp_waves_spectral_class:
                 line_style='-'
             )
         )
-
         # DEBUG: Setting up kz_E (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: kz_E ===")
         kz_E_data = self.raw_data.get('kz_E')
@@ -3880,4 +3784,4 @@ class psp_waves_spectral_class:
 
 # Initialize the class with no data
 psp_waves_spectral = psp_waves_spectral_class(None)
-print_manager.dependency_management('initialized psp_waves_spectral class')
+print_manager.dependency_management(f'initialized psp_waves_spectral class')

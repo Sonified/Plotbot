@@ -1,6 +1,6 @@
 """
 Auto-generated plotbot class for PSP_wavePower_2021-04-29_v1.3.cdf
-Generated on: 2025-07-23T11:53:18.216416
+Generated on: 2025-07-23T17:28:06.350152
 Source: data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf
 
 This class contains 2 variables from the CDF file.

@@ -1,7 +1,7 @@
 """
 Auto-generated plotbot class for PSP_wavePower_2021-04-29_v1.3.cdf
-Generated on: 2025-07-23T12:36:55.178687
-Source: /Users/robertalexander/GitHub/Plotbot/docs/implementation_plans/CDF_Integration/KP_wavefiles/PSP_wavePower_2021-04-29_v1.3.cdf
+Generated on: 2025-07-23T17:45:54.952494
+Source: data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf
 
 This class contains 2 variables from the CDF file.
 """
@@ -41,22 +41,22 @@ class psp_waves_timeseries_class:
         
         
         # Store original CDF file path AND smart pattern for multi-file loading
-        object.__setattr__(self, '_original_cdf_file_path', '/Users/robertalexander/GitHub/Plotbot/docs/implementation_plans/CDF_Integration/KP_wavefiles/PSP_wavePower_2021-04-29_v1.3.cdf')
+        object.__setattr__(self, '_original_cdf_file_path', 'data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf')
         object.__setattr__(self, '_cdf_file_pattern', 'PSP_wavePower_2021-04-29_v1.3.cdf')
 
         if imported_data is None:
             self.set_ploptions()
             print_manager.dependency_management("No data provided; initialized with empty attributes.")
         else:
-            print_manager.dependency_management("Calculating psp_waves_timeseries variables...")
+            print_manager.dependency_management(f"Calculating psp_waves_timeseries variables...")
             self.calculate_variables(imported_data)
             self.set_ploptions()
-            print_manager.status("Successfully calculated psp_waves_timeseries variables.")
+            print_manager.status(f"Successfully calculated psp_waves_timeseries variables.")
         
         # Auto-register with data_cubby (following plotbot pattern)
         from plotbot.data_cubby import data_cubby
         data_cubby.stash(self, class_name='psp_waves_timeseries')
-        print_manager.dependency_management("Registered psp_waves_timeseries with data_cubby")
+        print_manager.dependency_management(f"Registered psp_waves_timeseries with data_cubby")
     
     def update(self, imported_data, original_requested_trange=None):
         """Method to update class with new data."""
@@ -119,7 +119,7 @@ class psp_waves_timeseries_class:
         if 'raw_data' not in self.__dict__:
             raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
         
-        print_manager.dependency_management('psp_waves_timeseries getattr helper!')
+        print_manager.dependency_management(f'psp_waves_timeseries getattr helper!')
         available_attrs = list(self.raw_data.keys()) if self.raw_data else []
         print(f"'{name}' is not a recognized attribute, friend!")                
         print(f"Try one of these: {', '.join(available_attrs)}")
@@ -136,7 +136,7 @@ class psp_waves_timeseries_class:
         if name in allowed_attrs or name in self.raw_data:
             super().__setattr__(name, value)
         else:
-            print_manager.dependency_management('psp_waves_timeseries setattr helper!')
+            print_manager.dependency_management(f'psp_waves_timeseries setattr helper!')
             print(f"'{name}' is not a recognized attribute, friend!")
             available_attrs = list(self.raw_data.keys()) if self.raw_data else []
             print(f"Try one of these: {', '.join(available_attrs)}")
@@ -264,7 +264,6 @@ class psp_waves_timeseries_class:
         """Set up plotting options for all variables"""
         print_manager.dependency_management("Setting up plot options for psp_waves_timeseries variables")
         
-
         self.wavePower_LH = plot_manager(
             self.raw_data['wavePower_LH'],
             plot_options=ploptions(
@@ -283,7 +282,6 @@ class psp_waves_timeseries_class:
                 line_style='-'
             )
         )
-
         self.wavePower_RH = plot_manager(
             self.raw_data['wavePower_RH'],
             plot_options=ploptions(
@@ -310,4 +308,4 @@ class psp_waves_timeseries_class:
 
 # Initialize the class with no data
 psp_waves_timeseries = psp_waves_timeseries_class(None)
-print_manager.dependency_management('initialized psp_waves_timeseries class')
+print_manager.dependency_management(f'initialized psp_waves_timeseries class')

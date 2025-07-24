@@ -1,6 +1,6 @@
 """
 Type hints for auto-generated plotbot class psp_waves_spectral
-Generated on: 2025-07-23T12:36:55.152982
+Generated on: 2025-07-23T17:45:54.886907
 Source: PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf
 """
 
@@ -128,6 +128,8 @@ class psp_waves_spectral_class:
     def calculate_variables(self, imported_data: Any) -> None: ...
     def set_ploptions(self) -> None: ...
     def restore_from_snapshot(self, snapshot_data: Any) -> None: ...
+    def __getattr__(self, name: str) -> Any: ...
+    def __setattr__(self, name: str, value: Any) -> None: ...
 
 # Instance
 psp_waves_spectral: psp_waves_spectral_class

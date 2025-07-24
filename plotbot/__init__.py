@@ -49,6 +49,27 @@ from .data_classes.psp_qtn_classes import psp_qtn, psp_qtn_class
 from .data_classes.psp_dfb_classes import psp_dfb, psp_dfb_class
 from .data_classes.psp_orbit import psp_orbit, psp_orbit_class
 
+# ==============================================================================
+# Custom Class Imports (auto-generated)
+# To add new classes: run cdf_to_plotbot('path/to/file.cdf') and this will be updated
+# ------------------------------------------------------------------------------
+from .data_classes.custom_classes.demo_spectral_waves import demo_spectral_waves, demo_spectral_waves_class
+from .data_classes.custom_classes.demo_wave_power import demo_wave_power, demo_wave_power_class
+from .data_classes.custom_classes.psp_simple_test import psp_simple_test, psp_simple_test_class
+from .data_classes.custom_classes.psp_spectral_waves import psp_spectral_waves, psp_spectral_waves_class
+from .data_classes.custom_classes.psp_waves_auto import psp_waves_auto, psp_waves_auto_class
+from .data_classes.custom_classes.psp_waves_real_test import psp_waves_real_test, psp_waves_real_test_class
+from .data_classes.custom_classes.psp_waves_spectral import psp_waves_spectral, psp_waves_spectral_class
+from .data_classes.custom_classes.psp_waves_timeseries import psp_waves_timeseries, psp_waves_timeseries_class
+from .data_classes.custom_classes.test_indentation_fix import test_indentation_fix, test_indentation_fix_class
+# ------------------------------------------------------------------------------
+# ==============================================================================
+
+# Import custom generated classes explicitly for type hinting and IDE support
+from .data_classes.custom_classes.psp_waves_timeseries import psp_waves_timeseries, psp_waves_timeseries_class
+from .data_classes.custom_classes.psp_waves_spectral import psp_waves_spectral, psp_waves_spectral_class
+
+
 # --- Explicitly Register Global Instances with DataCubby --- #
 data_cubby.stash(mag_rtn_4sa, class_name='mag_rtn_4sa')
 data_cubby.stash(mag_rtn, class_name='mag_rtn')
@@ -103,6 +124,14 @@ def _auto_register_custom_classes():
                 class_instance = getattr(module, module_name)
                 data_cubby.stash(class_instance, class_name=module_name)
                 print_manager.datacubby(f"Auto-registered custom class: {module_name}")
+
+                # --- THIS IS THE CRITICAL FIX ---
+                # Inject the class instance into the main plotbot module's globals
+                globals()[module_name] = class_instance
+                # Also add to __all__ so it can be imported with `from plotbot import *`
+                if module_name not in __all__:
+                    __all__.append(module_name)
+                print_manager.debug(f"Exposed '{module_name}' as a global plotbot class.")
                 
         except Exception as e:
             print_manager.warning(f"Failed to auto-register {module_name}: {e}")
@@ -329,7 +358,30 @@ __all__ = [
     'cdf_to_plotbot',       # CDF class generation function
     'scan_cdf_directory',   # CDF directory scanning function
     'CLASS_NAME_MAPPING',  # Add CLASS_NAME_MAPPING to __all__
-    'showda_holes'      # Add showda_holes to __all__
+    'showda_holes',      # Add showda_holes to __all__
+    
+    # --- AUTO-GENERATED CUSTOM CLASS __all__ ENTRIES ---
+    'demo_spectral_waves',  # Custom generated class
+    'demo_wave_power',  # Custom generated class
+    'psp_simple_test',  # Custom generated class
+    'psp_spectral_waves',  # Custom generated class
+    'psp_waves_auto',  # Custom generated class
+    'psp_waves_real_test',  # Custom generated class
+    'psp_waves_spectral',  # Custom generated class
+    'psp_waves_timeseries',  # Custom generated class
+    # --- END AUTO-GENERATED __all__ ENTRIES ---
+
+    # --- AUTO-GENERATED CUSTOM CLASS __ALL__ ENTRIES ---
+    'demo_spectral_waves',  # Custom generated class
+    'demo_wave_power',  # Custom generated class
+    'psp_simple_test',  # Custom generated class
+    'psp_spectral_waves',  # Custom generated class
+    'psp_waves_auto',  # Custom generated class
+    'psp_waves_real_test',  # Custom generated class
+    'psp_waves_spectral',  # Custom generated class
+    'psp_waves_timeseries',  # Custom generated class
+    'test_indentation_fix',  # Custom generated class
+# --- END AUTO-GENERATED __ALL__ ENTRIES ---
 ]
 
 # Colors for printing
@@ -339,10 +391,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_23_v2.88"
+__version__ = "2025_07_23_v2.90"
 
 # Commit message for this version
-__commit_message__ = "v2.88 CDF INTEGRATION v1 COMPLETE: Single-file cdf_to_plotbot pipeline working - classes auto-register, data loads, plotting functional"
+__commit_message__ = "v2.90 FIX: Auto-generated CDF class indentation and f-string formatting issues resolved"
 
 # Print the version and commit message
 print(f"""

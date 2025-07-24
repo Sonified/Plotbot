@@ -1,6 +1,6 @@
 """
 Auto-generated plotbot class for PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf
-Generated on: 2025-07-23T11:53:22.756663
+Generated on: 2025-07-23T17:28:11.535386
 Source: data/cdf_files/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf
 
 This class contains 96 variables from the CDF file.

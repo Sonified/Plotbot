@@ -1,12 +1,12 @@
 {
-  "file_path": "/Users/robertalexander/GitHub/Plotbot/docs/implementation_plans/CDF_Integration/KP_wavefiles/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf",
+  "file_path": "data/cdf_files/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf",
   "time_variable": "FFT_time",
   "frequency_variable": "Frequencies",
   "global_attributes": {
     "cdfj_source": "/home/kpaulson/Research/PSP/WaveAnalysis/WaveAnalysis_Files/v1.2/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf"
   },
   "variable_count": 96,
-  "scan_timestamp": "2025-07-23T12:36:55.150785",
+  "scan_timestamp": "2025-07-23T17:45:54.884519",
   "start_time": "2021/04/29 06:00:01.750",
   "end_time": "2021/04/29 11:59:57.790",
   "time_coverage_hours": 5.998900071111112,

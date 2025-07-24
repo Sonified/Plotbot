@@ -1,6 +1,6 @@
 """
 Type hints for auto-generated plotbot class demo_wave_power
-Generated on: 2025-07-23T11:53:18.216940
+Generated on: 2025-07-23T17:28:06.350660
 Source: PSP_wavePower_2021-04-29_v1.3.cdf
 """
 
@@ -34,6 +34,8 @@ class demo_wave_power_class:
     def calculate_variables(self, imported_data: Any) -> None: ...
     def set_ploptions(self) -> None: ...
     def restore_from_snapshot(self, snapshot_data: Any) -> None: ...
+    def __getattr__(self, name: str) -> Any: ...
+    def __setattr__(self, name: str, value: Any) -> None: ...
 
 # Instance
 demo_wave_power: demo_wave_power_class

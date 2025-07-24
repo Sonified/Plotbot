@@ -21,6 +21,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 from collections import namedtuple
 import re
+import inspect
 
 from .print_manager import print_manager
 from .time_utils import daterange
@@ -747,8 +748,8 @@ def cdf_to_plotbot(file_path: str, class_name: str, output_dir: Optional[str] = 
         print_manager.status(f"   📄 Types: {pyi_file}")
         print_manager.status(f"   🎯 Usage: from plotbot.data_classes.{class_name} import {class_name}")
         
-        # IMMEDIATELY register the new class with data_cubby
-        print_manager.debug(f"🔄 Auto-registering '{class_name}' with data_cubby...")
+        # IMMEDIATELY register the new class with data_cubby AND INJECT into globals
+        print_manager.debug(f"🔄 Auto-registering '{class_name}' with data_cubby and injecting into globals...")
         try:
             import importlib
             import sys
@@ -762,28 +763,42 @@ def cdf_to_plotbot(file_path: str, class_name: str, output_dir: Optional[str] = 
             
             module = importlib.import_module(module_path)
             
-            # Get the class (follows pattern: class_name + '_class')
-            class_type = getattr(module, f"{class_name}_class", None)
+            # The class is initialized at the bottom of the generated file
+            class_instance = getattr(module, class_name, None)
             
-            if class_type:
-                # Create instance and register with data_cubby
-                class_instance = class_type(None)  # Initialize with no data
-                
+            if class_instance:
+                # Add to the class type map for future lookups
                 from .data_cubby import data_cubby
-                data_cubby.stash(class_instance, class_name=class_name)
+                data_cubby._CLASS_TYPE_MAP[class_name] = type(class_instance)
                 
-                # Also add to the class type map for future lookups
-                data_cubby._CLASS_TYPE_MAP[class_name] = class_type
-                
+                # Inject the class instance into the caller's global namespace
+                # This makes it immediately available, e.g., psp_waves_spectral.variable
+                try:
+                    caller_globals = inspect.stack()[1].frame.f_globals
+                    caller_globals[class_name] = class_instance
+                    print_manager.status(f"✅ Injected '{class_name}' into global namespace.")
+                    print_manager.status(f"   🎯 Ready for direct use: {class_name}.<variable>")
+                except Exception as e:
+                    print_manager.warning(f"⚠️  Could not inject '{class_name}' into globals: {e}")
+
                 print_manager.status(f"✅ Successfully registered '{class_name}' with data_cubby")
-                print_manager.status(f"   🎯 Ready for use: data_cubby.grab('{class_name}')")
                 print_manager.status(f"   📝 Class will auto-register on next plotbot restart")
             else:
-                print_manager.warning(f"⚠️  Could not find class '{class_name}_class' in generated module")
+                print_manager.warning(f"⚠️  Could not find class instance '{class_name}' in generated module")
                 
         except Exception as e:
             print_manager.warning(f"⚠️  Failed to auto-register '{class_name}': {e}")
             print_manager.debug(f"   Manual registration may be needed on next plotbot restart")
+        
+        # AUTO-UPDATE MAIN __INIT__.PY for proper type hinting
+        print_manager.status(f"🔄 Auto-updating main __init__.py for IDE type hinting...")
+        try:
+            if update_plotbot_init():
+                print_manager.status(f"✅ Updated main __init__.py - IDE type hints now available!")
+            else:
+                print_manager.warning(f"⚠️  Failed to update __init__.py - type hints may not work in IDE")
+        except Exception as e:
+            print_manager.warning(f"⚠️  Error updating __init__.py: {e}")
         
         return True
         
@@ -811,8 +826,7 @@ def _generate_plotbot_class_code(metadata: CDFMetadata, class_name: str) -> str:
     
     # Helper function for spectral plot options with debugging
     def generate_spectral_ploptions_with_debug(var):
-        return f"""
-        # DEBUG: Setting up {var.name} (spectral)
+        return f"""        # DEBUG: Setting up {var.name} (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: {var.name} ===")
         {var.name}_data = self.raw_data.get('{var.name}')
         {var.name}_mesh = self.variable_meshes.get('{var.name}', self.datetime_array)
@@ -883,8 +897,7 @@ def _generate_plotbot_class_code(metadata: CDFMetadata, class_name: str) -> str:
         if var.plot_type == 'spectral':
             set_ploptions_code.append(generate_spectral_ploptions_with_debug(var))
         else:
-            set_ploptions_code.append(f"""
-        self.{var.name} = plot_manager(
+            set_ploptions_code.append(f"""        self.{var.name} = plot_manager(
             self.raw_data['{var.name}'],
             plot_options=ploptions(
                 data_type='{class_name}',
@@ -953,15 +966,15 @@ class {class_name}_class:
             self.set_ploptions()
             print_manager.dependency_management("No data provided; initialized with empty attributes.")
         else:
-            print_manager.dependency_management("Calculating {class_name} variables...")
+            print_manager.dependency_management(f"Calculating {class_name} variables...")
             self.calculate_variables(imported_data)
             self.set_ploptions()
-            print_manager.status("Successfully calculated {class_name} variables.")
+            print_manager.status(f"Successfully calculated {class_name} variables.")
         
         # Auto-register with data_cubby (following plotbot pattern)
         from plotbot.data_cubby import data_cubby
         data_cubby.stash(self, class_name='{class_name}')
-        print_manager.dependency_management("Registered {class_name} with data_cubby")
+        print_manager.dependency_management(f"Registered {class_name} with data_cubby")
     
     def update(self, imported_data, original_requested_trange=None):
         """Method to update class with new data."""
@@ -1024,7 +1037,7 @@ class {class_name}_class:
         if 'raw_data' not in self.__dict__:
             raise AttributeError(f"{{self.__class__.__name__}} has no attribute '{{name}}' (raw_data not initialized)")
         
-        print_manager.dependency_management('{class_name} getattr helper!')
+        print_manager.dependency_management(f'{class_name} getattr helper!')
         available_attrs = list(self.raw_data.keys()) if self.raw_data else []
         print(f"'{{name}}' is not a recognized attribute, friend!")                
         print(f"Try one of these: {{', '.join(available_attrs)}}")
@@ -1041,7 +1054,7 @@ class {class_name}_class:
         if name in allowed_attrs or name in self.raw_data:
             super().__setattr__(name, value)
         else:
-            print_manager.dependency_management('{class_name} setattr helper!')
+            print_manager.dependency_management(f'{class_name} setattr helper!')
             print(f"'{{name}}' is not a recognized attribute, friend!")
             available_attrs = list(self.raw_data.keys()) if self.raw_data else []
             print(f"Try one of these: {{', '.join(available_attrs)}}")
@@ -1161,7 +1174,7 @@ class {class_name}_class:
 
 # Initialize the class with no data
 {class_name} = {class_name}_class(None)
-print_manager.dependency_management('initialized {class_name} class')
+print_manager.dependency_management(f'initialized {class_name} class')
 '''
 
     return class_code
@@ -1212,6 +1225,8 @@ class {class_name}_class:
     def calculate_variables(self, imported_data: Any) -> None: ...
     def set_ploptions(self) -> None: ...
     def restore_from_snapshot(self, snapshot_data: Any) -> None: ...
+    def __getattr__(self, name: str) -> Any: ...
+    def __setattr__(self, name: str, value: Any) -> None: ...
 
 # Instance
 {class_name}: {class_name}_class
@@ -1325,4 +1340,237 @@ def _find_files_matching_pattern(pattern: str, directory: str) -> List[str]:
     glob_pattern = os.path.join(directory, pattern)
     matching_files = glob.glob(glob_pattern)
     
-    return matching_files 
+    return matching_files
+
+
+# ============================================================================== 
+# Auto-Init Updater for Plotbot Custom Classes
+# 
+# This script automatically scans the custom_classes directory and updates
+# the main __init__.py file with the necessary imports and __all__ entries
+# to ensure type hinting works properly.
+# ==============================================================================
+
+#!/usr/bin/env python3
+"""
+Auto-Init Updater for Plotbot Custom Classes
+
+This script automatically scans the custom_classes directory and updates
+the main __init__.py file with the necessary imports and __all__ entries
+to ensure type hinting works properly.
+
+Run this after generating new CDF classes.
+"""
+
+from pathlib import Path
+
+def update_plotbot_init():
+    """Update the main plotbot __init__.py with custom class imports."""
+    
+    # Find the plotbot root directory
+    script_dir = Path(__file__).parent
+    plotbot_root = script_dir.parent if script_dir.name == 'scripts' else script_dir
+    init_file = plotbot_root / '__init__.py'
+    custom_classes_dir = plotbot_root / 'data_classes' / 'custom_classes'
+    
+    if not custom_classes_dir.exists():
+        print_manager.warning(f"❌ Custom classes directory not found: {custom_classes_dir}")
+        return False
+    
+    if not init_file.exists():
+        print_manager.error(f"❌ Init file not found: {init_file}")
+        return False
+    
+    # Scan for custom classes
+    custom_classes = []
+    for py_file in custom_classes_dir.glob("*.py"):
+        if py_file.name.startswith("__"):
+            continue
+        class_name = py_file.stem
+        custom_classes.append(class_name)
+    
+    if not custom_classes:
+        print_manager.status("✅ No custom classes found - nothing to update")
+        return True
+    
+    print_manager.debug(f"🔍 Found custom classes: {', '.join(custom_classes)}")
+    
+    # Read current init file
+    with open(init_file, 'r') as f:
+        content = f.read()
+    
+    # Scan for existing imports to see what's already there vs what's missing
+    existing_custom_imports = []
+    for class_name in custom_classes:
+        if f"from .data_classes.custom_classes.{class_name} import" in content:
+            existing_custom_imports.append(class_name)
+    
+    missing_imports = [cls for cls in custom_classes if cls not in existing_custom_imports]
+    
+    if existing_custom_imports:
+        print_manager.debug(f"✅ Already imported: {', '.join(existing_custom_imports)}")
+    if missing_imports:
+        print_manager.debug(f"🆕 Missing imports: {', '.join(missing_imports)}")
+    elif custom_classes:
+        print_manager.debug("✅ All custom classes already imported!")
+        # Still continue to ensure format is correct
+    
+    # Define markers for our auto-generated sections
+    import_marker_start = "# =============================================================================="
+    import_header = "# Custom Class Imports (auto-generated)"
+    import_tip = "# To add new classes: run cdf_to_plotbot('path/to/file.cdf') and this will be updated"
+    import_marker_end = "# =============================================================================="
+    
+    all_marker_start = "# --- AUTO-GENERATED CUSTOM CLASS __ALL__ ENTRIES ---"
+    all_marker_end = "# --- END AUTO-GENERATED __ALL__ ENTRIES ---"
+    
+    # Check which classes are already imported vs missing
+    already_imported = []
+    missing_classes = []
+    
+    for class_name in custom_classes:
+        import_pattern = f"from .data_classes.custom_classes.{class_name} import"
+        if import_pattern in content:
+            already_imported.append(class_name)
+        else:
+            missing_classes.append(class_name)
+    
+    print_manager.debug(f"📊 Import status:")
+    if already_imported:
+        print_manager.debug(f"   ✅ Already imported: {', '.join(already_imported)}")
+    if missing_classes:
+        print_manager.debug(f"   🆕 Need to add: {', '.join(missing_classes)}")
+    
+    # Generate import section
+    import_lines = [
+        import_marker_start,
+        import_header,
+        import_tip,
+        import_marker_start.replace("=", "-")  # Separator line
+    ]
+    
+    for class_name in sorted(custom_classes):
+        import_lines.append(f"from .data_classes.custom_classes.{class_name} import {class_name}, {class_name}_class")
+    
+    import_lines.extend([
+        import_marker_start.replace("=", "-"),  # Separator line
+        import_marker_end
+    ])
+    import_section = "\n".join(import_lines)
+    
+    # Generate __all__ entries
+    all_lines = [all_marker_start]
+    for class_name in sorted(custom_classes):
+        all_lines.append(f"    '{class_name}',  # Custom generated class")
+    all_lines.append(all_marker_end)
+    all_section = "\n".join(all_lines)
+    
+    # Update imports section
+    import_pattern = re.compile(
+        rf'{re.escape(import_marker_start)}.*?{re.escape(import_marker_end)}',
+        re.DOTALL
+    )
+    
+    if import_pattern.search(content):
+        # Replace existing section
+        content = import_pattern.sub(import_section, content)
+        print_manager.debug("📝 Updated existing custom imports section")
+    else:
+        # Find a good place to insert imports (after existing data class imports)
+        insert_point = content.find("from .data_classes.psp_orbit import")
+        if insert_point == -1:
+            insert_point = content.find("# --- Explicitly Register Global Instances")
+        
+        if insert_point != -1:
+            # Find the end of that line
+            line_end = content.find('\n', insert_point)
+            content = content[:line_end+1] + '\n' + import_section + '\n' + content[line_end+1:]
+            print_manager.debug("📝 Added new custom imports section")
+        else:
+            print_manager.warning("❌ Could not find good insertion point for imports")
+            return False
+    
+    # Update __all__ section
+    all_pattern = re.compile(
+        rf'{re.escape(all_marker_start)}.*?{re.escape(all_marker_end)}',
+        re.DOTALL
+    )
+    
+    if all_pattern.search(content):
+        # Replace existing section
+        content = all_pattern.sub(all_section, content)
+        print_manager.debug("📝 Updated existing __all__ entries")
+    else:
+        # Find __all__ list and check for existing entries to avoid duplicates
+        all_list_pattern = re.compile(r'(__all__\s*=\s*\[.*?)(])', re.DOTALL)
+        match = all_list_pattern.search(content)
+        
+        if match:
+            existing_all_content = match.group(1)
+            
+            # Check which custom classes are already in __all__ to avoid duplicates
+            already_present = []
+            missing_classes = []
+            
+            for class_name in custom_classes:
+                if f"'{class_name}'" in existing_all_content:
+                    already_present.append(class_name)
+                else:
+                    missing_classes.append(class_name)
+            
+            if already_present:
+                print_manager.debug(f"📋 Already in __all__: {', '.join(already_present)}")
+            
+            if missing_classes:
+                # Only add missing classes to avoid duplicates
+                missing_entries = [f"    '{cls}',  # Custom generated class" for cls in sorted(missing_classes)]
+                entries_to_add = '\n    ' + all_marker_start + '\n' + '\n'.join(missing_entries) + '\n    ' + all_marker_end
+                
+                new_all = existing_all_content + entries_to_add + '\n' + match.group(2)
+                content = content[:match.start()] + new_all + content[match.end():]
+                print_manager.debug(f"📝 Added {len(missing_classes)} missing custom classes to __all__ list")
+            else:
+                print_manager.debug("✅ All custom classes already present in __all__ list")
+        else:
+            print_manager.warning("❌ Could not find __all__ list to update")
+            return False
+    
+    # Write updated content
+    with open(init_file, 'w') as f:
+        f.write(content)
+    
+    print_manager.status(f"✅ Successfully updated {init_file}")
+    print_manager.status(f"🎉 Added {len(custom_classes)} custom classes to imports and __all__")
+    return True
+
+def validate_imports():
+    """Validate that all custom classes can be imported."""
+    script_dir = Path(__file__).parent
+    plotbot_root = script_dir.parent if script_dir.name == 'scripts' else script_dir
+    
+    # Change to plotbot parent directory for import testing
+    import sys
+    sys.path.insert(0, str(plotbot_root.parent))
+    
+    try:
+        import plotbot
+        custom_classes_dir = plotbot_root / 'data_classes' / 'custom_classes'
+        
+        success_count = 0
+        for py_file in custom_classes_dir.glob("*.py"):
+            if py_file.name.startswith("__"):
+                continue
+            
+            class_name = py_file.stem
+            if hasattr(plotbot, class_name):
+                print_manager.debug(f"✅ {class_name} - Import successful")
+                success_count += 1
+            else:
+                print_manager.warning(f"❌ {class_name} - Import failed")
+        
+        print_manager.status(f"🎯 Validation complete: {success_count} classes imported successfully")
+        return success_count > 0
+        
+    except Exception as e:
+        print_manager.error(f"❌ Validation failed: {e}")
+        return False 
