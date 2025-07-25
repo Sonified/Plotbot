@@ -721,7 +721,8 @@ class MultiplotOptions:
             self.__dict__['use_degrees_from_perihelion'] = value # Set the primary option first
             if value:
                 print_manager.status("Enabling degrees from perihelion axis.")
-                # Disable other specific positional x-axis modes
+                # Disable other specific positional x-axis modes including center_time mode
+                self.__dict__['use_degrees_from_center_time'] = False
                 self.__dict__['_x_axis_r_sun'] = False
                 self.__dict__['_x_axis_carrington_lon'] = False
                 self.__dict__['_x_axis_carrington_lat'] = False
@@ -749,6 +750,42 @@ class MultiplotOptions:
             print_manager.warning(f"Invalid degrees_from_perihelion_range format: {value}. Expected (min, max) tuple or None.")
             return
         self.__dict__['degrees_from_perihelion_range'] = value
+
+    @property
+    def use_degrees_from_center_time(self) -> bool:
+        """Whether to use degrees relative to center_time longitude for the x-axis (bypasses perihelion lookup)."""
+        return self.__dict__.get('use_degrees_from_center_time', False)
+
+    @use_degrees_from_center_time.setter
+    def use_degrees_from_center_time(self, value: bool):
+        """Set whether to use degrees from center_time for the x-axis."""
+        # Only proceed if the value is actually changing to avoid redundant operations
+        if value != self.__dict__.get('use_degrees_from_center_time', False):
+            self.__dict__['use_degrees_from_center_time'] = value # Set the primary option first
+            if value:
+                print_manager.status("Enabling degrees from center_time axis.")
+                # Disable other specific positional x-axis modes including perihelion mode
+                self.__dict__['use_degrees_from_perihelion'] = False
+                self.__dict__['_x_axis_r_sun'] = False
+                self.__dict__['_x_axis_carrington_lon'] = False
+                self.__dict__['_x_axis_carrington_lat'] = False
+                
+                # If enabling degrees, print a message if relative time is also active.
+                if self.__dict__.get('_use_relative_time', False):
+                    print_manager.status("Note: 'use_relative_time' is also active with 'degrees_from_center_time'.")
+
+    @property
+    def degrees_from_center_time_range(self) -> Optional[Tuple[float, float]]:
+        """Fixed range for the 'degrees from center_time' x-axis (min_deg, max_deg). None for auto."""
+        return self.__dict__.get('degrees_from_center_time_range', None)
+
+    @degrees_from_center_time_range.setter
+    def degrees_from_center_time_range(self, value: Optional[Tuple[float, float]]):
+        """Set the fixed range for the 'degrees from center_time' x-axis."""
+        if value is not None and not (isinstance(value, (tuple, list)) and len(value) == 2):
+            print_manager.warning(f"Invalid degrees_from_center_time_range format: {value}. Expected (min, max) tuple or None.")
+            return
+        self.__dict__['degrees_from_center_time_range'] = value
 
     @property
     def degrees_from_perihelion_tick_step(self) -> Optional[float]:

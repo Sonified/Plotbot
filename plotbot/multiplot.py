@@ -200,6 +200,16 @@ def multiplot(plot_list, **kwargs):
                     options.x_axis_r_sun = False
                     options.x_axis_carrington_lat = False
                     # options.use_relative_time = False # Explicitly disable relative time - REMOVED TO ALLOW USER CONTROL
+                elif getattr(options, 'use_degrees_from_center_time', False):
+                    print_manager.debug("--> Mode Determination: use_degrees_from_center_time is True.")
+                    data_type = 'degrees_from_center_time' # Use a distinct type identifier
+                    axis_label = "Degrees from Center Time (°)"
+                    units = "°"
+                    # Ensure conflicting modes are off (setters should handle this, but verify)
+                    options.x_axis_carrington_lon = False
+                    options.x_axis_r_sun = False
+                    options.x_axis_carrington_lat = False
+                    # options.use_relative_time = False # Explicitly disable relative time - REMOVED TO ALLOW USER CONTROL
                 elif options.x_axis_carrington_lon:
                     print_manager.debug("--> Mode Determination: x_axis_carrington_lon is True.")
                     data_type = 'carrington_lon'
@@ -511,13 +521,16 @@ def multiplot(plot_list, **kwargs):
         print_manager.debug(f"Panel {i+1} - HAM feature status: hamify={options.hamify}, ham_var={options.ham_var is not None}")
         # center_dt = pd.Timestamp(center_time) # Moved up
 
-        # <<< NEW: Get perihelion time and determine if this panel should use degrees >>>
+        # <<< NEW: Get perihelion/center time and determine if this panel should use degrees >>>
+        reference_time_str = None  # Will store either perihelion time or center time
+        
         if using_positional_axis and getattr(options, 'use_degrees_from_perihelion', False):
             try:
                 # <<< ADD DEBUG PRINT: Show center_dt BEFORE lookup >>>
                 print_manager.debug(f"[DEBUG Perihelion Lookup - Panel {i+1}] Center Datetime for Lookup: {center_dt}")
                 
                 perihelion_time_str = get_perihelion_time(center_dt)
+                reference_time_str = perihelion_time_str
 
                 # <<< ADD DEBUG PRINT: Show result AFTER lookup >>>
                 print_manager.debug(f"[DEBUG Perihelion Lookup - Panel {i+1}] Returned Perihelion Time Str: {perihelion_time_str}")
@@ -525,27 +538,22 @@ def multiplot(plot_list, **kwargs):
                 if perihelion_time_str:
                     print_manager.debug(f"Panel {i+1}: Found perihelion time: {perihelion_time_str}")
                     current_panel_use_degrees = True
-                    # --- <CURSOR_INSERT> ---
-                    # <<< DEBUG: Confirm perihelion time found >>>
-                    # print_manager.debug(f"DEBUG_TRACE: Panel {i+1} FOUND perihelion: {perihelion_time_str}, setting current_panel_use_degrees=True")
-                    # <<< END DEBUG >>>
-                    # --- </CURSOR_INSERT> ---
                 else:
                     print_manager.status(f"Panel {i+1}: Perihelion time not found for {center_dt}. Cannot use degrees from perihelion for this panel.")
                     current_panel_use_degrees = False
-                    # --- <CURSOR_INSERT> ---
-                    # <<< DEBUG: Confirm perihelion time NOT found >>>
-                    # print_manager.debug(f"DEBUG_TRACE: Panel {i+1} DID NOT FIND perihelion for {center_dt}, setting current_panel_use_degrees=False")
-                    # <<< END DEBUG >>>
-                    # --- </CURSOR_INSERT> ---
             except Exception as e:
                 print_manager.error(f"Panel {i+1}: Error getting perihelion time: {e}")
                 current_panel_use_degrees = False
-                # --- <CURSOR_INSERT> ---
-                # <<< DEBUG: Confirm EXCEPTION during perihelion lookup >>>
-                # print_manager.debug(f"DEBUG_TRACE: Panel {i+1} EXCEPTION getting perihelion: {e}, setting current_panel_use_degrees=False")
-                # <<< END DEBUG >>>
-                # --- </CURSOR_INSERT> ---
+                
+        elif using_positional_axis and getattr(options, 'use_degrees_from_center_time', False):
+            try:
+                # For center_time mode, use the center_time directly as the reference
+                reference_time_str = center_dt.strftime('%Y/%m/%d %H:%M:%S.%f')
+                print_manager.debug(f"Panel {i+1}: Using center_time as reference: {reference_time_str}")
+                current_panel_use_degrees = True
+            except Exception as e:
+                print_manager.error(f"Panel {i+1}: Error formatting center_time: {e}")
+                current_panel_use_degrees = False
         # <<< END NEW >>>
 
         # Get encounter number automatically
@@ -864,26 +872,26 @@ def multiplot(plot_list, **kwargs):
                             x_data = time_slice # Default to time
                             valid_lon_mask = None # Initialize mask
 
-                            # --- Perihelion Degree Calculation ---
-                            if current_panel_use_degrees and perihelion_time_str and positional_mapper:
-                                print_manager.debug(f"Panel {i+1} (Time Series): Calculating Degrees from Perihelion.")
+                            # --- Reference Time Degree Calculation ---
+                            if current_panel_use_degrees and reference_time_str and positional_mapper:
+                                mode_name = "Perihelion" if getattr(options, 'use_degrees_from_perihelion', False) else "Center Time"
+                                print_manager.debug(f"Panel {i+1} (Time Series): Calculating Degrees from {mode_name}.")
                                 try:
                                     # 1. Map time slice to Carrington longitude
-                                    # <<< MOVE PERIHELION LON CALCULATION *INSIDE* THIS BLOCK >>>
                                     carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon', unwrap_angles=True)
                                     
-                                    # 2. Map *panel-specific* perihelion time to its longitude
-                                    perihelion_dt = datetime.strptime(perihelion_time_str, '%Y/%m/%d %H:%M:%S.%f')
-                                    perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
-                                    perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon', unwrap_angles=True)
+                                    # 2. Map reference time to its longitude
+                                    reference_dt = datetime.strptime(reference_time_str, '%Y/%m/%d %H:%M:%S.%f')
+                                    reference_time_np = np.array([np.datetime64(reference_dt)])
+                                    reference_lon_arr = positional_mapper.map_to_position(reference_time_np, 'carrington_lon', unwrap_angles=True)
                                     
-                                    if carrington_lons_slice is not None and perihelion_lon_arr is not None and len(perihelion_lon_arr) > 0:
-                                        perihelion_lon_val = perihelion_lon_arr[0]
+                                    if carrington_lons_slice is not None and reference_lon_arr is not None and len(reference_lon_arr) > 0:
+                                        reference_lon_val = reference_lon_arr[0]
                                         
                                         # <<< Existing Debug Prints Here >>>
-                                        print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Plot Type: Time Series")
-                                        print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Perihelion Time Str: {perihelion_time_str}")
-                                        print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Perihelion Lon Value Used: {perihelion_lon_val:.4f}")
+                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Plot Type: Time Series")
+                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Reference Time Str: {reference_time_str}")
+                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Reference Lon Value Used: {reference_lon_val:.4f}")
 
                                         # Create mask for valid longitude values in the slice
                                         valid_lon_mask = ~np.isnan(carrington_lons_slice) # Assign mask here
@@ -895,7 +903,7 @@ def multiplot(plot_list, **kwargs):
                                             data_slice_filtered_lon = data_slice[valid_lon_mask]
 
                                             # 3. Calculate relative degrees (raw difference of unwrapped)
-                                            relative_degrees = carrington_lons_slice_valid - perihelion_lon_val
+                                            relative_degrees = carrington_lons_slice_valid - reference_lon_val
 
                                             # 4. CRITICAL FIX: Wrap the difference to the [-180, 180] range
                                             relative_degrees_wrapped = (relative_degrees + 180) % 360 - 180
@@ -1023,26 +1031,26 @@ def multiplot(plot_list, **kwargs):
                             data_slice = var.data[indices]
                             x_data = time_slice # Default to time
 
-                            # --- Perihelion Degree Calculation (Scatter) --- 
-                            if current_panel_use_degrees and perihelion_time_str and positional_mapper:
-                                print_manager.debug(f"Panel {i+1} (Scatter): Calculating Degrees from Perihelion.")
+                            # --- Reference Time Degree Calculation (Scatter) --- 
+                            if current_panel_use_degrees and reference_time_str and positional_mapper:
+                                mode_name = "Perihelion" if getattr(options, 'use_degrees_from_perihelion', False) else "Center Time"
+                                print_manager.debug(f"Panel {i+1} (Scatter): Calculating Degrees from {mode_name}.")
                                 try:
                                     # 1. Map time slice to Carrington longitude
-                                    # <<< MOVE PERIHELION LON CALCULATION *INSIDE* THIS BLOCK >>>
                                     carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon', unwrap_angles=True)
                                     
-                                    # 2. Map *panel-specific* perihelion time to its longitude
-                                    perihelion_dt = datetime.strptime(perihelion_time_str, '%Y/%m/%d %H:%M:%S.%f')
-                                    perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
-                                    perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon', unwrap_angles=True)
+                                    # 2. Map reference time to its longitude
+                                    reference_dt = datetime.strptime(reference_time_str, '%Y/%m/%d %H:%M:%S.%f')
+                                    reference_time_np = np.array([np.datetime64(reference_dt)])
+                                    reference_lon_arr = positional_mapper.map_to_position(reference_time_np, 'carrington_lon', unwrap_angles=True)
                                     
-                                    if carrington_lons_slice is not None and perihelion_lon_arr is not None and len(perihelion_lon_arr) > 0:
-                                        perihelion_lon_val = perihelion_lon_arr[0]
+                                    if carrington_lons_slice is not None and reference_lon_arr is not None and len(reference_lon_arr) > 0:
+                                        reference_lon_val = reference_lon_arr[0]
 
                                         # <<< Existing Debug Prints Here >>>
-                                        print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Plot Type: Scatter")
-                                        print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Perihelion Time Str: {perihelion_time_str}")
-                                        print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Perihelion Lon Value Used: {perihelion_lon_val:.4f}")
+                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Plot Type: Scatter")
+                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Reference Time Str: {reference_time_str}")
+                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Reference Lon Value Used: {reference_lon_val:.4f}")
 
                                         # Create mask for valid longitude values in the slice
                                         valid_lon_mask = ~np.isnan(carrington_lons_slice)
@@ -1054,7 +1062,7 @@ def multiplot(plot_list, **kwargs):
                                             data_slice_filtered_lon = data_slice[valid_lon_mask]
                                             
                                             # 3. Calculate relative degrees (raw difference of unwrapped)
-                                            relative_degrees = carrington_lons_slice_valid - perihelion_lon_val
+                                            relative_degrees = carrington_lons_slice_valid - reference_lon_val
 
                                             # 4. CRITICAL FIX: Wrap the difference to the [-180, 180] range
                                             relative_degrees_wrapped = (relative_degrees + 180) % 360 - 180
@@ -1146,26 +1154,26 @@ def multiplot(plot_list, **kwargs):
                             # y_spectral_axis remains the full energy/frequency axis
                             x_data = time_slice # Default to time
 
-                            # --- Perihelion Degree Calculation (Spectral) --- 
-                            if current_panel_use_degrees and perihelion_time_str and positional_mapper:
-                                print_manager.debug(f"Panel {i+1} (Spectral): Calculating Degrees from Perihelion.")
+                            # --- Reference Time Degree Calculation (Spectral) --- 
+                            if current_panel_use_degrees and reference_time_str and positional_mapper:
+                                mode_name = "Perihelion" if getattr(options, 'use_degrees_from_perihelion', False) else "Center Time"
+                                print_manager.debug(f"Panel {i+1} (Spectral): Calculating Degrees from {mode_name}.")
                                 try:
                                     # 1. Map time slice to Carrington longitude
-                                    # <<< MOVE PERIHELION LON CALCULATION *INSIDE* THIS BLOCK >>>
                                     carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon', unwrap_angles=True)
                                     
-                                    # 2. Map *panel-specific* perihelion time to its longitude
-                                    perihelion_dt = datetime.strptime(perihelion_time_str, '%Y/%m/%d %H:%M:%S.%f')
-                                    perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
-                                    perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon', unwrap_angles=True)
+                                    # 2. Map reference time to its longitude
+                                    reference_dt = datetime.strptime(reference_time_str, '%Y/%m/%d %H:%M:%S.%f')
+                                    reference_time_np = np.array([np.datetime64(reference_dt)])
+                                    reference_lon_arr = positional_mapper.map_to_position(reference_time_np, 'carrington_lon', unwrap_angles=True)
                                     
-                                    if carrington_lons_slice is not None and perihelion_lon_arr is not None and len(perihelion_lon_arr) > 0:
-                                        perihelion_lon_val = perihelion_lon_arr[0]
+                                    if carrington_lons_slice is not None and reference_lon_arr is not None and len(reference_lon_arr) > 0:
+                                        reference_lon_val = reference_lon_arr[0]
 
                                         # <<< Existing Debug Prints Here >>>
-                                        print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Plot Type: Spectral")
-                                        print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Perihelion Time Str: {perihelion_time_str}")
-                                        print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Perihelion Lon Value Used: {perihelion_lon_val:.4f}")
+                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Plot Type: Spectral")
+                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Reference Time Str: {reference_time_str}")
+                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Reference Lon Value Used: {reference_lon_val:.4f}")
 
                                         # Create mask for valid longitude values in the slice
                                         valid_lon_mask = ~np.isnan(carrington_lons_slice)
@@ -1178,7 +1186,7 @@ def multiplot(plot_list, **kwargs):
                                             data_slice_filtered_lon = data_slice[valid_lon_mask, :]
                                             
                                             # 3. Calculate relative degrees
-                                            relative_degrees = carrington_lons_slice_valid - perihelion_lon_val
+                                            relative_degrees = carrington_lons_slice_valid - reference_lon_val
 
                                             # 5. Set x_data & filtered data_slice
                                             x_data = relative_degrees

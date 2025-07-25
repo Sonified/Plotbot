@@ -650,4 +650,42 @@ After `cdf_to_plotbot()` completes, classes are:
 **Impact**: Custom CDF classes now generate with **clean, properly formatted code** that matches the quality of built-in plotbot classes.
 
 **Version for this update**: v2.90
-**Commit Message**: "v2.90 FIX: Auto-generated CDF class indentation and f-string formatting issues resolved" 
+**Commit Message**: "v2.90 FIX: Auto-generated CDF class indentation and f-string formatting issues resolved"
+**Git Hash**: 270b230
+
+---
+
+## 🛑 VERSION 1.5 Implementation: Rollback & Lessons Learned
+
+### Issue Encountered
+During VERSION 1.5 implementation (pattern-based multi-file CDF loading), made too many complex changes simultaneously without proper testing methodology.
+
+### Problems Identified
+1. **Scope Creep**: Attempted to implement entire VERSION 1.5 system in single session
+2. **Insufficient Testing**: Made changes without validating each step 
+3. **Complex Modifications**: Modified core `data_import.py` logic without full understanding
+4. **Broke Existing Functionality**: Changes potentially impacted working VERSION 1 system
+
+### Resolution
+- **Rollback Applied**: Restored `plotbot/data_import.py` from git hash `270b230`
+- **Test Files Removed**: Cleaned up incomplete VERSION 1.5 test files
+- **System Verified**: Original single-file CDF functionality confirmed working
+
+### Lessons Learned for Future Development
+1. **Incremental Development**: Make small, testable changes one at a time
+2. **Test-Driven Approach**: Validate each change before proceeding to next
+3. **Understand Before Modify**: Fully comprehend existing code before making changes
+4. **Backup Working State**: Always ensure easy rollback to known good state
+5. **Focused Sessions**: Complete one specific feature per development session
+
+### Path Forward for VERSION 1.5
+**Next Session Strategy:**
+1. **Start with Analysis**: Thoroughly understand current single-file data loading flow
+2. **Minimal Test Case**: Create simple test with existing CDF files
+3. **Incremental Enhancement**: Add pattern-based file discovery as isolated feature
+4. **Validate at Each Step**: Ensure no regression in existing functionality
+5. **Document Design Decisions**: Record architectural choices and trade-offs
+
+**STATUS**: VERSION 1.5 development postponed for methodical approach
+**CURRENT STATE**: VERSION 1 CDF integration fully functional and stable
+**NEXT SESSION**: Systematic analysis and incremental VERSION 1.5 implementation 

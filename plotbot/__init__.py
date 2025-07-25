@@ -61,7 +61,6 @@ from .data_classes.custom_classes.psp_waves_auto import psp_waves_auto, psp_wave
 from .data_classes.custom_classes.psp_waves_real_test import psp_waves_real_test, psp_waves_real_test_class
 from .data_classes.custom_classes.psp_waves_spectral import psp_waves_spectral, psp_waves_spectral_class
 from .data_classes.custom_classes.psp_waves_timeseries import psp_waves_timeseries, psp_waves_timeseries_class
-from .data_classes.custom_classes.test_indentation_fix import test_indentation_fix, test_indentation_fix_class
 # ------------------------------------------------------------------------------
 # ==============================================================================
 
@@ -370,18 +369,6 @@ __all__ = [
     'psp_waves_spectral',  # Custom generated class
     'psp_waves_timeseries',  # Custom generated class
     # --- END AUTO-GENERATED __all__ ENTRIES ---
-
-    # --- AUTO-GENERATED CUSTOM CLASS __ALL__ ENTRIES ---
-    'demo_spectral_waves',  # Custom generated class
-    'demo_wave_power',  # Custom generated class
-    'psp_simple_test',  # Custom generated class
-    'psp_spectral_waves',  # Custom generated class
-    'psp_waves_auto',  # Custom generated class
-    'psp_waves_real_test',  # Custom generated class
-    'psp_waves_spectral',  # Custom generated class
-    'psp_waves_timeseries',  # Custom generated class
-    'test_indentation_fix',  # Custom generated class
-# --- END AUTO-GENERATED __ALL__ ENTRIES ---
 ]
 
 # Colors for printing
