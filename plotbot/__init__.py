@@ -378,10 +378,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_23_v2.90"
+__version__ = "2025_07_25_v2.91"
 
 # Commit message for this version
-__commit_message__ = "v2.90 FIX: Auto-generated CDF class indentation and f-string formatting issues resolved"
+__commit_message__ = "v2.91 FIX: Restored core data loading functionality by fixing corrupted data_types.py and isolating test time ranges."
 
 # Print the version and commit message
 print(f"""

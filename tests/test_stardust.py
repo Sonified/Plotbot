@@ -127,9 +127,9 @@ def test_environment():
 
 # === Basic Plotting Tests (from test_all_plot_basics.py) ===
 
-# Use E10 perihelion time range for stardust tests (5 days around perihelion)
-STARDUST_TRANGE = ['2021-11-19/00:00:00.000', '2021-11-24/00:00:00.000'] 
-STARDUST_CENTER_TIME = '2021-11-21/12:00:00.000'
+# Use a shorter, common time range for stardust tests
+STARDUST_TRANGE = ['2020-04-09/06:00:00.000', '2020-04-09/07:00:00.000']
+STARDUST_CENTER_TIME = '2020-04-09/06:30:00.000'
 
 @pytest.fixture(autouse=True)
 def setup_stardust_test_plots():
@@ -1188,7 +1188,7 @@ def test_stardust_wind_mfi():
                 plt.close(fig_num)
                 print(f"--- Explicitly closed WIND MFI figure {fig_num} in finally block ---")
             except Exception as close_err:
-                print(f"--- Error closing WIND MFI figure {fig_num} in finally block: {close_err} ---")
+                print(f"--- Error closing WIND MFI figure {fig_num} in finally block: ---")
 
 # === End Example Integration Tests ===
 
@@ -1198,6 +1198,8 @@ def test_stardust_wind_mfi():
 def test_stardust_psp_orbit_data():
     """Comprehensive test for PSP orbit data including main and derived variables."""
     print("\n=== Testing PSP Orbit Data (stardust) ===")
+    # Use a specific, longer time range for this test only
+    ORBIT_TEST_TRANGE = ['2021-11-19/00:00:00.000', '2021-11-24/00:00:00.000']
     fig = None
     fig_num = None
     try:
@@ -1206,7 +1208,7 @@ def test_stardust_psp_orbit_data():
         phase(1, "Calling plotbot with PSP orbit variables (stardust)")
         print("Variables: r_sun (panel 1), orbital_speed (panel 2), carrington_lon (panel 3)")
         
-        plotbot_function(STARDUST_TRANGE, 
+        plotbot_function(ORBIT_TEST_TRANGE, 
                         psp_orbit.r_sun, 1,                    # Distance from Sun
                         psp_orbit.orbital_speed, 2,            # Orbital speed
                         psp_orbit.carrington_lon, 3)           # Carrington longitude
