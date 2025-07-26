@@ -48,7 +48,8 @@ class proton_class:
         object.__setattr__(self, 'theta_vals', None)
         object.__setattr__(self, 'phi_vals', None)
         object.__setattr__(self, 'data_type', 'spi_sf00_l3_mom')
-        object.__setattr__(self, '_current_operation_trange', None)
+        object.__setattr__(self, '_current_operation_trange', None) # For dependency tracking (all available data)
+        object.__setattr__(self, '_original_requested_trange', None) # For .data property clipping (user's last request)
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
@@ -69,7 +70,9 @@ class proton_class:
         if the class stored itself as an attribute and tried to reference itself directly. The code breaks without the cubby!"""
         if original_requested_trange is not None:
             object.__setattr__(self, '_current_operation_trange', original_requested_trange)
+            object.__setattr__(self, '_original_requested_trange', original_requested_trange)
             print_manager.dependency_management(f"[{self.__class__.__name__}] Updated _current_operation_trange to: {self._current_operation_trange}")
+            print_manager.dependency_management(f"[{self.__class__.__name__}] Updated _original_requested_trange to: {self._original_requested_trange}")
 
         if imported_data is None:                                                # Exit if no new data
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")

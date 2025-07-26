@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import cdflib
 from datetime import datetime, timedelta, timezone
+from typing import Optional, List
 import logging
 
 # Define constants (moved from calculation file)
@@ -90,6 +91,7 @@ class proton_fits_class:
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
         object.__setattr__(self, 'data_type', 'psp_fld_l3_sf0_fit') # Explicitly set data_type
+        object.__setattr__(self, '_current_operation_trange', None)
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
@@ -102,11 +104,14 @@ class proton_fits_class:
             self.set_ploptions()
             print_manager.status("Successfully calculated proton fits variables.")
 
-    def update(self, imported_data): #This is function is the exact same across all classes :)
+    def update(self, imported_data, original_requested_trange: Optional[List[str]] = None): #This is function is the exact same across all classes :)
         """Method to update class with new data.
         NOTE: This function updates the class with newly imported data. We need to use the data_cubby
         as a registry to store class instances in order to avoid circular references that would occur
         if the class stored itself as an attribute and tried to reference itself directly. The code breaks without the cubby!"""
+        if original_requested_trange is not None:
+            object.__setattr__(self, '_current_operation_trange', original_requested_trange)
+            print_manager.dependency_management(f"[{self.__class__.__name__}] Updated _current_operation_trange to: {self._current_operation_trange}")
         if imported_data is None:                                                # Exit if no new data
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
             return

@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import cdflib
 from datetime import datetime, timedelta, timezone
+from typing import Optional, List
 import logging
 
 # Define constants if needed (e.g., mass, physical constants for future calculations)
@@ -111,6 +112,7 @@ class alpha_fits_class: # Renamed class
         object.__setattr__(self, 'time', None) 
         object.__setattr__(self, 'datetime_array', None)
         object.__setattr__(self, 'data_type', 'psp_fld_l3_sf1_fit') # Explicitly set data_type
+        object.__setattr__(self, '_current_operation_trange', None)
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None
@@ -133,8 +135,11 @@ class alpha_fits_class: # Renamed class
         # Stash the instance in data_cubby
         data_cubby.stash(self, class_name='alpha_fits') # Use unique class name
 
-    def update(self, imported_data):
+    def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
         """Method to update class with new data."""
+        if original_requested_trange is not None:
+            object.__setattr__(self, '_current_operation_trange', original_requested_trange)
+            print_manager.dependency_management(f"[{self.__class__.__name__}] Updated _current_operation_trange to: {self._current_operation_trange}")
         if imported_data is None:
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
             return

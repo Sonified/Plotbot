@@ -4,16 +4,8 @@
 # Import and configure matplotlib first to ensure consistent styling
 import matplotlib.pyplot as mpl_plt
 import numpy as np
-
-# Set global font settings for consistent plotting appearance
-mpl_plt.rcParams.update({
-    'font.family': 'sans-serif',
-    'font.sans-serif': ['Arial', 'Helvetica', 'sans-serif'],
-    'axes.labelweight': 'normal',
-    'font.weight': 'normal',
-    'mathtext.fontset': 'stix',
-    'mathtext.default': 'regular'
-})
+from pathlib import Path
+import importlib
 
 # Import core components
 from .print_manager import print_manager
@@ -144,10 +136,6 @@ print_manager.datacubby("Registered global data instances with DataCubby.")
 # Import custom variables system
 from .data_classes.custom_variables import custom_variable, CustomVariablesContainer
 
-# Import test_pilot for testing - safely importing the test functions
-# (test_pilot handles the fallback if pytest is not available)
-#from .test_pilot import run_missions, phase, system_check
-
 # Add a method to debug custom variables
 def debug_custom_variables():
     """Print information about all custom variables."""
@@ -190,10 +178,6 @@ def debug_custom_variables():
 
 # Create custom variables instance
 custom_vars = CustomVariablesContainer()
-
-# Debug custom variables initially
-print_manager.variable_testing("Initial custom variables state:")
-debug_custom_variables()
 
 # Import audification module
 from .audifier import audifier
@@ -311,7 +295,7 @@ CLASS_NAME_MAPPING = {
     },
 }
 
-# Specify what gets imported with `from plotbot import *`
+# --- Dynamically build __all__ from custom classes ---
 __all__ = [
     'plt',           # Now provides our enhanced plt with options support
     'np',            # Make numpy directly available
@@ -371,25 +355,33 @@ __all__ = [
     # --- END AUTO-GENERATED __all__ ENTRIES ---
 ]
 
+custom_classes_dir = Path(__file__).parent / "data_classes" / "custom_classes"
+if custom_classes_dir.exists():
+    for py_file in custom_classes_dir.glob("*.py"):
+        if py_file.name.startswith("__"):
+            continue
+        module_name = py_file.stem
+        try:
+            module = importlib.import_module(f".data_classes.custom_classes.{module_name}", package='plotbot')
+            if hasattr(module, module_name):
+                globals()[module_name] = getattr(module, module_name)
+                if module_name not in __all__:
+                    __all__.append(module_name)
+        except ImportError as e:
+            # This can happen if a dependency is missing. We should not crash on import.
+            print(f"Plotbot warning: Could not auto-import custom class '{module_name}': {e}")
+
+
 # Colors for printing
 BLUE = '\033[94m'
 RESET = '\033[0m'
 
 #------------------------------------------------------------------------------
-# Version, Date, and Welcome Message for Plotbot
+# Version, Date, and Commit Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_25_v2.91"
+__version__ = "2025_07_26_v2.92"
+__commit_message__ = "v2.92 ATTEMPT: fix of class.data using original_requested_trange"
 
-# Commit message for this version
-__commit_message__ = "v2.91 FIX: Restored core data loading functionality by fixing corrupted data_types.py and isolating test time ranges."
-
-# Print the version and commit message
-print(f"""
-🤖 Plotbot Initialized
-📈📉 Multiplot Initialized
-   Version: {__version__}
-   Commit: {__commit_message__}
-""")
-
-# Note: Previous logic had this at the end of plotbot_main.py, moved here 
-#       to ensure it prints after all imports in __init__ are processed.
+# Initialize immediately on import (maintains current UX)
+from .initialization import initialize
+initialize()

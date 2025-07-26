@@ -629,6 +629,7 @@ class data_cubby:
             bool: True if the update was successful or deemed unnecessary, False otherwise.
         """
         pm = print_manager # Local alias
+        pm.status(f"🔍 [CUBBY_DEBUG] Received original_requested_trange: {original_requested_trange}")
         pm.dependency_management(f"[CUBBY_UPDATE_ENTRY] Received call for '{data_type_str}'. Original trange: '{original_requested_trange}', type(original_requested_trange[0])='{type(original_requested_trange[0]) if original_requested_trange and len(original_requested_trange)>0 else 'N/A'}'")
 
         timer_entry = timer.perf_counter()
@@ -769,6 +770,11 @@ class data_cubby:
                     dt_len_after_instance_update = len(global_instance.datetime_array) if hasattr(global_instance, 'datetime_array') and global_instance.datetime_array is not None else "None_or_NoAttr"
                     pm.dependency_management(f"[CUBBY_UPDATE_DEBUG H2] Instance (ID: {id(global_instance)}) AFTER global_instance.update(). datetime_array len: {dt_len_after_instance_update}")
                     
+                    # 🔧 FIX: Update ONLY original requested trange for plot clipping (NOT current operation trange)
+                    if original_requested_trange is not None:
+                        object.__setattr__(global_instance, '_original_requested_trange', original_requested_trange)
+                        pm.status(f"🔧 [DEBUG] Set original_requested_trange to {original_requested_trange} for {data_type_str}")
+                    
                     pm.datacubby("✅ Instance updated successfully via .update() method.")
                     pm.datacubby("=== End Global Instance Update ===\n")
                     return True
@@ -872,6 +878,13 @@ class data_cubby:
                     global_instance.raw_data = merged_raw_data
                     # STRATEGIC PRINT F
                     pm.dependency_management(f"[CUBBY_UPDATE_DEBUG F] Instance (ID: {id(global_instance)}) AFTER assigning merged_times/raw_data. merged_times len: {len(merged_times)}, global_instance.datetime_array len: {len(global_instance.datetime_array) if global_instance.datetime_array is not None else 'None'}")
+
+                    # 🔧 FIX: Update _current_operation_trange for merge operations
+                    if original_requested_trange is not None:
+                        object.__setattr__(global_instance, '_current_operation_trange', original_requested_trange)
+                        pm.status(f"🔍 [CUBBY_MERGE] Updated _current_operation_trange to: {global_instance._current_operation_trange}")
+                        object.__setattr__(global_instance, '_original_requested_trange', original_requested_trange)
+                        pm.status(f"🔍 [CUBBY_MERGE] Preserved _original_requested_trange: {original_requested_trange}")
 
                     # STEP 2: Reconstruct .time from .datetime_array (CRITICAL)
                     pm.dependency_management(f"[CUBBY_UPDATE_DEBUG] PRE-TIME-RECONSTRUCTION:")

@@ -49,7 +49,7 @@ class epad_strahl_class:
         as a registry to store class instances in order to avoid circular references that would occur
         if the class stored itself as an attribute and tried to reference itself directly. The code breaks without the cubby!"""
         if original_requested_trange is not None:
-            self._current_operation_trange = original_requested_trange
+            object.__setattr__(self, '_current_operation_trange', original_requested_trange)
             print_manager.dependency_management(f"[{self.__class__.__name__}] Updated _current_operation_trange to: {self._current_operation_trange}")
         
         if imported_data is None:                                                # Exit if no new data
@@ -343,7 +343,7 @@ class epad_strahl_high_res_class:
         as a registry to store class instances in order to avoid circular references that would occur
         if the class stored itself as an attribute and tried to reference itself directly. The code breaks without the cubby!"""
         if original_requested_trange is not None:
-            self._current_operation_trange = original_requested_trange
+            object.__setattr__(self, '_current_operation_trange', original_requested_trange)
             print_manager.dependency_management(f"[{self.__class__.__name__}] Updated _current_operation_trange to: {self._current_operation_trange}")
         
         if imported_data is None:                                                # Exit if no new data

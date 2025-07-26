@@ -35,7 +35,8 @@ class mag_rtn_4sa_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
-        object.__setattr__(self, '_current_operation_trange', None) # Initialize new attribute
+        object.__setattr__(self, '_current_operation_trange', None) # For dependency tracking (all available data)
+        object.__setattr__(self, '_original_requested_trange', None) # For .data property clipping (user's last request)
 
         print_manager.dependency_management(f"*** MAG_CLASS_INIT (mag_rtn_4sa_class) ID:{id(self)}: imported_data ID: {id(imported_data) if imported_data is not None else 'None'}. ***")
         if imported_data is None:
@@ -50,11 +51,15 @@ class mag_rtn_4sa_class:
             print_manager.status("Successfully calculated mag rtn 4sa variables.")
     
     def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
-        # Store the passed trange
+        # Store the passed trange for both dependency tracking and data clipping
+        print_manager.status(f"🔍 [MAG_DEBUG] Received original_requested_trange: {original_requested_trange}")
         object.__setattr__(self, '_current_operation_trange', original_requested_trange)
+        object.__setattr__(self, '_original_requested_trange', original_requested_trange)
         print_manager.processing(f"PSP_MAG_RTN_4SA_CLASS UPDATE: self._current_operation_trange SET TO: {self._current_operation_trange} (original_requested_trange was: {original_requested_trange})") # ADDED FOR DEBUG
+        print_manager.processing(f"PSP_MAG_RTN_4SA_CLASS UPDATE: self._original_requested_trange SET TO: {self._original_requested_trange}")
         if original_requested_trange:
             print_manager.dependency_management(f"[MAG_CLASS_UPDATE] Stored _current_operation_trange: {self._current_operation_trange}")
+            print_manager.dependency_management(f"[MAG_CLASS_UPDATE] Stored _original_requested_trange: {self._original_requested_trange}")
         else:
             print_manager.dependency_management(f"[MAG_CLASS_UPDATE] original_requested_trange not provided or None.")
 

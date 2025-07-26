@@ -450,6 +450,7 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             # Tell DataCubby to handle the update/merge for the global instance
             # Use canonical key for cubby update
             print_manager.status(f"📥 Requesting DataCubby to update/merge global instance for {cubby_key}...")
+            print_manager.status(f"🔍 [GET_DATA_DEBUG] About to call data_cubby.update_global_instance with trange: {trange}")
             print_manager.dependency_management(f"[GET_DATA PRE-CUBBY CALL] Passing to DataCubby: cubby_key='{cubby_key}', original_requested_trange='{trange}', type(original_requested_trange[0])='{type(trange[0]) if trange and len(trange)>0 else 'N/A'}'")
             start_time = timer.perf_counter()
             update_success = data_cubby.update_global_instance(
@@ -475,7 +476,13 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             # --- End Import/Update Data --- 
 
         else: # Calculation NOT needed
-             # Use canonical key in status message
+            # Still update original requested trange even when using cached data
+            class_instance = data_cubby.grab(cubby_key)
+            if class_instance and trange:
+                object.__setattr__(class_instance, '_original_requested_trange', trange)
+                print_manager.status(f"🔧 [CACHED] Updated _original_requested_trange to {trange} for {cubby_key}")
+            
+            # Use canonical key in status message
             print_manager.status(f"📤 Using existing {data_type} data, calculation/import not needed.")
         
         end_step(step_key, step_start, {"calculation_needed": calculation_needed})

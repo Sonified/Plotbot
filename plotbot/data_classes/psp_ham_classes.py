@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import logging
 import cdflib # Needed for TT2000 conversion in calculate_variables
+from typing import Optional, List
 
 # Import our custom managers
 from plotbot.print_manager import print_manager
@@ -57,6 +58,7 @@ class ham_class:
         object.__setattr__(self, 'time', None) # To store raw TT2000 time
         object.__setattr__(self, 'datetime_array', None) # To store Python datetime objects
         object.__setattr__(self, 'data_type', 'ham') # Explicitly set data_type
+        object.__setattr__(self, '_current_operation_trange', None)
 
         if imported_data is None:
             self.set_ploptions() # Set empty ploptions on init
@@ -67,8 +69,11 @@ class ham_class:
             self.set_ploptions()
             print_manager.status("Ham class: Successfully processed imported data.")
 
-    def update(self, imported_data):
+    def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
         """Method to update class with new data."""
+        if original_requested_trange is not None:
+            object.__setattr__(self, '_current_operation_trange', original_requested_trange)
+            print_manager.dependency_management(f"[{self.__class__.__name__}] Updated _current_operation_trange to: {self._current_operation_trange}")
         if imported_data is None:
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
             return

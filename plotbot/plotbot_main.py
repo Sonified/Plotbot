@@ -68,6 +68,8 @@ from .data_import import import_data_function
 from .plot_manager import plot_manager
 from .multiplot_options import plt, MultiplotOptions
 from .get_data import get_data  # Add get_data import
+from . import config, print_manager
+from .initialization import initialize
 
 from .data_classes.data_types import data_types
 from . import mag_rtn_4sa, mag_rtn, mag_sc_4sa, mag_sc
@@ -84,12 +86,15 @@ from .plotbot_helpers import time_clip, parse_axis_spec, resample, debug_plot_va
 #====================================================================
 @timer_decorator("TIMER_PLOTBOT_ENTRY")
 def plotbot(trange, *args):
-    """Plot multiple time series with shared x-axis and optional right y-axes."""
-    from collections import defaultdict
-    import matplotlib.pyplot as mpl_plt
-    # mpl_plt.rcParams['font.size'] = 8
+    """
+    Main function for creating plots with plotbot.
     
-    print_manager.status("🤖 Plotbot starting...")
+    Initializes the plotbot environment if not already initialized.
+    """
+    # --- Ensure Plotbot is Initialized ---
+    initialize()
+    
+    print_manager.status(f"Plotbot engaged for time range: {trange}")
     
     # Validate time range using dateutil.parser for flexibility
     try:
@@ -447,6 +452,11 @@ def plotbot(trange, *args):
                         empty_plot = True
                         print_manager.debug("empty_plot = True - No valid time indices found")
                         continue
+                    
+                    # 🔧 FIX: Set current_trange on plot_options for .data property time clipping
+                    if hasattr(var, 'plot_options'):
+                        var.plot_options.current_trange = trange
+                        print_manager.status(f"🔧 [DEBUG] Set current_trange to {trange} for {var.class_name}.{var.subclass_name}")
 
                     # Convert variable data to numpy array for processing
                     data = np.array(var)
