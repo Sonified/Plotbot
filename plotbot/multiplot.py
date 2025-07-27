@@ -1143,128 +1143,136 @@ def multiplot(plot_list, **kwargs):
                                 apply_panel_color(axs[i], panel_color, options)
                     
                     elif var.plot_type == 'spectral':
-                        # CRITICAL FIX: Check if indices is empty before trying to plot spectral data
-                        if len(indices) > 0:
-                            datetime_clipped = var.datetime_array[indices]
-                            data_clipped = var.all_data[indices] # This is the 2D spectral data (Z)
-                            y_spectral_axis = np.array(var.additional_data) # This is the y-axis (e.g., energy bins)
+                        print_manager.debug("[SPECTRAL] Using working spectral plotting code from plotbot_main.py")
+                        
+                        empty_plot = False
+                        
+                        #====================================================================
+                        # Verify data availability and validity (EXACT from plotbot_main.py)
+                        #====================================================================
+                        if var.datetime_array is None or len(var.datetime_array) == 0:
+                            empty_plot = True
+                            print_manager.debug("[SPECTRAL] ERROR: No datetime array available")
+                            continue
+
+                        # Use raw datetime array for time clipping, not the property (which is now clipped)
+                        raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                        time_indices = time_clip(raw_datetime_array, trange[0], trange[1])  # Get time range indices
+                        if len(time_indices) == 0:
+                            empty_plot = True
+                            print_manager.debug("[SPECTRAL] ERROR: No valid time indices found")
+                            continue
+                        
+                        print_manager.debug(f"[SPECTRAL] Found {len(time_indices)} valid time indices")
+                        
+                        # Use all_data property for internal plotting (performance optimization)
+                        data = var.all_data  # Get full unclipped data for internal processing
+                        print_manager.debug(f"[SPECTRAL] Data shape: {data.shape}")
+                        
+                        # For spectral data, ensure indices are valid for the data array
+                        max_valid_index = data.shape[0] - 1
+                        if len(time_indices) > 0 and time_indices[-1] > max_valid_index:
+                            print_manager.debug(f"[SPECTRAL] Adjusting time indices: max index {time_indices[-1]} > data length {data.shape[0]}")
+                            time_indices = time_indices[time_indices <= max_valid_index]
+                            if len(time_indices) == 0:
+                                empty_plot = True
+                                print_manager.debug("[SPECTRAL] ERROR: No valid time indices after adjustment")
+                                continue
+                        
+                        data_clipped = data[time_indices]  # Slice data for time range
+                        if np.all(np.isnan(data_clipped)):  # Check for all NaN values
+                            empty_plot = True
+                            print_manager.debug("[SPECTRAL] ERROR: All data points in time window are NaN")
+                            continue
                             
-                            colorbar_limits = axis_options.colorbar_limits if hasattr(axis_options, 'colorbar_limits') and axis_options.colorbar_limits else var.colorbar_limits
-                            if var.colorbar_scale == 'log':
-                                norm = colors.LogNorm(vmin=colorbar_limits[0], vmax=colorbar_limits[1]) if colorbar_limits else colors.LogNorm()
-                            elif var.colorbar_scale == 'linear':
-                                norm = colors.Normalize(vmin=colorbar_limits[0], vmax=colorbar_limits[1]) if colorbar_limits else None
-        
-                            # Get x-axis data
-                            time_slice = datetime_clipped
-                            data_slice = data_clipped # This is the 2D spectral data
-                            # y_spectral_axis remains the full energy/frequency axis
-                            x_data = time_slice # Default to time
+                        print_manager.debug(f"[SPECTRAL] Data clipped shape: {data_clipped.shape}")
+                            
+                        #====================================================================
+                        # Proceed with spectral plotting (EXACT from plotbot_main.py)
+                        #====================================================================
+                        if not empty_plot:  # Create spectral plot only if we have valid data
+                            # For datetime_clipped, also handle potential mismatched dimensions
+                            # Use raw datetime array for clipping to match time_indices calculation
+                            if raw_datetime_array.ndim == 2:
+                                # Keep 2D for pcolormesh compatibility with additional_data
+                                datetime_clipped = raw_datetime_array[time_indices, :]
+                            else:
+                                datetime_clipped = raw_datetime_array[time_indices]
+                            
+                            print_manager.debug(f"[SPECTRAL] Datetime clipped shape: {datetime_clipped.shape if hasattr(datetime_clipped, 'shape') else len(datetime_clipped)}")
+                            
+                            # Handle additional_data similarly
+                            if hasattr(var, 'additional_data') and var.additional_data is not None:
+                                additional_data_clipped = var.additional_data[time_indices] if len(var.additional_data) > max(time_indices) else var.additional_data
+                                print_manager.debug(f"[SPECTRAL] Additional data clipped shape: {additional_data_clipped.shape if hasattr(additional_data_clipped, 'shape') else len(additional_data_clipped)}")
+                            else:
+                                additional_data_clipped = None
+                                print_manager.debug("[SPECTRAL] No additional_data available")
 
-                            # --- Reference Time Degree Calculation (Spectral) --- 
-                            if current_panel_use_degrees and reference_time_str and positional_mapper:
-                                mode_name = "Perihelion" if getattr(options, 'use_degrees_from_perihelion', False) else "Center Time"
-                                print_manager.debug(f"Panel {i+1} (Spectral): Calculating Degrees from {mode_name}.")
-                                try:
-                                    # 1. Map time slice to Carrington longitude
-                                    carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon', unwrap_angles=True)
-                                    
-                                    # 2. Map reference time to its longitude
-                                    reference_dt = datetime.strptime(reference_time_str, '%Y/%m/%d %H:%M:%S.%f')
-                                    reference_time_np = np.array([np.datetime64(reference_dt)])
-                                    reference_lon_arr = positional_mapper.map_to_position(reference_time_np, 'carrington_lon', unwrap_angles=True)
-                                    
-                                    if carrington_lons_slice is not None and reference_lon_arr is not None and len(reference_lon_arr) > 0:
-                                        reference_lon_val = reference_lon_arr[0]
+                            axs[i].set_ylabel(var.y_label)  # Set y-axis properties
+                            axs[i].set_yscale(var.y_scale)
+                            if var.y_limit:
+                                axs[i].set_ylim(var.y_limit)
 
-                                        # <<< Existing Debug Prints Here >>>
-                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Plot Type: Spectral")
-                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Reference Time Str: {reference_time_str}")
-                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Reference Lon Value Used: {reference_lon_val:.4f}")
+                            # Configure color scaling
+                            if var.colorbar_scale == 'log':  # Set up logarithmic color scaling
+                                norm = colors.LogNorm(vmin=var.colorbar_limits[0], vmax=var.colorbar_limits[1]) if var.colorbar_limits else colors.LogNorm()
+                            elif var.colorbar_scale == 'linear':  # Set up linear color scaling
+                                norm = colors.Normalize(vmin=var.colorbar_limits[0], vmax=var.colorbar_limits[1]) if var.colorbar_limits else None
+                            else:
+                                norm = None
 
-                                        # Create mask for valid longitude values in the slice
-                                        valid_lon_mask = ~np.isnan(carrington_lons_slice)
-                                        num_valid_lons = np.sum(valid_lon_mask)
-                                        
-                                        if num_valid_lons > 0:
-                                            # Filter slice data based on valid longitudes
-                                            carrington_lons_slice_valid = carrington_lons_slice[valid_lon_mask]
-                                            # Filter the 2D spectral data along the time dimension (axis 0)
-                                            data_slice_filtered_lon = data_slice[valid_lon_mask, :]
-                                            
-                                            # 3. Calculate relative degrees
-                                            relative_degrees = carrington_lons_slice_valid - reference_lon_val
+                            print_manager.debug(f"[SPECTRAL] Color scale: {var.colorbar_scale}, limits: {var.colorbar_limits}")
 
-                                            # 5. Set x_data & filtered data_slice
-                                            x_data = relative_degrees
-                                            data_slice = data_slice_filtered_lon # Use filtered spectral data
-                                            # 6. Set flags
-                                            panel_actually_uses_degrees = True
-                                            axs[i]._panel_actually_used_degrees = True
-                                            print_manager.debug(f"--> Stored _panel_actually_used_degrees=True on axis {i} (Spectral)")
-                                        else:
-                                            print_manager.warning(f"Panel {i+1} (Spectral): No valid longitudes. Fallback time.")
-                                            x_data = time_slice # Fallback
-                                            # data_slice remains original full spectral data
-                                    else:
-                                        print_manager.warning(f"Panel {i+1} (Spectral): Failed map. Fallback time.")
-                                        x_data = time_slice # Fallback
-                                        # data_slice remains original full spectral data
-                                except Exception as e:
-                                    print_manager.error(f"Panel {i+1} (Spectral): Error during degrees calc: {e}")
-                                    x_data = time_slice # Fallback
-                                    # data_slice remains original full spectral data
-
-                            # --- Standard Positional Mapping (if degrees not used/failed - Spectral) --- 
-                            elif using_positional_axis and positional_mapper is not None:
-                                print_manager.debug(f"Panel {i+1} (Spectral): Attempting standard positional mapping ({data_type}) for {len(time_slice)} points")
-                                positional_vals = positional_mapper.map_to_position(time_slice, data_type)
-                                if positional_vals is not None:
-                                    valid_mask = ~np.isnan(positional_vals)
-                                    num_valid = np.sum(valid_mask)
-                                    if num_valid > 0:
-                                        x_data = positional_vals[valid_mask]
-                                        # Filter the 2D spectral data along the time dimension
-                                        data_slice = data_slice[valid_mask, :]
-                                        print_manager.debug(f"Panel {i+1} (Spectral): Standard positional mapping successful, using {num_valid} valid points")
-                                    else:
-                                        print_manager.warning(f"Panel {i+1} (Spectral): Standard positional mapping resulted in no valid points. Using time axis.")
-                                        x_data = time_slice
-                                        # data_slice remains original full spectral data
-                                else:
-                                    print_manager.warning(f"Panel {i+1} (Spectral): Standard positional mapping failed (returned None). Using time axis.")
-                                    x_data = time_slice
-                                    # data_slice remains original full spectral data
-
-                            # FIXED: Create properly shaped mesh grid for pcolormesh to avoid dimension mismatch
-                            try:
-                                # Remove the transpose - data should not be transposed
-                                # Debug the shapes for troubleshooting
-                                x_shape = len(x_data)
-                                # y_shape = len(additional_data_clipped) # y_spectral_axis might change
-                                z_shape = data_slice.shape # Use filtered data_slice shape
-                                y_shape = z_shape[1] if len(z_shape) > 1 else 0 # Infer Y shape from Z
-                                print_manager.debug(f"Spectral data shapes after filtering: X:{x_shape}, Y:{y_shape}, Z:{z_shape}")
-
-                                # Ensure y_spectral_axis matches the Z dimension
-                                if y_shape != len(y_spectral_axis):
-                                    print_manager.warning(f"Spectral Y axis length ({len(y_spectral_axis)}) does not match filtered data dimension ({y_shape}). Skipping plot.")
-                                    # Handle error: plot text or skip?
-                                else:
-                                    # Always use 'auto' shading which handles the dimension requirements correctly
-                                    # and don't transpose the data
-                                    im = axs[i].pcolormesh(x_data, y_spectral_axis, data_slice.T, # Transpose needed for pcolormesh
-                                                                norm=norm, cmap=var.colormap, shading='auto')
-
-                                    pos = axs[i].get_position()
-                                    cax = fig.add_axes([pos.x1 + 0.01, pos.y0, 0.02, pos.height])
-                                    cbar = fig.colorbar(im, cax=cax)
-
-                                    if hasattr(var, 'colorbar_label'):
-                                        cbar.set_label(var.colorbar_label)
-                            except Exception as e:
-                                print_manager.warning(f"Error plotting spectral data: {str(e)}")
-                                print_manager.warning(f"Data shapes: X:{len(x_data)}, Y:{len(y_spectral_axis)}, Z:{data_slice.shape}")
+                            # Create spectral plot (EXACT from plotbot_main.py)
+                            if additional_data_clipped is not None:
+                                print_manager.debug("[SPECTRAL] Creating pcolormesh with additional_data")
+                                im = axs[i].pcolormesh(  # Create 2D color plot
+                                    datetime_clipped,
+                                    additional_data_clipped,
+                                    data_clipped,
+                                    norm=norm,
+                                    cmap=var.colormap if hasattr(var, 'colormap') else None,
+                                    shading='auto'
+                                )
+                            else:
+                                print_manager.debug("[SPECTRAL] Creating pcolormesh with y_values")
+                                # If no additional_data, create a simple y-axis based on data shape
+                                y_values = np.arange(data_clipped.shape[1]) if data_clipped.ndim > 1 else np.arange(len(data_clipped))
+                                print_manager.debug(f"[SPECTRAL] Y values shape: {y_values.shape}")
+                                im = axs[i].pcolormesh(  # Create 2D color plot
+                                    datetime_clipped,
+                                    y_values,
+                                    data_clipped,
+                                    norm=norm,
+                                    cmap=var.colormap if hasattr(var, 'colormap') else None,
+                                    shading='auto'
+                                )
+                            
+                            print_manager.debug("[SPECTRAL] pcolormesh created successfully")
+                            
+                            # Add and configure colorbar
+                            pos = axs[i].get_position()  # Get plot position
+                            cax = fig.add_axes([pos.x1 + 0.01, pos.y0, 0.02, pos.height])  # Create colorbar axes
+                            cbar = fig.colorbar(im, cax=cax)  # Add colorbar
+                            if hasattr(var, 'colorbar_label'):
+                                cbar.set_label(var.colorbar_label)  # Set colorbar label if specified
+                            
+                            print_manager.debug("[SPECTRAL] Colorbar added successfully")
+                            
+                            # Apply panel color formatting if needed
+                            if panel_color:
+                                apply_panel_color(axs[i], panel_color, options)
+                        else:
+                            print_manager.debug("[SPECTRAL] ERROR: empty_plot flag was set")
+                            # Handle empty data case for spectral plots
+                            axs[i].text(0.5, 0.5, 'No spectral data for this time range',
+                                       ha='center', va='center', transform=axs[i].transAxes,
+                                       fontsize=10, color='gray', style='italic')
+                            
+                            # Apply panel color formatting if needed (even for empty plots)
+                            if panel_color:
+                                apply_panel_color(axs[i], panel_color, options)
 
                 else: # Default plot type (treat as time_series)
                     print('THIS IS A DEFAULT PLOT🍀🍀🍀🍀🍀🍀')

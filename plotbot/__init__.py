@@ -378,10 +378,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_27_v2.97"
+__version__ = "2025_07_27_v2.98"
 
 # Commit message for this version
-__commit_message__ = "v2.97 BREAKTHROUGH: Isolated working spectral plotting code from plotbot_main.py"
+__commit_message__ = "v2.98 SUCCESS: Spectral multiplot functionality restored, layout fixes needed"
 
 # Print the version and commit message
 print(f"""
