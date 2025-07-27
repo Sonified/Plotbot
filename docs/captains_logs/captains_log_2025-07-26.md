@@ -484,3 +484,18 @@ sun_dist_rsun = np.array(proton.sun_dist_rsun)  # Use raw array, not .data prope
 - **Commit Message:** "v2.92 MAJOR: Complete data alignment system implementation with .data property fix, Berkeley download restoration, and comprehensive bug fixes"
 
 ### Ready for Production Deployment 
+
+---
+### Post-Release Bug Fixes (v2.92 follow-up)
+
+Following the `v2.92` push, a critical bug was identified that broke plotting functionality, particularly for spectral data. The `time_clip_optimization_attempt` branch was an incorrect path. We have rolled back to `644fbbc` (the `v2.92` commit) and applied the correct fixes.
+
+**Issue #1: `.data` Property Flattening 2D Arrays**
+- **Root Cause:** In `plotbot/plot_manager.py`, both `clip_to_original_trange` and `_clip_datetime_array` methods used boolean mask indexing (`data_array[time_mask]`) which flattens multi-dimensional arrays. This broke spectral plotting for variables like `epad.strahl`.
+- **Fix:** Modified both methods to check the array's dimensionality. For 2D+ arrays, they now use `np.where(time_mask)[0]` to get indices and slice with `data_array[time_indices, ...]` to preserve all dimensions.
+- **Verification:** All tests in `tests/test_class_data_alignment.py` passed, confirming the fix did not introduce regressions.
+
+**Issue #2: Audifier `IndexError`**
+- **Root Cause:** The `audify` method in `plotbot/audifier.py` was calculating slicing `indices` based on the raw, un-clipped datetime array, but then attempting to apply those indices to the `.datetime_array` property, which was now returning a *clipped* array. This caused an `IndexError: index 0 is out of bounds for axis 0 with size 0`.
+- **Fix:** Modified the `audify` method to explicitly use the raw datetime array from `component.plot_options.datetime_array` when slicing with the pre-computed `indices`, ensuring the array and indices were in sync.
+- **Verification:** The `tests/test_stardust.py::test_stardust_sonify_valid_data` test now passes. 

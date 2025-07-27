@@ -144,8 +144,14 @@ class plot_manager(np.ndarray):
             # Return empty datetime array
             return np.array([], dtype=datetime_array.dtype)
         
-        # Apply mask to datetime array
-        return datetime_array[time_mask]
+        # Apply mask to datetime array while preserving dimensions
+        if datetime_array.ndim == 1:
+            # For 1D arrays, boolean indexing is fine
+            return datetime_array[time_mask]
+        else:
+            # For multidimensional arrays, use indices to prevent flattening
+            time_indices = np.where(time_mask)[0]
+            return datetime_array[time_indices, ...]  # Preserve all other dimensions
 
     def clip_to_original_trange(self, data_array, original_trange, datetime_array=None):
         """Clip data array to the specified time range using ChatGPT's improved approach"""
@@ -182,8 +188,14 @@ class plot_manager(np.ndarray):
 
         print_manager.status(f"🔍 [DEBUG] Clipping {len(data_array)} points to {np.sum(time_mask)} points in range")
         
-        # Apply mask on the time axis (axis 0) regardless of dimensionality
-        return data_array[time_mask]
+        # Apply mask on the time axis (axis 0) while preserving other dimensions
+        if data_array.ndim == 1:
+            # For 1D arrays, boolean indexing is fine
+            return data_array[time_mask]
+        else:
+            # For multidimensional arrays, use indices to prevent flattening
+            time_indices = np.where(time_mask)[0]
+            return data_array[time_indices, ...]  # Preserve all other dimensions
 
     # Properties for data_type, class_name and subclass_name
     @property
