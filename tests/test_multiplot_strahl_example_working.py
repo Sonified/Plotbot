@@ -3,6 +3,9 @@
 Test for multiplot that first shows a working example with mag_rtn_4sa.br,
 and then shows the failing example with epad.strahl.
 This allows for direct visual comparison and debugging.
+
+REQUIREMENT: This test must be run with conda environment:
+conda run -n plotbot_env python tests/test_multiplot_strahl_example_working.py
 """
 
 import sys

@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
 Quick test to verify spectral multiplot fix
+
+REQUIREMENT: This test must be run with conda environment:
+conda run -n plotbot_env python test_quick_spectral_fix.py
 """
 
 import sys
@@ -17,6 +20,12 @@ def test_quick_spectral():
     """Quick test of spectral multiplot"""
     
     print("🧪 Testing spectral multiplot fix...")
+    
+    # Enable test printing
+    from plotbot.print_manager import print_manager
+    print_manager.test_enabled = True
+    print_manager.show_status = True
+    print_manager.test("[TEST] Test printing enabled for spectral debugging")
     
     # Reset plotting options
     plt.options.reset()

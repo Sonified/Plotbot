@@ -1,7 +1,5 @@
-# plotbot/multiplot.py
-# Original version
-
 # Import plotbot components with relative imports
+# working title and colorbar positioning and styling, but broken data handling
 from .data_cubby import data_cubby
 from .data_tracker import global_tracker  
 from .data_download_berkeley import download_berkeley_data
@@ -197,16 +195,6 @@ def multiplot(plot_list, **kwargs):
                     print_manager.debug("--> Mode Determination: use_degrees_from_perihelion is True.")
                     data_type = 'degrees_from_perihelion' # Use a distinct type identifier
                     axis_label = "Degrees from Perihelion (°)"
-                    units = "°"
-                    # Ensure conflicting modes are off (setters should handle this, but verify)
-                    options.x_axis_carrington_lon = False
-                    options.x_axis_r_sun = False
-                    options.x_axis_carrington_lat = False
-                    # options.use_relative_time = False # Explicitly disable relative time - REMOVED TO ALLOW USER CONTROL
-                elif getattr(options, 'use_degrees_from_center_time', False):
-                    print_manager.debug("--> Mode Determination: use_degrees_from_center_time is True.")
-                    data_type = 'degrees_from_center_time' # Use a distinct type identifier
-                    axis_label = "Degrees from Center Time (°)"
                     units = "°"
                     # Ensure conflicting modes are off (setters should handle this, but verify)
                     options.x_axis_carrington_lon = False
@@ -469,36 +457,35 @@ def multiplot(plot_list, **kwargs):
         else:
             figsize = (options.width, options.height_per_panel * n_panels)
             dpi = 300
-        fig, axs = plt.subplots(n_panels, 1, figsize=figsize, dpi=dpi, constrained_layout=options.constrained_layout)
-        print_manager.status(f"Using constrained_layout={options.constrained_layout} and letting matplotlib handle all margins and spacing.")
-        # If constrained_layout is False, set all margins and hspace using the options
-        if not options.constrained_layout:
-            fig.subplots_adjust(
-                top=options.margin_top,
-                bottom=options.margin_bottom,
-                left=options.margin_left,
-                right=options.margin_right,
-                hspace=options.hspace_vertical_space_between_plots
-            )
-            print_manager.status(f"Set margins (top={options.margin_top}, bottom={options.margin_bottom}, left={options.margin_left}, right={options.margin_right}) and hspace={options.hspace_vertical_space_between_plots}")
-        else:
-            if hasattr(options, 'hspace_vertical_space_between_plots') and options.hspace_vertical_space_between_plots != 0.2:
-                print_manager.warning("hspace_vertical_space_between_plots is set but constrained_layout=True, so it will be ignored.")
+        # TEMPORARY DEBUG: Force constrained_layout=False to test colorbar positioning
+        print_manager.test(f"[TEST LAYOUT] Original constrained_layout setting: {options.constrained_layout}")
+        fig, axs = plt.subplots(n_panels, 1, figsize=figsize, dpi=dpi, constrained_layout=False)
+        print_manager.test(f"[TEST LAYOUT] Using constrained_layout=False for debugging")
+        print_manager.status(f"Using constrained_layout=False (forced for debugging) and applying manual margins.")
+        # FORCE manual margins since we're forcing constrained_layout=False
+        fig.subplots_adjust(
+            top=options.margin_top,
+            bottom=options.margin_bottom,
+            left=options.margin_left,
+            right=options.margin_right,
+            hspace=options.hspace_vertical_space_between_plots
+        )
+        print_manager.status(f"Set margins (top={options.margin_top}, bottom={options.margin_bottom}, left={options.margin_left}, right={options.margin_right}) and hspace={options.hspace_vertical_space_between_plots}")
     else:
-        fig, axs = plt.subplots(n_panels, 1, figsize=(options.width, options.height_per_panel * n_panels), constrained_layout=options.constrained_layout)
-        print_manager.status(f"Using constrained_layout={options.constrained_layout} and letting matplotlib handle all margins and spacing.")
-        if not options.constrained_layout:
-            fig.subplots_adjust(
-                top=options.margin_top,
-                bottom=options.margin_bottom,
-                left=options.margin_left,
-                right=options.margin_right,
-                hspace=options.hspace_vertical_space_between_plots
-            )
-            print_manager.status(f"Set margins (top={options.margin_top}, bottom={options.margin_bottom}, left={options.margin_left}, right={options.margin_right}) and hspace={options.hspace_vertical_space_between_plots}")
-        else:
-            if hasattr(options, 'hspace_vertical_space_between_plots') and options.hspace_vertical_space_between_plots != 0.2:
-                print_manager.warning("hspace_vertical_space_between_plots is set but constrained_layout=True, so it will be ignored.")
+        # TEMPORARY DEBUG: Force constrained_layout=False to test colorbar positioning
+        print_manager.test(f"[TEST LAYOUT] Original constrained_layout setting: {options.constrained_layout}")
+        fig, axs = plt.subplots(n_panels, 1, figsize=(options.width, options.height_per_panel * n_panels), constrained_layout=False)
+        print_manager.test(f"[TEST LAYOUT] Using constrained_layout=False for debugging")
+        print_manager.status(f"Using constrained_layout=False (forced for debugging) and applying manual margins.")
+        # FORCE manual margins since we're forcing constrained_layout=False
+        fig.subplots_adjust(
+            top=options.margin_top,
+            bottom=options.margin_bottom,
+            left=options.margin_left,
+            right=options.margin_right,
+            hspace=options.hspace_vertical_space_between_plots
+        )
+        print_manager.status(f"Set margins (top={options.margin_top}, bottom={options.margin_bottom}, left={options.margin_left}, right={options.margin_right}) and hspace={options.hspace_vertical_space_between_plots}")
     # Ensure axs is always a flat list of Axes
     import numpy as _np
     if not isinstance(axs, (list, _np.ndarray)):
@@ -524,16 +511,13 @@ def multiplot(plot_list, **kwargs):
         print_manager.debug(f"Panel {i+1} - HAM feature status: hamify={options.hamify}, ham_var={options.ham_var is not None}")
         # center_dt = pd.Timestamp(center_time) # Moved up
 
-        # <<< NEW: Get perihelion/center time and determine if this panel should use degrees >>>
-        reference_time_str = None  # Will store either perihelion time or center time
-        
+        # <<< NEW: Get perihelion time and determine if this panel should use degrees >>>
         if using_positional_axis and getattr(options, 'use_degrees_from_perihelion', False):
             try:
                 # <<< ADD DEBUG PRINT: Show center_dt BEFORE lookup >>>
                 print_manager.debug(f"[DEBUG Perihelion Lookup - Panel {i+1}] Center Datetime for Lookup: {center_dt}")
                 
                 perihelion_time_str = get_perihelion_time(center_dt)
-                reference_time_str = perihelion_time_str
 
                 # <<< ADD DEBUG PRINT: Show result AFTER lookup >>>
                 print_manager.debug(f"[DEBUG Perihelion Lookup - Panel {i+1}] Returned Perihelion Time Str: {perihelion_time_str}")
@@ -541,22 +525,27 @@ def multiplot(plot_list, **kwargs):
                 if perihelion_time_str:
                     print_manager.debug(f"Panel {i+1}: Found perihelion time: {perihelion_time_str}")
                     current_panel_use_degrees = True
+                    # --- <CURSOR_INSERT> ---
+                    # <<< DEBUG: Confirm perihelion time found >>>
+                    # print_manager.debug(f"DEBUG_TRACE: Panel {i+1} FOUND perihelion: {perihelion_time_str}, setting current_panel_use_degrees=True")
+                    # <<< END DEBUG >>>
+                    # --- </CURSOR_INSERT> ---
                 else:
                     print_manager.status(f"Panel {i+1}: Perihelion time not found for {center_dt}. Cannot use degrees from perihelion for this panel.")
                     current_panel_use_degrees = False
+                    # --- <CURSOR_INSERT> ---
+                    # <<< DEBUG: Confirm perihelion time NOT found >>>
+                    # print_manager.debug(f"DEBUG_TRACE: Panel {i+1} DID NOT FIND perihelion for {center_dt}, setting current_panel_use_degrees=False")
+                    # <<< END DEBUG >>>
+                    # --- </CURSOR_INSERT> ---
             except Exception as e:
                 print_manager.error(f"Panel {i+1}: Error getting perihelion time: {e}")
                 current_panel_use_degrees = False
-                
-        elif using_positional_axis and getattr(options, 'use_degrees_from_center_time', False):
-            try:
-                # For center_time mode, use the center_time directly as the reference
-                reference_time_str = center_dt.strftime('%Y/%m/%d %H:%M:%S.%f')
-                print_manager.debug(f"Panel {i+1}: Using center_time as reference: {reference_time_str}")
-                current_panel_use_degrees = True
-            except Exception as e:
-                print_manager.error(f"Panel {i+1}: Error formatting center_time: {e}")
-                current_panel_use_degrees = False
+                # --- <CURSOR_INSERT> ---
+                # <<< DEBUG: Confirm EXCEPTION during perihelion lookup >>>
+                # print_manager.debug(f"DEBUG_TRACE: Panel {i+1} EXCEPTION getting perihelion: {e}, setting current_panel_use_degrees=False")
+                # <<< END DEBUG >>>
+                # --- </CURSOR_INSERT> ---
         # <<< END NEW >>>
 
         # Get encounter number automatically
@@ -630,7 +619,6 @@ def multiplot(plot_list, **kwargs):
                         pass # Keep pass to avoid syntax error
                     # print_manager.debug(f"Panel {i+1} pre-clip: Requested trange: {trange[0]} to {trange[1]}") # COMMENTED OUT
                     # <<< END ADDED DEBUG PRINTS >>>
-                    # CRITICAL FIX: Use raw datetime array for time clipping, not the property (which is now clipped)
                     raw_datetime_array = single_var.plot_options.datetime_array if hasattr(single_var, 'plot_options') else single_var.datetime_array
                     indices = time_clip(raw_datetime_array, trange[0], trange[1])
                 else:
@@ -852,7 +840,6 @@ def multiplot(plot_list, **kwargs):
                     pass # Keep pass to avoid syntax error
                 # print_manager.debug(f"Panel {i+1} pre-clip: Requested trange: {trange[0]} to {trange[1]}") # COMMENTED OUT
                 # <<< END ADDED DEBUG PRINTS >>>
-                # CRITICAL FIX: Use raw datetime array for time clipping, not the property (which is now clipped)
                 raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
                 indices = time_clip(raw_datetime_array, trange[0], trange[1])
             else:
@@ -879,26 +866,26 @@ def multiplot(plot_list, **kwargs):
                             x_data = time_slice # Default to time
                             valid_lon_mask = None # Initialize mask
 
-                            # --- Reference Time Degree Calculation ---
-                            if current_panel_use_degrees and reference_time_str and positional_mapper:
-                                mode_name = "Perihelion" if getattr(options, 'use_degrees_from_perihelion', False) else "Center Time"
-                                print_manager.debug(f"Panel {i+1} (Time Series): Calculating Degrees from {mode_name}.")
+                            # --- Perihelion Degree Calculation ---
+                            if current_panel_use_degrees and perihelion_time_str and positional_mapper:
+                                print_manager.debug(f"Panel {i+1} (Time Series): Calculating Degrees from Perihelion.")
                                 try:
                                     # 1. Map time slice to Carrington longitude
+                                    # <<< MOVE PERIHELION LON CALCULATION *INSIDE* THIS BLOCK >>>
                                     carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon', unwrap_angles=True)
                                     
-                                    # 2. Map reference time to its longitude
-                                    reference_dt = datetime.strptime(reference_time_str, '%Y/%m/%d %H:%M:%S.%f')
-                                    reference_time_np = np.array([np.datetime64(reference_dt)])
-                                    reference_lon_arr = positional_mapper.map_to_position(reference_time_np, 'carrington_lon', unwrap_angles=True)
+                                    # 2. Map *panel-specific* perihelion time to its longitude
+                                    perihelion_dt = datetime.strptime(perihelion_time_str, '%Y/%m/%d %H:%M:%S.%f')
+                                    perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
+                                    perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon', unwrap_angles=True)
                                     
-                                    if carrington_lons_slice is not None and reference_lon_arr is not None and len(reference_lon_arr) > 0:
-                                        reference_lon_val = reference_lon_arr[0]
+                                    if carrington_lons_slice is not None and perihelion_lon_arr is not None and len(perihelion_lon_arr) > 0:
+                                        perihelion_lon_val = perihelion_lon_arr[0]
                                         
                                         # <<< Existing Debug Prints Here >>>
-                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Plot Type: Time Series")
-                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Reference Time Str: {reference_time_str}")
-                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Reference Lon Value Used: {reference_lon_val:.4f}")
+                                        print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Plot Type: Time Series")
+                                        print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Perihelion Time Str: {perihelion_time_str}")
+                                        print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Perihelion Lon Value Used: {perihelion_lon_val:.4f}")
 
                                         # Create mask for valid longitude values in the slice
                                         valid_lon_mask = ~np.isnan(carrington_lons_slice) # Assign mask here
@@ -910,7 +897,7 @@ def multiplot(plot_list, **kwargs):
                                             data_slice_filtered_lon = data_slice[valid_lon_mask]
 
                                             # 3. Calculate relative degrees (raw difference of unwrapped)
-                                            relative_degrees = carrington_lons_slice_valid - reference_lon_val
+                                            relative_degrees = carrington_lons_slice_valid - perihelion_lon_val
 
                                             # 4. CRITICAL FIX: Wrap the difference to the [-180, 180] range
                                             relative_degrees_wrapped = (relative_degrees + 180) % 360 - 180
@@ -1038,26 +1025,26 @@ def multiplot(plot_list, **kwargs):
                             data_slice = var.all_data[indices]
                             x_data = time_slice # Default to time
 
-                            # --- Reference Time Degree Calculation (Scatter) --- 
-                            if current_panel_use_degrees and reference_time_str and positional_mapper:
-                                mode_name = "Perihelion" if getattr(options, 'use_degrees_from_perihelion', False) else "Center Time"
-                                print_manager.debug(f"Panel {i+1} (Scatter): Calculating Degrees from {mode_name}.")
+                            # --- Perihelion Degree Calculation (Scatter) --- 
+                            if current_panel_use_degrees and perihelion_time_str and positional_mapper:
+                                print_manager.debug(f"Panel {i+1} (Scatter): Calculating Degrees from Perihelion.")
                                 try:
                                     # 1. Map time slice to Carrington longitude
+                                    # <<< MOVE PERIHELION LON CALCULATION *INSIDE* THIS BLOCK >>>
                                     carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon', unwrap_angles=True)
                                     
-                                    # 2. Map reference time to its longitude
-                                    reference_dt = datetime.strptime(reference_time_str, '%Y/%m/%d %H:%M:%S.%f')
-                                    reference_time_np = np.array([np.datetime64(reference_dt)])
-                                    reference_lon_arr = positional_mapper.map_to_position(reference_time_np, 'carrington_lon', unwrap_angles=True)
+                                    # 2. Map *panel-specific* perihelion time to its longitude
+                                    perihelion_dt = datetime.strptime(perihelion_time_str, '%Y/%m/%d %H:%M:%S.%f')
+                                    perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
+                                    perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon', unwrap_angles=True)
                                     
-                                    if carrington_lons_slice is not None and reference_lon_arr is not None and len(reference_lon_arr) > 0:
-                                        reference_lon_val = reference_lon_arr[0]
+                                    if carrington_lons_slice is not None and perihelion_lon_arr is not None and len(perihelion_lon_arr) > 0:
+                                        perihelion_lon_val = perihelion_lon_arr[0]
 
                                         # <<< Existing Debug Prints Here >>>
-                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Plot Type: Scatter")
-                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Reference Time Str: {reference_time_str}")
-                                        print_manager.debug(f"[DEBUG Reference Offset Calc - Panel {i+1}] Reference Lon Value Used: {reference_lon_val:.4f}")
+                                        print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Plot Type: Scatter")
+                                        print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Perihelion Time Str: {perihelion_time_str}")
+                                        print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Perihelion Lon Value Used: {perihelion_lon_val:.4f}")
 
                                         # Create mask for valid longitude values in the slice
                                         valid_lon_mask = ~np.isnan(carrington_lons_slice)
@@ -1069,7 +1056,7 @@ def multiplot(plot_list, **kwargs):
                                             data_slice_filtered_lon = data_slice[valid_lon_mask]
                                             
                                             # 3. Calculate relative degrees (raw difference of unwrapped)
-                                            relative_degrees = carrington_lons_slice_valid - reference_lon_val
+                                            relative_degrees = carrington_lons_slice_valid - perihelion_lon_val
 
                                             # 4. CRITICAL FIX: Wrap the difference to the [-180, 180] range
                                             relative_degrees_wrapped = (relative_degrees + 180) % 360 - 180
@@ -1143,137 +1130,209 @@ def multiplot(plot_list, **kwargs):
                                 apply_panel_color(axs[i], panel_color, options)
                     
                     elif var.plot_type == 'spectral':
-                        print_manager.debug("[SPECTRAL] Using working spectral plotting code from plotbot_main.py")
-                        
-                        empty_plot = False
-                        
-                        #====================================================================
-                        # Verify data availability and validity (EXACT from plotbot_main.py)
-                        #====================================================================
-                        if var.datetime_array is None or len(var.datetime_array) == 0:
-                            empty_plot = True
-                            print_manager.debug("[SPECTRAL] ERROR: No datetime array available")
-                            continue
-
-                        # Use raw datetime array for time clipping, not the property (which is now clipped)
+                        print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: SPECTRAL PLOT TYPE DETECTED")
+                        print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: Variable: {var.class_name}.{var.subclass_name}")
+                        print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: Indices available: {len(indices)}")
                         raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
-                        time_indices = time_clip(raw_datetime_array, trange[0], trange[1])  # Get time range indices
-                        if len(time_indices) == 0:
-                            empty_plot = True
-                            print_manager.debug("[SPECTRAL] ERROR: No valid time indices found")
-                            continue
+                        datetime_clipped = raw_datetime_array[indices]
+                        data_clipped = np.array(var.all_data)[indices] # Use improved data handling
+                        print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: data_clipped shape: {data_clipped.shape}")
+                        # Handle additional_data for spectral plots (energy/frequency channels)
+                        print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: Checking additional_data...")
+                        print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: hasattr(var, 'additional_data'): {hasattr(var, 'additional_data')}")
+                        if hasattr(var, 'additional_data'):
+                            print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: var.additional_data is not None: {var.additional_data is not None}")
+                            if var.additional_data is not None:
+                                print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: additional_data shape: {var.additional_data.shape}")
+                                print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: additional_data ndim: {var.additional_data.ndim}")
                         
-                        print_manager.debug(f"[SPECTRAL] Found {len(time_indices)} valid time indices")
-                        
-                        # Use all_data property for internal plotting (performance optimization)
-                        data = var.all_data  # Get full unclipped data for internal processing
-                        print_manager.debug(f"[SPECTRAL] Data shape: {data.shape}")
-                        
-                        # For spectral data, ensure indices are valid for the data array
-                        max_valid_index = data.shape[0] - 1
-                        if len(time_indices) > 0 and time_indices[-1] > max_valid_index:
-                            print_manager.debug(f"[SPECTRAL] Adjusting time indices: max index {time_indices[-1]} > data length {data.shape[0]}")
-                            time_indices = time_indices[time_indices <= max_valid_index]
-                            if len(time_indices) == 0:
-                                empty_plot = True
-                                print_manager.debug("[SPECTRAL] ERROR: No valid time indices after adjustment")
-                                continue
-                        
-                        data_clipped = data[time_indices]  # Slice data for time range
-                        if np.all(np.isnan(data_clipped)):  # Check for all NaN values
-                            empty_plot = True
-                            print_manager.debug("[SPECTRAL] ERROR: All data points in time window are NaN")
-                            continue
-                            
-                        print_manager.debug(f"[SPECTRAL] Data clipped shape: {data_clipped.shape}")
-                            
-                        #====================================================================
-                        # Proceed with spectral plotting (EXACT from plotbot_main.py)
-                        #====================================================================
-                        if not empty_plot:  # Create spectral plot only if we have valid data
-                            # For datetime_clipped, also handle potential mismatched dimensions
-                            # Use raw datetime array for clipping to match time_indices calculation
-                            if raw_datetime_array.ndim == 2:
-                                # Keep 2D for pcolormesh compatibility with additional_data
-                                datetime_clipped = raw_datetime_array[time_indices, :]
+                        if hasattr(var, 'additional_data') and var.additional_data is not None:
+                            print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: ✅ additional_data exists, processing...")
+                            # For spectral data, additional_data represents energy channels, not time-varying data
+                            # So we should NOT apply time indices to it
+                            if var.additional_data.ndim == 1:
+                                print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: 📍 Taking 1D path - using additional_data directly")
+                                # 1D array - use directly as energy channels
+                                y_spectral_axis = var.additional_data
+                            elif var.additional_data.ndim == 2:
+                                print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: 📍 Taking 2D path - using first row of additional_data")
+                                # 2D array - take first row as energy channels (assuming constant across time)
+                                y_spectral_axis = var.additional_data[0, :]
                             else:
-                                datetime_clipped = raw_datetime_array[time_indices]
-                            
-                            print_manager.debug(f"[SPECTRAL] Datetime clipped shape: {datetime_clipped.shape if hasattr(datetime_clipped, 'shape') else len(datetime_clipped)}")
-                            
-                            # Handle additional_data similarly
-                            if hasattr(var, 'additional_data') and var.additional_data is not None:
-                                additional_data_clipped = var.additional_data[time_indices] if len(var.additional_data) > max(time_indices) else var.additional_data
-                                print_manager.debug(f"[SPECTRAL] Additional data clipped shape: {additional_data_clipped.shape if hasattr(additional_data_clipped, 'shape') else len(additional_data_clipped)}")
-                            else:
-                                additional_data_clipped = None
-                                print_manager.debug("[SPECTRAL] No additional_data available")
-
-                            axs[i].set_ylabel(var.y_label)  # Set y-axis properties
-                            axs[i].set_yscale(var.y_scale)
-                            if var.y_limit:
-                                axs[i].set_ylim(var.y_limit)
-
-                            # Configure color scaling
-                            if var.colorbar_scale == 'log':  # Set up logarithmic color scaling
-                                norm = colors.LogNorm(vmin=var.colorbar_limits[0], vmax=var.colorbar_limits[1]) if var.colorbar_limits else colors.LogNorm()
-                            elif var.colorbar_scale == 'linear':  # Set up linear color scaling
-                                norm = colors.Normalize(vmin=var.colorbar_limits[0], vmax=var.colorbar_limits[1]) if var.colorbar_limits else None
-                            else:
-                                norm = None
-
-                            print_manager.debug(f"[SPECTRAL] Color scale: {var.colorbar_scale}, limits: {var.colorbar_limits}")
-
-                            # Create spectral plot (EXACT from plotbot_main.py)
-                            if additional_data_clipped is not None:
-                                print_manager.debug("[SPECTRAL] Creating pcolormesh with additional_data")
-                                im = axs[i].pcolormesh(  # Create 2D color plot
-                                    datetime_clipped,
-                                    additional_data_clipped,
-                                    data_clipped,
-                                    norm=norm,
-                                    cmap=var.colormap if hasattr(var, 'colormap') else None,
-                                    shading='auto'
-                                )
-                            else:
-                                print_manager.debug("[SPECTRAL] Creating pcolormesh with y_values")
-                                # If no additional_data, create a simple y-axis based on data shape
-                                y_values = np.arange(data_clipped.shape[1]) if data_clipped.ndim > 1 else np.arange(len(data_clipped))
-                                print_manager.debug(f"[SPECTRAL] Y values shape: {y_values.shape}")
-                                im = axs[i].pcolormesh(  # Create 2D color plot
-                                    datetime_clipped,
-                                    y_values,
-                                    data_clipped,
-                                    norm=norm,
-                                    cmap=var.colormap if hasattr(var, 'colormap') else None,
-                                    shading='auto'
-                                )
-                            
-                            print_manager.debug("[SPECTRAL] pcolormesh created successfully")
-                            
-                            # Add and configure colorbar
-                            pos = axs[i].get_position()  # Get plot position
-                            cax = fig.add_axes([pos.x1 + 0.01, pos.y0, 0.02, pos.height])  # Create colorbar axes
-                            cbar = fig.colorbar(im, cax=cax)  # Add colorbar
-                            if hasattr(var, 'colorbar_label'):
-                                cbar.set_label(var.colorbar_label)  # Set colorbar label if specified
-                            
-                            print_manager.debug("[SPECTRAL] Colorbar added successfully")
-                            
-                            # Apply panel color formatting if needed
-                            if panel_color:
-                                apply_panel_color(axs[i], panel_color, options)
+                                print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: 📍 Taking fallback path - unexpected dimensions ({var.additional_data.ndim}D)")
+                                # Fallback for unexpected dimensions
+                                y_spectral_axis = np.arange(data_clipped.shape[1]) if data_clipped.ndim > 1 else np.arange(len(data_clipped))
                         else:
-                            print_manager.debug("[SPECTRAL] ERROR: empty_plot flag was set")
-                            # Handle empty data case for spectral plots
-                            axs[i].text(0.5, 0.5, 'No spectral data for this time range',
-                                       ha='center', va='center', transform=axs[i].transAxes,
-                                       fontsize=10, color='gray', style='italic')
-                            
-                            # Apply panel color formatting if needed (even for empty plots)
-                            if panel_color:
-                                apply_panel_color(axs[i], panel_color, options)
+                            print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: 📍 Taking no-additional_data path - generating array")
+                            y_spectral_axis = np.arange(data_clipped.shape[1]) if data_clipped.ndim > 1 else np.arange(len(data_clipped))
+                        
+                        print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: Final y_spectral_axis shape: {y_spectral_axis.shape}")
+                        
+                        colorbar_limits = axis_options.colorbar_limits if hasattr(axis_options, 'colorbar_limits') and axis_options.colorbar_limits else var.colorbar_limits
+                        if var.colorbar_scale == 'log':
+                            norm = colors.LogNorm(vmin=colorbar_limits[0], vmax=colorbar_limits[1]) if colorbar_limits else colors.LogNorm()
+                        elif var.colorbar_scale == 'linear':
+                            norm = colors.Normalize(vmin=colorbar_limits[0], vmax=colorbar_limits[1]) if colorbar_limits else None
+    
+                        # Get x-axis data
+                        time_slice = datetime_clipped
+                        data_slice = data_clipped # This is the 2D spectral data
+                        # y_spectral_axis remains the full energy/frequency axis
+                        
+                        # CRITICAL FIX: Extract 1D time array for pcolormesh
+                        if time_slice.ndim == 2:
+                            # 2D time array - extract first column to get 1D time values
+                            x_data = time_slice[:, 0]  
+                            print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: Extracted 1D time from 2D array, shape: {x_data.shape}")
+                        else:
+                            # Already 1D
+                            x_data = time_slice
+                            print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: Using 1D time array directly, shape: {x_data.shape}")
 
+                        # --- Perihelion Degree Calculation (Spectral) --- 
+                        if current_panel_use_degrees and perihelion_time_str and positional_mapper:
+                            print_manager.debug(f"Panel {i+1} (Spectral): Calculating Degrees from Perihelion.")
+                            try:
+                                # 1. Map time slice to Carrington longitude
+                                # <<< MOVE PERIHELION LON CALCULATION *INSIDE* THIS BLOCK >>>
+                                carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon', unwrap_angles=True)
+                                
+                                # 2. Map *panel-specific* perihelion time to its longitude
+                                perihelion_dt = datetime.strptime(perihelion_time_str, '%Y/%m/%d %H:%M:%S.%f')
+                                perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
+                                perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon', unwrap_angles=True)
+                                
+                                if carrington_lons_slice is not None and perihelion_lon_arr is not None and len(perihelion_lon_arr) > 0:
+                                    perihelion_lon_val = perihelion_lon_arr[0]
+
+                                    # <<< Existing Debug Prints Here >>>
+                                    print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Plot Type: Spectral")
+                                    print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Perihelion Time Str: {perihelion_time_str}")
+                                    print_manager.debug(f"[DEBUG Perihelion Offset Calc - Panel {i+1}] Perihelion Lon Value Used: {perihelion_lon_val:.4f}")
+
+                                    # Create mask for valid longitude values in the slice
+                                    valid_lon_mask = ~np.isnan(carrington_lons_slice)
+                                    num_valid_lons = np.sum(valid_lon_mask)
+                                    
+                                    if num_valid_lons > 0:
+                                        # Filter slice data based on valid longitudes
+                                        carrington_lons_slice_valid = carrington_lons_slice[valid_lon_mask]
+                                        # Filter the 2D spectral data along the time dimension (axis 0)
+                                        data_slice_filtered_lon = data_slice[valid_lon_mask, :]
+                                        
+                                        # 3. Calculate relative degrees
+                                        relative_degrees = carrington_lons_slice_valid - perihelion_lon_val
+
+                                        # 5. Set x_data & filtered data_slice
+                                        x_data = relative_degrees
+                                        data_slice = data_slice_filtered_lon # Use filtered spectral data
+                                        # 6. Set flags
+                                        panel_actually_uses_degrees = True
+                                        axs[i]._panel_actually_used_degrees = True
+                                        print_manager.debug(f"--> Stored _panel_actually_used_degrees=True on axis {i} (Spectral)")
+                                    else:
+                                        print_manager.warning(f"Panel {i+1} (Spectral): No valid longitudes. Fallback time.")
+                                        x_data = time_slice # Fallback
+                                        # data_slice remains original full spectral data
+                                else:
+                                    print_manager.warning(f"Panel {i+1} (Spectral): Failed map. Fallback time.")
+                                    x_data = time_slice # Fallback
+                                    # data_slice remains original full spectral data
+                            except Exception as e:
+                                print_manager.error(f"Panel {i+1} (Spectral): Error during degrees calc: {e}")
+                                x_data = time_slice # Fallback
+                                # data_slice remains original full spectral data
+
+                        # --- Standard Positional Mapping (if degrees not used/failed - Spectral) --- 
+                        elif using_positional_axis and positional_mapper is not None:
+                            print_manager.debug(f"Panel {i+1} (Spectral): Attempting standard positional mapping ({data_type}) for {len(time_slice)} points")
+                            positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                            if positional_vals is not None:
+                                valid_mask = ~np.isnan(positional_vals)
+                                num_valid = np.sum(valid_mask)
+                                if num_valid > 0:
+                                    x_data = positional_vals[valid_mask]
+                                    # Filter the 2D spectral data along the time dimension
+                                    data_slice = data_slice[valid_mask, :]
+                                    print_manager.debug(f"Panel {i+1} (Spectral): Standard positional mapping successful, using {num_valid} valid points")
+                                else:
+                                    print_manager.warning(f"Panel {i+1} (Spectral): Standard positional mapping resulted in no valid points. Using time axis.")
+                                    x_data = time_slice
+                                    # data_slice remains original full spectral data
+                            else:
+                                print_manager.warning(f"Panel {i+1} (Spectral): Standard positional mapping failed (returned None). Using time axis.")
+                                x_data = time_slice
+                                # data_slice remains original full spectral data
+
+                        # FIXED: Create properly shaped mesh grid for pcolormesh to avoid dimension mismatch
+                        try:
+                            # Remove the transpose - data should not be transposed
+                            # Debug the shapes for troubleshooting
+                            x_shape = len(x_data)
+                            # y_shape = len(additional_data_clipped) # y_spectral_axis might change
+                            z_shape = data_slice.shape # Use filtered data_slice shape
+                            y_shape = z_shape[1] if len(z_shape) > 1 else 0 # Infer Y shape from Z
+                            print_manager.debug(f"Spectral data shapes after filtering: X:{x_shape}, Y:{y_shape}, Z:{z_shape}")
+
+                            print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: y_shape={y_shape}, y_spectral_axis length={len(y_spectral_axis)}")
+                            # Ensure y_spectral_axis matches the Z dimension
+                            if y_shape != len(y_spectral_axis):
+                                print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: ❌ Y axis mismatch - y_shape={y_shape}, y_spectral_axis={len(y_spectral_axis)}")
+                                print_manager.warning(f"Spectral Y axis length ({len(y_spectral_axis)}) does not match filtered data dimension ({y_shape}). Skipping plot.")
+                                # Handle error: plot text or skip?
+                            else:
+                                print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: ✅ Y axis dimensions match, proceeding with plot")
+                                # Always use 'auto' shading which handles the dimension requirements correctly
+                                # and don't transpose the data
+                                print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: Creating pcolormesh...")
+                                print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: Shapes for pcolormesh - X: {len(x_data)}, Y: {len(y_spectral_axis)}, Z: {data_slice.shape}")
+                                print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: x_data type: {type(x_data)}, sample values: {x_data[:3] if len(x_data) > 3 else x_data}")
+                                print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: y_spectral_axis type: {type(y_spectral_axis)}, sample values: {y_spectral_axis[:3] if len(y_spectral_axis) > 3 else y_spectral_axis}")
+                                print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: data_slice.T shape: {data_slice.T.shape}")
+                                print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: norm: {norm}")
+                                print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: colormap: {getattr(var, 'colormap', 'None')}")
+                                try:
+                                    im = axs[i].pcolormesh(x_data, y_spectral_axis, data_slice.T, # Transpose needed for pcolormesh
+                                                                norm=norm, cmap=var.colormap, shading='auto')
+                                    print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: ✅ pcolormesh created successfully!")
+                                except Exception as pcolor_e:
+                                    print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: ❌ pcolormesh failed: {str(pcolor_e)}")
+                                    print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: ❌ Exception type: {type(pcolor_e)}")
+                                    # Skip pcolormesh creation but continue with the panel
+                                    im = None
+
+                                if im is not None:
+                                    print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: Adding colorbar...")
+                                    pos = axs[i].get_position()
+                                    print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: Axis position - x0={pos.x0:.3f}, y0={pos.y0:.3f}, x1={pos.x1:.3f}, y1={pos.y1:.3f}, width={pos.width:.3f}, height={pos.height:.3f}")
+                                    
+                                    # DEBUGGING: Try different colorbar approaches
+                                    try:
+                                        # METHOD 1: Original manual positioning
+                                        cax = fig.add_axes([pos.x1 + 0.01, pos.y0, 0.02, pos.height])
+                                        cbar = fig.colorbar(im, cax=cax)
+                                        print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: ✅ Colorbar added with manual positioning!")
+                                    except Exception as cbar_e:
+                                        print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: ❌ Manual colorbar failed: {str(cbar_e)}")
+                                        try:
+                                            # METHOD 2: Use matplotlib's automatic positioning
+                                            cbar = fig.colorbar(im, ax=axs[i], shrink=0.8, aspect=20)
+                                            print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: ✅ Colorbar added with automatic positioning!")
+                                        except Exception as cbar_e2:
+                                            print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: ❌ Automatic colorbar also failed: {str(cbar_e2)}")
+                                            cbar = None
+
+                                    if hasattr(var, 'colorbar_label') and cbar is not None:
+                                        cbar.set_label(var.colorbar_label)
+                                else:
+                                    print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: ❌ Skipping colorbar - pcolormesh failed")
+                        except Exception as e:
+                            print_manager.warning(f"Error plotting spectral data: {str(e)}")
+                            print_manager.warning(f"Data shapes: X:{len(x_data)}, Y:{len(y_spectral_axis)}, Z:{data_slice.shape}")
+                        
+                        # Apply panel color formatting if needed
+                        if panel_color:
+                            apply_panel_color(axs[i], panel_color, options)
                 else: # Default plot type (treat as time_series)
                     print('THIS IS A DEFAULT PLOT🍀🍀🍀🍀🍀🍀')
                     plot_color = panel_color

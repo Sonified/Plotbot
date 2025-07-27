@@ -1,3 +1,5 @@
+#plotbot/multiplot_helpers.py
+
 import matplotlib.colors as colors
 
 def get_plot_colors(n_panels, color_mode='default', single_color=None):
