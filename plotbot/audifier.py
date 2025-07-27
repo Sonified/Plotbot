@@ -534,8 +534,10 @@ class Audifier:
         file_names = {}
         
         # Generate markers using clipped datetime array
+        # Use raw datetime array to match how indices were computed
+        raw_datetime_array = processed_components[0].plot_options.datetime_array if hasattr(processed_components[0], 'plot_options') else processed_components[0].datetime_array
         marker_file = self.generate_markers(
-            processed_components[0].datetime_array[indices],
+            raw_datetime_array[indices],
             trange,
             output_dir
         )

@@ -112,13 +112,17 @@ class plot_manager(np.ndarray):
 
     @property
     def data(self):
-        """Return the time clipped numpy array data"""
+        """Return the time clipped numpy array data, preserving original dimensions"""
+        # Get raw data preserving original dimensions - access parent class data directly
+        # Use super() to get the underlying numpy array without recursion
+        raw_data = super(plot_manager, self).__array__()
+        
         # If we have a requested time range, clip to it
         if hasattr(self, 'requested_trange') and self.requested_trange:
-            return self.clip_to_original_trange(self.view(np.ndarray), self.requested_trange)
+            return self.clip_to_original_trange(raw_data, self.requested_trange)
         
         # Otherwise return full array
-        return self.view(np.ndarray)
+        return raw_data
     
     def _clip_datetime_array(self, datetime_array, original_trange):
         """Helper method to clip datetime array without circular dependency"""
@@ -138,14 +142,33 @@ class plot_manager(np.ndarray):
         datetime_array_pd = pd.to_datetime(datetime_array, utc=True)
 
         # Create boolean mask for the time range
-        time_mask = (datetime_array_pd >= start_time) & (datetime_array_pd <= end_time)
+        # For 2D datetime arrays (spectral data), only use the first column for time filtering
+        if datetime_array.ndim > 1:
+            # Use only the first column (time dimension) for filtering
+            time_mask = (datetime_array_pd[:, 0] >= start_time) & (datetime_array_pd[:, 0] <= end_time)
+        else:
+            # For 1D arrays, use the entire array
+            time_mask = (datetime_array_pd >= start_time) & (datetime_array_pd <= end_time)
 
         if not np.any(time_mask):
-            # Return empty datetime array
-            return np.array([], dtype=datetime_array.dtype)
+            # Return empty datetime array with preserved dimensions
+            empty_shape = (0,) + datetime_array.shape[1:] if datetime_array.ndim > 1 else (0,)
+            return np.empty(empty_shape, dtype=datetime_array.dtype)
         
-        # Apply mask to datetime array
-        return datetime_array[time_mask]
+        # Apply mask to datetime array while preserving dimensions
+        print_manager.status(f"🔍 [DEBUG] _clip_datetime_array INPUT shape: {datetime_array.shape}, ndim: {datetime_array.ndim}")
+        print_manager.status(f"🔍 [DEBUG] _clip_datetime_array time_mask shape: {time_mask.shape}, sum: {np.sum(time_mask)}")
+        if datetime_array.ndim == 1:
+            result = datetime_array[time_mask]
+            print_manager.status(f"🔍 [DEBUG] _clip_datetime_array 1D path - OUTPUT shape: {result.shape}")
+            return result
+        else:
+            # For multidimensional arrays, use proper indexing to preserve structure
+            # Convert boolean mask to indices to avoid advanced indexing flattening
+            time_indices = np.where(time_mask)[0]
+            result = datetime_array[time_indices, :]  # Explicitly preserve all other dimensions
+            print_manager.status(f"🔍 [DEBUG] _clip_datetime_array Multi-D path - OUTPUT shape: {result.shape}")
+            return result
 
     def clip_to_original_trange(self, data_array, original_trange, datetime_array=None):
         """Clip data array to the specified time range using ChatGPT's improved approach"""
@@ -172,7 +195,13 @@ class plot_manager(np.ndarray):
         datetime_array_pd = pd.to_datetime(datetime_array, utc=True)
 
         # Create boolean mask for the time range
-        time_mask = (datetime_array_pd >= start_time) & (datetime_array_pd <= end_time)
+        # For 2D datetime arrays (spectral data), only use the first column for time filtering
+        if datetime_array.ndim > 1:
+            # Use only the first column (time dimension) for filtering
+            time_mask = (datetime_array_pd[:, 0] >= start_time) & (datetime_array_pd[:, 0] <= end_time)
+        else:
+            # For 1D arrays, use the entire array
+            time_mask = (datetime_array_pd >= start_time) & (datetime_array_pd <= end_time)
 
         if not np.any(time_mask):
             print_manager.status("⚠️ No data in requested time range")
@@ -181,9 +210,21 @@ class plot_manager(np.ndarray):
             return np.empty(empty_shape, dtype=data_array.dtype)
 
         print_manager.status(f"🔍 [DEBUG] Clipping {len(data_array)} points to {np.sum(time_mask)} points in range")
+        print_manager.status(f"🔍 [DEBUG] INPUT data_array.shape: {data_array.shape}, ndim: {data_array.ndim}")
+        print_manager.status(f"🔍 [DEBUG] time_mask shape: {time_mask.shape}, sum: {np.sum(time_mask)}")
         
-        # Apply mask on the time axis (axis 0) regardless of dimensionality
-        return data_array[time_mask]
+        # Apply mask on the time axis (axis 0) while preserving other dimensions
+        if data_array.ndim == 1:
+            result = data_array[time_mask]
+            print_manager.status(f"🔍 [DEBUG] 1D path - OUTPUT shape: {result.shape}")
+            return result
+        else:
+            # For multidimensional arrays, use proper indexing to preserve structure
+            # Convert boolean mask to indices to avoid advanced indexing flattening
+            time_indices = np.where(time_mask)[0]
+            result = data_array[time_indices, :]  # Explicitly preserve all other dimensions
+            print_manager.status(f"🔍 [DEBUG] Multi-D path - OUTPUT shape: {result.shape}")
+            return result
 
     # Properties for data_type, class_name and subclass_name
     @property

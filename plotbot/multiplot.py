@@ -627,12 +627,14 @@ def multiplot(plot_list, **kwargs):
                         pass # Keep pass to avoid syntax error
                     # print_manager.debug(f"Panel {i+1} pre-clip: Requested trange: {trange[0]} to {trange[1]}") # COMMENTED OUT
                     # <<< END ADDED DEBUG PRINTS >>>
-                    indices = time_clip(single_var.datetime_array, trange[0], trange[1])
+                    # Use raw datetime array for time_clip to avoid double clipping
+                    raw_datetime_array = single_var.plot_options.datetime_array if hasattr(single_var, 'plot_options') else single_var.datetime_array
+                    indices = time_clip(raw_datetime_array, trange[0], trange[1])
                 else:
                     print_manager.warning(f"Empty datetime_array for panel {i+1} - cannot clip times")
 
                 if len(indices) > 0:
-                    print_manager.time_tracking(f"Panel {i+1} time_clip returned {len(indices)} points: first={single_var.datetime_array[indices[0]]}, last={single_var.datetime_array[indices[-1]]}")
+                    print_manager.time_tracking(f"Panel {i+1} time_clip returned {len(indices)} points: first={raw_datetime_array[indices[0]]}, last={raw_datetime_array[indices[-1]]}")
                     
                     if idx == 1 and options.second_variable_on_right_axis:
                         ax2 = axs[i].twinx()
@@ -646,7 +648,7 @@ def multiplot(plot_list, **kwargs):
     
                         # Get x-axis data - use longitude if available
                         # x_data = single_var.datetime_array[indices] # OLD: Start with time
-                        time_slice = single_var.datetime_array[indices]
+                        time_slice = raw_datetime_array[indices]
                         data_slice = single_var.data[indices]
                         x_data = time_slice # Default to time
 
@@ -751,7 +753,7 @@ def multiplot(plot_list, **kwargs):
     
                         # Get x-axis data - use longitude if available
                         # x_data = single_var.datetime_array[indices] # OLD
-                        time_slice = single_var.datetime_array[indices]
+                        time_slice = raw_datetime_array[indices]
                         data_slice = single_var.data[indices]
                         x_data = time_slice # Default to time
 
@@ -847,12 +849,14 @@ def multiplot(plot_list, **kwargs):
                     pass # Keep pass to avoid syntax error
                 # print_manager.debug(f"Panel {i+1} pre-clip: Requested trange: {trange[0]} to {trange[1]}") # COMMENTED OUT
                 # <<< END ADDED DEBUG PRINTS >>>
-                indices = time_clip(var.datetime_array, trange[0], trange[1])
+                # Use raw datetime array for time_clip to avoid double clipping
+                raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                indices = time_clip(raw_datetime_array, trange[0], trange[1])
             else:
                 print_manager.warning(f"Empty datetime_array for panel {i+1} - cannot clip times")
 
             if len(indices) > 0:
-                print_manager.time_tracking(f"Panel {i+1} time_clip returned {len(indices)} points: first={var.datetime_array[indices[0]]}, last={var.datetime_array[indices[-1]]}")
+                print_manager.time_tracking(f"Panel {i+1} time_clip returned {len(indices)} points: first={raw_datetime_array[indices[0]]}, last={raw_datetime_array[indices[-1]]}")
                 
                 if hasattr(var, 'y_limit') and var.y_limit:
                     # Keep functionality but remove debug print
@@ -867,7 +871,7 @@ def multiplot(plot_list, **kwargs):
                         # CRITICAL FIX: Check if indices is empty before trying to plot
                         if len(indices) > 0:
                             # Get initial time and data slices
-                            time_slice = var.datetime_array[indices]
+                            time_slice = raw_datetime_array[indices]
                             data_slice = var.data[indices]
                             x_data = time_slice # Default to time
                             valid_lon_mask = None # Initialize mask
@@ -1027,7 +1031,7 @@ def multiplot(plot_list, **kwargs):
                             legend_label = getattr(var, 'legend_label', None) # Get legend label if it exists
 
                             # Get x-axis data
-                            time_slice = var.datetime_array[indices]
+                            time_slice = raw_datetime_array[indices]
                             data_slice = var.data[indices]
                             x_data = time_slice # Default to time
 
@@ -1138,7 +1142,9 @@ def multiplot(plot_list, **kwargs):
                     elif var.plot_type == 'spectral':
                         # CRITICAL FIX: Check if indices is empty before trying to plot spectral data
                         if len(indices) > 0:
-                            datetime_clipped = var.datetime_array[indices]
+                            # Use raw datetime array to match how indices were computed
+                            raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                            datetime_clipped = raw_datetime_array[indices]
                             data_clipped = np.array(var.data)[indices] # This is the 2D spectral data (Z)
                             y_spectral_axis = np.array(var.additional_data) # This is the y-axis (e.g., energy bins)
                             
@@ -1268,7 +1274,7 @@ def multiplot(plot_list, **kwargs):
                     # CRITICAL FIX: Check if indices is empty before trying to plot
                     if len(indices) > 0:
                         # --- MODIFIED: X-Data Calculation --- 
-                        time_slice = var.datetime_array[indices]
+                        time_slice = raw_datetime_array[indices]
                         data_slice = var.data[indices]
                         x_data = time_slice # Default to time
                         
