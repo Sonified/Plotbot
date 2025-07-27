@@ -172,7 +172,8 @@ class Audifier:
 
         # Get indices for the time range
         try:
-            datetime_array = components[0].datetime_array
+            # Use raw datetime array for clipping, not the property (which is now clipped)
+            datetime_array = components[0].plot_options.datetime_array if hasattr(components[0], 'plot_options') else components[0].datetime_array
             indices = np.where((datetime_array >= start_dt) & 
                               (datetime_array < stop_dt))[0]
         except TypeError as e:

@@ -11,6 +11,7 @@ from typing import Optional, List
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
 from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.time_utils import TimeRangeTracker
 from ._utils import _format_setattr_debug
 
 # 🎉 Define the main class to calculate and store WIND 3DP PM ion plasma moment variables 🎉
@@ -98,10 +99,28 @@ class wind_3dp_pm_class:
         print_manager.datacubby("=== End Update Debug ===\n")
         
     def get_subclass(self, subclass_name):
-        """Retrieve a specific component"""
-        print_manager.dependency_management(f"Getting subclass: {subclass_name}")
-        if subclass_name in self.raw_data.keys():
-            print_manager.dependency_management(f"Returning {subclass_name} component")
+        """
+        Retrieves a specific data component (subclass) by its name.
+        
+        Args:
+            subclass_name (str): The name of the component to retrieve.
+            
+        Returns:
+            The requested component, or None if not found.
+        """
+        # Update requested_trange for all plot_manager components when accessed
+        current_trange = TimeRangeTracker.get_current_trange()
+        if current_trange:
+            for attr_name in dir(self):
+                if not attr_name.startswith('_'):
+                    try:
+                        attr_value = getattr(self, attr_name)
+                        if isinstance(attr_value, plot_manager):
+                            attr_value.requested_trange = current_trange
+                    except Exception:
+                        pass
+        print_manager.debug(f"Getting subclass: {subclass_name}")
+        if subclass_name in self.raw_data:
             return getattr(self, subclass_name)
         else:
             print(f"'{subclass_name}' is not a recognized subclass, friend!")

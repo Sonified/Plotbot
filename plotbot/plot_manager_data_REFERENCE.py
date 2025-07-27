@@ -17,7 +17,6 @@ class plot_manager(np.ndarray):
         'y_label', 'legend_label', 'color', 'y_scale', 'y_limit', 'line_width',
         'line_style', 'colormap', 'colorbar_scale', 'colorbar_limits',
         'additional_data', 'colorbar_label', 'is_derived', 'source_var', 'operation',
-        'requested_trange',
 
         # Add missing attributes
         'marker', 'marker_size', 'alpha', 'marker_style' #, 'zorder', 'legend_label_override'
@@ -113,77 +112,127 @@ class plot_manager(np.ndarray):
     @property
     def data(self):
         """Return the time clipped numpy array data"""
-        # If we have a requested time range, clip to it
-        if hasattr(self, 'requested_trange') and self.requested_trange:
-            return self.clip_to_original_trange(self.view(np.ndarray), self.requested_trange)
-        
-        # Otherwise return full array
-        return self.view(np.ndarray)
-    
-    def _clip_datetime_array(self, datetime_array, original_trange):
-        """Helper method to clip datetime array without circular dependency"""
-        from dateutil.parser import parse
-        import pandas as pd
-        import numpy as np
-        from datetime import timezone
         from .print_manager import print_manager
-
-        if datetime_array is None:
-            return None
-
-        # Parse time range strings to UTC-aware datetimes
-        start_time = parse(original_trange[0]).replace(tzinfo=timezone.utc)
-        end_time = parse(original_trange[1]).replace(tzinfo=timezone.utc)
-
-        datetime_array_pd = pd.to_datetime(datetime_array, utc=True)
-
-        # Create boolean mask for the time range
-        time_mask = (datetime_array_pd >= start_time) & (datetime_array_pd <= end_time)
-
-        if not np.any(time_mask):
-            # Return empty datetime array
-            return np.array([], dtype=datetime_array.dtype)
         
-        # Apply mask to datetime array
-        return datetime_array[time_mask]
+        print_manager.status("🔍 [DEBUG] plot_manager.data property called")
+        
+        # Get the original trange from the parent class (where it's actually stored)
+        original_trange = self._get_original_trange_from_parent()
+        print_manager.status(f"🔍 [DEBUG] Found original_trange from parent: {original_trange}")
+        
+        # If no trange, return everything
+        if original_trange is None:
+            print_manager.status(f"🔍 [DEBUG] No time clipping applied. Returning full array with shape: {self.view(np.ndarray).shape}")
+            return self.view(np.ndarray)
+        
+        # Get the ORIGINAL datetime array (not the potentially modified one)
+        original_datetime_array = getattr(self.plot_options, '_original_datetime_array', None)
+        current_datetime_array = self.plot_options.datetime_array
+        
+        print_manager.status(f"🔍 [DEBUG] Current datetime_array length: {len(current_datetime_array) if current_datetime_array is not None else 'None'}")
+        print_manager.status(f"🔍 [DEBUG] Stored original_datetime_array exists: {original_datetime_array is not None}")
+        
+        if original_datetime_array is None:
+            # Store the original on first access
+            print_manager.status(f"🔍 [DEBUG] Storing original datetime_array for first time (length: {len(current_datetime_array) if current_datetime_array is not None else 'None'})")
+            original_datetime_array = current_datetime_array
+            self.plot_options._original_datetime_array = original_datetime_array
+        else:
+            print_manager.status(f"🔍 [DEBUG] Using stored original_datetime_array (length: {len(original_datetime_array) if original_datetime_array is not None else 'None'})")
+        
+        if original_datetime_array is None:
+            print_manager.status(f"🔍 [DEBUG] No datetime array available. Returning full array with shape: {self.view(np.ndarray).shape}")
+            return self.view(np.ndarray)
+        
+        # Time clip using the ORIGINAL arrays
+        print_manager.status(f"🔍 [DEBUG] Attempting time clipping with trange: {original_trange}")
+        print_manager.status(f"🔍 [DEBUG] About to clip data array (current shape: {self.view(np.ndarray).shape})")
+        print_manager.status(f"🔍 [DEBUG] About to clip using original datetime_array (length: {len(original_datetime_array)})")
+        
+        clipped_data = self.clip_to_original_trange(self.view(np.ndarray), original_trange, original_datetime_array)
+        clipped_times = self.clip_to_original_trange(original_datetime_array, original_trange, original_datetime_array)
+        
+        print_manager.status(f"🔍 [DEBUG] Clipped data shape: {clipped_data.shape}")
+        print_manager.status(f"🔍 [DEBUG] Clipped times length: {len(clipped_times) if clipped_times is not None else 'None'}")
+        
+        # Update the datetime_array to the clipped version (this is what gets returned by the datetime_array property)
+        print_manager.status(f"🔍 [DEBUG] Updating plot_options.datetime_array from {len(self.plot_options.datetime_array) if self.plot_options.datetime_array is not None else 'None'} to {len(clipped_times) if clipped_times is not None else 'None'}")
+        self.plot_options.datetime_array = clipped_times
+        self._clipped_datetime_array = clipped_times
+        
+        print_manager.status(f"🔍 [DEBUG] Time clipping successful! Data array shape: {self.view(np.ndarray).shape} -> {clipped_data.shape}")
+        print_manager.status(f"🔍 [DEBUG] Returning clipped data with shape: {clipped_data.shape}")
+        return clipped_data
+
+    def _get_original_trange_from_parent(self):
+        """Get original time range from parent class instance via data_cubby"""
+        try:
+            from .data_cubby import data_cubby
+            
+            # Get the parent class instance using class_name
+            if hasattr(self, 'plot_options') and hasattr(self.plot_options, 'class_name'):
+                class_name = self.plot_options.class_name.lower()
+                class_instance = data_cubby.class_registry.get(class_name)
+                
+                # Get _original_requested_trange from the parent class (where it's actually stored)
+                if class_instance and hasattr(class_instance, '_original_requested_trange'):
+                    return class_instance._original_requested_trange
+                    
+        except Exception as e:
+            from .print_manager import print_manager
+            print_manager.warning(f"Failed to get original trange: {e}")
+        
+        return None
 
     def clip_to_original_trange(self, data_array, original_trange, datetime_array=None):
-        """Clip data array to the specified time range using ChatGPT's improved approach"""
-        from dateutil.parser import parse
-        import pandas as pd
-        import numpy as np
-        from datetime import timezone
-        from .print_manager import print_manager
+        """Clip data array to the specified time range"""
+        try:
+            from .print_manager import print_manager
+            from dateutil.parser import parse
+            from datetime import timezone
+            import pandas as pd
+            import numpy as np
 
-        print_manager.status(f"🔍 [DEBUG] clip_to_original_trange called with trange: {original_trange}")
+            print_manager.status(f"🔍 [DEBUG] clip_to_original_trange called with original_trange: {original_trange}")
 
-        if datetime_array is None:
-            # Use the ORIGINAL datetime array from plot_options, not the property
-            datetime_array = self.plot_options.datetime_array
+            # Use provided datetime_array or fall back to self.datetime_array
+            if datetime_array is None:
+                datetime_array = self.datetime_array
 
-        if datetime_array is None:
-            print_manager.status("⚠️ No datetime array available, returning full data")
-            return data_array
+            # Parse the start and end time using dateutil and make them timezone-aware
+            if isinstance(original_trange[0], str):
+                print_manager.status(f"🔍 [DEBUG] original_trange[0] is a string")
+                start_time = parse(original_trange[0]).replace(tzinfo=timezone.utc)
+                end_time = parse(original_trange[1]).replace(tzinfo=timezone.utc)
+            else:
+                print_manager.status(f"🔍 [DEBUG] original_trange[0] is not a string")
+                start_time = original_trange[0]
+                end_time = original_trange[1]
 
-        # Parse time range strings to UTC-aware datetimes
-        start_time = parse(original_trange[0]).replace(tzinfo=timezone.utc)
-        end_time = parse(original_trange[1]).replace(tzinfo=timezone.utc)
+            print_manager.status(f"🔍 [DEBUG] start_time: {start_time}")
+            print_manager.status(f"🔍 [DEBUG] end_time: {end_time}")
 
-        datetime_array_pd = pd.to_datetime(datetime_array, utc=True)
+            # Convert datetime_array to pandas timestamps (timezone-aware)
+            datetime_array_pd = pd.to_datetime(datetime_array, utc=True)
+            print_manager.status(f"🔍 [DEBUG] using datetime_array length: {len(datetime_array)}")
+            print_manager.status(f"🔍 [DEBUG] datetime_array_pd[0]: {datetime_array_pd[0]}, datetime_array_pd[-1]: {datetime_array_pd[-1]}")
 
-        # Create boolean mask for the time range
-        time_mask = (datetime_array_pd >= start_time) & (datetime_array_pd <= end_time)
+            # Create time mask
+            time_mask = (datetime_array_pd >= start_time) & (datetime_array_pd <= end_time)
+            print_manager.status(f"🔍 [DEBUG] time_mask sum: {np.sum(time_mask)} out of {len(time_mask)} total")
 
-        if not np.any(time_mask):
-            print_manager.status("⚠️ No data in requested time range")
-            # Return empty array with same trailing dimensions
-            empty_shape = (0,) + data_array.shape[1:] if data_array.ndim > 1 else (0,)
-            return np.empty(empty_shape, dtype=data_array.dtype)
+            # Handle case of no data in range
+            if not np.any(time_mask):
+                print_manager.status(f"🔍 [DEBUG] No points in range")
+                return np.array([], dtype=data_array.dtype)
 
-        print_manager.status(f"🔍 [DEBUG] Clipping {len(data_array)} points to {np.sum(time_mask)} points in range")
-        
-        # Apply mask on the time axis (axis 0) regardless of dimensionality
-        return data_array[time_mask]
+            print_manager.status(f"🔍 [DEBUG] Returning clipped data")
+            return data_array[time_mask]
+
+        except Exception as e:
+            from .print_manager import print_manager
+            print_manager.warning(f"Time clipping failed: {e}")
+            return data_array  # Return unclipped data on error
 
     # Properties for data_type, class_name and subclass_name
     @property
@@ -233,15 +282,6 @@ class plot_manager(np.ndarray):
 
     @property
     def datetime_array(self):
-        """Return the time clipped datetime array to match .data property"""
-        # If we have a requested time range, clip the datetime array to match
-        if hasattr(self, 'requested_trange') and self.requested_trange:
-            full_datetime_array = self.plot_options.datetime_array
-            if full_datetime_array is not None:
-                # Use a separate clipping method to avoid circular dependency
-                return self._clip_datetime_array(full_datetime_array, self.requested_trange)
-        
-        # Otherwise return full datetime array
         return self.plot_options.datetime_array
 
     @datetime_array.setter

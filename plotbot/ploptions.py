@@ -30,6 +30,7 @@ class ploptions:
                  colorbar_limits=None,
                  additional_data=None,
                  colorbar_label=None,
+                 requested_trange=None,
                  # Add common font size attributes explicitly
                  title_fontsize=12,
                  y_label_size=10,
@@ -57,6 +58,7 @@ class ploptions:
         self.colorbar_limits = colorbar_limits
         self.additional_data = additional_data
         self.colorbar_label = colorbar_label
+        self.requested_trange = requested_trange
         # Set the explicit font sizes
         self.title_fontsize = title_fontsize
         self.y_label_size = y_label_size

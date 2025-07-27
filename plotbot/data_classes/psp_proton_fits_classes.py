@@ -21,9 +21,10 @@ m_proton_kg = proton_mass_kg_scipy
 
 # Import our custom managers (UPDATED PATHS)
 from plotbot.print_manager import print_manager
-# from plotbot.data_cubby import data_cubby # REMOVED
 from plotbot.plot_manager import plot_manager
 from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.time_utils import TimeRangeTracker
+# from plotbot.data_cubby import data_cubby # REMOVED
 # Import get_data and proton instance for dependency loading (within method if needed)
 # from ..get_data import get_data 
 # from .psp_proton_classes import proton
@@ -166,27 +167,24 @@ class proton_fits_class:
         print_manager.datacubby("=== End Update Debug ===\n")
 
     def get_subclass(self, subclass_name):
-        """Retrieve a specific plot_manager attribute by its name (subclass_name)."""
-        print_manager.debug(f"Attempting to get subclass/attribute: {subclass_name}")
-        # Directly check if an attribute with the exact subclass_name exists on the instance.
-        # This attribute should hold the plot_manager instance set by set_ploptions.
+        current_trange = TimeRangeTracker.get_current_trange()
+        if current_trange:
+            for attr_name in dir(self):
+                if not attr_name.startswith('_'):
+                    try:
+                        attr_value = getattr(self, attr_name)
+                        if isinstance(attr_value, plot_manager):
+                            attr_value.requested_trange = current_trange
+                    except Exception:
+                        pass
+        print_manager.debug(f"Getting subclass: {subclass_name}")
         if hasattr(self, subclass_name):
-            attribute_value = getattr(self, subclass_name)
-            # Optional: Check if it's actually a plot_manager instance?
-            if isinstance(attribute_value, plot_manager):
-                print_manager.debug(f"Returning plot_manager instance for: {subclass_name}")
-                return attribute_value
-            else:
-                # This case shouldn't normally happen if set_ploptions worked correctly
-                print_manager.warning(f"Attribute '{subclass_name}' exists but is not a plot_manager instance (Type: {type(attribute_value)}). Returning None.")
-                return None
+            return getattr(self, subclass_name)
         else:
-            # If the attribute doesn't exist (e.g., set_ploptions failed or name is wrong)
-            print(f"'{subclass_name}' is not a recognized subclass/attribute, friend!")
-            # List available plot_manager attributes
+            print(f"'{subclass_name}' is not a recognized subclass, friend!")
             available_attrs = [attr for attr in dir(self) if isinstance(getattr(self, attr, None), plot_manager) and not attr.startswith('_')]
-            print(f"Available plot managers: {', '.join(sorted(available_attrs))}")
-            return None # Return None if not found
+            print(f"Try one of these: {', '.join(sorted(available_attrs))}")
+            return None
 
     def __getattr__(self, name):
         # Allow direct access to dunder OR single underscore methods/attributes
@@ -696,14 +694,14 @@ class proton_fits_class:
             )
         )
 
-        # 2. vsw_mach_pfits (Scatter, Size 20)
-        self.vsw_mach_pfits = plot_manager( # Solar wind Mach number - ATTRIBUTE NAME CHANGED
+        # 2. vsw_mach (Scatter, Size 20)
+        self.vsw_mach = plot_manager( # Solar wind Mach number - ATTRIBUTE NAME CHANGED
             self.raw_data.get('vsw_mach'), # Still gets raw 'vsw_mach' data
             plot_options=ploptions(
                 var_name='vsw_mach', 
                 data_type='proton_fits',
                 class_name='proton_fits',
-                subclass_name='vsw_mach_pfits', # User list #2
+                subclass_name='vsw_mach', # User list #2
                 plot_type='scatter',
                 datetime_array=self.datetime_array,
                 y_label=r'$V_{sw}/V_A$', 
@@ -717,14 +715,14 @@ class proton_fits_class:
             )
         )
 
-        # 3. beta_ppar_pfits (Scatter, Size 20)
-        self.beta_ppar_pfits = plot_manager( # Total Proton parallel beta - ATTRIBUTE NAME CHANGED
+        # 3. beta_ppar (Scatter, Size 20)
+        self.beta_ppar = plot_manager( # Total Proton parallel beta - ATTRIBUTE NAME CHANGED
             self.raw_data.get('beta_ppar'), # Still gets raw 'beta_ppar' data
             plot_options=ploptions(
                 var_name='beta_ppar',
                 data_type='proton_fits',
                 class_name='proton_fits',
-                subclass_name='beta_ppar_pfits', # User list #3 (Updated)
+                subclass_name='beta_ppar', # User list #3 (Updated)
                 plot_type='scatter', 
                 datetime_array=self.datetime_array,
                 y_label=r'$\beta_{\parallel,p}$', 
@@ -738,14 +736,14 @@ class proton_fits_class:
             )
         )
 
-        # 4. beta_pperp_pfits (Scatter, Size 20)
-        self.beta_pperp_pfits = plot_manager( # Total Proton perpendicular beta - ATTRIBUTE NAME CHANGED
+        # 4. beta_pperp (Scatter, Size 20)
+        self.beta_pperp = plot_manager( # Total Proton perpendicular beta - ATTRIBUTE NAME CHANGED
             self.raw_data.get('beta_pperp'), # Still gets raw 'beta_pperp' data
             plot_options=ploptions(
                 var_name='beta_pperp', 
                 data_type='proton_fits',
                 class_name='proton_fits',
-                subclass_name='beta_pperp_pfits', # User list #4 (Updated)
+                subclass_name='beta_pperp', # User list #4 (Updated)
                 plot_type='scatter',
                 datetime_array=self.datetime_array,
                 y_label=r'$\beta_{\perp,p}$',
@@ -759,7 +757,28 @@ class proton_fits_class:
             )
         )
 
-        # 5. ham_param (Scatter, Size 20)
+        # 5. beta_p_tot (Scatter, Size 20)
+        self.beta_p_tot = plot_manager( # Total Proton beta - ATTRIBUTE NAME CHANGED
+            self.raw_data.get('beta_p_tot'), # Still gets raw 'beta_p_tot' data
+            plot_options=ploptions(
+                var_name='beta_p_tot', 
+                data_type='proton_fits',
+                class_name='proton_fits',
+                subclass_name='beta_p_tot', # User list #5 (Updated)
+                plot_type='scatter',
+                datetime_array=self.datetime_array,
+                y_label=r'$\beta_p$',
+                legend_label=r'$\beta_p$',
+                color='orange',
+                y_scale='linear',
+                marker_style='*',
+                marker_size=20,
+                alpha=0.7,
+                y_limit=None
+            )
+        )
+
+        # 6. ham_param (Scatter, Size 20)
         self.ham_param = plot_manager( # Hammerhead parameter
             self.raw_data.get('ham_param'),
             plot_options=ploptions(

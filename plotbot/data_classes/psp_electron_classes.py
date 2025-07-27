@@ -8,10 +8,12 @@ from typing import Optional, List # Added for type hinting
 
 # Import our custom managers (UPDATED PATHS)
 from plotbot.print_manager import print_manager
-# from plotbot.data_cubby import data_cubby # REMOVED Circular Import
 from plotbot.plot_manager import plot_manager
 from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
-from plotbot.get_encounter import get_encounter_number
+from plotbot.time_utils import TimeRangeTracker
+from plotbot.utils import get_encounter_number
+from ._utils import _format_setattr_debug
+# from plotbot.data_cubby import data_cubby # REMOVED Circular Import
 
 class epad_strahl_class:
     def __init__(self, imported_data):
@@ -87,10 +89,21 @@ class epad_strahl_class:
 
     def get_subclass(self, subclass_name):  # Dynamic component retrieval method
         """Retrieve a specific component"""
-        print_manager.debug(f"Getting subclass: {subclass_name}")  # Log which component is requested
+        print_manager.dependency_management(f"Getting subclass: {subclass_name}")  # Log which component is requested
+        # Update requested_trange for all plot_manager components when accessed
+        current_trange = TimeRangeTracker.get_current_trange()
+        if current_trange:
+            for attr_name in dir(self):
+                if not attr_name.startswith('_'):
+                    try:
+                        attr_value = getattr(self, attr_name)
+                        if isinstance(attr_value, plot_manager):
+                            attr_value.requested_trange = current_trange
+                    except Exception:
+                        pass
         if subclass_name in self.raw_data.keys():  # Check if component exists in raw_data
-            print_manager.debug(f"Returning {subclass_name} component")  # Log successful component find
-            return getattr(self, subclass_name)  # Return the component
+            print_manager.dependency_management(f"Returning {subclass_name} component")  # Log successful component find
+            return getattr(self, subclass_name)  # Return the plot_manager instance
         else:
             print(f"'{subclass_name}' is not a recognized subclass, friend!")  # Friendly error message
             print(f"Try one of these: {', '.join(self.raw_data.keys())}")  # Show available components
@@ -381,10 +394,21 @@ class epad_strahl_high_res_class:
 
     def get_subclass(self, subclass_name):  # Dynamic component retrieval method
         """Retrieve a specific component"""
-        print_manager.debug(f"Getting subclass: {subclass_name}")  # Log which component is requested
+        print_manager.dependency_management(f"Getting subclass: {subclass_name}")  # Log which component is requested
+        # Update requested_trange for all plot_manager components when accessed
+        current_trange = TimeRangeTracker.get_current_trange()
+        if current_trange:
+            for attr_name in dir(self):
+                if not attr_name.startswith('_'):
+                    try:
+                        attr_value = getattr(self, attr_name)
+                        if isinstance(attr_value, plot_manager):
+                            attr_value.requested_trange = current_trange
+                    except Exception:
+                        pass
         if subclass_name in self.raw_data.keys():  # Check if component exists in raw_data
-            print_manager.debug(f"Returning {subclass_name} component")  # Log successful component find
-            return getattr(self, subclass_name)  # Return the component
+            print_manager.dependency_management(f"Returning {subclass_name} component")  # Log successful component find
+            return getattr(self, subclass_name)  # Return the plot_manager instance
         else:
             print(f"'{subclass_name}' is not a recognized subclass, friend!")  # Friendly error message
             print(f"Try one of these: {', '.join(self.raw_data.keys())}")  # Show available components

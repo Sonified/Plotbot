@@ -11,7 +11,7 @@ data_types = {
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/fields/{data_level}/mag_RTN/',  # URL for data source
         'local_path': os.path.join('data', 'psp', 'fields', '{data_level}', 'mag_rtn'),  # Local path for storing data
         'password_type': 'mag',  # Type of password required
-        'file_pattern': r'psp_fld_{data_level}_mag_RTN_{date_hour_str}_v(\\d{{2}})\\.cdf',  # Regex pattern for file names
+        'file_pattern': r'psp_fld_{data_level}_mag_RTN_{date_hour_str}_v(\d{{2}})\.cdf',  # Regex pattern for file names
         'file_pattern_import': r'psp_fld_{data_level}_mag_RTN_{date_hour_str}_v*.cdf',  # Regex pattern for importing files
         'data_level': 'l2',  # Data level
         'file_time_format': '6-hour',  # Time format of the files
@@ -23,7 +23,7 @@ data_types = {
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/fields/{data_level}/mag_RTN_4_Sa_per_Cyc/',
         'local_path': os.path.join('data', 'psp', 'fields', '{data_level}', 'mag_rtn_4_per_cycle'),
         'password_type': 'mag',
-        'file_pattern': r'psp_fld_{data_level}_mag_RTN_4_Sa_per_Cyc_{date_str}_v(\\d{{2}})\\.cdf',      # Added this
+        'file_pattern': r'psp_fld_{data_level}_mag_RTN_4_Sa_per_Cyc_{date_str}_v(\d{{2}})\.cdf',      # Added this
         'file_pattern_import': r'psp_fld_{data_level}_mag_RTN_4_Sa_per_Cyc_{date_str}_v*.cdf',  # Fixed case to match actual files
         'spdf_file_pattern': r'psp_fld_{data_level}_mag_rtn_4_sa_per_cyc_{date_str}_v*.cdf',    # SPDF case (lowercase)
         'data_level': 'l2',
@@ -36,7 +36,7 @@ data_types = {
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/fields/{data_level}/mag_SC/',
         'local_path': os.path.join('data', 'psp', 'fields', '{data_level}', 'mag_sc'),
         'password_type': 'mag',
-        'file_pattern': r'psp_fld_{data_level}_mag_SC_{date_hour_str}_v(\\d{{2}})\\.cdf',
+        'file_pattern': r'psp_fld_{data_level}_mag_SC_{date_hour_str}_v(\d{{2}})\.cdf',
         'file_pattern_import': r'psp_fld_{data_level}_mag_SC_{date_hour_str}_v*.cdf',
         'data_level': 'l2',
         'file_time_format': '6-hour',
@@ -48,7 +48,7 @@ data_types = {
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/fields/{data_level}/mag_SC_4_Sa_per_Cyc/',
         'local_path': os.path.join('data', 'psp', 'fields', '{data_level}', 'mag_sc_4_per_cycle'),
         'password_type': 'mag',
-        'file_pattern': r'psp_fld_{data_level}_mag_SC_4_Sa_per_Cyc_{date_str}_v(\\d{{2}})\\.cdf',
+        'file_pattern': r'psp_fld_{data_level}_mag_SC_4_Sa_per_Cyc_{date_str}_v(\d{{2}})\.cdf',
         'file_pattern_import': r'psp_fld_{data_level}_mag_SC_4_Sa_per_Cyc_{date_str}_v*.cdf',
         'spdf_file_pattern': r'psp_fld_{data_level}_mag_sc_4_sa_per_cyc_{date_str}_v*.cdf',   # SPDF case (lowercase)
         'data_level': 'l2',
@@ -61,7 +61,7 @@ data_types = {
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/fields/{data_level}/sqtn_rfs_V1V2/',  # Berkeley uses uppercase URL
         'local_path': os.path.join('data', 'psp', 'fields', '{data_level}', 'sqtn_rfs_v1v2'),
         'password_type': 'mag',  # FIELDS instrument uses mag password type
-        'file_pattern': r'psp_fld_{data_level}_sqtn_rfs_V1V2_{date_str}_v(\\d{{2}})\\.cdf',  # Berkeley uses uppercase
+        'file_pattern': r'psp_fld_{data_level}_sqtn_rfs_V1V2_{date_str}_v(\d{{2}})\.cdf',  # Berkeley uses uppercase
         'file_pattern_import': r'psp_fld_{data_level}_sqtn_rfs_V1V2_{date_str}_v*.cdf',   # Berkeley uses uppercase
         'spdf_file_pattern': r'psp_fld_{data_level}_sqtn_rfs_v1v2_{date_str}_v*.cdf',   # SPDF uses lowercase
         'data_level': 'l3',
@@ -74,7 +74,7 @@ data_types = {
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/sweap/spe/L3/spe_sf0_pad/',
         'local_path': os.path.join('data', 'psp', 'sweap', 'spe', 'l3', 'spe_sf0_pad'),
         'password_type': 'sweap',
-        'file_pattern': r'psp_swp_spe_sf0_L3_pad_{date_str}_v(\\d{{2}})\\.cdf',
+        'file_pattern': r'psp_swp_spe_sf0_L3_pad_{date_str}_v(\d{{2}})\.cdf',
         'file_pattern_import': r'psp_swp_spe_sf0_L3_pad_{date_str}_v*.cdf',
         'spdf_file_pattern': r'psp_swp_spe_sf0_l3_pad_{date_str}_v*.cdf',   # SPDF case (lowercase l3)
         'data_level': 'l3',
@@ -87,7 +87,7 @@ data_types = {
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/sweap/spe/L3/spe_af0_pad/',
         'local_path': os.path.join('data', 'psp', 'sweap', 'spe', 'l3', 'spe_af0_pad'),
         'password_type': 'sweap',
-        'file_pattern': r'psp_swp_spe_af0_L3_pad_{date_str}_v(\\d{{2}})\\.cdf',
+        'file_pattern': r'psp_swp_spe_af0_L3_pad_{date_str}_v(\d{{2}})\.cdf',
         'file_pattern_import': r'psp_swp_spe_af0_L3_pad_{date_str}_v*.cdf',
         'data_level': 'l3',
         'file_time_format': 'daily',
@@ -99,7 +99,7 @@ data_types = {
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/sweap/spi/L3/spi_sf00/',
         'local_path': os.path.join('data', 'psp', 'sweap', 'spi', 'l3', 'spi_sf00_l3_mom'),
         'password_type': 'sweap',
-        'file_pattern': r'psp_swp_spi_sf00_L3_mom_{date_str}_v(\\d{{2}})\\.cdf',
+        'file_pattern': r'psp_swp_spi_sf00_L3_mom_{date_str}_v(\d{{2}})\.cdf',
         'file_pattern_import': r'psp_swp_spi_sf00_L3_mom_{date_str}_v*.cdf',
         'spdf_file_pattern': r'psp_swp_spi_sf00_l3_mom_{date_str}_v*.cdf',   # SPDF case (lowercase l3)
         'data_level': 'l3',
@@ -116,7 +116,7 @@ data_types = {
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/sweap/spi/L3/spi_af00/',
         'local_path': os.path.join('data', 'psp', 'sweap', 'spi', 'l3', 'spi_af00_l3_mom'),
         'password_type': 'sweap',
-        'file_pattern': r'psp_swp_spi_af00_L3_mom_{date_str}_v(\\d{{2}})\\.cdf',
+        'file_pattern': r'psp_swp_spi_af00_L3_mom_{date_str}_v(\d{{2}})\.cdf',
         'file_pattern_import': r'psp_swp_spi_af00_L3_mom_{date_str}_v*.cdf',
         'data_level': 'l3',
         'file_time_format': 'daily',
@@ -132,7 +132,7 @@ data_types = {
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/sweap/spi/L3/spi_sf0a/',
         'local_path': os.path.join('data', 'psp', 'sweap', 'spi', 'l3', 'spi_sf0a_l3_mom'),
         'password_type': 'sweap',
-        'file_pattern': r'psp_swp_spi_sf0a_L3_mom_{date_str}_v(\\d{{2}})\\.cdf',
+        'file_pattern': r'psp_swp_spi_sf0a_L3_mom_{date_str}_v(\d{{2}})\.cdf',
         'file_pattern_import': r'psp_swp_spi_sf0a_L3_mom_{date_str}_v*.cdf',
         'spdf_file_pattern': r'psp_swp_spi_sf0a_l3_mom_{date_str}_v*.cdf',   # SPDF case (lowercase l3)
         'data_level': 'l3',
@@ -149,7 +149,7 @@ data_types = {
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/fields/{data_level}/dfb_ac_spec/dv12hg/',
         'local_path': os.path.join('data', 'psp', 'fields', '{data_level}', 'dfb_ac_spec', 'dv12hg'),
         'password_type': 'mag',  # FIELDS instrument uses mag password type
-        'file_pattern': r'psp_fld_{data_level}_dfb_ac_spec_dv12hg_{date_str}_v(\\d{{2}})\\.cdf',
+        'file_pattern': r'psp_fld_{data_level}_dfb_ac_spec_dv12hg_{date_str}_v(\d{{2}})\.cdf',
         'file_pattern_import': r'psp_fld_{data_level}_dfb_ac_spec_dv12hg_{date_str}_v*.cdf',
         'data_level': 'l2',
         'file_time_format': 'daily',
@@ -164,7 +164,7 @@ data_types = {
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/fields/{data_level}/dfb_ac_spec/dv34hg/',
         'local_path': os.path.join('data', 'psp', 'fields', '{data_level}', 'dfb_ac_spec', 'dv34hg'),
         'password_type': 'mag',  # FIELDS instrument uses mag password type
-        'file_pattern': r'psp_fld_{data_level}_dfb_ac_spec_dv34hg_{date_str}_v(\\d{{2}})\\.cdf',
+        'file_pattern': r'psp_fld_{data_level}_dfb_ac_spec_dv34hg_{date_str}_v(\d{{2}})\.cdf',
         'file_pattern_import': r'psp_fld_{data_level}_dfb_ac_spec_dv34hg_{date_str}_v*.cdf',
         'data_level': 'l2',
         'file_time_format': 'daily',
@@ -179,7 +179,7 @@ data_types = {
         'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/fields/{data_level}/dfb_dc_spec/dv12hg/',
         'local_path': os.path.join('data', 'psp', 'fields', '{data_level}', 'dfb_dc_spec', 'dv12hg'),
         'password_type': 'mag',  # FIELDS instrument uses mag password type
-        'file_pattern': r'psp_fld_{data_level}_dfb_dc_spec_dv12hg_{date_str}_v(\\d{{2}})\\.cdf',
+        'file_pattern': r'psp_fld_{data_level}_dfb_dc_spec_dv12hg_{date_str}_v(\d{{2}})\.cdf',
         'file_pattern_import': r'psp_fld_{data_level}_dfb_dc_spec_dv12hg_{date_str}_v*.cdf',
         'data_level': 'l2',
         'file_time_format': 'daily',

@@ -10,6 +10,7 @@ from typing import Optional, List
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
 from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.time_utils import TimeRangeTracker
 
 class psp_dfb_class:
     """PSP FIELDS Digital Fields Board (DFB) electric field spectra data."""
@@ -283,11 +284,23 @@ class psp_dfb_class:
         print_manager.processing(f"[DFB_SET_PLOPT] Plot managers created for all DFB variables")
 
     def get_subclass(self, subclass_name):
-        """Get a specific subclass by name."""
-        if hasattr(self, subclass_name):
+        # Update requested_trange for all plot_manager components when accessed
+        current_trange = TimeRangeTracker.get_current_trange()
+        if current_trange:
+            for attr_name in dir(self):
+                if not attr_name.startswith('_'):
+                    try:
+                        attr_value = getattr(self, attr_name)
+                        if isinstance(attr_value, plot_manager):
+                            attr_value.requested_trange = current_trange
+                    except Exception:
+                        pass
+        print_manager.debug(f"Getting subclass: {subclass_name}")
+        if subclass_name in self.raw_data:
             return getattr(self, subclass_name)
         else:
-            print_manager.warning(f"Subclass '{subclass_name}' not found in {self.class_name}")
+            print(f"'{subclass_name}' is not a recognized subclass, friend!")
+            print(f"Try one of these: {', '.join(self.raw_data.keys())}")
             return None
 
     def __getattr__(self, name):

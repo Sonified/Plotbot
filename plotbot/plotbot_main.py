@@ -318,6 +318,9 @@ def plotbot(trange, *args):
                 elif regular_vars[0].data_type == 'psp_orbit_data':
                     print_manager.speed_test(f'[TIMER_ORBIT_3] get_data() call: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
             print_manager.status(f"📥 Acquiring data for {len(regular_vars)} regular variables...")
+            # Set TimeRangeTracker for user's original request before get_data call
+            from .time_utils import TimeRangeTracker
+            TimeRangeTracker.set_current_trange(trange)
             timer_start = timer.perf_counter()
             get_data(trange, *regular_vars)
             timer_end = timer.perf_counter()
@@ -325,6 +328,9 @@ def plotbot(trange, *args):
             print_manager.speed_test(f"[TIMER_GET_DATA_CALL] get_data() call: {duration_ms:.2f}ms")
         else:
             print_manager.status(f"✅ All data already cached for {len(regular_vars)} regular variables in the specified trange.")
+            # Even for cached data, update TimeRangeTracker so requested_trange gets set correctly
+            from .time_utils import TimeRangeTracker
+            TimeRangeTracker.set_current_trange(trange)
 
     #------------------ Prepare Plot Variables ------------------#
     plot_vars = []
@@ -442,7 +448,9 @@ def plotbot(trange, *args):
                         continue
 
                     # Check if any data points fall within the specified time range
-                    time_indices = time_clip(var.datetime_array, trange[0], trange[1])
+                    # Use raw datetime array for time clipping, not the property (which is now clipped)
+                    raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                    time_indices = time_clip(raw_datetime_array, trange[0], trange[1])
                     if len(time_indices) == 0:
                         empty_plot = True
                         print_manager.debug("empty_plot = True - No valid time indices found")
@@ -456,7 +464,8 @@ def plotbot(trange, *args):
                     #====================================================================
                     # Only continue if all verification checks passed
                     if not empty_plot:
-                        datetime_clipped = var.datetime_array[time_indices]  # Get timestamps within range
+                        # Use raw datetime array for clipping to match time_indices calculation
+                        datetime_clipped = raw_datetime_array[time_indices]  # Get timestamps within range
                         
                         # Handle scalar quantities (single line)
                         if data.ndim == 1:
@@ -510,7 +519,9 @@ def plotbot(trange, *args):
                         print_manager.debug("empty_plot = True - No datetime array available (scatter)")
                         continue
 
-                    time_indices = time_clip(var.datetime_array, trange[0], trange[1])
+                    # Use raw datetime array for time clipping, not the property (which is now clipped)
+                    raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                    time_indices = time_clip(raw_datetime_array, trange[0], trange[1])
                     if len(time_indices) == 0:
                         empty_plot = True
                         print_manager.debug("empty_plot = True - No valid time indices found (scatter)")
@@ -520,7 +531,8 @@ def plotbot(trange, *args):
 
                     # PROCEED WITH PLOTTING
                     if not empty_plot:
-                        datetime_clipped = var.datetime_array[time_indices]
+                        # Use raw datetime array for clipping to match time_indices calculation
+                        datetime_clipped = raw_datetime_array[time_indices]
 
                         # Handle scalar quantities
                         if data.ndim == 1:
@@ -564,13 +576,28 @@ def plotbot(trange, *args):
                         print_manager.debug("empty_plot = True - No datetime array available (spectral)")
                         continue
 
-                    time_indices = time_clip(var.datetime_array, trange[0], trange[1])  # Get time range indices
+                    # Use raw datetime array for time clipping, not the property (which is now clipped)
+                    raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                    time_indices = time_clip(raw_datetime_array, trange[0], trange[1])  # Get time range indices
                     if len(time_indices) == 0:
                         empty_plot = True
                         print_manager.debug("empty_plot = True - No valid time indices found (spectral)")
                         continue
                     
-                    data = np.array(var).view(np.ndarray)  # Convert to numpy array
+                    # Use raw data array (not .data property) for manual time clipping
+                    raw_data = var.view(np.ndarray)  # Get raw data without .data property clipping
+                    data = raw_data  # Keep original variable name for compatibility
+                    
+                    # For spectral data, ensure indices are valid for the data array
+                    max_valid_index = data.shape[0] - 1
+                    if len(time_indices) > 0 and time_indices[-1] > max_valid_index:
+                        print_manager.debug(f"Adjusting time indices for spectral data: max index {time_indices[-1]} > data length {data.shape[0]}")
+                        time_indices = time_indices[time_indices <= max_valid_index]
+                        if len(time_indices) == 0:
+                            empty_plot = True
+                            print_manager.debug("empty_plot = True - No valid time indices after adjustment (spectral)")
+                            continue
+                    
                     data_clipped = data[time_indices]  # Slice data for time range
                     if np.all(np.isnan(data_clipped)):  # Check for all NaN values
                         empty_plot = True
@@ -581,8 +608,19 @@ def plotbot(trange, *args):
                     # Proceed with spectral plotting
                     #====================================================================
                     if not empty_plot:  # Create spectral plot only if we have valid data
-                        datetime_clipped = var.datetime_array[time_indices]
-                        additional_data_clipped = var.additional_data[time_indices]
+                        # For datetime_clipped, also handle potential mismatched dimensions
+                        # Use raw datetime array for clipping to match time_indices calculation
+                        if raw_datetime_array.ndim == 2:
+                            # Keep 2D for pcolormesh compatibility with additional_data
+                            datetime_clipped = raw_datetime_array[time_indices, :]
+                        else:
+                            datetime_clipped = raw_datetime_array[time_indices]
+                        
+                        # Handle additional_data similarly
+                        if hasattr(var, 'additional_data') and var.additional_data is not None:
+                            additional_data_clipped = var.additional_data[time_indices] if len(var.additional_data) > max(time_indices) else var.additional_data
+                        else:
+                            additional_data_clipped = None
 
                         ax.set_ylabel(var.y_label)  # Set y-axis properties
                         ax.set_yscale(var.y_scale)
@@ -598,14 +636,26 @@ def plotbot(trange, *args):
                             norm = None
 
                         # Create spectral plot
-                        im = ax.pcolormesh(  # Create 2D color plot
-                            datetime_clipped,
-                            additional_data_clipped,
-                            data_clipped,
-                            norm=norm,
-                            cmap=var.colormap if hasattr(var, 'colormap') else None,
-                            shading='auto'
-                        )
+                        if additional_data_clipped is not None:
+                            im = ax.pcolormesh(  # Create 2D color plot
+                                datetime_clipped,
+                                additional_data_clipped,
+                                data_clipped,
+                                norm=norm,
+                                cmap=var.colormap if hasattr(var, 'colormap') else None,
+                                shading='auto'
+                            )
+                        else:
+                            # If no additional_data, create a simple y-axis based on data shape
+                            y_values = np.arange(data_clipped.shape[1]) if data_clipped.ndim > 1 else np.arange(len(data_clipped))
+                            im = ax.pcolormesh(  # Create 2D color plot
+                                datetime_clipped,
+                                y_values,
+                                data_clipped,
+                                norm=norm,
+                                cmap=var.colormap if hasattr(var, 'colormap') else None,
+                                shading='auto'
+                            )
                         
                         # Add and configure colorbar
                         pos = ax.get_position()  # Get plot position
@@ -628,7 +678,9 @@ def plotbot(trange, *args):
                             debug_info = f"Var {i}: {var.class_name}.{var.subclass_name} | type={var.data_type}, plot={var.plot_type}, scale={var.y_scale}"
                             debug_info += f"{', y_limit=' + str(var.y_limit) if hasattr(var, 'y_limit') else ''}"
                             debug_info += f" | sources=[{', '.join(src_var.class_name + '(has_data=' + str(hasattr(src_var, 'datetime_array') and len(src_var.datetime_array) > 0) + ')' for src_var in var.source_var) if hasattr(var, 'source_var') and var.source_var is not None else 'none'}]" if var.data_type == 'custom_data_type' else ''
-                            time_indices = time_clip(var.datetime_array, trange[0], trange[1]) if hasattr(var, 'datetime_array') and var.datetime_array is not None else []
+                            # Use raw datetime array for time clipping, not the property (which is now clipped)
+                            raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                            time_indices = time_clip(raw_datetime_array, trange[0], trange[1]) if hasattr(var, 'datetime_array') and var.datetime_array is not None else []
                             debug_info += f" | data: points={len(time_indices)}" + (f", shape={np.array(var)[time_indices].shape}, has_nans={np.isnan(np.array(var)[time_indices]).any()}" if len(time_indices) > 0 else " (no data in range)")
                             print_manager.debug(debug_info)
                         except Exception as e:

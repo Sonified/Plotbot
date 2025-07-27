@@ -10,6 +10,8 @@ from plotbot.print_manager import print_manager
 # from plotbot.data_cubby import data_cubby # REMOVED
 from plotbot.plot_manager import plot_manager
 from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.time_utils import TimeRangeTracker
+from ._utils import _format_setattr_debug
 
 class ham_class:
     def __init__(self, imported_data):
@@ -115,21 +117,32 @@ class ham_class:
         print_manager.datacubby(f"=== Finished {self.__class__.__name__} update ===\n")
 
     def get_subclass(self, subclass_name):
-        """Retrieve a specific plot_manager attribute by its name."""
-        print_manager.debug(f"Attempting to get subclass/attribute: {subclass_name}")
-
-        if hasattr(self, subclass_name):
-            attribute_value = getattr(self, subclass_name)
-            if isinstance(attribute_value, plot_manager):
-                print_manager.debug(f"Returning plot_manager instance for: {subclass_name}")
-                return attribute_value
-            else:
-                print_manager.warning(f"Attribute '{subclass_name}' exists but is not a plot_manager instance (Type: {type(attribute_value)}). Returning None.")
-                return None
+        """
+        Retrieves a specific data component (subclass) by its name.
+        
+        Args:
+            subclass_name (str): The name of the component to retrieve.
+            
+        Returns:
+            The requested component, or None if not found.
+        """
+        # Update requested_trange for all plot_manager components when accessed
+        current_trange = TimeRangeTracker.get_current_trange()
+        if current_trange:
+            for attr_name in dir(self):
+                if not attr_name.startswith('_'):
+                    try:
+                        attr_value = getattr(self, attr_name)
+                        if isinstance(attr_value, plot_manager):
+                            attr_value.requested_trange = current_trange
+                    except Exception:
+                        pass
+        print_manager.debug(f"Getting subclass: {subclass_name}")
+        if subclass_name in self.raw_data:
+            return getattr(self, subclass_name)
         else:
-            print(f"'{subclass_name}' is not a recognized subclass/attribute for ham data!")
-            available_attrs = [attr for attr in dir(self) if isinstance(getattr(self, attr, None), plot_manager) and not attr.startswith('_')]
-            print(f"Available plot managers: {', '.join(sorted(available_attrs))}")
+            print(f"'{subclass_name}' is not a recognized subclass, friend!")
+            print(f"Try one of these: {', '.join(self.raw_data.keys())}")
             return None
 
     def __getattr__(self, name):

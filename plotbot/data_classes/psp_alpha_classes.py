@@ -8,6 +8,8 @@ from typing import Optional, List
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
 from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.time_utils import TimeRangeTracker
+from ._utils import _format_setattr_debug
 
 class psp_alpha_class:    
     def __init__(self, imported_data):
@@ -129,10 +131,28 @@ class psp_alpha_class:
         print_manager.datacubby("=== End Alpha Update Debug ===\n")
 
     def get_subclass(self, subclass_name):
-        """Retrieve a specific component"""
+        """
+        Retrieves a specific data component (subclass) by its name.
+        
+        Args:
+            subclass_name (str): The name of the component to retrieve.
+            
+        Returns:
+            The requested component, or None if not found.
+        """
+        # Update requested_trange for all plot_manager components when accessed
+        current_trange = TimeRangeTracker.get_current_trange()
+        if current_trange:
+            for attr_name in dir(self):
+                if not attr_name.startswith('_'):
+                    try:
+                        attr_value = getattr(self, attr_name)
+                        if isinstance(attr_value, plot_manager):
+                            attr_value.requested_trange = current_trange
+                    except Exception:
+                        pass
         print_manager.debug(f"Getting subclass: {subclass_name}")
-        if subclass_name in self.raw_data.keys():
-            print_manager.debug(f"Returning {subclass_name} component")
+        if subclass_name in self.raw_data:
             return getattr(self, subclass_name)
         else:
             print(f"'{subclass_name}' is not a recognized subclass, friend!")
@@ -777,11 +797,11 @@ class psp_alpha_class:
             alpha_times = self.datetime_array
             
             # Get proton data arrays from regular proton class (CDF data)
-            proton_density = proton.density.data
-            proton_vr = proton.vr.data
-            proton_vt = proton.vt.data
-            proton_vn = proton.vn.data
-            proton_bmag = proton.bmag.data
+            proton_density = np.array(proton.density)  # Use raw array, not .data property
+            proton_vr = np.array(proton.vr)  # Use raw array, not .data property
+            proton_vt = np.array(proton.vt)  # Use raw array, not .data property
+            proton_vn = np.array(proton.vn)  # Use raw array, not .data property
+            proton_bmag = np.array(proton.bmag)  # Use raw array, not .data property
             proton_times = proton.datetime_array
             
             print_manager.dependency_management(f"[ALPHA_PROTON_CALC] Alpha data length: {len(alpha_density)}, Proton data length: {len(proton_density)}")

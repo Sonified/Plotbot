@@ -11,6 +11,7 @@ from typing import Optional, List # Added for type hinting
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
 from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.time_utils import TimeRangeTracker
 from ._utils import _format_setattr_debug
 # import matplotlib.dates as mdates # Will be moved
 # import scipy.interpolate as interpolate # Will be moved
@@ -120,6 +121,18 @@ class mag_rtn_4sa_class:
     def get_subclass(self, subclass_name):  # Dynamic component retrieval method
         """Retrieve a specific component (subclass or property)."""
         print_manager.dependency_management(f"[MAG_CLASS_GET_SUBCLASS] Attempting to get subclass/property: {subclass_name} for instance ID: {id(self)}")
+
+        # Update requested_trange for all plot_manager components when accessed
+        current_trange = TimeRangeTracker.get_current_trange()
+        if current_trange:
+            for attr_name in dir(self):
+                if not attr_name.startswith('_'):
+                    try:
+                        attr_value = getattr(self, attr_name)
+                        if isinstance(attr_value, plot_manager):
+                            attr_value.requested_trange = current_trange
+                    except Exception:
+                        pass
 
         # First, check if it's a direct attribute/property of the instance
         if hasattr(self, subclass_name):
@@ -398,10 +411,10 @@ class mag_rtn_4sa_class:
         
         print_manager.dependency_management(f"[BR_NORM_DEBUG] SUCCESS: proton.sun_dist_rsun.data loaded with shape {proton.sun_dist_rsun.data.shape}")
         
-        # Get the proton data directly - let any errors raise naturally
+        # Get the proton data directly - use raw arrays to avoid time clipping mismatch
         mag_datetime = self.datetime_array
         proton_datetime = proton.datetime_array
-        sun_dist_rsun = proton.sun_dist_rsun.data
+        sun_dist_rsun = np.array(proton.sun_dist_rsun)  # Use raw array, not .data property
         
         print_manager.dependency_management(f"[BR_NORM_DEBUG] Using proton_datetime with length {len(proton_datetime)}")
         print_manager.dependency_management(f"[BR_NORM_DEBUG] Using sun_dist_rsun with shape {sun_dist_rsun.shape}")

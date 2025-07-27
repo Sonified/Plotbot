@@ -605,9 +605,10 @@ def test_stardust_fits_group_1(stardust_sf00_test_data):
         
     variables = [
         proton_fits_instance.qz_p,
-        proton_fits_instance.vsw_mach_pfits,
-        proton_fits_instance.beta_ppar_pfits,
-        proton_fits_instance.beta_pperp_pfits,
+        proton_fits_instance.vsw_mach,
+        proton_fits_instance.beta_ppar,
+        proton_fits_instance.beta_pperp,
+        proton_fits_instance.beta_p_tot,
         proton_fits_instance.ham_param
     ]
     _run_stardust_plotbot_fits_test_group(variables)

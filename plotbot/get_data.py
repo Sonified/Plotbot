@@ -32,6 +32,7 @@ import plotbot
 from .data_import import import_data_function, DataObject
 from .data_classes.data_types import data_types
 from .config import config
+from .time_utils import TimeRangeTracker
 
 # Add global step counter for dynamic numbering
 _global_step_counter = 0
@@ -119,6 +120,11 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
     
     # Step: Initialize get_data
     step_key, step_start = next_step("Initialize get_data", "get_data")
+    
+    # Store current time range for data classes to access
+    # NOTE: Commented out because this overwrites user's original trange during internal get_data calls
+    # TimeRangeTracker should only be set by plotbot_main.py for the user's original request
+    # TimeRangeTracker.set_current_trange(trange)
     
     # Temporary debug for test_proton_trange_updates.py - RE-ADDING BLOCK
     if 'tests.test_proton_trange_updates' in sys.modules:

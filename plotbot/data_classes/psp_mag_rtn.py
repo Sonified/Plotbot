@@ -10,6 +10,7 @@ from typing import Optional, List
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
 from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.time_utils import TimeRangeTracker
 from ._utils import _format_setattr_debug
 
 # 🎉 Define the main class to calculate and store mag_rtn variables 🎉
@@ -112,6 +113,18 @@ class mag_rtn_class:
     def get_subclass(self, subclass_name):  # Dynamic component retrieval method
         """Retrieve a specific component"""
         print_manager.dependency_management(f"Getting subclass: {subclass_name}")  # Log which component is requested
+        
+        # Update requested_trange for all plot_manager components when accessed
+        current_trange = TimeRangeTracker.get_current_trange()
+        if current_trange:
+            for attr_name in dir(self):
+                if not attr_name.startswith('_'):
+                    try:
+                        attr_value = getattr(self, attr_name)
+                        if isinstance(attr_value, plot_manager):
+                            attr_value.requested_trange = current_trange
+                    except Exception:
+                        pass
         if subclass_name in self.raw_data.keys():  # Check if component exists in raw_data
             print_manager.dependency_management(f"Returning {subclass_name} component")  # Log successful component find
             return getattr(self, subclass_name)  # Return the plot_manager instance
@@ -472,7 +485,7 @@ class mag_rtn_class:
         br_data = self.raw_data['br']
         mag_datetime = self.datetime_array
         proton_datetime = proton.datetime_array
-        sun_dist_rsun = proton.sun_dist_rsun.data
+        sun_dist_rsun = np.array(proton.sun_dist_rsun)  # Use raw array, not .data property
         
         if mag_datetime is None or len(mag_datetime) == 0 or \
            proton_datetime is None or len(proton_datetime) == 0 or \
