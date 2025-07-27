@@ -639,3 +639,25 @@ The DataCubby optimization represents a fundamental improvement to plotbot's dat
 - **System Status:** Critical bottleneck eliminated, testing recommended
 
 **Next Priority:** Verify multiplot operations return to **~15 second** target performance 
+
+---
+## **v2.96 FEAT: Add multiplot spectral debug test**
+
+### **Summary**
+- **Branch:** `multiplot_spectral_debug`
+- **Commit:** `v2.96 FEAT: Add multiplot spectral debug test`
+- **Objective:** Create a dedicated test script to diagnose and resolve failures in the `multiplot` function when plotting `epad.strahl` spectral data.
+
+### **Changes**
+1.  **New Test File Created:** `tests/test_multiplot_strahl_example.py`
+    - This script is designed to be run directly to provide visual feedback.
+    - It first generates a known-working plot using `mag_rtn_4sa.br` to confirm the plotting environment is functional.
+    - After the first plot is closed, it then attempts to generate the failing `epad.strahl` spectral plot.
+
+### **Problem Diagnosis**
+- Initial attempts to plot `epad.strahl` using a multiplot configuration from a notebook example resulted in a blank plot window.
+- The root cause is suspected to be a conflict with one or more of the advanced `plt.options` copied from the notebook, particularly the new axis-specific `colorbar_limits`.
+
+### **Next Steps**
+- Systematically debug the `epad.strahl` plot within `tests/test_multiplot_strahl_example.py` to isolate the problematic option or logic.
+- Enable `print_manager.test_enabled` to provide more verbose, test-specific debugging output during execution. 

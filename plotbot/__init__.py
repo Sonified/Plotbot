@@ -378,10 +378,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_26_v2.95"
+__version__ = "2025_07_27_v2.96"
 
 # Commit message for this version
-__commit_message__ = "v2.95 OPTIMIZATION: DataCubby array merging 10x performance improvement with vectorized operations"
+__commit_message__ = "v2.96 FEAT: Add multiplot spectral debug test"
 
 # Print the version and commit message
 print(f"""
