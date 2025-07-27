@@ -304,9 +304,13 @@ class UltimateMergeEngine:
                     if existing_arr is not None:
                         dtype = existing_arr.dtype
                         shape = (unique_count,) + existing_arr.shape[1:] if existing_arr.ndim > 1 else (unique_count,)
-                    else:
+                    elif new_arr is not None:
                         dtype = new_arr.dtype
                         shape = (unique_count,) + new_arr.shape[1:] if new_arr.ndim > 1 else (unique_count,)
+                    else:
+                        # Both arrays are None - skip this key
+                        print_manager.datacubby(f"⚠️ Skipping key '{key}' - both arrays are None")
+                        continue
                     
                     # Pre-allocate with NaN for numerical types
                     if np.issubdtype(dtype, np.number):
