@@ -427,7 +427,7 @@ def plotbot(trange, *args):
                 except Exception as e:
                     # print_manager.debug(f"[PLOT DEBUG] Error printing debug info: {e}") # Commented out
                     pass # Added pass for empty except block
-                if var is None or (hasattr(var, 'data') and np.array(var).size == 0) or var.datetime_array is None:
+                if var is None or (hasattr(var, 'all_data') and np.array(var.all_data).size == 0) or var.datetime_array is None:
                     # print_manager.debug(f"No data available for {var.class_name}.{var.subclass_name} in time range")
                     continue
 
@@ -457,7 +457,7 @@ def plotbot(trange, *args):
                         continue
 
                     # Convert variable data to numpy array for processing
-                    data = np.array(var)
+                    data = var.all_data
 
                     #====================================================================
                     # PROCEED WITH PLOTTING
@@ -527,7 +527,7 @@ def plotbot(trange, *args):
                         print_manager.debug("empty_plot = True - No valid time indices found (scatter)")
                         continue
 
-                    data = np.array(var) # Ensure data is numpy array
+                    data = var.all_data # Ensure data is numpy array
 
                     # PROCEED WITH PLOTTING
                     if not empty_plot:
@@ -584,9 +584,8 @@ def plotbot(trange, *args):
                         print_manager.debug("empty_plot = True - No valid time indices found (spectral)")
                         continue
                     
-                    # Use raw data array (not .data property) for manual time clipping
-                    raw_data = var.view(np.ndarray)  # Get raw data without .data property clipping
-                    data = raw_data  # Keep original variable name for compatibility
+                    # Use all_data property for internal plotting (performance optimization)
+                    data = var.all_data  # Get full unclipped data for internal processing
                     
                     # For spectral data, ensure indices are valid for the data array
                     max_valid_index = data.shape[0] - 1

@@ -120,6 +120,11 @@ class plot_manager(np.ndarray):
         # Otherwise return full array
         return self.view(np.ndarray)
     
+    @property
+    def all_data(self):
+        """Return all the unclipped numpy array data for internal use"""
+        return np.array(self)
+    
     def _clip_datetime_array(self, datetime_array, original_trange):
         """Helper method to clip datetime array without circular dependency"""
         from dateutil.parser import parse

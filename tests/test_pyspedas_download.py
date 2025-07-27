@@ -28,7 +28,7 @@ sys.path.insert(0, plotbot_project_root)
 # Now import plotbot components specifically
 import plotbot # For plotbot.config
 from plotbot.plotbot_main import plotbot as plotbot_function # The main function, renamed
-from plotbot.data_classes.psp_data_types import data_types # For config lookups in helpers
+from plotbot.data_classes.data_types import data_types # For config lookups in helpers
 from plotbot import mag_rtn_4sa, mag_sc_4sa, proton, epad # Data variables needed for tests
 from plotbot import print_manager # For logging
 from plotbot.test_pilot import phase, system_check # Test helpers

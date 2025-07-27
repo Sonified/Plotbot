@@ -367,8 +367,10 @@ class data_cubby:
             merged_raw_data = {}
             all_keys = set(existing_raw_data.keys()) | set(new_raw_data.keys())
             
-            # Create mapping from timestamps to indices for efficiency
-            merged_time_to_idx = {time: i for i, time in enumerate(final_merged_times)}
+            # OPTIMIZATION 1 & 3: Use vectorized numpy operations instead of dictionary lookups
+            # Pre-compute indices using numpy's searchsorted (vectorized operation)
+            existing_indices = np.searchsorted(final_merged_times, existing_times)
+            new_indices = np.searchsorted(final_merged_times, new_times)
 
             for key in all_keys:
                 if key == 'all': continue
@@ -386,26 +388,21 @@ class data_cubby:
                 else:
                     continue # Should not happen
 
-                # Create an empty (NaN-filled) container for the final merged data
+                # OPTIMIZATION: Use np.empty instead of np.full for better performance
                 final_shape = (len(final_merged_times),) + y_shape
-                fill_value = np.nan if np.issubdtype(final_dtype, np.number) else None
-                final_array = np.full(final_shape, fill_value, dtype=final_dtype)
+                final_array = np.empty(final_shape, dtype=final_dtype)
+                
+                # Initialize with NaN only if numeric type
+                if np.issubdtype(final_dtype, np.number):
+                    final_array.fill(np.nan)
 
-                # --- Place existing data into the final array ---
+                # --- Place existing data into the final array (vectorized assignment) ---
                 if existing_comp is not None and len(existing_comp) == len(existing_times):
-                    try:
-                        existing_indices_in_final = [merged_time_to_idx[t] for t in existing_times]
-                        final_array[existing_indices_in_final] = existing_comp
-                    except KeyError:
-                        print_manager.warning(f"MERGE ARRAYS WARNING: A timestamp from existing_times was not found in merged_time_to_idx for key '{key}'.")
+                    final_array[existing_indices] = existing_comp
 
-                # --- Place new data into the final array (overwriting if necessary) ---
+                # --- Place new data into the final array (vectorized assignment) ---
                 if new_comp is not None and len(new_comp) == len(new_times):
-                    try:
-                        new_indices_in_final = [merged_time_to_idx[t] for t in new_times]
-                        final_array[new_indices_in_final] = new_comp
-                    except KeyError:
-                        print_manager.warning(f"MERGE ARRAYS WARNING: A timestamp from new_times was not found in merged_time_to_idx for key '{key}'.")
+                    final_array[new_indices] = new_comp  # Overwrites existing where needed
                 
                 merged_raw_data[key] = final_array
 

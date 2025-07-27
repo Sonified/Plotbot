@@ -647,7 +647,7 @@ def multiplot(plot_list, **kwargs):
                         # Get x-axis data - use longitude if available
                         # x_data = single_var.datetime_array[indices] # OLD: Start with time
                         time_slice = single_var.datetime_array[indices]
-                        data_slice = single_var.data[indices]
+                        data_slice = single_var.all_data[indices]
                         x_data = time_slice # Default to time
 
                         if using_positional_axis and positional_mapper is not None:
@@ -752,7 +752,7 @@ def multiplot(plot_list, **kwargs):
                         # Get x-axis data - use longitude if available
                         # x_data = single_var.datetime_array[indices] # OLD
                         time_slice = single_var.datetime_array[indices]
-                        data_slice = single_var.data[indices]
+                        data_slice = single_var.all_data[indices]
                         x_data = time_slice # Default to time
 
                         if using_positional_axis and positional_mapper is not None:
@@ -868,7 +868,7 @@ def multiplot(plot_list, **kwargs):
                         if len(indices) > 0:
                             # Get initial time and data slices
                             time_slice = var.datetime_array[indices]
-                            data_slice = var.data[indices]
+                            data_slice = var.all_data[indices]
                             x_data = time_slice # Default to time
                             valid_lon_mask = None # Initialize mask
 
@@ -1028,7 +1028,7 @@ def multiplot(plot_list, **kwargs):
 
                             # Get x-axis data
                             time_slice = var.datetime_array[indices]
-                            data_slice = var.data[indices]
+                            data_slice = var.all_data[indices]
                             x_data = time_slice # Default to time
 
                             # --- Reference Time Degree Calculation (Scatter) --- 
@@ -1139,7 +1139,7 @@ def multiplot(plot_list, **kwargs):
                         # CRITICAL FIX: Check if indices is empty before trying to plot spectral data
                         if len(indices) > 0:
                             datetime_clipped = var.datetime_array[indices]
-                            data_clipped = np.array(var.data)[indices] # This is the 2D spectral data (Z)
+                            data_clipped = var.all_data[indices] # This is the 2D spectral data (Z)
                             y_spectral_axis = np.array(var.additional_data) # This is the y-axis (e.g., energy bins)
                             
                             colorbar_limits = axis_options.colorbar_limits if hasattr(axis_options, 'colorbar_limits') and axis_options.colorbar_limits else var.colorbar_limits
@@ -1269,7 +1269,7 @@ def multiplot(plot_list, **kwargs):
                     if len(indices) > 0:
                         # --- MODIFIED: X-Data Calculation --- 
                         time_slice = var.datetime_array[indices]
-                        data_slice = var.data[indices]
+                        data_slice = var.all_data[indices]
                         x_data = time_slice # Default to time
                         
                         
@@ -1455,7 +1455,7 @@ def multiplot(plot_list, **kwargs):
                     # Get x-axis data and handle positional mapping
                     # x_data = ham_var.datetime_array[ham_indices] # OLD
                     time_slice = ham_var.datetime_array[ham_indices]
-                    data_slice = ham_var.data[ham_indices]
+                    data_slice = ham_var.all_data[ham_indices]
                     x_data = time_slice # Default to time
 
                     if using_positional_axis and positional_mapper is not None:

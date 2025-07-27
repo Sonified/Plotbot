@@ -1162,7 +1162,7 @@ def test_multiplot_with_fits_variables():
     fits_vars_to_plot = [
         proton_fits_instance.np1, 
         proton_fits_instance.valfven_pfits,
-        proton_fits_instance.beta_ppar_pfits
+        proton_fits_instance.beta_ppar
     ]
     fits_var_names = [v.subclass_name for v in fits_vars_to_plot if hasattr(v, 'subclass_name')]
     print_manager.test(f"Selected FITS variables for multiplot: {fits_var_names}")
