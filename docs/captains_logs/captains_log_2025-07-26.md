@@ -661,3 +661,93 @@ The DataCubby optimization represents a fundamental improvement to plotbot's dat
 ### **Next Steps**
 - Systematically debug the `epad.strahl` plot within `tests/test_multiplot_strahl_example.py` to isolate the problematic option or logic.
 - Enable `print_manager.test_enabled` to provide more verbose, test-specific debugging output during execution. 
+
+---
+## **🎯 SPECTRAL PLOTTING BREAKTHROUGH - WORKING CODE ISOLATED**
+
+### **Major Discovery: plotbot_main.py Spectral Code Works Perfectly**
+**Achievement:** Successfully identified and extracted the exact working spectral plotting implementation from `plotbot_main.py`
+**Problem Solved:** Multiplot spectral plotting failures were due to differences in data handling between `plotbot_main.py` and `multiplot.py`
+
+### **Root Cause Analysis**
+**The Issue Was Never with get_data or data_cubby** - These systems work perfectly fine, as demonstrated by the successful `plotbot()` function.
+
+**Key Differences Between Working vs Broken Code:**
+
+**✅ plotbot_main.py (WORKING):**
+- Uses `var.plot_options.datetime_array` as raw datetime array for time clipping
+- Uses `var.all_data` directly without inappropriate transpose operations
+- Proper bounds checking: `additional_data_clipped = var.additional_data[time_indices] if len(var.additional_data) > max(time_indices) else var.additional_data`
+- Handles 2D datetime arrays correctly: `datetime_clipped = raw_datetime_array[time_indices, :]` 
+- No `.T` transpose on data passed to `pcolormesh`
+
+**❌ multiplot.py (BROKEN):**
+- Uses `var.datetime_array[indices]` directly (which may be clipped data)
+- Inappropriately transposes data: `data_slice.T`
+- Different handling of additional_data without proper bounds checking
+- May have issues with 2D datetime array handling
+
+### **Test Implementation Success**
+**New Test File:** `tests/test_multiplot_strahl_example.py`
+- **Function:** `test_standalone_spectral_plot()` - Uses exact spectral plotting code from `plotbot_main.py`
+- **Result:** ✅ **SUCCESSFUL SPECTRAL PLOT GENERATED AND DISPLAYED**
+- **Verification:** 3089 data points loaded, time clipping worked, pcolormesh created successfully
+
+**Test Output Confirms Success:**
+```
+[TEST] Found 3089 valid time indices
+[TEST] Data shape: (3089, 12)
+[TEST] Data clipped shape: (3089, 12)
+[TEST] Datetime clipped shape: (3089, 12)
+[TEST] Additional data clipped shape: (3089, 12)
+[TEST] Creating pcolormesh with additional_data
+[TEST] pcolormesh created successfully
+[TEST] Plot displayed successfully
+```
+
+### **Technical Insights Discovered**
+1. **Working Data Flow:** `get_data()` → `data_cubby` → `var.all_data` → direct plotting (no issues here)
+2. **Critical Fix Pattern:** Use `var.plot_options.datetime_array` for raw datetime arrays in time calculations
+3. **Correct Data Handling:** No transpose operations on spectral data for `pcolormesh`
+4. **Proper Bounds Checking:** Always validate indices against array dimensions before slicing
+
+### **Next Priority Actions**
+1. **URGENT:** Apply the working spectral code pattern from `plotbot_main.py` to fix `multiplot.py`
+2. **Key Changes Needed in multiplot.py:**
+   - Replace `var.datetime_array[indices]` with proper raw datetime array handling
+   - Remove inappropriate `.T` transpose operations  
+   - Add proper bounds checking for additional_data
+   - Use same 2D datetime array handling as plotbot_main.py
+
+### **Files Modified**
+- **NEW:** `tests/test_multiplot_strahl_example.py` - Contains working spectral plotting implementation extracted from plotbot_main.py
+- **IMPORTS ADDED:** `matplotlib.colors`, `numpy` for color scaling and array operations
+
+### **Architecture Pattern Confirmed**
+The pattern that works in `plotbot_main.py`:
+```python
+# Use raw datetime array for time clipping calculations
+raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+time_indices = time_clip(raw_datetime_array, trange[0], trange[1])
+
+# Handle 2D datetime arrays correctly  
+if raw_datetime_array.ndim == 2:
+    datetime_clipped = raw_datetime_array[time_indices, :]
+else:
+    datetime_clipped = raw_datetime_array[time_indices]
+
+# Use all_data directly (no transpose for spectral)
+data_clipped = var.all_data[time_indices]
+
+# Proper bounds checking for additional_data
+if hasattr(var, 'additional_data') and var.additional_data is not None:
+    additional_data_clipped = var.additional_data[time_indices] if len(var.additional_data) > max(time_indices) else var.additional_data
+```
+
+### **Success Metrics**
+- ✅ **Visual Confirmation:** Spectral plot displayed on screen using extracted plotbot_main.py code
+- ✅ **Data Integrity:** 3089 data points correctly processed
+- ✅ **Test Framework:** Comprehensive test structure ready for multiplot fixes
+- ✅ **Debug Infrastructure:** `print_manager.test_enabled` working perfectly
+
+**Status:** Ready to transfer working spectral plotting implementation to multiplot.py 
