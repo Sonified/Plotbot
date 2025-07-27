@@ -1,8 +1,14 @@
 import pytest
 import numpy as np
+import sys
+import os
+
+# Add project root to the Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, project_root)
+
 from plotbot import *
 import cdflib
-import os
 import fnmatch
 
 from plotbot.data_classes.data_types import data_types

@@ -140,24 +140,40 @@ class psp_alpha_class:
         Returns:
             The requested component, or None if not found.
         """
-        # Update requested_trange for all plot_manager components when accessed
-        current_trange = TimeRangeTracker.get_current_trange()
-        if current_trange:
-            for attr_name in dir(self):
-                if not attr_name.startswith('_'):
-                    try:
-                        attr_value = getattr(self, attr_name)
-                        if isinstance(attr_value, plot_manager):
-                            attr_value.requested_trange = current_trange
-                    except Exception:
-                        pass
-        print_manager.debug(f"Getting subclass: {subclass_name}")
-        if subclass_name in self.raw_data:
-            return getattr(self, subclass_name)
-        else:
-            print(f"'{subclass_name}' is not a recognized subclass, friend!")
-            print(f"Try one of these: {', '.join(self.raw_data.keys())}")
-            return None
+        print_manager.dependency_management(f"[ALPHA_CLASS_GET_SUBCLASS] Attempting to get subclass/property: {subclass_name} for instance ID: {id(self)}")
+
+        # First, check if it's a direct attribute/property of the instance
+        if hasattr(self, subclass_name):
+            # 🚀 PERFORMANCE FIX: Only set requested_trange on the SPECIFIC subclass being requested
+            current_trange = TimeRangeTracker.get_current_trange()
+            if current_trange:
+                try:
+                    attr_value = getattr(self, subclass_name)
+                    if isinstance(attr_value, plot_manager):
+                        attr_value.requested_trange = current_trange
+                except Exception:
+                    pass
+            # Verify it's not a private or dunder attribute unless explicitly intended
+            if not subclass_name.startswith('_'): 
+                retrieved_attr = getattr(self, subclass_name)
+                print_manager.dependency_management(f"[ALPHA_CLASS_GET_SUBCLASS] Found '{subclass_name}' as a direct attribute/property. Type: {type(retrieved_attr)}")
+                return retrieved_attr
+            else:
+                print_manager.dependency_management(f"[ALPHA_CLASS_GET_SUBCLASS] '{subclass_name}' is an internal attribute, not returning via get_subclass.")
+        
+        # If not a direct attribute, check if it's a key in raw_data (original behavior for data components)
+        if hasattr(self, 'raw_data') and self.raw_data and subclass_name in self.raw_data.keys():
+            component = self.raw_data.get(subclass_name)
+            print_manager.dependency_management(f"[ALPHA_CLASS_GET_SUBCLASS] Found '{subclass_name}' as a key in raw_data. Type: {type(component)}. This might be raw data.")
+            return component
+
+        # If not found as a direct attribute or in raw_data keys
+        print_manager.warning(f"[ALPHA_CLASS_GET_SUBCLASS] '{subclass_name}' is not a recognized subclass, property, or raw_data key for instance ID: {id(self)}.")
+        available_attrs = [attr for attr in dir(self) if not attr.startswith('_') and not callable(getattr(self, attr))]
+        available_raw_keys = list(self.raw_data.keys()) if hasattr(self, 'raw_data') and self.raw_data else []
+        print_manager.dependency_management(f"[ALPHA_CLASS_GET_SUBCLASS] Available properties/attributes: {available_attrs}")
+        print_manager.dependency_management(f"[ALPHA_CLASS_GET_SUBCLASS] Available raw_data keys: {available_raw_keys}")
+        return None
     
     def __getattr__(self, name):
         # Allow direct access to dunder OR single underscore methods/attributes

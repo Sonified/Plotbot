@@ -91,6 +91,10 @@ def plotbot(trange, *args):
     
     print_manager.status("🤖 Plotbot starting...")
     
+    # 🚀 CRITICAL FIX: Clear TimeRangeTracker to prevent stale data from interfering with CLIP ONCE optimization
+    from .time_utils import TimeRangeTracker
+    TimeRangeTracker.clear_trange()
+    
     # Validate time range using dateutil.parser for flexibility
     try:
         plot_start_time = dateutil_parse(trange[0]).replace(tzinfo=timezone.utc)

@@ -111,11 +111,43 @@ class plot_manager(np.ndarray):
             return False
 
     @property
+    def requested_trange(self):
+        """Get the currently set time range"""
+        return getattr(self, '_requested_trange', None)
+    
+    @requested_trange.setter 
+    def requested_trange(self, value):
+        """Set time range and perform clipping ONCE when set"""
+        if value is None:
+            # Clear clipped data when trange is cleared
+            self._requested_trange = None
+            self._clipped_data = None
+            self._clipped_datetime_array = None
+            return
+        
+        # Only clip if the trange has actually changed
+        if getattr(self, '_requested_trange', None) == value:
+            return  # No change, don't reclip
+        
+        self._requested_trange = value
+        
+        # 🚀 PERFORMANCE FIX: Clip ONCE when trange is set, not on every property access
+        from .print_manager import print_manager
+        print_manager.debug(f"⚡ [CLIP_ONCE] Clipping data ONCE for trange: {value}")
+        
+        # Perform clipping once and store results
+        self._clipped_data = self.clip_to_original_trange(self.view(np.ndarray), value)
+        if self.plot_options.datetime_array is not None:
+            self._clipped_datetime_array = self._clip_datetime_array(self.plot_options.datetime_array, value)
+        else:
+            self._clipped_datetime_array = None
+    
+    @property
     def data(self):
         """Return the time clipped numpy array data"""
-        # If we have a requested time range, clip to it
-        if hasattr(self, 'requested_trange') and self.requested_trange:
-            return self.clip_to_original_trange(self.view(np.ndarray), self.requested_trange)
+        # Return pre-clipped data if available (ZERO CLIPPING OVERHEAD!)
+        if hasattr(self, '_clipped_data') and self._clipped_data is not None:
+            return self._clipped_data
         
         # Otherwise return full array
         return self.view(np.ndarray)
@@ -166,7 +198,7 @@ class plot_manager(np.ndarray):
         from datetime import timezone
         from .print_manager import print_manager
 
-        print_manager.status(f"🔍 [DEBUG] clip_to_original_trange called with trange: {original_trange}")
+        print_manager.debug(f"🔍 [DEBUG] clip_to_original_trange called with trange: {original_trange}")
 
         if datetime_array is None:
             # Use the ORIGINAL datetime array from plot_options, not the property
@@ -191,7 +223,7 @@ class plot_manager(np.ndarray):
             empty_shape = (0,) + data_array.shape[1:] if data_array.ndim > 1 else (0,)
             return np.empty(empty_shape, dtype=data_array.dtype)
 
-        print_manager.status(f"🔍 [DEBUG] Clipping {len(data_array)} points to {np.sum(time_mask)} points in range")
+        print_manager.debug(f"🔍 [DEBUG] Clipping {len(data_array)} points to {np.sum(time_mask)} points in range")
         
         # Apply mask on the time axis (axis 0) while preserving other dimensions
         if data_array.ndim == 1:
@@ -251,13 +283,10 @@ class plot_manager(np.ndarray):
     @property
     def datetime_array(self):
         """Return the time clipped datetime array to match .data property"""
-        # If we have a requested time range, clip the datetime array to match
-        if hasattr(self, 'requested_trange') and self.requested_trange:
-            full_datetime_array = self.plot_options.datetime_array
-            if full_datetime_array is not None:
-                # Use a separate clipping method to avoid circular dependency
-                return self._clip_datetime_array(full_datetime_array, self.requested_trange)
-        
+        # Return pre-clipped datetime array if available (ZERO CLIPPING OVERHEAD!)
+        if hasattr(self, '_clipped_datetime_array') and self._clipped_datetime_array is not None:
+            return self._clipped_datetime_array
+            
         # Otherwise return full datetime array
         return self.plot_options.datetime_array
 

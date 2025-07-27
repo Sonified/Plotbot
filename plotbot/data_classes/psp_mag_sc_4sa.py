@@ -82,19 +82,20 @@ class mag_sc_4sa_class:
     def get_subclass(self, subclass_name):  # Dynamic component retrieval method
         """Retrieve a specific component"""
         print_manager.dependency_management(f"Getting subclass: {subclass_name}")  # Log which component is requested
-        # Update requested_trange for all plot_manager components when accessed
-        current_trange = TimeRangeTracker.get_current_trange()
-        if current_trange:
-            for attr_name in dir(self):
-                if not attr_name.startswith('_'):
-                    try:
-                        attr_value = getattr(self, attr_name)
-                        if isinstance(attr_value, plot_manager):
-                            attr_value.requested_trange = current_trange
-                    except Exception:
-                        pass
+        
         if subclass_name in self.raw_data.keys():  # Check if component exists in raw_data
             print_manager.dependency_management(f"Returning {subclass_name} component")  # Log successful component find
+            
+            # 🚀 PERFORMANCE FIX: Only set requested_trange on the SPECIFIC subclass being requested
+            current_trange = TimeRangeTracker.get_current_trange()
+            if current_trange:
+                try:
+                    attr_value = getattr(self, subclass_name)
+                    if isinstance(attr_value, plot_manager):
+                        attr_value.requested_trange = current_trange
+                except Exception:
+                    pass
+            
             return getattr(self, subclass_name)  # Return the plot_manager instance
         else:
             print(f"'{subclass_name}' is not a recognized subclass, friend!")  # Friendly error message

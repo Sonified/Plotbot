@@ -378,10 +378,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_27_v2.99"
+__version__ = "2025_07_27_v3.00"
 
 # Commit message for this version
-__commit_message__ = "v2.99 Fix: Spectral multiplot colorbars, layout positioning, and data handling fully resolved"
+__commit_message__ = "v3.00 Feat: Complete CLIP ONCE optimization system, CDF generator alignment, and TimeRangeTracker bug fix"
 
 # Print the version and commit message
 print(f"""

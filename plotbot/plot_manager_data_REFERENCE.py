@@ -193,7 +193,7 @@ class plot_manager(np.ndarray):
             import pandas as pd
             import numpy as np
 
-            print_manager.status(f"🔍 [DEBUG] clip_to_original_trange called with original_trange: {original_trange}")
+            print_manager.debug(f"🔍 [DEBUG] clip_to_original_trange called with original_trange: {original_trange}")
 
             # Use provided datetime_array or fall back to self.datetime_array
             if datetime_array is None:

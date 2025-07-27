@@ -122,20 +122,17 @@ class mag_rtn_4sa_class:
         """Retrieve a specific component (subclass or property)."""
         print_manager.dependency_management(f"[MAG_CLASS_GET_SUBCLASS] Attempting to get subclass/property: {subclass_name} for instance ID: {id(self)}")
 
-        # Update requested_trange for all plot_manager components when accessed
-        current_trange = TimeRangeTracker.get_current_trange()
-        if current_trange:
-            for attr_name in dir(self):
-                if not attr_name.startswith('_'):
-                    try:
-                        attr_value = getattr(self, attr_name)
-                        if isinstance(attr_value, plot_manager):
-                            attr_value.requested_trange = current_trange
-                    except Exception:
-                        pass
-
         # First, check if it's a direct attribute/property of the instance
         if hasattr(self, subclass_name):
+            # 🚀 PERFORMANCE FIX: Only set requested_trange on the SPECIFIC subclass being requested
+            current_trange = TimeRangeTracker.get_current_trange()
+            if current_trange:
+                try:
+                    attr_value = getattr(self, subclass_name)
+                    if isinstance(attr_value, plot_manager):
+                        attr_value.requested_trange = current_trange
+                except Exception:
+                    pass
             # Verify it's not a private or dunder attribute unless explicitly intended (though typically not requested via get_subclass)
             if not subclass_name.startswith('_'): 
                 retrieved_attr = getattr(self, subclass_name)
