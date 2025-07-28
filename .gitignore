@@ -52,3 +52,6 @@ tests/archive/
 
 .specstory/
 
+# Files from Jaye's code
+/files_from_Jaye/
+

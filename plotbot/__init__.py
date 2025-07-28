@@ -378,10 +378,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_27_v3.00"
+__version__ = "2025_07_28_v3.01"
 
 # Commit message for this version
-__commit_message__ = "v3.00 Feat: Complete CLIP ONCE optimization system, CDF generator alignment, and TimeRangeTracker bug fix"
+__commit_message__ = "v3.01 Refactor: Cleaned up and reorganized test and utility files, updated .gitignore."
 
 # Print the version and commit message
 print(f"""
