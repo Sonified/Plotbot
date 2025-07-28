@@ -198,3 +198,60 @@ This refined approach gives us precise control over what data files are tracked 
 ## Git Push Details - v3.03:
 - **Version Tag**: 2025_07_28_v3.03  
 - **Commit Message**: v3.03 Maintenance: Refined .gitignore for precise data file management - selectively ignore large data directories while preserving essential reference files. 
+
+## Showdahodo Data Access Pattern Fix
+
+### Overview
+Discovered and fixed a critical inconsistency in data access patterns between `showdahodo.py` and `plotbot_main.py` after the recent refactor that introduced `.all_data` vs `.data` properties.
+
+### The Problem:
+**showdahodo.py** was still using the **old pattern**:
+```python
+values1_full = var1_instance.data           # ❌ OLD - returns time-clipped data
+values2_full = var2_instance.data           # ❌ OLD - optimized for plotting
+color_var_full = color_var_instance.data    # ❌ OLD - not full dataset
+```
+
+**plotbot_main.py** had been **updated** to use:
+```python
+data = var.all_data                         # ✅ NEW - returns full unclipped data
+```
+
+### The Fix Applied:
+Updated all 6 instances in `showdahodo.py` to use `.all_data`:
+
+```python
+# Lines 208, 210, 218, 226, 249, 278
+values1_full = var1_instance.all_data       # ✅ NEW
+values2_full = var2_instance.all_data       # ✅ NEW  
+color_var_full = color_var_instance.all_data # ✅ NEW
+```
+
+### Data Access Pattern Clarification:
+- **`.data` property**: Returns time-clipped data (optimized for plotting)
+- **`.all_data` property**: Returns all unclipped numpy array data (for internal processing)
+
+### Test Consolidation:
+Consolidated all tests from `test_class_data_alignment.py` into `test_stardust.py` to create a comprehensive test suite:
+
+**Added 6 comprehensive data alignment tests:**
+1. **`test_stardust_proton_density_data_alignment`** - Tests that proton density data updates correctly for different time ranges
+2. **`test_stardust_data_alignment_fix_verification`** - Verifies the core data alignment fix is working
+3. **`test_stardust_multi_class_data_alignment`** - Tests multiple data classes (mag, proton, epad, orbit) in single plots
+4. **`test_stardust_raw_cdf_data_verification`** - Verifies plotbot data matches raw CDF file data
+5. **`test_stardust_multiple_trange_raw_cdf_verification`** - Tests multiple time ranges with CDF verification
+6. **`test_stardust_systematic_time_range_tracking`** - Systematic testing of time range tracking across different data types
+
+### Test Results:
+**Complete Success: 23 passed, 2 skipped, 0 failed**
+- All showdahodo tests now passing with `.all_data` fix
+- All class data alignment tests integrated and passing
+- Comprehensive validation of data access patterns across the codebase
+
+### Key Learnings:
+1. **Consistency is critical** - Data access patterns must be uniform across all modules
+2. **Property distinction matters** - `.data` vs `.all_data` serve different purposes
+3. **Test consolidation improves maintainability** - Single comprehensive test suite is easier to manage
+4. **Import management** - Added necessary imports (`proton`, `epad`, `psp_orbit`) for new tests
+
+This fix ensures that `showdahodo.py` now correctly accesses the full dataset for internal processing, maintaining consistency with the refactored data access patterns throughout the codebase. 

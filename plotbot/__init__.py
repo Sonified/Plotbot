@@ -378,10 +378,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_28_v3.03"
+__version__ = "2025_07_28_v3.04"
 
 # Commit message for this version
-__commit_message__ = "v3.03 Maintenance: Refined .gitignore for precise data file management - selectively ignore large data directories while preserving essential reference files."
+__commit_message__ = "v3.04 Fix: Updated showdahodo.py to use .all_data instead of .data for consistency with refactored data access patterns, consolidated test_class_data_alignment.py into test_stardust.py."
 
 # Print the version and commit message
 print(f"""

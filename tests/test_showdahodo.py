@@ -670,7 +670,7 @@ def test_proton_fits_variables(test_environment):
 
     # Phase 1: Trigger data loading for proton_fits for the trange
     # Use existing attributes from the proton_fits instance
-    var1 = proton_fits.beta_ppar_pfits # Example: Parallel beta
+    var1 = proton_fits.beta_ppar # Example: Parallel beta
     var2 = proton_fits.vdrift_va_pfits # Example: Normalized drift speed
 
     # Check if variables were retrieved (basic check)

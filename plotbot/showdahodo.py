@@ -206,9 +206,9 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     print_manager.processing("Preparing data for plotting...")
     
     # Extract data from class instances
-    values1_full = var1_instance.data
+    values1_full = var1_instance.all_data
     time1_full = var1_instance.datetime_array
-    values2_full = var2_instance.data  
+    values2_full = var2_instance.all_data  
     time2_full = var2_instance.datetime_array
     # Save original lengths
     time1_original_len = len(time1_full)
@@ -216,7 +216,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     color_var_original_len = 0
     var3_original_len = 0
     if color_var_instance is not None:
-        color_var_full = color_var_instance.data
+        color_var_full = color_var_instance.all_data
         color_time_full = color_var_instance.datetime_array
         color_var_original_len = len(color_time_full) if color_time_full is not None else 0
     else:
@@ -224,7 +224,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
         color_time_full = None
 
     if var3_instance is not None:
-        values3_full = var3_instance.data
+        values3_full = var3_instance.all_data
         time3_full = var3_instance.datetime_array
         var3_original_len = len(time3_full) if time3_full is not None else 0
     else:
@@ -247,7 +247,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     
     # Prepare color data if provided
     if color_var is not None:
-        color_values_full = color_var_instance.data
+        color_values_full = color_var_instance.all_data
         color_time_full = color_var_instance.datetime_array
         
         if color_values_full is not None and color_time_full is not None:
@@ -276,7 +276,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
 
     # Prepare var3 data if provided
     if var3 is not None:
-        var3_values_full = var3_instance.data
+        var3_values_full = var3_instance.all_data
         var3_time_full = var3_instance.datetime_array
         var3_time_original_len = len(var3_time_full)
         
