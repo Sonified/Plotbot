@@ -144,4 +144,57 @@ This implementation provides a clean, simple alternative to perihelion mode whil
 
 ## Git Push Details - v3.02:
 - **Version Tag**: 2025_07_28_v3.02
-- **Commit Message**: v3.02 Feature: Implemented use_degrees_from_center_times multiplot x-axis option with clean, simple implementation separate from perihelion code. 
+- **Commit Message**: v3.02 Feature: Implemented use_degrees_from_center_times multiplot x-axis option with clean, simple implementation separate from perihelion code.
+
+## .gitignore Refinements
+
+### Overview
+Made several improvements to `.gitignore` to better manage large data files and directories while keeping essential files tracked.
+
+### Changes Made:
+
+#### 1. Data Directory Management
+- **Removed**: Blanket `data/` ignore that was too broad
+- **Added**: Specific ignores for large data subdirectories:
+  - `data/psp/fields/` and `data/psp/sweap/` (large PSP data directories)
+  - `data/wind/` (Wind satellite data)
+  - `data/test_precise_dfb/` (test data directory)
+  - `data/windwind_masters/` (Wind master files)
+
+#### 2. HAM Data File Management
+- **Strategy**: Keep one reference file (19th of month) while ignoring others
+- **Kept tracked**: `data/psp/Hamstrings/2025/03/2025-03-19_v00.csv`
+- **Added to ignore**: All other HAM CSV files in March 2025:
+  - `2025-03-20_v00.csv` through `2025-03-27_v00.csv`
+  - Listed explicitly by filename for precise control
+
+#### 3. CDF Files Management
+- **Strategy**: Allow CDF directory but ignore specific large files and test metadata
+- **Allowed**: `data/cdf_files/` directory and most contents
+- **Ignored**:
+  - `data/cdf_files/TEST_CDF_METADATA/` (test metadata directory)
+  - `data/cdf_files/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf` (1.5GB file)
+- **Kept trackable**: `data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf` (4.5MB file)
+
+#### 4. Previously Tracked Files
+- **Issue**: Some files were already tracked by Git before ignore rules
+- **Solution**: Used `git rm -r --cached <directory>` to untrack files so `.gitignore` could take effect
+- **Applied to**: `data/psp/fields/`, `data/psp/sweap/`, `data/windwind_masters/`
+
+### Technical Approach:
+1. **Precision over patterns**: Used explicit file listings rather than complex glob patterns
+2. **Untrack then ignore**: Removed already-tracked files from Git index before applying ignore rules  
+3. **Test verification**: Used `git check-ignore` to verify each rule was working correctly
+4. **Selective approach**: Avoided broad ignores that might catch wanted files
+
+### Key Learnings:
+- **Explicit is better**: Listing specific files is clearer than complex patterns
+- **Order matters**: Files already tracked by Git need to be untracked before `.gitignore` applies
+- **Test thoroughly**: `git check-ignore <file>` is essential for verifying rules work
+- **Document strategy**: Complex ignore rules need clear explanations for future reference
+
+This refined approach gives us precise control over what data files are tracked while keeping repository size manageable and preserving essential reference files.
+
+## Git Push Details - v3.03:
+- **Version Tag**: 2025_07_28_v3.03  
+- **Commit Message**: v3.03 Maintenance: Refined .gitignore for precise data file management - selectively ignore large data directories while preserving essential reference files. 

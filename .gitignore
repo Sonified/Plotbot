@@ -1,7 +1,31 @@
 psp_data/
 ace_data/
 data_snapshots/
-data/
+
+# Ignore specific data subdirectories (but not Hamstrings)
+data/psp/fields/*
+data/psp/fields/
+data/psp/sweap/*
+data/psp/sweap/
+data/wind/*
+data/wind/
+data/test_precise_dfb/
+data/windwind_masters/
+
+# CDF files - ignore specific large files and test metadata
+data/cdf_files/TEST_CDF_METADATA/
+data/cdf_files/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf
+
+# Ignore specific HAM files (keeping only the 19th)
+data/psp/Hamstrings/2025/03/2025-03-25_v00.csv
+data/psp/Hamstrings/2025/03/2025-03-24_v00.csv
+data/psp/Hamstrings/2025/03/2025-03-26_v00.csv
+data/psp/Hamstrings/2025/03/2025-03-27_v00.csv
+data/psp/Hamstrings/2025/03/2025-03-22_v00.csv
+data/psp/Hamstrings/2025/03/2025-03-23_v00.csv
+data/psp/Hamstrings/2025/03/2025-03-21_v00.csv
+data/psp/Hamstrings/2025/03/2025-03-20_v00.csv
+
 .DS_Store
 .vscode/
 Thumbs.db
