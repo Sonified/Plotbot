@@ -147,7 +147,8 @@ def multiplot(plot_list, **kwargs):
         options.x_axis_r_sun or 
         options.x_axis_carrington_lon or 
         options.x_axis_carrington_lat or 
-        getattr(options, 'use_degrees_from_perihelion', False) # Added perihelion option
+        getattr(options, 'use_degrees_from_perihelion', False) or # Added perihelion option
+        getattr(options, 'use_degrees_from_center_times', False) # Added center_times option
     )
     print_manager.debug(f"Initial check - positional_feature_requested: {positional_feature_requested}")
     
@@ -161,9 +162,10 @@ def multiplot(plot_list, **kwargs):
     if positional_feature_requested:
         # Ensure positional_data_path exists
         if not hasattr(options, 'positional_data_path') or not options.positional_data_path:
-            print_manager.error("❌ Positional data path (options.positional_data_path) is not set. Cannot use positional x-axis or degrees from perihelion.")
+            print_manager.error("❌ Positional data path (options.positional_data_path) is not set. Cannot use positional x-axis or degrees from perihelion/center_times.")
             # Disable positional features if path is missing
             if hasattr(options, 'use_degrees_from_perihelion'): options.use_degrees_from_perihelion = False
+            if hasattr(options, 'use_degrees_from_center_times'): options.use_degrees_from_center_times = False
             options.x_axis_r_sun = False 
             options.x_axis_carrington_lon = False 
             options.x_axis_carrington_lat = False
@@ -182,8 +184,9 @@ def multiplot(plot_list, **kwargs):
             # --- </CURSOR_INSERT> ---
             
             if not mapper_loaded:
-                print_manager.warning("❌ Failed to load positional data. Disabling positional x-axis and degrees from perihelion.")
+                print_manager.warning("❌ Failed to load positional data. Disabling positional x-axis and degrees from perihelion/center_times.")
                 if hasattr(options, 'use_degrees_from_perihelion'): options.use_degrees_from_perihelion = False
+                if hasattr(options, 'use_degrees_from_center_times'): options.use_degrees_from_center_times = False
                 options.x_axis_r_sun = False 
                 options.x_axis_carrington_lon = False 
                 options.x_axis_carrington_lat = False
@@ -201,6 +204,15 @@ def multiplot(plot_list, **kwargs):
                     options.x_axis_r_sun = False
                     options.x_axis_carrington_lat = False
                     # options.use_relative_time = False # Explicitly disable relative time - REMOVED TO ALLOW USER CONTROL
+                elif getattr(options, 'use_degrees_from_center_times', False):
+                    print_manager.debug("--> Mode Determination: use_degrees_from_center_times is True.")
+                    data_type = 'degrees_from_center_times' # Use a distinct type identifier
+                    axis_label = "Degrees from Center Times (°)"
+                    units = "°"
+                    # Ensure conflicting modes are off (setters should handle this, but verify)
+                    options.x_axis_carrington_lon = False
+                    options.x_axis_r_sun = False
+                    options.x_axis_carrington_lat = False
                 elif options.x_axis_carrington_lon:
                     print_manager.debug("--> Mode Determination: x_axis_carrington_lon is True.")
                     data_type = 'carrington_lon'
@@ -504,6 +516,11 @@ def multiplot(plot_list, **kwargs):
         center_dt = pd.Timestamp(center_time)
         # <<< END NEW >>>
 
+        # <<< NEW: Initialize separate variables for center_times degrees >>>
+        panel_uses_center_times_degrees = False
+        center_time_reference_str = None
+        # <<< END NEW >>>
+
         # <<< MODIFIED DEBUG >>>
         print_manager.custom_debug(f'Adding data to plot panel {i+1}/{n_panels}... Var ID from plot_list: {id(var)}\n')
         # <<< END MODIFIED DEBUG >>>
@@ -546,6 +563,15 @@ def multiplot(plot_list, **kwargs):
                 # print_manager.debug(f"DEBUG_TRACE: Panel {i+1} EXCEPTION getting perihelion: {e}, setting current_panel_use_degrees=False")
                 # <<< END DEBUG >>>
                 # --- </CURSOR_INSERT> ---
+        # <<< END NEW >>>
+
+        # <<< NEW: Simple center_times degrees (completely separate from perihelion) >>>
+        elif using_positional_axis and getattr(options, 'use_degrees_from_center_times', False):
+            print_manager.debug(f"Panel {i+1}: Using degrees from center_times mode - simple reference to center_time")
+            # For center_times mode, we always use the center_time as reference - no lookup needed!
+            panel_uses_center_times_degrees = True
+            center_time_reference_str = center_dt.strftime('%Y/%m/%d %H:%M:%S.%f')
+            print_manager.debug(f"Panel {i+1}: Center time reference: {center_time_reference_str}")
         # <<< END NEW >>>
 
         # Get encounter number automatically
@@ -927,6 +953,63 @@ def multiplot(plot_list, **kwargs):
                                     panel_actually_uses_degrees = False
                                     x_data = time_slice # Ensure fallback
                                     # data_slice remains the original full slice matching time_slice
+
+                            # --- Center Times Degree Calculation (simpler - no lookup needed) ---
+                            elif panel_uses_center_times_degrees and center_time_reference_str and positional_mapper:
+                                print_manager.debug(f"Panel {i+1} (Time Series): Calculating Degrees from Center Time.")
+                                try:
+                                    # 1. Map time slice to Carrington longitude
+                                    carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon', unwrap_angles=True)
+                                    
+                                    # 2. Use center_time directly (no lookup needed!)
+                                    center_time_dt = datetime.strptime(center_time_reference_str, '%Y/%m/%d %H:%M:%S.%f')
+                                    center_time_np = np.array([np.datetime64(center_time_dt)])
+                                    center_time_lon_arr = positional_mapper.map_to_position(center_time_np, 'carrington_lon', unwrap_angles=True)
+                                    
+                                    if carrington_lons_slice is not None and center_time_lon_arr is not None and len(center_time_lon_arr) > 0:
+                                        center_time_lon_val = center_time_lon_arr[0]
+                                        
+                                        print_manager.debug(f"[DEBUG Center Time Offset Calc - Panel {i+1}] Plot Type: Time Series")
+                                        print_manager.debug(f"[DEBUG Center Time Offset Calc - Panel {i+1}] Center Time: {center_time_reference_str}")
+                                        print_manager.debug(f"[DEBUG Center Time Offset Calc - Panel {i+1}] Center Time Lon Value: {center_time_lon_val:.4f}")
+
+                                        # Create mask for valid longitude values in the slice
+                                        valid_lon_mask = ~np.isnan(carrington_lons_slice)
+                                        num_valid_lons = np.sum(valid_lon_mask)
+
+                                        if num_valid_lons > 0:
+                                            # Filter slice data based on valid longitudes
+                                            carrington_lons_slice_valid = carrington_lons_slice[valid_lon_mask]
+                                            data_slice_filtered_lon = data_slice[valid_lon_mask]
+
+                                            # 3. Calculate relative degrees (raw difference of unwrapped)
+                                            relative_degrees = carrington_lons_slice_valid - center_time_lon_val
+
+                                            # 4. Wrap the difference to the [-180, 180] range
+                                            relative_degrees_wrapped = (relative_degrees + 180) % 360 - 180
+
+                                            # 5. Set x_data & filtered data_slice
+                                            x_data = relative_degrees_wrapped
+                                            data_slice = data_slice_filtered_lon
+
+                                            # 6. Set flags
+                                            panel_actually_uses_degrees = True
+                                            print_manager.debug(f"Panel {i+1}: Successfully calculated degrees from center time. Range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
+                                            # 7. Store flag on axis
+                                            axs[i]._panel_actually_used_degrees = True
+                                            print_manager.debug(f"--> Stored _panel_actually_used_degrees=True on axis {i} (Time Series - Center Times)")
+                                        else:
+                                            print_manager.warning(f"Panel {i+1} (Time Series): No valid longitudes found for center times. Falling back to time axis.")
+                                            panel_actually_uses_degrees = False
+                                            x_data = time_slice # Ensure fallback
+                                    else:
+                                        print_manager.warning(f"Panel {i+1} (Time Series): Failed to map center time to longitude. Falling back to time axis.")
+                                        panel_actually_uses_degrees = False
+                                        x_data = time_slice # Ensure fallback
+                                except Exception as e:
+                                    print_manager.error(f"Panel {i+1} (Time Series): Error during degrees from center time calculation: {e}")
+                                    panel_actually_uses_degrees = False
+                                    x_data = time_slice # Ensure fallback
 
                             # --- Standard Positional Mapping (if degrees not used/failed) ---
                             elif using_positional_axis and positional_mapper is not None:
@@ -2072,7 +2155,7 @@ def multiplot(plot_list, **kwargs):
         elif current_axis_mode == 'relative_time':
             # (Assume relative time logic is handled elsewhere, or add here if needed)
             pass
-        elif current_axis_mode in ['degrees_from_perihelion', 'carrington_lon', 'carrington_lat']:
+        elif current_axis_mode in ['degrees_from_perihelion', 'degrees_from_center_times', 'carrington_lon', 'carrington_lat']:
             num_ticks = 5 * options.positional_tick_density
             ax.xaxis.set_major_locator(mpl_plt.MaxNLocator(num_ticks))
             def angle_formatter(x, pos):
@@ -2097,6 +2180,9 @@ def multiplot(plot_list, **kwargs):
         fixed_range = None
         if current_axis_mode == 'degrees_from_perihelion' and hasattr(options, 'degrees_from_perihelion_range') and options.degrees_from_perihelion_range:
             fixed_range = options.degrees_from_perihelion_range
+            ax.set_xlim(fixed_range)
+        elif current_axis_mode == 'degrees_from_center_times' and hasattr(options, 'degrees_from_center_times_range') and options.degrees_from_center_times_range:
+            fixed_range = options.degrees_from_center_times_range
             ax.set_xlim(fixed_range)
         elif current_axis_mode in ['carrington_lon', 'carrington_lat'] and options.x_axis_positional_range:
             fixed_range = options.x_axis_positional_range

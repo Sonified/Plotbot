@@ -378,10 +378,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_28_v3.01"
+__version__ = "2025_07_28_v3.02"
 
 # Commit message for this version
-__commit_message__ = "v3.01 Refactor: Cleaned up and reorganized test and utility files, updated .gitignore."
+__commit_message__ = "v3.02 Feature: Implemented use_degrees_from_center_times multiplot x-axis option with clean, simple implementation separate from perihelion code."
 
 # Print the version and commit message
 print(f"""
