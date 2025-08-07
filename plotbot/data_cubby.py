@@ -48,6 +48,7 @@ from .data_classes.psp_alpha_classes import psp_alpha_class
 from .data_classes.psp_qtn_classes import psp_qtn_class
 from .data_classes.psp_dfb_classes import psp_dfb_class
 from .data_classes.psp_orbit import psp_orbit_class
+from .data_classes.psp_span_vdf import psp_span_vdf_class
 from .data_classes.wind_swe_h5_classes import wind_swe_h5_class
 from .data_classes.wind_swe_h1_classes import wind_swe_h1_class
 
@@ -393,6 +394,7 @@ class data_cubby:
     'spi_sf0a_l3_mom': psp_alpha_class,
         'wind_swe_h5': wind_swe_h5_class,
         'wind_swe_h1': wind_swe_h1_class,
+        'psp_span_vdf': psp_span_vdf_class,  # PSP SPAN-I VDF data
         # Add other standard CDF types here as needed
     }
 

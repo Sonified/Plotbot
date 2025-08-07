@@ -44,6 +44,16 @@ PYSPEDAS_MAP = {
         'pyspedas_func': pyspedas.psp.spi,
         'kwargs': {'level': 'l3'}
     },
+    'spi_sf00_8dx32ex8a': {  # PSP SPAN-I L2 VDF data
+        'pyspedas_datatype': 'spi_sf00_8dx32ex8a',
+        'pyspedas_func': pyspedas.psp.spi,
+        'kwargs': {'level': 'l2', 'get_support_data': True}
+    },
+    'psp_span_vdf': {  # PSP SPAN-I VDF data (plotbot interface)
+        'pyspedas_datatype': 'spi_sf00_8dx32ex8a',  # Uses same underlying data
+        'pyspedas_func': pyspedas.psp.spi,
+        'kwargs': {'level': 'l2', 'get_support_data': True}
+    },
     'spe_sf0_pad': {
         'pyspedas_datatype': 'spe_sf0_pad',
         'pyspedas_func': pyspedas.psp.spe,
@@ -347,6 +357,9 @@ def download_spdf_data(trange, plotbot_key):
                                 if temp_name != spdf_basename: spdf_basename, rename_needed = temp_name, True
                             elif plotbot_key == 'sqtn_rfs_v1v2':
                                 temp_name = spdf_basename.replace('V1V2', 'v1v2')
+                                if temp_name != spdf_basename: spdf_basename, rename_needed = temp_name, True
+                            elif plotbot_key in ['spi_sf00_8dx32ex8a', 'psp_span_vdf']:  # VDF case handling
+                                temp_name = spdf_basename.replace('8Dx32Ex8A', '8dx32ex8a').replace('L2', 'l2')
                                 if temp_name != spdf_basename: spdf_basename, rename_needed = temp_name, True
                             # Add more rules if needed for other keys
 

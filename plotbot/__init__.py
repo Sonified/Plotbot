@@ -48,6 +48,7 @@ from .data_classes.psp_alpha_classes import psp_alpha, psp_alpha_class
 from .data_classes.psp_qtn_classes import psp_qtn, psp_qtn_class
 from .data_classes.psp_dfb_classes import psp_dfb, psp_dfb_class
 from .data_classes.psp_orbit import psp_orbit, psp_orbit_class
+from .data_classes.psp_span_vdf import psp_span_vdf, psp_span_vdf_class
 
 # ==============================================================================
 # Custom Class Imports (auto-generated)
@@ -88,6 +89,7 @@ data_cubby.stash(wind_3dp_pm, class_name='wind_3dp_pm')
 data_cubby.stash(psp_alpha, class_name='psp_alpha')
 data_cubby.stash(wind_swe_h5, class_name='wind_swe_h5')
 data_cubby.stash(wind_swe_h1, class_name='wind_swe_h1')
+data_cubby.stash(psp_span_vdf, class_name='psp_span_vdf')
 data_cubby.stash(psp_qtn, class_name='psp_qtn')
 data_cubby.stash(psp_dfb, class_name='psp_dfb')
 data_cubby.stash(psp_orbit, class_name='psp_orbit')
@@ -215,6 +217,7 @@ from .showda_holes import showda_holes
 
 # --- Import CDF functions for direct access ---
 from .data_import_cdf import cdf_to_plotbot, scan_cdf_directory
+from .vdyes import vdyes
 
 # --- CLASS_NAME_MAPPING for test utilities and data integrity checks ---
 CLASS_NAME_MAPPING = {
@@ -318,6 +321,7 @@ __all__ = [
     'plotbot',
     'showdahodo', 
     'multiplot',
+    'vdyes',         # PSP SPAN-I VDF plotting function
     'MultiplotOptions',
     'get_data',      # New function to get data without plotting
     'print_manager', 
@@ -346,6 +350,7 @@ __all__ = [
     'psp_qtn',       # PSP quasi-thermal noise (electron density and temperature)
     'psp_dfb',       # PSP FIELDS electric field AC/DC spectra
     'psp_orbit',     # PSP orbital/positional data
+    'psp_span_vdf',  # PSP SPAN-I velocity distribution functions
     'audifier',
     'custom_variable',  # Using custom_variable instead of new_variable
     'debug_custom_variables',  # Add debug function for custom variables
@@ -378,10 +383,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_07_28_v3.04"
+__version__ = "2025_08_06_v3.05"
 
 # Commit message for this version
-__commit_message__ = "v3.04 Fix: Updated showdahodo.py to use .all_data instead of .data for consistency with refactored data access patterns, consolidated test_class_data_alignment.py into test_stardust.py."
+__commit_message__ = "v3.05 Enhancement: Major VDF widget UX improvements - status system, background fixes, directory dialog, warning suppression"
 
 # Print the version and commit message
 print(f"""

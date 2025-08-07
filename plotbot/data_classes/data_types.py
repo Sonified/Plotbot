@@ -110,6 +110,19 @@ data_types = {
             'ENERGY_VALS', 'THETA_VALS', 'PHI_VALS', 'SUN_DIST'
         ],
     },
+    'spi_sf00_8dx32ex8a': {  # PSP SPAN-I L2 VDF data - CONFIRMED ON BERKELEY!
+        'mission': 'psp',
+        'data_sources': ['berkeley', 'spdf'],
+        'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/sweap/spi/L2/spi_sf00/',
+        'local_path': os.path.join('data', 'psp', 'sweap', 'spi', 'l2', 'spi_sf00_8dx32ex8a'),
+        'password_type': 'sweap',
+        'file_pattern': r'psp_swp_spi_sf00_L2_8Dx32Ex8A_{date_str}_v(\d{{2}})\.cdf',      # Berkeley case
+        'file_pattern_import': r'psp_swp_spi_sf00_L2_8Dx32Ex8A_{date_str}_v*.cdf',       # Berkeley case
+        'spdf_file_pattern': r'psp_swp_spi_sf00_l2_8dx32ex8a_{date_str}_v*.cdf',         # SPDF case (lowercase)
+        'data_level': 'l2',
+        'file_time_format': 'daily',
+        'data_vars': ['Epoch', 'THETA', 'PHI', 'ENERGY', 'EFLUX', 'ROTMAT_SC_INST'],
+    },
     'spi_af00_L3_mom': {  # High-resolution proton data
         'mission': 'psp',
         'data_sources': ['berkeley', 'spdf'],
@@ -254,6 +267,30 @@ data_types = {
         'class_file': 'psp_orbit',
         'class_name': 'psp_orbit_class',
         'description': 'Parker Solar Probe orbital/positional data including heliocentric distance, Carrington coordinates, and derived quantities'
+    },
+    'psp_span_vdf': {
+        'mission': 'psp',
+        'data_sources': ['berkeley', 'spdf'],  # Dual source support
+        'url': 'https://sprg.ssl.berkeley.edu/data/psp/data/sci/sweap/spi/L2/spi_sf00/',
+        'local_path': os.path.join('data', 'psp', 'sweap', 'spi', 'l2', 'spi_sf00_8dx32ex8a'),
+        'password_type': 'sweap',
+        'file_pattern': r'psp_swp_spi_sf00_L2_8Dx32Ex8A_{date_str}_v(\d{{2}})\.cdf',      # Berkeley case
+        'file_pattern_import': r'psp_swp_spi_sf00_L2_8Dx32Ex8A_{date_str}_v*.cdf',       # Berkeley case
+        'spdf_file_pattern': r'psp_swp_spi_sf00_l2_8dx32ex8a_{date_str}_v*.cdf',         # SPDF case (lowercase)
+        'data_level': 'l2',
+        'file_time_format': 'daily',
+        'class_file': 'psp_span_vdf',         # Points to our new class file
+        'class_name': 'psp_span_vdf_class',   # Our VDF class name
+        'data_vars': [
+            'THETA',              # Raw angular coordinates (needed for VDF calculation)
+            'PHI',                # Raw angular coordinates (needed for VDF calculation)  
+            'ENERGY',             # Raw energy bins (needed for VDF calculation)
+            'EFLUX',              # Raw energy flux data (needed for VDF calculation)
+            'ROTMAT_SC_INST',     # Rotation matrix for coordinate transforms
+            # Note: Time comes from imported_data.times, not data_vars
+            # Note: Processed variables (vdf_collapsed, vdf_theta_plane, etc.) are calculated by VDF class
+        ],
+        'description': 'PSP SPAN-I Velocity Distribution Function data for velocity-space analysis',
     },
     
     # === WIND SATELLITE DATA TYPES ===
