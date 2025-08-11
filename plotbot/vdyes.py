@@ -153,7 +153,7 @@ def _create_static_vdf_plot(dat, time_index, epoch):
     
     # Parameters are now read directly from class attributes (Plotbot way)
     print_manager.status(f"🎛️ VDF Parameters: smart_padding={vdf_class.enable_smart_padding}, "
-                        f"theta_x_padding={vdf_class.theta_x_smart_padding}, "
+                        f"theta_padding={vdf_class.theta_smart_padding}, "
                         f"colormap={vdf_class.vdf_colormap}")
     
     # Use working parameter hierarchy (manual limits > smart bounds > Jaye's defaults)
@@ -163,7 +163,7 @@ def _create_static_vdf_plot(dat, time_index, epoch):
     print_manager.status("📊 Creating 3-panel VDF plot using proven approach...")
     
     # Use proven gridspec layout with explicit white backgrounds
-    fig = plt.figure(figsize=(18, 6), facecolor='white')
+    fig = plt.figure(figsize=(vdf_class.vdf_figure_width, vdf_class.vdf_figure_height), facecolor='white')
     fig.patch.set_facecolor('white')  # Ensure figure background is white
     gs = gridspec.GridSpec(1, 4, width_ratios=[1, 1, 1, 0.05], wspace=0.4)
     
@@ -283,7 +283,7 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
             phi_xlim, phi_ylim = vdf_class.get_axis_limits('phi', vx_phi, vy_phi, df_phi)
             
             # Create 3-panel plot with explicit white backgrounds
-            fig = plt.figure(figsize=(18, 6), facecolor='white')
+            fig = plt.figure(figsize=(vdf_class.vdf_figure_width, vdf_class.vdf_figure_height), facecolor='white')
             fig.patch.set_facecolor('white')  # Ensure figure background is white
             gs = gridspec.GridSpec(1, 4, width_ratios=[1, 1, 1, 0.05], wspace=0.4)
             
@@ -359,11 +359,11 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
         vx_phi, vy_phi, df_phi = jaye_exact_phi_plane_processing(vdf_data)
         
         vdf_class = psp_span_vdf
-        theta_xlim, theta_ylim = vdf_class.get_axis_limits('theta', vx_theta, vz_theta, df_theta)
+        theta_xlim, theta_ylim = vdf_class.get_theta_square_bounds(vx_theta, vz_theta, df_theta)
         phi_xlim, phi_ylim = vdf_class.get_axis_limits('phi', vx_phi, vy_phi, df_phi)
         
         # Create complete 3-panel plot with explicit white backgrounds
-        fig = plt.figure(figsize=(18, 6), facecolor='white')
+        fig = plt.figure(figsize=(vdf_class.vdf_figure_width, vdf_class.vdf_figure_height), facecolor='white')
         fig.patch.set_facecolor('white')  # Ensure figure background is white
         gs = gridspec.GridSpec(1, 4, width_ratios=[1, 1, 1, 0.05], wspace=0.4)
         
@@ -432,11 +432,11 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
             vx_phi, vy_phi, df_phi = jaye_exact_phi_plane_processing(vdf_data)
             
             vdf_class = psp_span_vdf
-            theta_xlim, theta_ylim = vdf_class.get_axis_limits('theta', vx_theta, vz_theta, df_theta)
+            theta_xlim, theta_ylim = vdf_class.get_theta_square_bounds(vx_theta, vz_theta, df_theta)
             phi_xlim, phi_ylim = vdf_class.get_axis_limits('phi', vx_phi, vy_phi, df_phi)
             
             # Create complete 3-panel plot for each time slice with explicit white backgrounds
-            fig = plt.figure(figsize=(18, 6), facecolor='white')
+            fig = plt.figure(figsize=(vdf_class.vdf_figure_width, vdf_class.vdf_figure_height), facecolor='white')
             fig.patch.set_facecolor('white')  # Ensure figure background is white
             gs = gridspec.GridSpec(1, 4, width_ratios=[1, 1, 1, 0.05], wspace=0.4)
             

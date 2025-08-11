@@ -26,10 +26,10 @@ class psp_span_vdf_class:
     # Smart bounds system (auto-zoom controls)
     enable_smart_padding: bool          # Enable/disable intelligent auto-zoom
     vdf_threshold_percentile: float     # Percentile threshold to separate bulk from background data
-    theta_x_smart_padding: float        # Vx padding for theta plane (km/s)
-    theta_y_smart_padding: float        # Vz padding for theta plane (km/s)  
+    theta_smart_padding: float          # Single padding for theta plane (km/s), square and zero-centered
     phi_x_smart_padding: float          # Vx padding for phi plane (km/s)
     phi_y_smart_padding: float          # Vy padding for phi plane (km/s)
+    phi_peak_centered: bool             # If True, center phi bounds on density peak
     enable_zero_clipping: bool          # Auto-clip when bulk doesn't cross zero
     
     # Manual axis limits (override smart bounds when set)
@@ -40,6 +40,8 @@ class psp_span_vdf_class:
     
     # Visual settings
     vdf_colormap: str                   # Colormap for VDF plots ('cool', 'viridis', 'plasma', etc.)
+    vdf_figure_width: float
+    vdf_figure_height: float
     
     # Plot managers for different VDF views
     vdf_main: plot_manager              # Main VDF plot manager (default theta plane)
@@ -62,6 +64,9 @@ class psp_span_vdf_class:
     def calculate_smart_bounds(self, vx: np.ndarray, vy: np.ndarray, vdf_data: np.ndarray, plane_type: str = 'theta') -> Tuple[Tuple[float, float], Tuple[float, float]]: ...
     def _apply_zero_clipping(self, xlim: Tuple[float, float], ylim: Tuple[float, float], x_max_bulk: float, y_max_bulk: float) -> Tuple[Tuple[float, float], Tuple[float, float]]: ...
     def get_axis_limits(self, plane_type: str = 'theta', vx: Optional[np.ndarray] = None, vy: Optional[np.ndarray] = None, vdf_data: Optional[np.ndarray] = None) -> Tuple[Tuple[float, float], Tuple[float, float]]: ...
+    def _find_phi_peak_center(self, vx_phi: np.ndarray, vy_phi: np.ndarray, df_phi: np.ndarray, search_radius: int = 50) -> Tuple[float, float]: ...
+    def get_phi_peak_centered_bounds(self, vx_phi: np.ndarray, vy_phi: np.ndarray, df_phi: np.ndarray) -> Tuple[Tuple[float, float], Tuple[float, float]]: ...
+    def get_theta_square_bounds(self, vx_theta: np.ndarray, vz_theta: np.ndarray, df_theta: np.ndarray) -> Tuple[Tuple[float, float], Tuple[float, float]]: ...
     
     # Velocity and plotting methods
     def generate_velocity_grids(self, time_index: int, plane_type: str = 'theta') -> Tuple[np.ndarray, np.ndarray, np.ndarray]: ...

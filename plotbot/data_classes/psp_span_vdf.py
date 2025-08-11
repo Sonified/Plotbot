@@ -70,11 +70,11 @@ class psp_span_vdf_class:
         # Smart bounds system (auto-zoom controls)
         object.__setattr__(self, 'enable_smart_padding', True)       # Enable/disable intelligent auto-zoom
         object.__setattr__(self, 'vdf_threshold_percentile', 10)     # 10th percentile separates bulk from background
-        object.__setattr__(self, 'theta_x_smart_padding', 100)      # Vx padding for theta plane (km/s)
-        object.__setattr__(self, 'theta_y_smart_padding', 100)      # Vz padding for theta plane (km/s)  
-        object.__setattr__(self, 'phi_x_smart_padding', 200)        # Vx padding for phi plane (km/s)
-        object.__setattr__(self, 'phi_y_smart_padding', 200)        # Vy padding for phi plane (km/s)
-        object.__setattr__(self, 'enable_zero_clipping', True)      # Auto-clip when bulk doesn't cross zero
+        object.__setattr__(self, 'theta_smart_padding', 100)         # Single padding for theta plane (km/s) – square, zero-centered
+        object.__setattr__(self, 'phi_x_smart_padding', 100)         # Vx padding for phi plane (km/s)
+        object.__setattr__(self, 'phi_y_smart_padding', 100)         # Vy padding for phi plane (km/s)
+        object.__setattr__(self, 'phi_peak_centered', False)         # Enable peak-centering for phi plane (default OFF)
+        object.__setattr__(self, 'enable_zero_clipping', True)       # Auto-clip when bulk doesn't cross zero
         
         # Manual axis limits (override smart bounds when set)
         object.__setattr__(self, 'theta_x_axis_limits', None)       # Manual X-axis limits for theta plane (Vx range, km/s)
@@ -84,6 +84,8 @@ class psp_span_vdf_class:
         
         # Visual settings
         object.__setattr__(self, 'vdf_colormap', 'cool')            # Default colormap for VDF plots
+        object.__setattr__(self, 'vdf_figure_width', 15)            # Figure width in inches (default 15)
+        object.__setattr__(self, 'vdf_figure_height', 5)            # Figure height in inches (default 5)
         
         if imported_data is None:
             # Set empty plotting options if imported_data is None
@@ -278,7 +280,8 @@ class psp_span_vdf_class:
             'theta_x_smart_padding', 'theta_y_smart_padding',
             'phi_x_smart_padding', 'phi_y_smart_padding', 'enable_zero_clipping',
             'theta_x_axis_limits', 'theta_y_axis_limits', 
-            'phi_x_axis_limits', 'phi_y_axis_limits', 'vdf_colormap'
+            'phi_x_axis_limits', 'phi_y_axis_limits', 'vdf_colormap',
+            'vdf_figure_width', 'vdf_figure_height'
         ]
         
         for key, value in kwargs.items():
@@ -302,8 +305,9 @@ class psp_span_vdf_class:
         """
         # Get padding values based on plane type (now direct attributes)
         if plane_type == 'theta':
-            x_padding = self.theta_x_smart_padding
-            y_padding = self.theta_y_smart_padding
+            # For theta plane, we use the single theta_smart_padding for both directions
+            x_padding = getattr(self, 'theta_smart_padding', 100)
+            y_padding = getattr(self, 'theta_smart_padding', 100)
         else:  # phi plane
             x_padding = self.phi_x_smart_padding 
             y_padding = self.phi_y_smart_padding
@@ -347,6 +351,94 @@ class psp_span_vdf_class:
         
         print_manager.debug(f"Smart bounds for {plane_type} plane: X={xlim}, Y={ylim}")
         return xlim, ylim
+
+    def get_theta_square_bounds(self, vx_theta, vz_theta, df_theta):
+        """Smart zero-centered, square bounds for theta plane using bulk data and user padding."""
+        from plotbot.vdf_helpers import theta_smart_bounds
+        
+        padding = getattr(self, 'theta_smart_padding', 100)
+        percentile = getattr(self, 'vdf_threshold_percentile', 10)
+        enable_clipping = getattr(self, 'enable_zero_clipping', True)
+        
+        xlim, ylim = theta_smart_bounds(
+            vx_theta, vz_theta, df_theta, 
+            percentile=percentile,
+            padding=padding, 
+            enable_zero_clipping=enable_clipping
+        )
+        
+        print_manager.debug(f"Theta smart square bounds: X={xlim}, Y={ylim} (padding={padding})")
+        return xlim, ylim
+
+    def _find_phi_peak_center(self, vx_phi, vy_phi, df_phi, search_radius=50):
+        """Find the weighted centroid of the highest density region in PHI plane"""
+        peak_idx = np.unravel_index(np.nanargmax(df_phi), df_phi.shape)
+        peak_vx = vx_phi[peak_idx]
+        peak_vy = vy_phi[peak_idx]
+        
+        distances = np.sqrt((vx_phi - peak_vx)**2 + (vy_phi - peak_vy)**2)
+        circle_mask = distances <= search_radius
+        
+        if not np.any(circle_mask):
+            return peak_vx, peak_vy
+        
+        circle_data = df_phi[circle_mask]
+        circle_vx = vx_phi[circle_mask] 
+        circle_vy = vy_phi[circle_mask]
+        
+        valid_mask = np.isfinite(circle_data) & (circle_data > 0)
+        if not np.any(valid_mask):
+            return peak_vx, peak_vy
+        
+        valid_data = circle_data[valid_mask]
+        valid_vx = circle_vx[valid_mask]
+        valid_vy = circle_vy[valid_mask]
+        
+        total_weight = np.nansum(valid_data)
+        if total_weight <= 0:
+            return peak_vx, peak_vy
+            
+        center_vx = np.nansum(valid_vx * valid_data) / total_weight
+        center_vy = np.nansum(valid_vy * valid_data) / total_weight
+        
+        return center_vx, center_vy
+
+    def get_phi_peak_centered_bounds(self, vx_phi, vy_phi, df_phi):
+        """Peak-centered bounds for phi plane to avoid cutting off bulk distribution."""
+        center_vx, center_vy = self._find_phi_peak_center(vx_phi, vy_phi, df_phi)
+        
+        x_padding = getattr(self, 'phi_x_smart_padding', 100)
+        y_padding = getattr(self, 'phi_y_smart_padding', 100)
+        
+        valid_mask = np.isfinite(df_phi) & (df_phi > 0)
+        if not np.any(valid_mask):
+            return (-800, 0), (-200, 600)
+        
+        vdf_threshold = np.percentile(df_phi[valid_mask], self.vdf_threshold_percentile)
+        bulk_mask = df_phi > vdf_threshold
+        if not np.any(bulk_mask):
+            bulk_mask = valid_mask
+        
+        vx_bulk = vx_phi[bulk_mask]
+        vy_bulk = vy_phi[bulk_mask]
+        
+        vx_range = max(abs(np.min(vx_bulk) - center_vx), abs(np.max(vx_bulk) - center_vx))
+        vy_range = max(abs(np.min(vy_bulk) - center_vy), abs(np.max(vy_bulk) - center_vy))
+        
+        x_half_range = vx_range + x_padding
+        y_half_range = vy_range + y_padding
+        
+        xlim = (center_vx - x_half_range, center_vx + x_half_range)
+        ylim = (center_vy - y_half_range, center_vy + y_half_range)
+        
+        if self.enable_zero_clipping:
+            vx_min_bulk, vx_max_bulk = np.min(vx_bulk), np.max(vx_bulk)
+            if vx_max_bulk < 0 and xlim[1] > 0:
+                xlim = (xlim[0], 0.0)
+            elif vx_min_bulk > 0 and xlim[0] < 0:
+                xlim = (0.0, xlim[1])
+        
+        return xlim, ylim
     
     def _apply_zero_clipping(self, xlim, ylim, x_max_bulk, y_max_bulk):
         """Apply intelligent zero clipping when bulk data doesn't cross zero."""
@@ -363,43 +455,38 @@ class psp_span_vdf_class:
         return xlim, ylim
     
     def get_axis_limits(self, plane_type='theta', vx=None, vy=None, vdf_data=None):
-        """
-        Get axis limits following parameter hierarchy: Manual > Smart > Jaye's defaults.
-        
-        Args:
-            plane_type: 'theta' or 'phi'  
-            vx, vy: Velocity arrays (required if smart bounds enabled)
-            vdf_data: VDF array (required if smart bounds enabled)
-            
-        Returns:
-            (xlim, ylim): Tuples of (min, max) for each axis
-        """
-        # Get manual limits based on plane type (now direct attributes)
+        """Get axis limits following parameter hierarchy: Manual > Smart > Jaye's defaults."""
         if plane_type == 'theta':
             x_manual = self.theta_x_axis_limits
             y_manual = self.theta_y_axis_limits
-            # Jaye's reference bounds from his notebook (Cell 39 & 41)
             jaye_x_bounds, jaye_y_bounds = (-800, 0), (-400, 400)
-        else:  # phi plane
+            
+            if x_manual is not None and y_manual is not None:
+                print_manager.debug(f"Using manual axis limits for theta plane: X={x_manual}, Y={y_manual}")
+                return x_manual, y_manual
+                
+            # Use square bounds for theta when smart padding enabled
+            if self.enable_smart_padding and vx is not None and vy is not None and vdf_data is not None:
+                return self.get_theta_square_bounds(vx, vy, vdf_data)
+            return jaye_x_bounds, jaye_y_bounds
+        else:
             x_manual = self.phi_x_axis_limits
             y_manual = self.phi_y_axis_limits
-            # Jaye's reference bounds from his notebook (Cell 41)
             jaye_x_bounds, jaye_y_bounds = (-800, 0), (-200, 600)
         
-        # 1. Check for manual axis limits (highest priority)
-        
+        # Manual limits check for phi
         if x_manual is not None and y_manual is not None:
-            # Both axes manually set
             print_manager.debug(f"Using manual axis limits for {plane_type} plane: X={x_manual}, Y={y_manual}")
             return x_manual, y_manual
         
-        # 2. Mixed manual/smart bounds
+        # Mixed manual/smart bounds for phi
         if x_manual is not None or y_manual is not None:
-            # Calculate smart bounds for unset axes
             if self.enable_smart_padding and vx is not None and vy is not None and vdf_data is not None:
-                xlim_smart, ylim_smart = self.calculate_smart_bounds(vx, vy, vdf_data, plane_type)
+                if getattr(self, 'phi_peak_centered', False):
+                    xlim_smart, ylim_smart = self.get_phi_peak_centered_bounds(vx, vy, vdf_data)
+                else:
+                    xlim_smart, ylim_smart = self.calculate_smart_bounds(vx, vy, vdf_data, plane_type)
             else:
-                # Fallback to Jaye's bounds if smart bounds disabled or no data provided
                 xlim_smart, ylim_smart = jaye_x_bounds, jaye_y_bounds
             
             xlim = x_manual if x_manual is not None else xlim_smart
@@ -408,13 +495,17 @@ class psp_span_vdf_class:
             print_manager.debug(f"Using mixed bounds for {plane_type} plane: X={xlim} ({'manual' if x_manual else 'smart'}), Y={ylim} ({'manual' if y_manual else 'smart'})")
             return xlim, ylim
         
-        # 3. No manual limits set - use smart bounds or fallback
+        # No manual limits - use smart bounds or fallback for phi
         if self.enable_smart_padding and vx is not None and vy is not None and vdf_data is not None:
-            xlim, ylim = self.calculate_smart_bounds(vx, vy, vdf_data, plane_type)
-            print_manager.debug(f"Using smart bounds for {plane_type} plane")
-            return xlim, ylim
+            if plane_type == 'phi' and getattr(self, 'phi_peak_centered', False):
+                xlim, ylim = self.get_phi_peak_centered_bounds(vx, vy, vdf_data)
+                print_manager.debug(f"Using peak-centered bounds for phi plane")
+                return xlim, ylim
+            else:
+                xlim, ylim = self.calculate_smart_bounds(vx, vy, vdf_data, plane_type)
+                print_manager.debug(f"Using smart bounds for {plane_type} plane")
+                return xlim, ylim
         else:
-            # Final fallback to Jaye's reference bounds
             xlim, ylim = jaye_x_bounds, jaye_y_bounds
             print_manager.debug(f"Using Jaye's reference bounds for {plane_type} plane: X={xlim}, Y={ylim}")
             return xlim, ylim
@@ -716,10 +807,12 @@ class psp_span_vdf_class:
             'class_name', 'data_type', 'subclass_name', '_mass_p', '_charge_p',
             # VDF parameters now as direct attributes
             'enable_smart_padding', 'vdf_threshold_percentile', 
-            'theta_x_smart_padding', 'theta_y_smart_padding',
-            'phi_x_smart_padding', 'phi_y_smart_padding', 'enable_zero_clipping',
-            'theta_x_axis_limits', 'theta_y_axis_limits', 
-            'phi_x_axis_limits', 'phi_y_axis_limits', 'vdf_colormap'
+            'theta_smart_padding', 'phi_x_smart_padding', 'phi_y_smart_padding', 'phi_peak_centered',
+            'enable_zero_clipping', 'theta_x_axis_limits', 'theta_y_axis_limits',
+            'phi_x_axis_limits', 'phi_y_axis_limits', 'vdf_colormap',
+            'vdf_figure_width', 'vdf_figure_height',
+            # Plot manager attributes that may be dynamically set
+            'vdf_main', 'vdf_collapsed', 'vdf_theta_plane', 'vdf_phi_plane'
         ]
         
         if name in allowed_attrs:
