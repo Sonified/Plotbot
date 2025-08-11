@@ -383,10 +383,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_08_06_v3.07"
+__version__ = "2025_08_06_v3.08"
 
 # Commit message for this version
-__commit_message__ = "v3.07 Enhancement: VDF text scaling system - universal text size control for all VDF plots (static & widget modes)"
+__commit_message__ = "v3.08 Fix: VDF smart padding priority - enable_smart_padding now properly overrides stored manual limits"
 
 # Print the version and commit message
 print(f"""

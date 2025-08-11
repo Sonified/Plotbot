@@ -456,13 +456,14 @@ class psp_span_vdf_class:
         return xlim, ylim
     
     def get_axis_limits(self, plane_type='theta', vx=None, vy=None, vdf_data=None):
-        """Get axis limits following parameter hierarchy: Manual > Smart > Jaye's defaults."""
+        """Get axis limits following parameter hierarchy: Manual (only when smart_padding disabled) > Smart > Jaye's defaults."""
         if plane_type == 'theta':
             x_manual = self.theta_x_axis_limits
             y_manual = self.theta_y_axis_limits
             jaye_x_bounds, jaye_y_bounds = (-800, 0), (-400, 400)
             
-            if x_manual is not None and y_manual is not None:
+            # Manual limits only used when smart padding is explicitly disabled
+            if not self.enable_smart_padding and x_manual is not None and y_manual is not None:
                 print_manager.debug(f"Using manual axis limits for theta plane: X={x_manual}, Y={y_manual}")
                 return x_manual, y_manual
                 
@@ -475,25 +476,20 @@ class psp_span_vdf_class:
             y_manual = self.phi_y_axis_limits
             jaye_x_bounds, jaye_y_bounds = (-800, 0), (-200, 600)
         
-        # Manual limits check for phi
-        if x_manual is not None and y_manual is not None:
+        # Manual limits check for phi (only when smart padding disabled)
+        if not self.enable_smart_padding and x_manual is not None and y_manual is not None:
             print_manager.debug(f"Using manual axis limits for {plane_type} plane: X={x_manual}, Y={y_manual}")
             return x_manual, y_manual
         
-        # Mixed manual/smart bounds for phi
-        if x_manual is not None or y_manual is not None:
-            if self.enable_smart_padding and vx is not None and vy is not None and vdf_data is not None:
-                if getattr(self, 'phi_peak_centered', False):
-                    xlim_smart, ylim_smart = self.get_phi_peak_centered_bounds(vx, vy, vdf_data)
-                else:
-                    xlim_smart, ylim_smart = self.calculate_smart_bounds(vx, vy, vdf_data, plane_type)
-            else:
-                xlim_smart, ylim_smart = jaye_x_bounds, jaye_y_bounds
+        # Mixed manual/smart bounds for phi (only when smart padding disabled)
+        if not self.enable_smart_padding and (x_manual is not None or y_manual is not None):
+            # When smart padding disabled, use Jaye's defaults for missing manual values
+            xlim_smart, ylim_smart = jaye_x_bounds, jaye_y_bounds
             
             xlim = x_manual if x_manual is not None else xlim_smart
             ylim = y_manual if y_manual is not None else ylim_smart
             
-            print_manager.debug(f"Using mixed bounds for {plane_type} plane: X={xlim} ({'manual' if x_manual else 'smart'}), Y={ylim} ({'manual' if y_manual else 'smart'})")
+            print_manager.debug(f"Using mixed bounds for {plane_type} plane: X={xlim} ({'manual' if x_manual else 'Jaye default'}), Y={ylim} ({'manual' if y_manual else 'Jaye default'})")
             return xlim, ylim
         
         # No manual limits - use smart bounds or fallback for phi
