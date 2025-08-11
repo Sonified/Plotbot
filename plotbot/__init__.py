@@ -383,10 +383,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_08_06_v3.08"
+__version__ = "2025_08_06_v3.09"
 
 # Commit message for this version
-__commit_message__ = "v3.08 Fix: VDF smart padding priority - enable_smart_padding now properly overrides stored manual limits"
+__commit_message__ = "v3.09 Fix: VDF single timestamp support - handles single timestamps, smart caching, closest time slice detection"
 
 # Print the version and commit message
 print(f"""

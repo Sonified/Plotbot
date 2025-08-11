@@ -221,7 +221,38 @@ This fixes a critical user experience issue where VDF parameter adjustments appe
 
 ---
 
+---
+
+## Additional Update: VDF Single Timestamp Support
+
+### Problem Solved
+- **Issue**: `vdyes()` function crashed with IndexError when passed single timestamp like `['2020/01/29 18:10:00.000']`
+- **Root Cause**: Function tried to access `trange[1]` but pyspedas expected 2-element time range for downloads
+- **User Impact**: VDF plotting was broken for single timestamp use case
+
+### Solution Implemented
+- **Smart Single Timestamp Handling**: When user passes single timestamp, automatically:
+  1. Creates ±1 hour download window around target time for pyspedas
+  2. Downloads appropriate CDF file containing that time period
+  3. Finds closest actual time slice in the data to user's target
+  4. Returns single static plot for that time slice
+
+- **Optimized Caching Strategy**: Enhanced download logic with two-stage approach:
+  1. First tries `no_update=True` (fast local file check)
+  2. Only downloads with `no_update=False` if local files missing
+  3. Provides clear feedback: "✅ Using cached VDF files" vs "📡 Downloading..."
+
+### Technical Details
+- **File**: `plotbot/vdyes.py`
+- **Changes**: Added single timestamp detection, time range expansion for downloads, closest time slice finding
+- **Performance**: Time slider movement remains fast (no re-downloads, just processes different time slices from loaded CDF)
+- **Backward Compatibility**: Existing time range usage unchanged
+
+This fix enables the intended workflow: `vdyes(['2020/01/29 18:10:00.000'])` now works perfectly and finds the closest available VDF time slice.
+
+---
+
 ## Version Information
-- **Previous Version**: v3.05 - "v3.05 Enhancement: Major VDF widget UX improvements - status system, background fixes, directory dialog, warning suppression"
-- **Current Version**: v3.06 - "v3.06 Fix: VDF parameter system - manual bounds now work, smart theta bounds with bulk data detection, intelligent zero clipping"
+- **Previous Version**: v3.06 - "v3.06 Fix: VDF parameter system - manual bounds now work, smart theta bounds with bulk data detection, intelligent zero clipping"
+- **Current Version**: v3.09 - "v3.09 Fix: VDF single timestamp support - handles single timestamps, smart caching, closest time slice detection"
 - **Date**: 2025-08-06

@@ -82,9 +82,33 @@ def vdyes(trange, force_static=False):
     
     print_manager.status("📡 Downloading PSP SPAN-I data using proven pyspedas approach...")
     
+    # Convert single timestamp to download range for pyspedas (which requires 2-element trange)
+    download_trange = trange
+    if len(trange) == 1:
+        # Create a small time window around the single timestamp for download
+        from dateutil.parser import parse
+        from datetime import timedelta
+        target_dt = parse(trange[0].replace('/', ' '))
+        start_dt = target_dt - timedelta(hours=1)  # 1 hour before
+        end_dt = target_dt + timedelta(hours=1)    # 1 hour after
+        download_trange = [start_dt.strftime('%Y/%m/%d %H:%M:%S.%f')[:-3], 
+                          end_dt.strftime('%Y/%m/%d %H:%M:%S.%f')[:-3]]
+        print_manager.status(f"🎯 Single timestamp: expanding to download range {download_trange}")
+    
     # Download using proven pyspedas approach (exactly like our working tests)
-    VDfile = pyspedas.psp.spi(trange, datatype='spi_sf00_8dx32ex8a', level='l2', 
-                              notplot=True, time_clip=True, downloadonly=True, get_support_data=True)
+    # First try local files only (no_update=True for fast local check)
+    VDfile = pyspedas.psp.spi(download_trange, datatype='spi_sf00_8dx32ex8a', level='l2', 
+                              notplot=True, time_clip=True, downloadonly=True, get_support_data=True, 
+                              no_update=True)
+    
+    # If no local files found, allow download
+    if not VDfile:
+        print_manager.status("📡 No local VDF files found, attempting download...")
+        VDfile = pyspedas.psp.spi(download_trange, datatype='spi_sf00_8dx32ex8a', level='l2', 
+                                  notplot=True, time_clip=True, downloadonly=True, get_support_data=True, 
+                                  no_update=False)
+    else:
+        print_manager.status("✅ Using cached VDF files (no download needed)")
     
     if not VDfile:
         raise ValueError(f"No VDF files downloaded for trange: {trange}")
@@ -98,15 +122,31 @@ def vdyes(trange, force_static=False):
     epoch_dt64 = cdflib.cdfepoch.to_datetime(dat.varget('Epoch'))
     epoch = pd.to_datetime(epoch_dt64).to_pydatetime().tolist()
     
-    # Filter time points to requested trange
+    # Handle single timestamp vs time range
     from dateutil.parser import parse
-    start_dt = parse(trange[0].replace('/', ' '))
-    end_dt = parse(trange[1].replace('/', ' '))
     
-    # Find time points within the requested range
-    time_mask = [(t >= start_dt and t <= end_dt) for t in epoch]
-    available_times = [epoch[i] for i, mask in enumerate(time_mask) if mask]
-    available_indices = [i for i, mask in enumerate(time_mask) if mask]
+    if len(trange) == 1:
+        # Single timestamp - find closest time slice
+        target_dt = parse(trange[0].replace('/', ' '))
+        
+        # Find the closest time point
+        time_diffs = [abs((t - target_dt).total_seconds()) for t in epoch]
+        closest_index = time_diffs.index(min(time_diffs))
+        
+        available_times = [epoch[closest_index]]
+        available_indices = [closest_index]
+        
+        print_manager.status(f"🎯 Single timestamp mode: Found closest time slice at {epoch[closest_index]}")
+        
+    else:
+        # Time range - filter time points to requested range
+        start_dt = parse(trange[0].replace('/', ' '))
+        end_dt = parse(trange[1].replace('/', ' '))
+        
+        # Find time points within the requested range
+        time_mask = [(t >= start_dt and t <= end_dt) for t in epoch]
+        available_times = [epoch[i] for i, mask in enumerate(time_mask) if mask]
+        available_indices = [i for i, mask in enumerate(time_mask) if mask]
     
     n_time_points = len(available_times)
     
