@@ -161,6 +161,7 @@ def _create_static_vdf_plot(dat, time_index, epoch):
     phi_xlim, phi_ylim = vdf_class.get_axis_limits('phi', vx_phi, vy_phi, df_phi)
     
     print_manager.status("📊 Creating 3-panel VDF plot using proven approach...")
+    print(f"🎛️ VDF Text Scaling: {vdf_class.vdf_text_scaling}")
     
     # Use proven gridspec layout with explicit white backgrounds
     fig = plt.figure(figsize=(vdf_class.vdf_figure_width, vdf_class.vdf_figure_height), facecolor='white')
@@ -178,34 +179,39 @@ def _create_static_vdf_plot(dat, time_index, epoch):
     ax1.plot(vel_1d, vdf_allAngles, 'b-', linewidth=2)
     ax1.set_yscale('log')
     ax1.set_xlim(0, 1000)
-    ax1.set_xlabel('Velocity (km/s)')
-    ax1.set_ylabel(f'f $(cm^2 \\ s \\ sr \\ eV)^{-1}$')
+    ax1.set_xlabel('Velocity (km/s)', fontsize=12 * vdf_class.vdf_text_scaling)
+    ax1.set_ylabel(f'f $(cm^2 \\ s \\ sr \\ eV)^{-1}$', fontsize=12 * vdf_class.vdf_text_scaling)
+    ax1.tick_params(axis='both', labelsize=10 * vdf_class.vdf_text_scaling)
     
     # 2D Theta plane with smart bounds (middle panel)
     cs2 = ax2.contourf(vx_theta, vz_theta, df_theta, 
                       locator=ticker.LogLocator(), cmap=vdf_class.vdf_colormap)
     ax2.set_xlim(theta_xlim)
     ax2.set_ylim(theta_ylim)
-    ax2.set_xlabel('$v_x$ km/s')
-    ax2.set_ylabel('$v_z$ km/s')
-    ax2.set_title('$\\theta$-plane')
+    ax2.set_xlabel('$v_x$ km/s', fontsize=12 * vdf_class.vdf_text_scaling)
+    ax2.set_ylabel('$v_z$ km/s', fontsize=12 * vdf_class.vdf_text_scaling)
+    ax2.set_title('$\\theta$-plane', fontsize=14 * vdf_class.vdf_text_scaling)
+    ax2.tick_params(axis='both', labelsize=10 * vdf_class.vdf_text_scaling)
     
     # 2D Phi plane with smart bounds (right panel)
     cs3 = ax3.contourf(vx_phi, vy_phi, df_phi,
                       locator=ticker.LogLocator(), cmap=vdf_class.vdf_colormap)
     ax3.set_xlim(phi_xlim)
     ax3.set_ylim(phi_ylim)
-    ax3.set_xlabel('$v_x$ km/s')
-    ax3.set_ylabel('$v_y$ km/s')
-    ax3.set_title('$\\phi$-plane')
+    ax3.set_xlabel('$v_x$ km/s', fontsize=12 * vdf_class.vdf_text_scaling)
+    ax3.set_ylabel('$v_y$ km/s', fontsize=12 * vdf_class.vdf_text_scaling)
+    ax3.set_title('$\\phi$-plane', fontsize=14 * vdf_class.vdf_text_scaling)
+    ax3.tick_params(axis='both', labelsize=10 * vdf_class.vdf_text_scaling)
     
     # Single colorbar in dedicated axis
     cbar = fig.colorbar(cs2, cax=cax)
-    cbar.set_label(f'f $(cm^2 \\ s \\ sr \\ eV)^{-1}$')
+    cbar.set_label(f'f $(cm^2 \\ s \\ sr \\ eV)^{-1}$', fontsize=12 * vdf_class.vdf_text_scaling)
+    cbar.ax.tick_params(labelsize=10 * vdf_class.vdf_text_scaling)
     
     # Add figure title
     epoch_str = epoch[time_index].strftime("%Y-%m-%d %H:%M:%S")
-    fig.suptitle(f'PSP SPAN-I VDF - vdyes() Static Plot\n{epoch_str}', y=1.02, fontsize=14)
+    fig.suptitle(f'PSP SPAN-I VDF - vdyes() Static Plot\n{epoch_str}', y=1.02,
+                fontsize=16 * vdf_class.vdf_text_scaling)
     
     print_manager.status(f"✅ vdyes() static plot complete! Plot created for {epoch[time_index]}")
     print_manager.status(f"   🎯 Theta bounds: X={theta_xlim}, Y={theta_ylim}")  
@@ -298,34 +304,38 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
             ax1.plot(vel_1d, vdf_allAngles, 'b-', linewidth=2)
             ax1.set_yscale('log')
             ax1.set_xlim(0, 1000)
-            ax1.set_xlabel('Velocity (km/s)')
-            ax1.set_ylabel(f'f $(cm^2 \\ s \\ sr \\ eV)^{-1}$')
+            ax1.set_xlabel('Velocity (km/s)', fontsize=12 * vdf_class.vdf_text_scaling)
+            ax1.set_ylabel(f'f $(cm^2 \\ s \\ sr \\ eV)^{-1}$', fontsize=12 * vdf_class.vdf_text_scaling)
+            ax1.tick_params(axis='both', labelsize=10 * vdf_class.vdf_text_scaling)
             
             # 2D Theta plane (middle panel)
             cs2 = ax2.contourf(vx_theta, vz_theta, df_theta, 
                               locator=ticker.LogLocator(), cmap=vdf_class.vdf_colormap)
             ax2.set_xlim(theta_xlim)
             ax2.set_ylim(theta_ylim)
-            ax2.set_xlabel('$v_x$ km/s')
-            ax2.set_ylabel('$v_z$ km/s')
-            ax2.set_title('$\\theta$-plane')
+            ax2.set_xlabel('$v_x$ km/s', fontsize=12 * vdf_class.vdf_text_scaling)
+            ax2.set_ylabel('$v_z$ km/s', fontsize=12 * vdf_class.vdf_text_scaling)
+            ax2.set_title('$\\theta$-plane', fontsize=14 * vdf_class.vdf_text_scaling)
+            ax2.tick_params(axis='both', labelsize=10 * vdf_class.vdf_text_scaling)
             
             # 2D Phi plane (right panel)
             cs3 = ax3.contourf(vx_phi, vy_phi, df_phi,
                               locator=ticker.LogLocator(), cmap=vdf_class.vdf_colormap)
             ax3.set_xlim(phi_xlim)
             ax3.set_ylim(phi_ylim)
-            ax3.set_xlabel('$v_x$ km/s')
-            ax3.set_ylabel('$v_y$ km/s')
-            ax3.set_title('$\\phi$-plane')
+            ax3.set_xlabel('$v_x$ km/s', fontsize=12 * vdf_class.vdf_text_scaling)
+            ax3.set_ylabel('$v_y$ km/s', fontsize=12 * vdf_class.vdf_text_scaling)
+            ax3.set_title('$\\phi$-plane', fontsize=14 * vdf_class.vdf_text_scaling)
+            ax3.tick_params(axis='both', labelsize=10 * vdf_class.vdf_text_scaling)
             
             # Colorbar
             cbar = fig.colorbar(cs2, cax=cax)
-            cbar.set_label(f'f $(cm^2 \\ s \\ sr \\ eV)^{-1}$')
+            cbar.set_label(f'f $(cm^2 \\ s \\ sr \\ eV)^{-1}$', fontsize=12 * vdf_class.vdf_text_scaling)
+            cbar.ax.tick_params(labelsize=10 * vdf_class.vdf_text_scaling)
             
             # Title with time
             time_str = available_times[time_index].strftime("%Y-%m-%d %H:%M:%S")
-            fig.suptitle(f'PSP SPAN-I VDF Widget - {time_str}', y=1.02, fontsize=14)
+            fig.suptitle(f'PSP SPAN-I VDF Widget - {time_str}', y=1.02, fontsize=16 * vdf_class.vdf_text_scaling)
             
             plt.show()
             
@@ -378,34 +388,38 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
         ax1.plot(vel_1d, vdf_allAngles, 'b-', linewidth=2)
         ax1.set_yscale('log')
         ax1.set_xlim(0, 1000)
-        ax1.set_xlabel('Velocity (km/s)')
-        ax1.set_ylabel(f'f $(cm^2 \\ s \\ sr \\ eV)^{-1}$')
+        ax1.set_xlabel('Velocity (km/s)', fontsize=12 * vdf_class.vdf_text_scaling)
+        ax1.set_ylabel(f'f $(cm^2 \\ s \\ sr \\ eV)^{-1}$', fontsize=12 * vdf_class.vdf_text_scaling)
+        ax1.tick_params(axis='both', labelsize=10 * vdf_class.vdf_text_scaling)
         
         # 2D Theta plane (middle panel)
         cs2 = ax2.contourf(vx_theta, vz_theta, df_theta, 
                           locator=ticker.LogLocator(), cmap=vdf_class.vdf_colormap)
         ax2.set_xlim(theta_xlim)
         ax2.set_ylim(theta_ylim)
-        ax2.set_xlabel('$v_x$ km/s')
-        ax2.set_ylabel('$v_z$ km/s')
-        ax2.set_title('$\\theta$-plane')
+        ax2.set_xlabel('$v_x$ km/s', fontsize=12 * vdf_class.vdf_text_scaling)
+        ax2.set_ylabel('$v_z$ km/s', fontsize=12 * vdf_class.vdf_text_scaling)
+        ax2.set_title('$\\theta$-plane', fontsize=14 * vdf_class.vdf_text_scaling)
+        ax2.tick_params(axis='both', labelsize=10 * vdf_class.vdf_text_scaling)
         
         # 2D Phi plane (right panel)
         cs3 = ax3.contourf(vx_phi, vy_phi, df_phi,
                           locator=ticker.LogLocator(), cmap=vdf_class.vdf_colormap)
         ax3.set_xlim(phi_xlim)
         ax3.set_ylim(phi_ylim)
-        ax3.set_xlabel('$v_x$ km/s')
-        ax3.set_ylabel('$v_y$ km/s')
-        ax3.set_title('$\\phi$-plane')
+        ax3.set_xlabel('$v_x$ km/s', fontsize=12 * vdf_class.vdf_text_scaling)
+        ax3.set_ylabel('$v_y$ km/s', fontsize=12 * vdf_class.vdf_text_scaling)
+        ax3.set_title('$\\phi$-plane', fontsize=14 * vdf_class.vdf_text_scaling)
+        ax3.tick_params(axis='both', labelsize=10 * vdf_class.vdf_text_scaling)
         
         # Colorbar
         cbar = fig.colorbar(cs2, cax=cax)
-        cbar.set_label(f'f $(cm^2 \\ s \\ sr \\ eV)^{-1}$')
+        cbar.set_label(f'f $(cm^2 \\ s \\ sr \\ eV)^{-1}$', fontsize=12 * vdf_class.vdf_text_scaling)
+        cbar.ax.tick_params(labelsize=10 * vdf_class.vdf_text_scaling)
         
         # Title with time
         time_str = current_time.strftime("%Y-%m-%d %H:%M:%S")
-        fig.suptitle(f'PSP SPAN-I VDF - {time_str}', y=1.02, fontsize=14)
+        fig.suptitle(f'PSP SPAN-I VDF - {time_str}', y=1.02, fontsize=16 * vdf_class.vdf_text_scaling)
         
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close(fig)

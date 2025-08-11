@@ -40,8 +40,9 @@ class psp_span_vdf_class:
     
     # Visual settings
     vdf_colormap: str                   # Colormap for VDF plots ('cool', 'viridis', 'plasma', etc.)
-    vdf_figure_width: float
-    vdf_figure_height: float
+    vdf_figure_width: float             # Figure width in inches
+    vdf_figure_height: float            # Figure height in inches
+    vdf_text_scaling: float             # Text scaling multiplier (1.0 = default matplotlib size, 1.3 = 30% larger)
     
     # Plot managers for different VDF views
     vdf_main: plot_manager              # Main VDF plot manager (default theta plane)

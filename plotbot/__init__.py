@@ -383,10 +383,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_08_06_v3.06"
+__version__ = "2025_08_06_v3.07"
 
 # Commit message for this version
-__commit_message__ = "v3.06 Fix: VDF parameter system - manual bounds now work, smart theta bounds with bulk data detection, intelligent zero clipping"
+__commit_message__ = "v3.07 Enhancement: VDF text scaling system - universal text size control for all VDF plots (static & widget modes)"
 
 # Print the version and commit message
 print(f"""

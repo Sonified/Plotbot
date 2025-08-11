@@ -84,8 +84,9 @@ class psp_span_vdf_class:
         
         # Visual settings
         object.__setattr__(self, 'vdf_colormap', 'cool')            # Default colormap for VDF plots
-        object.__setattr__(self, 'vdf_figure_width', 15)            # Figure width in inches (default 15)
+        object.__setattr__(self, 'vdf_figure_width', 18)            # Figure width in inches (default 18)
         object.__setattr__(self, 'vdf_figure_height', 5)            # Figure height in inches (default 5)
+        object.__setattr__(self, 'vdf_text_scaling', 1.0)           # Text scaling multiplier (1.0 = default matplotlib size)
         
         if imported_data is None:
             # Set empty plotting options if imported_data is None
@@ -810,7 +811,7 @@ class psp_span_vdf_class:
             'theta_smart_padding', 'phi_x_smart_padding', 'phi_y_smart_padding', 'phi_peak_centered',
             'enable_zero_clipping', 'theta_x_axis_limits', 'theta_y_axis_limits',
             'phi_x_axis_limits', 'phi_y_axis_limits', 'vdf_colormap',
-            'vdf_figure_width', 'vdf_figure_height',
+            'vdf_figure_width', 'vdf_figure_height', 'vdf_text_scaling',
             # Plot manager attributes that may be dynamically set
             'vdf_main', 'vdf_collapsed', 'vdf_theta_plane', 'vdf_phi_plane'
         ]
