@@ -19,42 +19,6 @@ A comprehensive tool for downloading and plotting space physics data, specializi
 *   **`vdyes()`**: **NEW** Velocity Distribution Function plotting (theta-plane, phi-plane, collapsed distributions)
 *   **`audifier()`**: Audio generation from data for sonification analysis
 
-### **Data Access & Management**
-*   **Straightforward class structure**: Access data variables intuitively
-    *   "mag_rtn.br" accesses FIELDS Mag Br data in RTN coordinate system
-    *   "mag_rtn.br.color = 'blue'" sets the line color to blue
-*   **Smart download system**: Dynamic server selection (SPDF ↔ Berkeley fallback)
-*   **Data caching**: `save_simple_snapshot()` / `load_simple_snapshot()` for persistent data storage
-*   **Custom variables**: Create derived quantities using arithmetic operations
-
-### **Advanced Capabilities**
-*   **Electric field spectral data**: PSP DFB (Digital Fields Board) AC/DC spectra
-*   **Quasi-thermal noise**: Electron density and temperature from QTN measurements
-*   **Orbital data integration**: PSP positional data with Carrington coordinates
-*   **HAM data support**: Hammerhead analysis integration from local CSV files
-*   **Multi-format support**: CDF, CSV, NPZ file formats with automatic detection
-
-## Example Usage & Notebooks
-
-The primary way to learn and use Plotbot is through the included Jupyter Notebooks. The main notebook `Plotbot.ipynb` provides a comprehensive overview, while specialized example notebooks demonstrate specific capabilities:
-
-### **Main Tutorial:**
-- `Plotbot.ipynb` - Complete overview with examples of `plotbot()`, `multiplot()`, `showdahodo()`, and `audifier()`
-
-### **Specialized Example Notebooks:**
-- `plotbot_cdf_import_examples.ipynb` - **NEW** CDF integration with auto-class generation and industry-standard scientific data format support
-- `plotbot_dfb_electric_field_examples.ipynb` - **NEW** PSP electric field spectral data (DFB) with efficient downloads and spectral plotting
-- `plotbot_qtn_data_examples.ipynb` - **NEW** Quasi-thermal noise data for electron density and temperature measurements
-- `plotbot_vdf_examples.ipynb` - **NEW** Velocity Distribution Function plotting with `vdyes()` function (theta-plane, phi-plane, collapsed distributions)
-- `plotbot_data_snapshot_examples.ipynb` - **UPDATED** Enhanced data caching with `save_simple_snapshot()` / `load_simple_snapshot()`
-- `plotbot_custom_variable_examples.ipynb` - **UPDATED** Custom variable creation and arithmetic operations
-- `plotbot_psp_orbit_data_examples.ipynb` - **UPDATED** PSP orbital/positional data including Carrington coordinates
-- `plotbot_wind_data_examples.ipynb` - WIND mission data (MFI, SWE, 3DP instruments)
-- `plotbot_grid_composer_examples.ipynb` - Modular plotting system for combining multiple plot types
-- `plotbot_multiplot_examples.ipynb` - Advanced multiplot features and options
-- `plotbot_alpha_proton_derived_examples.ipynb` - Alpha particle and derived variable examples
-- `plotbot_audifier_examples.ipynb` - Audio generation from data
-
 A typical `plotbot()` call looks like this:
 
 ```python
@@ -178,27 +142,53 @@ In VS code hit 'Run All' and scroll down to see example plots:
 
 ## Additional Example Notebooks
 
-Beyond the main `Plotbot.ipynb` tutorial, comprehensive example notebooks are available at the project root level. Each `plotbot_*.ipynb` file demonstrates specific capabilities:
+### **Data Access & Management**
+*   **Straightforward class structure**: Access data variables intuitively
+    *   "mag_rtn.br" accesses FIELDS Mag Br data in RTN coordinate system
+    *   "mag_rtn.br.color = 'blue'" sets the line color to blue
+*   **Smart download system**: Dynamic server selection (SPDF ↔ Berkeley fallback)
+*   **Data caching**: `save_simple_snapshot()` / `load_simple_snapshot()` for persistent data storage
+*   **Custom variables**: Create derived quantities using arithmetic operations
 
-### **Data Access & Integration:**
-- `plotbot_cdf_import_examples.ipynb` - Automatic CDF file integration with class generation
-- `plotbot_data_snapshot_examples.ipynb` - Data caching and persistent storage techniques
-- `plotbot_psp_orbit_data_examples.ipynb` - PSP orbital/positional data and Carrington coordinates
+### **Advanced Capabilities**
+*   **Electric field spectral data**: PSP DFB (Digital Fields Board) AC/DC spectra
+*   **Quasi-thermal noise**: Electron density and temperature from QTN measurements
+*   **Orbital data integration**: PSP positional data with Carrington coordinates
+*   **HAM data support**: Hammerhead analysis integration from local CSV files (place in `data/psp/Hamstrings/` directory)
+*   **Multi-format support**: CDF, CSV, NPZ file formats with automatic detection
 
-### **Instrument-Specific Data:**
-- `plotbot_dfb_electric_field_examples.ipynb` - Electric field spectral data (DFB) analysis
-- `plotbot_qtn_data_examples.ipynb` - Quasi-thermal noise electron measurements
-- `plotbot_vdf_examples.ipynb` - Velocity Distribution Function plotting with `vdyes()`
-- `plotbot_alpha_proton_derived_examples.ipynb` - Alpha particle and derived quantities
+## Example Usage & Notebooks
 
-### **Multi-Mission Data:**
+The primary way to learn and use Plotbot is through the included Jupyter Notebooks, which demonstrate specific plotting capabilities and data access methods:
+
+### **Core Plotting Function Examples:**
+- `Plotbot.ipynb` - Complete overview with examples of `plotbot()`, `multiplot()`, `showdahodo()`, and `audifier()`
+- `plotbot_showdahodo_examples.ipynb` - **NEW** Hodogram (scatter) plotting with `showdahodo()` function for variable relationships and correlation analysis
+- `plotbot_multiplot_examples.ipynb` - Multi-panel time series analysis with `multiplot()` across encounters and events
+- `plotbot_multiplot_example_all_encounters.ipynb` - Comprehensive multi-encounter analysis examples
+- `plotbot_multiplot_degrees_from_center_times_examples.ipynb` - Specialized positioning analysis around perihelion
+- `plotbot_vdf_examples.ipynb` - **NEW** Velocity Distribution Function plotting with `vdyes()` function (theta-plane, phi-plane, collapsed distributions)
+
+### **Data Integration & Advanced Features:**
+- `plotbot_cdf_import_examples.ipynb` - **NEW** CDF integration with auto-class generation and industry-standard scientific data format support
+- `plotbot_data_snapshot_examples.ipynb` - **UPDATED** Enhanced data caching with `save_simple_snapshot()` / `load_simple_snapshot()`
+- `plotbot_custom_variable_examples.ipynb` - **UPDATED** Custom variable creation and arithmetic operations
+- `plotbot_grid_composer_examples.ipynb` - Modular plotting system for combining multiple plot types
+
+### **Instrument-Specific Data Examples:**
+- `plotbot_dfb_electric_field_examples.ipynb` - **NEW** PSP electric field spectral data (DFB) with efficient downloads and spectral plotting
+- `plotbot_qtn_data_examples.ipynb` - **NEW** Quasi-thermal noise data for electron density and temperature measurements
+- `plotbot_qtn_integration.ipynb` - **NEW** Quasi-thermal noise integration workflows and advanced analysis
+- `plotbot_alpha_proton_derived_examples.ipynb` - Alpha particle and derived variable examples
+- `plotbot_alpha_integration_examples.ipynb` - Alpha particle integration workflows
+- `plotbot_psp_orbit_data_examples.ipynb` - **UPDATED** PSP orbital/positional data including Carrington coordinates
+
+### **Multi-Mission & Specialized Data:**
 - `plotbot_wind_data_examples.ipynb` - WIND mission data (MFI, SWE, 3DP instruments)
-
-### **Advanced Plotting & Analysis:**
-- `plotbot_multiplot_examples.ipynb` - Multi-panel analysis with enhanced positioning options
-- `plotbot_custom_variable_examples.ipynb` - Creating derived variables using arithmetic operations
-- `plotbot_grid_composer_examples.ipynb` - Modular plotting system for complex layouts
-- `plotbot_audifier_examples.ipynb` - Audio generation and sonification from data
+- `plotbot_multiplot_examples.ipynb` - Advanced multiplot features and options
+- `plotbot_alpha_proton_derived_examples.ipynb` - Alpha particle and derived variable examples
+- `plotbot_audification_examples.ipynb` - Audio generation from data
+- `plotbot_grid_composer_examples.ipynb` - ⚠️ Work in progress. Modular plotting system for combining multiple plot types.
 
 Each notebook includes detailed explanations, working code examples, and demonstrates best practices for that specific capability.
 
@@ -482,6 +472,11 @@ Plotbot supports automatic integration of any CDF (Common Data Format) files thr
 *   **Auto-Registration**: Generated classes automatically integrate with the data system
 *   **Mixed Data Types**: Support for both spectral (2D) and timeseries (1D) variables
 
+**File Location Requirements:**
+*   Place your CDF files in the `data/cdf_files/` directory within your Plotbot installation
+*   Plotbot will automatically scan this directory for `.cdf` files during import
+*   Generated classes will be saved to `plotbot/data_classes/custom_classes/` with auto-generated `.py` and `.pyi` files
+
 **5. Advanced Plotting Functions**
 
 Beyond the basic `plotbot()` function, Plotbot offers several specialized plotting tools for advanced analysis:
@@ -492,15 +487,26 @@ Designed for comparing a *single* variable across multiple consecutive time inte
 
 **Enhanced Features:**
 ```python
-# Basic usage
+# Basic usage - list of (time, variable) tuples
 plot_list = [('2020-01-29 18:10:00', mag_rtn_4sa.br),
              ('2020-01-29 19:15:00', mag_rtn_4sa.br)]
 multiplot(plot_list)
+
+# OR define times first, then create plot_data
+hcs_crossing_times = [
+    '2022-12-12/08:30:00.000',
+    '2023-06-22/01:30:00.000',
+    '2023-06-22/04:45:00.000'
+]
+plot_data = [(time, mag_rtn_4sa.br) for time in hcs_crossing_times]
+multiplot(plot_data)
 
 # Advanced positioning options
 plt.options.x_axis_r_sun = True              # Plot vs radial distance
 plt.options.x_axis_carrington_lon = True     # Plot vs Carrington longitude  
 plt.options.use_degrees_from_perihelion = True  # Degrees from perihelion
+plt.options.use_degrees_from_center_times = True  # Degrees from provided center times
+
 
 # Color and styling options
 plt.options.color_mode = 'rainbow'           # Options: 'default', 'rainbow', 'single'

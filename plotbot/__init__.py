@@ -383,10 +383,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_08_06_v3.09"
+__version__ = "2025_08_17_v3.10"
 
 # Commit message for this version
-__commit_message__ = "v3.09 Fix: VDF single timestamp support - handles single timestamps, smart caching, closest time slice detection"
+__commit_message__ = "v3.10 Fix: Critical showdahodo alignment bug, restored FITS naming, comprehensive README update with notebook reorganization and file location documentation."
 
 # Print the version and commit message
 print(f"""

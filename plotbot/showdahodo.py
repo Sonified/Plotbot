@@ -210,10 +210,11 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     # ====================================================================
     print_manager.processing("Preparing data for plotting...")
     
-    # Extract data from class instances
-    values1_full = var1_instance.all_data
+    # Extract data from class instances using proper plot_manager.data property
+    # This ensures consistent time clipping with plotbot_main.py
+    values1_full = var1_instance.data
     time1_full = var1_instance.datetime_array
-    values2_full = var2_instance.all_data  
+    values2_full = var2_instance.data  
     time2_full = var2_instance.datetime_array
     # Save original lengths
     time1_original_len = len(time1_full)
@@ -221,7 +222,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     color_var_original_len = 0
     var3_original_len = 0
     if color_var_instance is not None:
-        color_var_full = color_var_instance.all_data
+        color_var_full = color_var_instance.data
         color_time_full = color_var_instance.datetime_array
         color_var_original_len = len(color_time_full) if color_time_full is not None else 0
     else:
@@ -229,7 +230,7 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
         color_time_full = None
 
     if var3_instance is not None:
-        values3_full = var3_instance.all_data
+        values3_full = var3_instance.data
         time3_full = var3_instance.datetime_array
         var3_original_len = len(time3_full) if time3_full is not None else 0
     else:
@@ -238,9 +239,10 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
 
     print_manager.debug(f"DEBUG: Original lengths - time1: {time1_original_len}, time2: {time2_original_len}, color: {color_var_original_len}, var3: {var3_original_len}")
     
-    # Apply time range 
-    time1_clipped, values1_clipped = apply_time_range(trange, time1_full, values1_full)
-    time2_clipped, values2_clipped = apply_time_range(trange, time2_full, values2_full)
+    # Data is already properly time-clipped by plot_manager.data property
+    # No need for additional apply_time_range() call
+    time1_clipped, values1_clipped = time1_full, values1_full
+    time2_clipped, values2_clipped = time2_full, values2_full
     
     # Check data availability
     if len(time1_clipped) == 0 or len(time2_clipped) == 0:
@@ -252,14 +254,14 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     
     # Prepare color data if provided
     if color_var is not None:
-        color_values_full = color_var_instance.all_data
+        color_values_full = color_var_instance.data
         color_time_full = color_var_instance.datetime_array
         
         if color_values_full is not None and color_time_full is not None:
             color_time_original_len = len(color_time_full)
             
-            # Apply time range to color data
-            color_time_clipped, color_values_clipped = apply_time_range(trange, color_time_full, color_values_full)
+            # Color data is already properly time-clipped by plot_manager.data property
+            color_time_clipped, color_values_clipped = color_time_full, color_values_full
             
             if color_time_clipped is not None and color_values_clipped is not None:
                 color_time_clipped_len = len(color_time_clipped)
@@ -281,12 +283,13 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
 
     # Prepare var3 data if provided
     if var3 is not None:
-        var3_values_full = var3_instance.all_data
+        var3_values_full = var3_instance.data
         var3_time_full = var3_instance.datetime_array
         var3_time_original_len = len(var3_time_full)
         
         # Apply time range to var3 data
-        var3_time_clipped, var3_values_clipped = apply_time_range(trange, var3_time_full, var3_values_full)
+        # var3 data is already properly time-clipped by plot_manager.data property
+        var3_time_clipped, var3_values_clipped = var3_time_full, var3_values_full
         var3_time_clipped_len = len(var3_time_clipped)
         
         if len(var3_time_clipped) == 0:
@@ -565,10 +568,9 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
     rsun_title = ''
     if rsun is not None:
         try:
-            # Try to get actual distance data if available
-            dist_time_clipped, dist_values_clipped = apply_time_range(trange, datetime_spi, sun_dist_rsun)    
-            sun_dist_rsun_clipped_avg = np.round(np.average(dist_values_clipped), 1)
-            rsun_title = f"Rs = {sun_dist_rsun_clipped_avg}, "
+            # TODO: Implement proper rsun distance calculation using plot_manager.data
+            # Legacy code was trying to access undefined variables datetime_spi, sun_dist_rsun
+            rsun_title = f"Rs requested, "
         except NameError:
             # Fallback if distance data not available
             rsun_title = f"Rs requested, "

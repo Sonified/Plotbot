@@ -731,14 +731,14 @@ class proton_fits_class:
             )
         )
 
-        # 3. beta_ppar (Scatter, Size 20)
-        self.beta_ppar = plot_manager( # Total Proton parallel beta - ATTRIBUTE NAME CHANGED
+        # 3. beta_ppar_pfits (Scatter, Size 20)
+        self.beta_ppar_pfits = plot_manager( # Total Proton parallel beta - RESTORED ORIGINAL NAME
             self.raw_data.get('beta_ppar'), # Still gets raw 'beta_ppar' data
             plot_options=ploptions(
-                var_name='beta_ppar',
+                var_name='beta_ppar_pfits',
                 data_type='proton_fits',
                 class_name='proton_fits',
-                subclass_name='beta_ppar', # User list #3 (Updated)
+                subclass_name='beta_ppar_pfits', # User list #3 (RESTORED ORIGINAL)
                 plot_type='scatter', 
                 datetime_array=self.datetime_array,
                 y_label=r'$\beta_{\parallel,p}$', 
@@ -752,14 +752,14 @@ class proton_fits_class:
             )
         )
 
-        # 4. beta_pperp (Scatter, Size 20)
-        self.beta_pperp = plot_manager( # Total Proton perpendicular beta - ATTRIBUTE NAME CHANGED
+        # 4. beta_pperp_pfits (Scatter, Size 20)
+        self.beta_pperp_pfits = plot_manager( # Total Proton perpendicular beta - RESTORED ORIGINAL NAME
             self.raw_data.get('beta_pperp'), # Still gets raw 'beta_pperp' data
             plot_options=ploptions(
-                var_name='beta_pperp', 
+                var_name='beta_pperp_pfits', 
                 data_type='proton_fits',
                 class_name='proton_fits',
-                subclass_name='beta_pperp', # User list #4 (Updated)
+                subclass_name='beta_pperp_pfits', # User list #4 (RESTORED ORIGINAL)
                 plot_type='scatter',
                 datetime_array=self.datetime_array,
                 y_label=r'$\beta_{\perp,p}$',
