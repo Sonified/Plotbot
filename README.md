@@ -140,8 +140,6 @@ In VS code hit 'Run All' and scroll down to see example plots:
 *   Hodogram (scatter) plots
 *   Sonification/audification
 
-## Additional Example Notebooks
-
 ### **Data Access & Management**
 *   **Straightforward class structure**: Access data variables intuitively
     *   "mag_rtn.br" accesses FIELDS Mag Br data in RTN coordinate system
@@ -211,110 +209,6 @@ These versions are defined in the `environment.yml` file located in the project 
 *   python-dateutil: 2.9.0.post0
 *   pytest: 7.4.4
 *   termcolor: 2.4.0
-
-## **Data Download System Architecture**
-
-Plotbot features a sophisticated multi-source download system that automatically handles data acquisition from multiple servers and formats. The system is controlled by the `config.data_server` setting in `plotbot/config.py`.
-
-### **Download Modes (`config.data_server`):**
-
-*   **`'dynamic'` (Default - Recommended):** 
-    *   **Primary**: Download from NASA's CDAWeb/SPDF archive using `pyspedas` (`data_download_pyspedas.py`)
-    *   **Fallback**: If SPDF fails or data unavailable, automatically switches to Berkeley server (`data_download_berkeley.py`)  
-    *   **Best for**: Maximum data availability and reliability
-    
-*   **`'spdf'`:** 
-    *   **SPDF/CDAWeb only** via `pyspedas` library
-    *   **No fallback** - stops if data not found on SPDF
-    *   **Best for**: Public data access without Berkeley authentication
-    
-*   **`'berkeley'`:** 
-    *   **Berkeley server only** - bypasses `pyspedas` entirely
-    *   **Direct access** to Berkeley's data repository
-    *   **Best for**: Latest/cutting-edge data that may not be publicly available yet
-
-### **Download System Components:**
-
-*   **`get_data.py`**: Master orchestrator that manages the entire data acquisition pipeline
-*   **`data_download_pyspedas.py`**: Handles SPDF downloads with efficiency optimizations (~75% fewer files for DFB data)
-*   **`data_download_berkeley.py`**: Direct Berkeley server access with authentication handling
-*   **`data_types.py`**: Configuration database defining all available data products across missions
-
-### **Key Features:**
-*   **Automatic server fallback**: Seamlessly switches between data sources
-*   **Case-sensitivity handling**: Resolves filename conflicts between Berkeley and SPDF naming conventions
-*   **Efficient caching**: Downloads only missing time ranges
-*   **Multi-mission support**: Handles PSP, WIND, and custom CDF data sources
-
-**PySpedas Data Directory Configuration:**
-
-Plotbot automatically configures PySpedas to use the unified `data/` directory structure. This configuration is handled in `plotbot/config.py` by setting the `SPEDAS_DATA_DIR` environment variable before PySpedas is imported. This ensures that all PySpedas downloads (including WIND, THEMIS, MMS, and other missions) are organized consistently under the `data/` directory, with mission-specific subdirectories (e.g., `data/psp/`, `data/wind_data/`) created automatically by PySpedas.
-
-### Enhanced IDE Support with Stub Files (`.pyi`)
-
-To significantly improve the development experience within IDEs like VS Code, Plotbot now includes `.pyi` stub files for many core modules (e.g., `plot_manager.pyi` corresponds to `plot_manager.py`).
-
-These stub files define the type signatures for functions, methods, classes, and attributes, acting as explicit blueprints for the code structure. The primary goal of adopting this approach was to:
-
-*   **Supercharge Auto-Completion:** Provide the IDE with precise type information, leading to vastly more accurate and helpful suggestions as you type (e.g., seeing available methods and attributes for objects like `mag_rtn_4sa.br`).
-*   **Improve Code Navigation:** Allow the IDE to better understand connections within the code, making it easier to jump to definitions and find usages.
-*   **Clarify Expectations:** Make it clearer what kinds of data functions expect and return, directly within the development environment.
-
-While these stubs *can* also be used by external type-checking tools, their main purpose within Plotbot is to make interacting with the code faster, easier, and less error-prone directly within your editor by boosting its built-in intelligence features.
-
-## Data Structure
-
-Downloaded data is stored in a unified directory structure supporting multiple missions and data formats:
-
-```
-data/
-  ├── psp/                    <--- Parker Solar Probe data
-  │    ├── fields/           <--- FIELDS instrument data
-  │    │    ├── l2/
-  │    │    │    ├── mag_rtn/              <--- High Resolution RTN magnetic field
-  │    │    │    ├── mag_rtn_4_per_cycle/  <--- Standard Resolution RTN magnetic field  
-  │    │    │    ├── mag_sc/               <--- High Resolution spacecraft coordinates
-  │    │    │    ├── mag_sc_4_per_cycle/   <--- Standard Resolution spacecraft coordinates
-  │    │    │    ├── dfb_ac_spec/          <--- **NEW** AC electric field spectra
-  │    │    │    │    ├── dv12hg/          <--- dV12 antenna pair
-  │    │    │    │    └── dv34hg/          <--- dV34 antenna pair
-  │    │    │    ├── dfb_dc_spec/          <--- **NEW** DC electric field spectra
-  │    │    │    │    └── dv12hg/
-  │    │    │    └── sqtn_rfs_v1v2/        <--- **NEW** Quasi-thermal noise data
-  │    │    └── l3/
-  │    │         └── sqtn_rfs_v1v2/        <--- QTN L3 data
-  │    ├── sweap/            <--- SWEAP instrument data
-  │    │    ├── spe/          <--- SPAN-e (electron) data
-  │    │    │    └── l3/
-  │    │    │         ├── spe_sf0_pad/     <--- Standard Resolution electron PAD
-  │    │    │         └── spe_af0_pad/     <--- High Resolution electron PAD
-  │    │    ├── spi/          <--- SPAN-i (ion) data
-  │    │    │    ├── l2/
-  │    │    │    │    └── spi_sf00_8dx32ex8a/  <--- **NEW** VDF data for vdyes()
-  │    │    │    └── l3/
-  │    │    │         ├── spi_sf00_l3_mom/     <--- Standard Resolution proton moments
-  │    │    │         ├── spi_af00_l3_mom/     <--- High Resolution proton moments
-  │    │    │         └── spi_sf0a_l3_mom/     <--- **NEW** Alpha particle moments
-  │    │    └── spi_fits/     <--- **NEW** FITS analysis results
-  │    │         ├── sf00/    <--- Proton fitting results
-  │    │         └── sf01/    <--- Alpha fitting results
-  │    └── Hamstrings/        <--- **NEW** HAM analysis data (CSV)
-  ├── wind/                   <--- **NEW** WIND mission data (via PySpedas)
-  │    ├── mfi/               <--- Magnetic Field Investigation
-  │    ├── swe/               <--- Solar Wind Experiment  
-  │    └── 3dp/               <--- 3D Plasma Analyzer
-  ├── support_data/           <--- **NEW** Supporting data files
-  │    └── trajectories/      <--- Orbital/positional data (NPZ, HDF5, etc.)
-  └── custom_cdf/             <--- **NEW** Auto-generated CDF classes
-       └── [dynamic]/         <--- User-provided CDF files with auto-generated classes
-```
-
-**Key Features:**
-- **Multi-Mission Support**: PSP, WIND, and extensible to other missions
-- **Multi-Format Support**: CDF, CSV, NPZ, HDF5 files with automatic detection
-- **Unified Organization**: All space physics data under single `data/` directory
-- **PySpedas Compatibility**: Automatic integration with PySpedas download conventions
-- **Custom Data Integration**: Support for user-provided CDF files with automatic class generation
 
 ## Using Plotbot's Data Classes
 
@@ -507,7 +401,6 @@ plt.options.x_axis_carrington_lon = True     # Plot vs Carrington longitude
 plt.options.use_degrees_from_perihelion = True  # Degrees from perihelion
 plt.options.use_degrees_from_center_times = True  # Degrees from provided center times
 
-
 # Color and styling options
 plt.options.color_mode = 'rainbow'           # Options: 'default', 'rainbow', 'single'
 plt.options.single_color = 'blue'            # For single color mode
@@ -519,6 +412,39 @@ plt.options.save_output = True
 plt.options.save_preset = 'high_res'         # Preset configurations
 plt.options.output_dimensions = (1920, 1080) # Custom dimensions
 ```
+
+### Positional X-Axis in Multiplot
+
+Plotbot supports plotting data against positional information on the x-axis (instead of time) in multi-panel plots:
+
+```python
+# 1. Setting positional data type (pick one to set to true)
+plt.options.x_axis_r_sun = True           # Use radial distance (R_sun)
+plt.options.x_axis_carrington_lon = True  # Use longitude (degrees)
+plt.options.x_axis_carrington_lat = True  # Use latitude (degrees)
+
+# 2. X-axis range control:
+# Fixed range (min, max) - units depend on data type (degrees or R_sun)
+plt.options.x_axis_positional_range = (0, 360)  # For longitude
+plt.options.x_axis_positional_range = (11, 14)  # For radial
+
+# Auto-scaling
+plt.options.x_axis_positional_range = None
+
+# 3. Common vs. separate axes:
+plt.options.use_single_x_axis = True   # Common x-axis (shared across panels)
+plt.options.use_single_x_axis = False  # Separate x-axis for each panel
+
+# 4. Tick density control:
+plt.options.positional_tick_density = 1  # Normal tick density
+plt.options.positional_tick_density = 2  # Twice as many ticks
+plt.options.positional_tick_density = 3  # Three times as many ticks
+
+# Resetting options to ensure a clean slate
+plt.options.reset() 
+```
+
+These options are mutually exclusive - setting one positional data type automatically disables the others. When using a positional x-axis, each panel's data is plotted against the corresponding positional values instead of time, making it easy to visualize how measurements change with distance from the Sun or across different Carrington longitudes/latitudes.
 
 ### **`showdahodo()` - Hodogram (Scatter) Analysis**
 
@@ -568,42 +494,115 @@ psp_span_vdf.vdf_text_scaling = 1.2
 - **Phi-plane**: Vx vs Vy (azimuthal velocity space)
 - **Interactive Widget**: Time slider with save functionality for time series analysis
 
-### Positional X-Axis in Multiplot
 
-Plotbot supports plotting data against positional information on the x-axis (instead of time) in multi-panel plots:
-
-```python
-# 1. Setting positional data type (pick one to set to true)
-plt.options.x_axis_r_sun = True           # Use radial distance (R_sun)
-plt.options.x_axis_carrington_lon = True  # Use longitude (degrees)
-plt.options.x_axis_carrington_lat = True  # Use latitude (degrees)
-
-# 2. X-axis range control:
-# Fixed range (min, max) - units depend on data type (degrees or R_sun)
-plt.options.x_axis_positional_range = (0, 360)  # For longitude
-plt.options.x_axis_positional_range = (11, 14)  # For radial
-
-# Auto-scaling
-plt.options.x_axis_positional_range = None
-
-# 3. Common vs. separate axes:
-plt.options.use_single_x_axis = True   # Common x-axis (shared across panels)
-plt.options.use_single_x_axis = False  # Separate x-axis for each panel
-
-# 4. Tick density control:
-plt.options.positional_tick_density = 1  # Normal tick density
-plt.options.positional_tick_density = 2  # Twice as many ticks
-plt.options.positional_tick_density = 3  # Three times as many ticks
-
-# Resetting options to ensure a clean slate
-plt.options.reset() 
-```
-
-These options are mutually exclusive - setting one positional data type automatically disables the others. When using a positional x-axis, each panel's data is plotted against the corresponding positional values instead of time, making it easy to visualize how measurements change with distance from the Sun or across different Carrington longitudes/latitudes.
 
 **6. Data Audification:**
 
 Plotbot also includes an `audifier` object, which allows you to create audio files (WAV format) from any of the data components.  Furthermore, you can generate a text file containing time markers.  This marker file can be directly imported into audio processing software like iZotope RX, allowing you to visually navigate the audio based on specific time points within the data. See the included Jupyter Notebook for examples.
+
+## **Data Download System Architecture**
+
+Plotbot features a sophisticated multi-source download system that automatically handles data acquisition from multiple servers and formats. The system is controlled by the `config.data_server` setting in `plotbot/config.py`.
+
+### **Download Modes (`config.data_server`):**
+
+*   **`'dynamic'` (Default - Recommended):** 
+    *   **Primary**: Download from NASA's CDAWeb/SPDF archive using `pyspedas` (`data_download_pyspedas.py`)
+    *   **Fallback**: If SPDF fails or data unavailable, automatically switches to Berkeley server (`data_download_berkeley.py`)  
+    *   **Best for**: Maximum data availability and reliability
+    
+*   **`'spdf'`:** 
+    *   **SPDF/CDAWeb only** via `pyspedas` library
+    *   **No fallback** - stops if data not found on SPDF
+    *   **Best for**: Public data access without Berkeley authentication
+    
+*   **`'berkeley'`:** 
+    *   **Berkeley server only** - bypasses `pyspedas` entirely
+    *   **Direct access** to Berkeley's data repository
+    *   **Best for**: Latest/cutting-edge data that may not be publicly available yet
+
+### **Download System Components:**
+
+*   **`get_data.py`**: Master orchestrator that manages the entire data acquisition pipeline
+*   **`data_download_pyspedas.py`**: Handles SPDF downloads with efficiency optimizations (~75% fewer files for DFB data)
+*   **`data_download_berkeley.py`**: Direct Berkeley server access with authentication handling
+*   **`data_types.py`**: Configuration database defining all available data products across missions
+
+### **Key Features:**
+*   **Automatic server fallback**: Seamlessly switches between data sources
+*   **Case-sensitivity handling**: Resolves filename conflicts between Berkeley and SPDF naming conventions
+*   **Efficient caching**: Downloads only missing time ranges
+*   **Multi-mission support**: Handles PSP, WIND, and custom CDF data sources
+
+**PySpedas Data Directory Configuration:**
+
+Plotbot automatically configures PySpedas to use the unified `data/` directory structure. This configuration is handled in `plotbot/config.py` by setting the `SPEDAS_DATA_DIR` environment variable before PySpedas is imported. This ensures that all PySpedas downloads (including WIND, THEMIS, MMS, and other missions) are organized consistently under the `data/` directory, with mission-specific subdirectories (e.g., `data/psp/`, `data/wind_data/`) created automatically by PySpedas.
+
+## Data Structure
+
+Downloaded data is stored in a unified directory structure supporting multiple missions and data formats:
+
+```
+data/
+  ├── psp/                   <--- Parker Solar Probe data
+  │    ├── fields/           <--- FIELDS instrument data
+  │    │    ├── l2/
+  │    │    │    ├── mag_rtn/              <--- High Resolution RTN magnetic field
+  │    │    │    ├── mag_rtn_4_per_cycle/  <--- Standard Resolution RTN magnetic field  
+  │    │    │    ├── mag_sc/               <--- High Resolution spacecraft coordinates
+  │    │    │    ├── mag_sc_4_per_cycle/   <--- Standard Resolution spacecraft coordinates
+  │    │    │    ├── dfb_ac_spec/          <--- **NEW** AC electric field spectra
+  │    │    │    │    ├── dv12hg/          <--- dV12 antenna pair
+  │    │    │    │    └── dv34hg/          <--- dV34 antenna pair
+  │    │    │    ├── dfb_dc_spec/          <--- **NEW** DC electric field spectra
+  │    │    │    │    └── dv12hg/
+  │    │    │    └── sqtn_rfs_v1v2/        <--- **NEW** Quasi-thermal noise data
+  │    │    └── l3/
+  │    │         └── sqtn_rfs_v1v2/        <--- QTN L3 data
+  │    ├── sweap/            <--- SWEAP instrument data
+  │    │    ├── spe/         <--- SPAN-e (electron) data
+  │    │    │    └── l3/
+  │    │    │         ├── spe_sf0_pad/     <--- Standard Resolution electron PAD
+  │    │    │         └── spe_af0_pad/     <--- High Resolution electron PAD
+  │    │    ├── spi/          <--- SPAN-i (ion) data
+  │    │    │    ├── l2/
+  │    │    │    │    └── spi_sf00_8dx32ex8a/  <--- **NEW** VDF data for vdyes()
+  │    │    │    └── l3/
+  │    │    │         ├── spi_sf00_l3_mom/     <--- Standard Resolution proton moments
+  │    │    │         ├── spi_af00_l3_mom/     <--- High Resolution proton moments
+  │    │    │         └── spi_sf0a_l3_mom/     <--- **NEW** Alpha particle moments
+  │    │    └── spi_fits/     <--- **NEW** FITS analysis results
+  │    │         ├── sf00/    <--- Proton fitting results
+  │    │         └── sf01/    <--- Alpha fitting results
+  │    └── Hamstrings/        <--- **NEW** HAM analysis data (CSV)
+  ├── wind/                   <--- **NEW** WIND mission data (via PySpedas)
+  │    ├── mfi/               <--- Magnetic Field Investigation
+  │    ├── swe/               <--- Solar Wind Experiment  
+  │    └── 3dp/               <--- 3D Plasma Analyzer
+  ├── support_data/           <--- **NEW** Supporting data files
+  │    └── trajectories/      <--- Orbital/positional data (NPZ, HDF5, etc.)
+  └── custom_cdf/             <--- **NEW** Auto-generated CDF classes
+       └── [dynamic]/         <--- User-provided CDF files with auto-generated classes
+```
+
+**Key Features:**
+- **Multi-Mission Support**: PSP, WIND, and extensible to other missions
+- **Multi-Format Support**: CDF, CSV, NPZ, HDF5 files with automatic detection
+- **Unified Organization**: All space physics data under single `data/` directory
+- **PySpedas Compatibility**: Automatic integration with PySpedas download conventions
+- **Custom Data Integration**: Support for user-provided CDF files with automatic class generation
+
+### Enhanced IDE Support with Stub Files (`.pyi`)
+
+To significantly improve the development experience within IDEs like VS Code, Plotbot now includes `.pyi` stub files for many core modules (e.g., `plot_manager.pyi` corresponds to `plot_manager.py`).
+
+These stub files define the type signatures for functions, methods, classes, and attributes, acting as explicit blueprints for the code structure. The primary goal of adopting this approach was to:
+
+*   **Supercharge Auto-Completion:** Provide the IDE with precise type information, leading to vastly more accurate and helpful suggestions as you type (e.g., seeing available methods and attributes for objects like `mag_rtn_4sa.br`).
+*   **Improve Code Navigation:** Allow the IDE to better understand connections within the code, making it easier to jump to definitions and find usages.
+*   **Clarify Expectations:** Make it clearer what kinds of data functions expect and return, directly within the development environment.
+
+While these stubs *can* also be used by external type-checking tools, their main purpose within Plotbot is to make interacting with the code faster, easier, and less error-prone directly within your editor by boosting its built-in intelligence features.
 
 ## Advanced Features
 
