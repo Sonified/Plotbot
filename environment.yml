@@ -24,3 +24,6 @@ dependencies:
     - ipykernel
     - ipywidgets
     - pyspedas
+    - dash
+    - plotly
+    - jupyter-dash

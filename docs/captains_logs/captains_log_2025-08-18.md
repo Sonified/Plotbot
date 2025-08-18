@@ -59,4 +59,60 @@ Status: Ready
 - **Version**: 2025_08_18_v3.13
 - **Commit Message**: "v3.13 Feat: Enhanced VDF widget with step controls and improved layout alignment"
 
+---
+
+## Interactive Plotting Implementation
+
+### New plotbot_interactive() Function
+- **Major Feature**: Implemented interactive web-based plotting with click-to-VDF functionality
+- **Technology Stack**: Dash + Plotly for publication-ready interactive plots
+- **Maintains Aesthetic**: Preserves Plotbot's clean matplotlib styling (white backgrounds, clean fonts)
+
+### Key Features Implemented:
+1. **Interactive Web Interface**:
+   - Opens in browser at `http://127.0.0.1:8050+`
+   - Publication-ready white background styling
+   - Clean scientific plot appearance (not space-console themed)
+
+2. **Click-to-VDF Integration**:
+   - Click any data point to trigger `vdyes()` VDF analysis
+   - Automatic time window generation around clicked point
+   - Seamless integration with existing PSP data workflow
+
+3. **Scientific Plot Controls**:
+   - **Drag Mode**: Click & drag to pan, two-finger scroll for x-axis zoom only
+   - **Select Mode**: Box selection for precise region zooming
+   - Toggle button switches between modes with visual feedback
+   - Double-click to reset zoom
+
+4. **Environment Integration**:
+   - Added lightweight dependencies: `dash`, `plotly`, `jupyter-dash` (~30MB total)
+   - Available via `from plotbot import *` (added to `__all__`)
+   - Maintains backward compatibility with existing plotbot functions
+
+### Technical Implementation:
+- **Module**: `plotbot/plotbot_interactive.py` (main user interface)
+- **Backend**: `plotbot/plotbot_dash.py` (Dash/Plotly engine)
+- **API**: Same signature as `plotbot()` with additional interactive features
+- **Controls**: Time-focused scroll zoom for scientific data exploration
+
+### Files Created/Modified:
+- `plotbot/plotbot_interactive.py`: Main interactive plotting function
+- `plotbot/plotbot_dash.py`: Dash backend with publication styling
+- `plotbot/__init__.py`: Added `plotbot_interactive` to exports
+- `environment.yml`: Added interactive dependencies
+- `plotbot_interactive_example.ipynb`: Usage examples and documentation
+- `test_plotbot_interactive.py`: Test script with conda run instructions
+
+### Usage Example:
+```python
+from plotbot import *
+trange = ['2020-01-29/17:00:00.000', '2020-01-29/19:00:00.000']
+plotbot_interactive(trange, mag_rtn_4sa.br, 1, proton.anisotropy, 2)
+```
+
+### Version Status (Final)
+- **Version**: 2025_08_18_v3.14
+- **Commit Message**: "v3.14 Feat: Implemented plotbot_interactive() with click-to-VDF and scientific plot controls"
+
 ## End of Log - 2025-08-18

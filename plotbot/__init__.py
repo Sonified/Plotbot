@@ -205,10 +205,12 @@ from .multiplot_options import plt
 
 # Import main plotting functions
 from .plotbot_main import plotbot
+from .plotbot_interactive import plotbot_interactive
 from .showdahodo import showdahodo
 from .multiplot import multiplot
 from .multiplot_options import MultiplotOptions
 from .get_data import get_data
+from .vdyes import vdyes
 from . import data_snapshot  # Import data_snapshot
 from .simple_snapshot import save_simple_snapshot, load_simple_snapshot
 
@@ -319,6 +321,7 @@ __all__ = [
     'plt',           # Now provides our enhanced plt with options support
     'np',            # Make numpy directly available
     'plotbot',
+    'plotbot_interactive',  # Interactive plotting with click-to-VDF functionality
     'showdahodo', 
     'multiplot',
     'vdyes',         # PSP SPAN-I VDF plotting function
@@ -383,10 +386,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_08_18_v3.13"
+__version__ = "2025_08_18_v3.14"
 
 # Commit message for this version
-__commit_message__ = "v3.13 Feat: Enhanced VDF widget with step controls and improved layout alignment"
+__commit_message__ = "v3.14 Feat: Implemented plotbot_interactive() with click-to-VDF and scientific plot controls"
 
 # Print the version and commit message
 print(f"""
