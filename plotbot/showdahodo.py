@@ -53,6 +53,11 @@ def showdahodo(trange, var1, var2, var3 = None, color_var = None, norm_ = None,
         print_manager.error(f"showdahodo: Invalid time format or type provided: {trange}. Please use 'YYYY-MM-DD HH:MM:SS' or similar.")
         return None
     
+    # 🚀 CRITICAL FIX: Set TimeRangeTracker to current showdahodo time range
+    # This prevents data classes from using stale time ranges from previous operations
+    from .time_utils import TimeRangeTracker
+    TimeRangeTracker.set_current_trange(trange)
+    
     # Identify required data types
     required_data_types = {var1.data_type, var2.data_type}
 

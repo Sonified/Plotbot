@@ -303,7 +303,7 @@ class psp_qtn_class:
         bypassing calculation.
         """
         for key, value in snapshot_data.__dict__.items():
-            setattr(self, key, value)
+            object.__setattr__(self, key, value)
 
 psp_qtn = psp_qtn_class(None) #Initialize the class with no data
 print('initialized psp_qtn class') 

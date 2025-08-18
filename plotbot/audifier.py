@@ -158,8 +158,8 @@ class Audifier:
     def clip_data_to_range(self, components, trange):
         """Get indices for the specified time range."""
 
-        print(f"\nDEBUG CLIPPING:")
-        print(f"Clipping data to range: {trange[0]} to {trange[1]}")
+        # print(f"\nDEBUG CLIPPING:")
+        # print(f"Clipping data to range: {trange[0]} to {trange[1]}")
 
         # Add check for valid components and datetime_array
         if not components or not hasattr(components[0], 'datetime_array') or components[0].datetime_array is None:
@@ -180,8 +180,8 @@ class Audifier:
             print(f"Error during datetime comparison: {e}. Returning empty indices.")
             return np.array([], dtype=int)
 
-        print(f"Original data points: {len(components[0]) if hasattr(components[0], '__len__') else 'N/A'}")
-        print(f"Points in range: {len(indices)}\n")
+        # print(f"Original data points: {len(components[0]) if hasattr(components[0], '__len__') else 'N/A'}")
+        # print(f"Points in range: {len(indices)}\n")
 
         return indices
     
@@ -442,6 +442,11 @@ class Audifier:
         if time_info is None:
              return {} # Error already printed by helper
         # ===============================================
+        
+        # 🚀 CRITICAL FIX: Set TimeRangeTracker to current audification time range
+        # This prevents data classes from using stale time ranges from previous operations
+        from .time_utils import TimeRangeTracker
+        TimeRangeTracker.set_current_trange(trange)
 
         # ====================================================================
         # DOWNLOAD AND PROCESS DATA FOR EACH COMPONENT

@@ -323,7 +323,7 @@ class mag_sc_class:
         bypassing calculation.
         """
         for key, value in snapshot_data.__dict__.items():
-            setattr(self, key, value)
+            object.__setattr__(self, key, value)
 
     def ensure_internal_consistency(self):
         """Ensures .time and .field are consistent with .datetime_array and .raw_data."""

@@ -414,7 +414,7 @@ class mag_rtn_class:
         bypassing calculation.
         """
         for key, value in snapshot_data.__dict__.items():
-            setattr(self, key, value)
+            object.__setattr__(self, key, value)
 
     @property
     def br_norm(self):

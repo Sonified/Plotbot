@@ -1173,7 +1173,7 @@ class proton_fits_class:
         bypassing calculation.
         """
         for key, value in snapshot_data.__dict__.items():
-            setattr(self, key, value)
+            object.__setattr__(self, key, value)
 
 
 # Initialize with no data - this creates the global singleton instance

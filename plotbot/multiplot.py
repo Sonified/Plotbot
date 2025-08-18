@@ -349,6 +349,8 @@ def multiplot(plot_list, **kwargs):
                     # Download fresh data for base variables
                     if base_vars:
                         print_manager.status(f"Downloading initial data for {len(base_vars)} source variables...")
+                        # Set TimeRangeTracker for this panel's time range
+                        TimeRangeTracker.set_current_trange(trange)
                         get_data(trange, *base_vars)
                 
                 # Check if time range update is needed (or in this case, initial data)
@@ -383,6 +385,8 @@ def multiplot(plot_list, **kwargs):
                     # Download fresh data for base variables if needed
                     if base_vars:
                         print_manager.custom_debug(f"Downloading fresh data for {len(base_vars)} source variables...")
+                        # Set TimeRangeTracker for this panel's time range
+                        TimeRangeTracker.set_current_trange(trange)
                         get_data(trange, *base_vars)
                 
                 # Update the variable for the new time range using its update method
@@ -418,6 +422,12 @@ def multiplot(plot_list, **kwargs):
                 # <<< END NEW DEBUG >>>
                 print_manager.custom_debug(f"Calling get_data for {var.class_name}.{var.subclass_name} for time range: {trange}")
                 print_manager.time_tracking(f"Panel {i+1} calling get_data for {var.class_name}.{var.subclass_name} with trange: {trange[0]} to {trange[1]}")
+                
+                # 🚀 CRITICAL FIX: Set TimeRangeTracker for this specific panel's time range
+                # This ensures data classes get the correct time range for this panel
+                from .time_utils import TimeRangeTracker
+                TimeRangeTracker.set_current_trange(trange)
+                
                 get_data(trange, var) # <<< USE CENTRAL get_data function >>>
 
                 # After get_data, the variable instance in data_cubby should be updated.
@@ -651,7 +661,7 @@ def multiplot(plot_list, **kwargs):
                     print_manager.warning(f"Empty datetime_array for panel {i+1} - cannot clip times")
 
                 if len(indices) > 0:
-                    print_manager.time_tracking(f"Panel {i+1} time_clip returned {len(indices)} points: first={single_var.datetime_array[indices[0]]}, last={single_var.datetime_array[indices[-1]]}")
+                    print_manager.time_tracking(f"Panel {i+1} time_clip returned {len(indices)} points: first={raw_datetime_array[indices[0]]}, last={raw_datetime_array[indices[-1]]}")
                     
                     if idx == 1 and options.second_variable_on_right_axis:
                         ax2 = axs[i].twinx()
@@ -664,8 +674,8 @@ def multiplot(plot_list, **kwargs):
                             plot_color = single_var.color
     
                         # Get x-axis data - use longitude if available
-                        # x_data = single_var.datetime_array[indices] # OLD: Start with time
-                        time_slice = single_var.datetime_array[indices]
+                        # x_data = raw_datetime_array[indices] # OLD: Start with time
+                        time_slice = raw_datetime_array[indices]
                         data_slice = single_var.all_data[indices]
                         x_data = time_slice # Default to time
 
@@ -769,8 +779,8 @@ def multiplot(plot_list, **kwargs):
                             plot_color = None
     
                         # Get x-axis data - use longitude if available
-                        # x_data = single_var.datetime_array[indices] # OLD
-                        time_slice = single_var.datetime_array[indices]
+                        # x_data = raw_datetime_array[indices] # OLD
+                        time_slice = raw_datetime_array[indices]
                         data_slice = single_var.all_data[indices]
                         x_data = time_slice # Default to time
 
@@ -872,7 +882,7 @@ def multiplot(plot_list, **kwargs):
                 print_manager.warning(f"Empty datetime_array for panel {i+1} - cannot clip times")
 
             if len(indices) > 0:
-                print_manager.time_tracking(f"Panel {i+1} time_clip returned {len(indices)} points: first={var.datetime_array[indices[0]]}, last={var.datetime_array[indices[-1]]}")
+                print_manager.time_tracking(f"Panel {i+1} time_clip returned {len(indices)} points: first={raw_datetime_array[indices[0]]}, last={raw_datetime_array[indices[-1]]}")
                 
                 if hasattr(var, 'y_limit') and var.y_limit:
                     # Keep functionality but remove debug print
@@ -887,7 +897,7 @@ def multiplot(plot_list, **kwargs):
                         # CRITICAL FIX: Check if indices is empty before trying to plot
                         if len(indices) > 0:
                             # Get initial time and data slices
-                            time_slice = var.datetime_array[indices]
+                            time_slice = raw_datetime_array[indices]
                             data_slice = var.all_data[indices]
                             x_data = time_slice # Default to time
                             valid_lon_mask = None # Initialize mask
@@ -1104,7 +1114,7 @@ def multiplot(plot_list, **kwargs):
                             legend_label = getattr(var, 'legend_label', None) # Get legend label if it exists
 
                             # Get x-axis data
-                            time_slice = var.datetime_array[indices]
+                            time_slice = raw_datetime_array[indices]
                             data_slice = var.all_data[indices]
                             x_data = time_slice # Default to time
 
@@ -1425,7 +1435,7 @@ def multiplot(plot_list, **kwargs):
                     # CRITICAL FIX: Check if indices is empty before trying to plot
                     if len(indices) > 0:
                         # --- MODIFIED: X-Data Calculation --- 
-                        time_slice = var.datetime_array[indices]
+                        time_slice = raw_datetime_array[indices]
                         data_slice = var.all_data[indices]
                         x_data = time_slice # Default to time
                         
@@ -1579,6 +1589,8 @@ def multiplot(plot_list, **kwargs):
             ham_var = options.ham_var
             # Call get_data for this panel's time range
             print_manager.debug(f"Panel {i+1}: Calling get_data for HAM variable for trange {trange}")
+            # Set TimeRangeTracker for this panel's time range
+            TimeRangeTracker.set_current_trange(trange)
             get_data(trange, ham_var)
             # Refresh the reference from data_cubby
             ham_class_instance = data_cubby.grab('ham')
@@ -1611,7 +1623,7 @@ def multiplot(plot_list, **kwargs):
                 if len(ham_indices) > 0:
                     # Get x-axis data and handle positional mapping
                     # x_data = ham_var.datetime_array[ham_indices] # OLD
-                    time_slice = ham_var.datetime_array[ham_indices]
+                    time_slice = ham_var.datetime_array[ham_indices]  # HAM uses its own datetime_array 
                     data_slice = ham_var.all_data[ham_indices]
                     x_data = time_slice # Default to time
 

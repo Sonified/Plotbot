@@ -1018,7 +1018,7 @@ class {class_name}_class:
         
     def get_subclass(self, subclass_name):
         """Retrieve a specific component (subclass or property)."""
-        print_manager.dependency_management(f"[{{class_name.upper()}}_CLASS_GET_SUBCLASS] Attempting to get subclass/property: {{subclass_name}} for instance ID: {{id(self)}}")
+        print_manager.dependency_management(f"[{class_name.upper()}_CLASS_GET_SUBCLASS] Attempting to get subclass/property: {{subclass_name}} for instance ID: {{id(self)}}")
 
         # First, check if it's a direct attribute/property of the instance
         if hasattr(self, subclass_name):
@@ -1034,23 +1034,23 @@ class {class_name}_class:
             # Verify it's not a private or dunder attribute unless explicitly intended
             if not subclass_name.startswith('_'): 
                 retrieved_attr = getattr(self, subclass_name)
-                print_manager.dependency_management(f"[{{class_name.upper()}}_CLASS_GET_SUBCLASS] Found '{{subclass_name}}' as a direct attribute/property. Type: {{type(retrieved_attr)}}")
+                print_manager.dependency_management(f"[{class_name.upper()}_CLASS_GET_SUBCLASS] Found '{{subclass_name}}' as a direct attribute/property. Type: {{type(retrieved_attr)}}")
                 return retrieved_attr
             else:
-                print_manager.dependency_management(f"[{{class_name.upper()}}_CLASS_GET_SUBCLASS] '{{subclass_name}}' is an internal attribute, not returning via get_subclass.")
+                print_manager.dependency_management(f"[{class_name.upper()}_CLASS_GET_SUBCLASS] '{{subclass_name}}' is an internal attribute, not returning via get_subclass.")
         
         # If not a direct attribute, check if it's a key in raw_data (original behavior for data components)
         if hasattr(self, 'raw_data') and self.raw_data and subclass_name in self.raw_data.keys():
             component = self.raw_data.get(subclass_name)
-            print_manager.dependency_management(f"[{{class_name.upper()}}_CLASS_GET_SUBCLASS] Found '{{subclass_name}}' as a key in raw_data. Type: {{type(component)}}. This might be raw data.")
+            print_manager.dependency_management(f"[{class_name.upper()}_CLASS_GET_SUBCLASS] Found '{{subclass_name}}' as a key in raw_data. Type: {{type(component)}}. This might be raw data.")
             return component
 
         # If not found as a direct attribute or in raw_data keys
-        print_manager.warning(f"[{{class_name.upper()}}_CLASS_GET_SUBCLASS] '{{subclass_name}}' is not a recognized subclass, property, or raw_data key for instance ID: {{id(self)}}.")
+        print_manager.warning(f"[{class_name.upper()}_CLASS_GET_SUBCLASS] '{{subclass_name}}' is not a recognized subclass, property, or raw_data key for instance ID: {{id(self)}}.")
         available_attrs = [attr for attr in dir(self) if not attr.startswith('_') and not callable(getattr(self, attr))]
         available_raw_keys = list(self.raw_data.keys()) if hasattr(self, 'raw_data') and self.raw_data else []
-        print_manager.dependency_management(f"[{{class_name.upper()}}_CLASS_GET_SUBCLASS] Available properties/attributes: {{available_attrs}}")
-        print_manager.dependency_management(f"[{{class_name.upper()}}_CLASS_GET_SUBCLASS] Available raw_data keys: {{available_raw_keys}}")
+        print_manager.dependency_management(f"[{class_name.upper()}_CLASS_GET_SUBCLASS] Available properties/attributes: {{available_attrs}}")
+        print_manager.dependency_management(f"[{class_name.upper()}_CLASS_GET_SUBCLASS] Available raw_data keys: {{available_raw_keys}}")
         return None
 
     def __getattr__(self, name):

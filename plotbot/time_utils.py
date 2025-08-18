@@ -128,7 +128,7 @@ class TimeRangeTracker:
         list or None
             Time range as [start_time, end_time] or None if not set
         """
-        print_manager.status(f"🕒 TimeRangeTracker: Retrieved trange {cls._current_trange}")
+        print_manager.debug(f"🕒 TimeRangeTracker: Retrieved trange {cls._current_trange}")
         return cls._current_trange.copy() if cls._current_trange else None
     
     @classmethod
@@ -136,7 +136,7 @@ class TimeRangeTracker:
         """Clear the stored time range."""
         cls._current_trange = None
         cls._last_updated = None
-        print_manager.status("🕒 TimeRangeTracker: Cleared trange")
+        print_manager.debug("🕒 TimeRangeTracker: Cleared trange")
     
     @classmethod
     def get_last_updated(cls):

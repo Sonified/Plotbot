@@ -1,6 +1,6 @@
 """
 Auto-generated plotbot class for PSP_wavePower_2021-04-29_v1.3.cdf
-Generated on: 2025-07-24T10:50:36.809594
+Generated on: 2025-08-17T20:58:14.726105
 Source: data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf
 
 This class contains 2 variables from the CDF file.
@@ -15,6 +15,7 @@ import logging
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
 from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.time_utils import TimeRangeTracker
 from .._utils import _format_setattr_debug
 
 class psp_waves_timeseries_class:
@@ -98,15 +99,41 @@ class psp_waves_timeseries_class:
         print_manager.datacubby("=== End Update Debug ===\n")
         
     def get_subclass(self, subclass_name):
-        """Retrieve a specific component"""
-        print_manager.dependency_management(f"Getting subclass: {subclass_name}")
-        if subclass_name in self.raw_data.keys():
-            print_manager.dependency_management(f"Returning {subclass_name} component")
-            return getattr(self, subclass_name)
-        else:
-            print(f"'{subclass_name}' is not a recognized subclass, friend!")
-            print(f"Try one of these: {', '.join(self.raw_data.keys())}")
-            return None
+        """Retrieve a specific component (subclass or property)."""
+        print_manager.dependency_management(f"[PSP_WAVES_TIMESERIES_CLASS_GET_SUBCLASS] Attempting to get subclass/property: {subclass_name} for instance ID: {id(self)}")
+
+        # First, check if it's a direct attribute/property of the instance
+        if hasattr(self, subclass_name):
+            # 🚀 PERFORMANCE FIX: Only set requested_trange on the SPECIFIC subclass being requested
+            current_trange = TimeRangeTracker.get_current_trange()
+            if current_trange:
+                try:
+                    attr_value = getattr(self, subclass_name)
+                    if isinstance(attr_value, plot_manager):
+                        attr_value.requested_trange = current_trange
+                except Exception:
+                    pass
+            # Verify it's not a private or dunder attribute unless explicitly intended
+            if not subclass_name.startswith('_'): 
+                retrieved_attr = getattr(self, subclass_name)
+                print_manager.dependency_management(f"[PSP_WAVES_TIMESERIES_CLASS_GET_SUBCLASS] Found '{subclass_name}' as a direct attribute/property. Type: {type(retrieved_attr)}")
+                return retrieved_attr
+            else:
+                print_manager.dependency_management(f"[PSP_WAVES_TIMESERIES_CLASS_GET_SUBCLASS] '{subclass_name}' is an internal attribute, not returning via get_subclass.")
+        
+        # If not a direct attribute, check if it's a key in raw_data (original behavior for data components)
+        if hasattr(self, 'raw_data') and self.raw_data and subclass_name in self.raw_data.keys():
+            component = self.raw_data.get(subclass_name)
+            print_manager.dependency_management(f"[PSP_WAVES_TIMESERIES_CLASS_GET_SUBCLASS] Found '{subclass_name}' as a key in raw_data. Type: {type(component)}. This might be raw data.")
+            return component
+
+        # If not found as a direct attribute or in raw_data keys
+        print_manager.warning(f"[PSP_WAVES_TIMESERIES_CLASS_GET_SUBCLASS] '{subclass_name}' is not a recognized subclass, property, or raw_data key for instance ID: {id(self)}.")
+        available_attrs = [attr for attr in dir(self) if not attr.startswith('_') and not callable(getattr(self, attr))]
+        available_raw_keys = list(self.raw_data.keys()) if hasattr(self, 'raw_data') and self.raw_data else []
+        print_manager.dependency_management(f"[PSP_WAVES_TIMESERIES_CLASS_GET_SUBCLASS] Available properties/attributes: {available_attrs}")
+        print_manager.dependency_management(f"[PSP_WAVES_TIMESERIES_CLASS_GET_SUBCLASS] Available raw_data keys: {available_raw_keys}")
+        return None
 
     def __getattr__(self, name):
         # Allow direct access to dunder OR single underscore methods/attributes
@@ -304,7 +331,7 @@ class psp_waves_timeseries_class:
     def restore_from_snapshot(self, snapshot_data):
         """Restore all relevant fields from a snapshot dictionary/object."""
         for key, value in snapshot_data.__dict__.items():
-            setattr(self, key, value)
+            object.__setattr__(self, key, value)
 
 # Initialize the class with no data
 psp_waves_timeseries = psp_waves_timeseries_class(None)

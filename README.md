@@ -1,22 +1,59 @@
 # Plotbot
 
-A tool for downloading and plotting data from the Parker Solar Probe. Created by Dr. Jaye Verniero and Dr. Robert Alexander. Note: this is a work in progress.
+A comprehensive tool for downloading and plotting space physics data, specializing in Parker Solar Probe analysis with multi-mission support. Created by Dr. Jaye Verniero and Dr. Robert Alexander. 
+
+**Multi-Mission Capabilities:** Parker Solar Probe (PSP), WIND, and extensible framework for additional space physics missions.
 
 ## Features
 
-*   Automatic downloading and processing of data from PSP instruments including FIELDS, SWEPAM, and SPAN-I
-*   Access to data variables in a straightforward class structure
-    *   "mag_rtn.br" accesses FIELDS Mag Br data in RTN coordinate system.
-    *   "mag_rtn.br.color = 'blue'" sets the line color to blue.
-*   Rapid Time series visualization with the `plotbot()` function.
-    *   "plotbot(trange, mag_sc.br, 1, proton.anisotropy, 2)" plots Br and proton Ta for your trange on panels 1 and 2 respectively.
-*   Rapid Hodogram visualization with the `showdahodo` function.
-*   Rapid Multi-panel comparisons ofa single variable using the `multiplot` function.
-*   Rapid Audio generation using the 'audifier' function.
+### **Multi-Mission Data Access**
+*   **Parker Solar Probe (PSP)**: Complete FIELDS, SWEAP/SPAN-I, SPAN-e instrument support
+*   **WIND Mission**: MFI, SWE, 3DP instrument integration via PySpedas
+*   **Custom CDF Integration**: Automatic class generation for any CDF scientific data files
 
-## Example Usage & Notebook
+### **Core Plotting Functions**
+*   **`plotbot()`**: Rapid time series visualization with automatic data downloading
+    *   "plotbot(trange, mag_sc.br, 1, proton.anisotropy, 2)" plots Br and proton anisotropy on panels 1 and 2
+*   **`multiplot()`**: Multi-panel comparisons of single variables across time intervals with enhanced positioning options
+*   **`showdahodo()`**: Hodogram (scatter) visualization for variable relationships  
+*   **`vdyes()`**: **NEW** Velocity Distribution Function plotting (theta-plane, phi-plane, collapsed distributions)
+*   **`audifier()`**: Audio generation from data for sonification analysis
 
-The primary way to learn and use Plotbot is through the included Jupyter Notebook: `Plotbot.ipynb`. This notebook contains numerous examples demonstrating how to load data, customize plots, and use the various functions like `plotbot()`, `multiplot()`, `showdahodo()`, and `audifier()`.
+### **Data Access & Management**
+*   **Straightforward class structure**: Access data variables intuitively
+    *   "mag_rtn.br" accesses FIELDS Mag Br data in RTN coordinate system
+    *   "mag_rtn.br.color = 'blue'" sets the line color to blue
+*   **Smart download system**: Dynamic server selection (SPDF ↔ Berkeley fallback)
+*   **Data caching**: `save_simple_snapshot()` / `load_simple_snapshot()` for persistent data storage
+*   **Custom variables**: Create derived quantities using arithmetic operations
+
+### **Advanced Capabilities**
+*   **Electric field spectral data**: PSP DFB (Digital Fields Board) AC/DC spectra
+*   **Quasi-thermal noise**: Electron density and temperature from QTN measurements
+*   **Orbital data integration**: PSP positional data with Carrington coordinates
+*   **HAM data support**: Hammerhead analysis integration from local CSV files
+*   **Multi-format support**: CDF, CSV, NPZ file formats with automatic detection
+
+## Example Usage & Notebooks
+
+The primary way to learn and use Plotbot is through the included Jupyter Notebooks. The main notebook `Plotbot.ipynb` provides a comprehensive overview, while specialized example notebooks demonstrate specific capabilities:
+
+### **Main Tutorial:**
+- `Plotbot.ipynb` - Complete overview with examples of `plotbot()`, `multiplot()`, `showdahodo()`, and `audifier()`
+
+### **Specialized Example Notebooks:**
+- `plotbot_cdf_import_examples.ipynb` - **NEW** CDF integration with auto-class generation and industry-standard scientific data format support
+- `plotbot_dfb_electric_field_examples.ipynb` - **NEW** PSP electric field spectral data (DFB) with efficient downloads and spectral plotting
+- `plotbot_qtn_data_examples.ipynb` - **NEW** Quasi-thermal noise data for electron density and temperature measurements
+- `plotbot_vdf_examples.ipynb` - **NEW** Velocity Distribution Function plotting with `vdyes()` function (theta-plane, phi-plane, collapsed distributions)
+- `plotbot_data_snapshot_examples.ipynb` - **UPDATED** Enhanced data caching with `save_simple_snapshot()` / `load_simple_snapshot()`
+- `plotbot_custom_variable_examples.ipynb` - **UPDATED** Custom variable creation and arithmetic operations
+- `plotbot_psp_orbit_data_examples.ipynb` - **UPDATED** PSP orbital/positional data including Carrington coordinates
+- `plotbot_wind_data_examples.ipynb` - WIND mission data (MFI, SWE, 3DP instruments)
+- `plotbot_grid_composer_examples.ipynb` - Modular plotting system for combining multiple plot types
+- `plotbot_multiplot_examples.ipynb` - Advanced multiplot features and options
+- `plotbot_alpha_proton_derived_examples.ipynb` - Alpha particle and derived variable examples
+- `plotbot_audifier_examples.ipynb` - Audio generation from data
 
 A typical `plotbot()` call looks like this:
 
@@ -139,13 +176,31 @@ In VS code hit 'Run All' and scroll down to see example plots:
 *   Hodogram (scatter) plots
 *   Sonification/audification
 
-## Examples Folder
+## Additional Example Notebooks
 
-The `Examples` folder contains additional example scripts and notebooks, including:
-- Multiplot usage
-- Custom variable implementation
+Beyond the main `Plotbot.ipynb` tutorial, comprehensive example notebooks are available at the project root level. Each `plotbot_*.ipynb` file demonstrates specific capabilities:
 
-Refer to this folder for hands-on demonstrations beyond the main notebook.
+### **Data Access & Integration:**
+- `plotbot_cdf_import_examples.ipynb` - Automatic CDF file integration with class generation
+- `plotbot_data_snapshot_examples.ipynb` - Data caching and persistent storage techniques
+- `plotbot_psp_orbit_data_examples.ipynb` - PSP orbital/positional data and Carrington coordinates
+
+### **Instrument-Specific Data:**
+- `plotbot_dfb_electric_field_examples.ipynb` - Electric field spectral data (DFB) analysis
+- `plotbot_qtn_data_examples.ipynb` - Quasi-thermal noise electron measurements
+- `plotbot_vdf_examples.ipynb` - Velocity Distribution Function plotting with `vdyes()`
+- `plotbot_alpha_proton_derived_examples.ipynb` - Alpha particle and derived quantities
+
+### **Multi-Mission Data:**
+- `plotbot_wind_data_examples.ipynb` - WIND mission data (MFI, SWE, 3DP instruments)
+
+### **Advanced Plotting & Analysis:**
+- `plotbot_multiplot_examples.ipynb` - Multi-panel analysis with enhanced positioning options
+- `plotbot_custom_variable_examples.ipynb` - Creating derived variables using arithmetic operations
+- `plotbot_grid_composer_examples.ipynb` - Modular plotting system for complex layouts
+- `plotbot_audifier_examples.ipynb` - Audio generation and sonification from data
+
+Each notebook includes detailed explanations, working code examples, and demonstrates best practices for that specific capability.
 
 ## Required Versions (included in the environment)
 
@@ -167,15 +222,39 @@ These versions are defined in the `environment.yml` file located in the project 
 *   pytest: 7.4.4
 *   termcolor: 2.4.0
 
-**Data Source Configuration (`config.data_server`):**
+## **Data Download System Architecture**
 
-By default, Plotbot now prioritizes downloading data from NASA's public CDAWeb/SPDF archive using the `pyspedas` library. This behavior can be controlled via the `config.data_server` setting found in `plotbot/config.py`. The available modes are:
+Plotbot features a sophisticated multi-source download system that automatically handles data acquisition from multiple servers and formats. The system is controlled by the `config.data_server` setting in `plotbot/config.py`.
 
-*   **`'dynamic'` (Default):** Plotbot first attempts to download data from the SPDF server using `pyspedas`. If the data is not found on SPDF (e.g., it's too recent or not available), it will automatically fall back to attempting a download from the original Berkeley server. **Note:** Data unavailable on SPDF is often not yet public on the Berkeley server either and may require password authentication.
-*   **`'spdf'`:** Plotbot will *only* attempt to download data from the SPDF server via `pyspedas`. If the data isn't found there, it will not attempt to download from Berkeley.
-*   **`'berkeley'`:** Plotbot will *only* use the original method to download data directly from the Berkeley server, bypassing `pyspedas` and SPDF entirely.
+### **Download Modes (`config.data_server`):**
 
-This setting allows users to choose their preferred data source or rely on the dynamic fallback for maximum data availability.
+*   **`'dynamic'` (Default - Recommended):** 
+    *   **Primary**: Download from NASA's CDAWeb/SPDF archive using `pyspedas` (`data_download_pyspedas.py`)
+    *   **Fallback**: If SPDF fails or data unavailable, automatically switches to Berkeley server (`data_download_berkeley.py`)  
+    *   **Best for**: Maximum data availability and reliability
+    
+*   **`'spdf'`:** 
+    *   **SPDF/CDAWeb only** via `pyspedas` library
+    *   **No fallback** - stops if data not found on SPDF
+    *   **Best for**: Public data access without Berkeley authentication
+    
+*   **`'berkeley'`:** 
+    *   **Berkeley server only** - bypasses `pyspedas` entirely
+    *   **Direct access** to Berkeley's data repository
+    *   **Best for**: Latest/cutting-edge data that may not be publicly available yet
+
+### **Download System Components:**
+
+*   **`get_data.py`**: Master orchestrator that manages the entire data acquisition pipeline
+*   **`data_download_pyspedas.py`**: Handles SPDF downloads with efficiency optimizations (~75% fewer files for DFB data)
+*   **`data_download_berkeley.py`**: Direct Berkeley server access with authentication handling
+*   **`data_types.py`**: Configuration database defining all available data products across missions
+
+### **Key Features:**
+*   **Automatic server fallback**: Seamlessly switches between data sources
+*   **Case-sensitivity handling**: Resolves filename conflicts between Berkeley and SPDF naming conventions
+*   **Efficient caching**: Downloads only missing time ranges
+*   **Multi-mission support**: Handles PSP, WIND, and custom CDF data sources
 
 **PySpedas Data Directory Configuration:**
 
@@ -195,34 +274,57 @@ While these stubs *can* also be used by external type-checking tools, their main
 
 ## Data Structure
 
-Downloaded data is stored in a unified directory structure:
+Downloaded data is stored in a unified directory structure supporting multiple missions and data formats:
 
 ```
 data/
   ├── psp/                    <--- Parker Solar Probe data
-  │    ├── fields/
+  │    ├── fields/           <--- FIELDS instrument data
   │    │    ├── l2/
-  │    │    │    ├── mag_rtn/  <--- High Resolution
-  │    │    │    ├── mag_rtn_4_per_cycle/  <--- Standard Resolution
-  │    │    │    ├── mag_sc/   <--- High Resolution
-  │    │    │    └── mag_sc_4_per_cycle/  <--- Standard Resolution
-  │    ├── sweap/
-  │    │    ├── spe/
-  │    │    │    ├── l3/
-  │    │    │    │    ├── spe_sf0_pad/  <--- Standard Resolution
-  │    │    │    │    └── spe_af0_pad/  <--- High Resolution
-  │    │    └── spi/
-  │    │         └── l3/
-  │    │              ├── spi_sf00_l3_mom/  <--- Standard Resolution
-  │    │              └── spi_af00_l3_mom/  <--- High Resolution
-  │    ├── sf00/              <--- FITS data
-  │    └── Hamstrings/         <--- HAM data
-  ├── wind_data/              <--- WIND mission data (future)
-  ├── themis/                 <--- THEMIS mission data (future)
-  └── ...                     <--- Other missions
+  │    │    │    ├── mag_rtn/              <--- High Resolution RTN magnetic field
+  │    │    │    ├── mag_rtn_4_per_cycle/  <--- Standard Resolution RTN magnetic field  
+  │    │    │    ├── mag_sc/               <--- High Resolution spacecraft coordinates
+  │    │    │    ├── mag_sc_4_per_cycle/   <--- Standard Resolution spacecraft coordinates
+  │    │    │    ├── dfb_ac_spec/          <--- **NEW** AC electric field spectra
+  │    │    │    │    ├── dv12hg/          <--- dV12 antenna pair
+  │    │    │    │    └── dv34hg/          <--- dV34 antenna pair
+  │    │    │    ├── dfb_dc_spec/          <--- **NEW** DC electric field spectra
+  │    │    │    │    └── dv12hg/
+  │    │    │    └── sqtn_rfs_v1v2/        <--- **NEW** Quasi-thermal noise data
+  │    │    └── l3/
+  │    │         └── sqtn_rfs_v1v2/        <--- QTN L3 data
+  │    ├── sweap/            <--- SWEAP instrument data
+  │    │    ├── spe/          <--- SPAN-e (electron) data
+  │    │    │    └── l3/
+  │    │    │         ├── spe_sf0_pad/     <--- Standard Resolution electron PAD
+  │    │    │         └── spe_af0_pad/     <--- High Resolution electron PAD
+  │    │    ├── spi/          <--- SPAN-i (ion) data
+  │    │    │    ├── l2/
+  │    │    │    │    └── spi_sf00_8dx32ex8a/  <--- **NEW** VDF data for vdyes()
+  │    │    │    └── l3/
+  │    │    │         ├── spi_sf00_l3_mom/     <--- Standard Resolution proton moments
+  │    │    │         ├── spi_af00_l3_mom/     <--- High Resolution proton moments
+  │    │    │         └── spi_sf0a_l3_mom/     <--- **NEW** Alpha particle moments
+  │    │    └── spi_fits/     <--- **NEW** FITS analysis results
+  │    │         ├── sf00/    <--- Proton fitting results
+  │    │         └── sf01/    <--- Alpha fitting results
+  │    └── Hamstrings/        <--- **NEW** HAM analysis data (CSV)
+  ├── wind/                   <--- **NEW** WIND mission data (via PySpedas)
+  │    ├── mfi/               <--- Magnetic Field Investigation
+  │    ├── swe/               <--- Solar Wind Experiment  
+  │    └── 3dp/               <--- 3D Plasma Analyzer
+  ├── support_data/           <--- **NEW** Supporting data files
+  │    └── trajectories/      <--- Orbital/positional data (NPZ, HDF5, etc.)
+  └── custom_cdf/             <--- **NEW** Auto-generated CDF classes
+       └── [dynamic]/         <--- User-provided CDF files with auto-generated classes
 ```
 
-**Note:** This unified structure organizes all space physics data under a single `data/` directory, with separate subdirectories for each mission. This approach facilitates multi-mission analysis and maintains compatibility with PySpedas download conventions.
+**Key Features:**
+- **Multi-Mission Support**: PSP, WIND, and extensible to other missions
+- **Multi-Format Support**: CDF, CSV, NPZ, HDF5 files with automatic detection
+- **Unified Organization**: All space physics data under single `data/` directory
+- **PySpedas Compatibility**: Automatic integration with PySpedas download conventions
+- **Custom Data Integration**: Support for user-provided CDF files with automatic class generation
 
 ## Using Plotbot's Data Classes
 
@@ -272,28 +374,40 @@ mag_rtn.br.y_scale = 'log' # Set y-axis to log scale
 
 **4. Available Data Products**
 
-Here's a list of the currently available data products and their components.
+Here's a list of the currently available data products and their components. Data is configured in `plotbot/data_classes/data_types.py` which supports multiple missions and data sources.
 
-**FIELDS Instrument (Magnetic Field):**
+### **Parker Solar Probe (PSP) Data Products**
 
-*   **Standard Resolution (4 samples per cycle, approximately 4 samples/second):**
-    *   `mag_rtn_4sa`:  RTN (Radial, Tangential, Normal) coordinate system.
-        *   `mag_rtn_4sa.br`: Radial component of the magnetic field.
-        *   `mag_rtn_4sa.bt`: Tangential component.
-        *   `mag_rtn_4sa.bn`: Normal component.
-        *   `mag_rtn_4sa.bmag`: Magnetic field magnitude.
-        *   `mag_rtn_4sa.all`: All three components (`br`, `bt`, `bn`) together, useful for multi-panel plots.
-        *   `mag_rtn_4sa.pmag`: Magnetic pressure
+**FIELDS Instrument:**
 
-    *   `mag_sc_4sa`: Spacecraft coordinate system.
-        *   `mag_sc_4sa.bx`: X component.
-        *   `mag_sc_4sa.by`: Y component.
-        *   `mag_sc_4sa.bz`: Z component.
-        *    `mag_sc_4sa.bmag`: Magnitude
-        *   `mag_sc_4sa.all`: All three components.
-        *    `mag_sc_4sa.pmag`: Magnetic pressure
+*   **Magnetic Field Data:**
+    *   **Standard Resolution (4 samples per cycle, ~4 samples/second):**
+        *   `mag_rtn_4sa`:  RTN (Radial, Tangential, Normal) coordinate system.
+            *   `mag_rtn_4sa.br`: Radial component of the magnetic field.
+            *   `mag_rtn_4sa.bt`: Tangential component.
+            *   `mag_rtn_4sa.bn`: Normal component.
+            *   `mag_rtn_4sa.bmag`: Magnetic field magnitude.
+            *   `mag_rtn_4sa.all`: All three components (`br`, `bt`, `bn`) together, useful for multi-panel plots.
+            *   `mag_rtn_4sa.pmag`: Magnetic pressure
 
-*   **High Resolution:** Data is available using `mag_rtn` and `mag_sc` (without the `_4sa`).
+        *   `mag_sc_4sa`: Spacecraft coordinate system.
+            *   `mag_sc_4sa.bx`: X component.
+            *   `mag_sc_4sa.by`: Y component.
+            *   `mag_sc_4sa.bz`: Z component.
+            *    `mag_sc_4sa.bmag`: Magnitude
+            *   `mag_sc_4sa.all`: All three components.
+            *    `mag_sc_4sa.pmag`: Magnetic pressure
+
+    *   **High Resolution:** Data is available using `mag_rtn` and `mag_sc` (without the `_4sa`).
+
+*   **Electric Field Spectral Data (DFB - Digital Fields Board):**
+    *   `psp_dfb.ac_spec_dv12`: AC electric field spectrum (dV12 antenna pair)
+    *   `psp_dfb.ac_spec_dv34`: AC electric field spectrum (dV34 antenna pair)
+    *   `psp_dfb.dc_spec_dv12`: DC electric field spectrum (dV12 antenna pair)
+
+*   **Quasi-Thermal Noise (QTN) Data:**
+    *   `psp_qtn.density`: Electron density measurements
+    *   `psp_qtn.temperature`: Electron core temperature measurements
 
 **SWEAP/SPAN-e Instrument (Electron Data):**
 
@@ -304,7 +418,7 @@ Here's a list of the currently available data products and their components.
 
 *   **High Resolution:** Data is available using `epad_hr`.
 
-**SWEAP/SPAN-i Instrument (Proton Data):**
+**SWEAP/SPAN-i Instrument (Proton & Ion Data):**
 
 *   **Standard Resolution:**
     *   `proton`:  Proton moments and derived quantities.
@@ -329,11 +443,124 @@ Here's a list of the currently available data products and their components.
 
 *   **High Resolution:** Data is available using `proton_hr`.
 
-**5. Other Plotting Functions**
-There are two other primary plotting methods in `Plotbot`:
+*   **Alpha Particle Data:**
+    *   `psp_alpha`: Alpha particle moments (density, temperature, velocity)
 
-*    `multiplot()`: Designed for comparing a *single* variable across multiple consecutive time intervals. It automatically generates subplots for each interval, making it easy to analyze changes over extended periods or around events like perihelion. See the 'Multiplotting Magic' section of the notebook for usage details.
-*   `showdahodo()`:  Creates a hodogram (scatter) plot comparing two variables against each other (instead of against time). This is useful for visualizing the relationship between, for example, two components of the magnetic field. Examples are provided in the notebook.
+*   **Velocity Distribution Functions (VDF):**
+    *   `psp_span_vdf`: Raw VDF data for velocity-space analysis
+    *   Use with `vdyes()` function for VDF plotting (theta-plane, phi-plane, collapsed distributions)
+
+**Additional PSP Data Products:**
+
+*   **Orbital/Positional Data:**
+    *   `psp_orbit`: Parker Solar Probe orbital data including heliocentric distance, Carrington coordinates
+
+*   **HAM (Hammerhead Analysis) Data:**
+    *   `ham`: Local CSV data with hammerhead-specific derived quantities
+
+*   **FITS Analysis Data:**
+    *   `sf00_fits`: SF00 proton distribution fitting results
+    *   `sf01_fits`: SF01 alpha particle fitting results
+
+### **WIND Mission Data Products**
+
+*   **WIND MFI (Magnetic Field Investigation):**
+    *   `wind_mfi`: Magnetic field components (Bx, By, Bz, |B|) in GSE coordinates
+
+*   **WIND SWE (Solar Wind Experiment):**
+    *   `wind_swe_h1`: Proton and alpha thermal speeds
+    *   `wind_swe_h5`: Electron temperature measurements
+
+*   **WIND 3DP (3D Plasma Analyzer):**
+    *   `wind_3dp_pm`: Ion plasma moments (proton/alpha density, temperature, velocity)
+    *   `wind_3dp_elpd`: Electron pitch-angle distributions
+
+### **Custom CDF Integration**
+
+Plotbot supports automatic integration of any CDF (Common Data Format) files through:
+*   **Auto-Class Generation**: Scan CDF files and automatically generate plotbot-compatible classes
+*   **Auto-Registration**: Generated classes automatically integrate with the data system
+*   **Mixed Data Types**: Support for both spectral (2D) and timeseries (1D) variables
+
+**5. Advanced Plotting Functions**
+
+Beyond the basic `plotbot()` function, Plotbot offers several specialized plotting tools for advanced analysis:
+
+### **`multiplot()` - Multi-Panel Time Series Analysis**
+
+Designed for comparing a *single* variable across multiple consecutive time intervals. Automatically generates subplots for each interval, making it easy to analyze changes over extended periods or around events like perihelion.
+
+**Enhanced Features:**
+```python
+# Basic usage
+plot_list = [('2020-01-29 18:10:00', mag_rtn_4sa.br),
+             ('2020-01-29 19:15:00', mag_rtn_4sa.br)]
+multiplot(plot_list)
+
+# Advanced positioning options
+plt.options.x_axis_r_sun = True              # Plot vs radial distance
+plt.options.x_axis_carrington_lon = True     # Plot vs Carrington longitude  
+plt.options.use_degrees_from_perihelion = True  # Degrees from perihelion
+
+# Color and styling options
+plt.options.color_mode = 'rainbow'           # Options: 'default', 'rainbow', 'single'
+plt.options.single_color = 'blue'            # For single color mode
+plt.options.hamify = True                    # Overlay HAM data
+plt.options.ham_opacity = 0.8                # HAM data transparency
+
+# Save options
+plt.options.save_output = True
+plt.options.save_preset = 'high_res'         # Preset configurations
+plt.options.output_dimensions = (1920, 1080) # Custom dimensions
+```
+
+### **`showdahodo()` - Hodogram (Scatter) Analysis**
+
+Creates hodogram plots comparing two or three variables against each other (instead of against time). Useful for visualizing relationships between variables, correlations, and phase space analysis.
+
+**Features:**
+```python
+# 2D hodogram
+showdahodo(trange, mag_rtn_4sa.br, mag_rtn_4sa.bt, 
+           color_var=proton.temperature)
+
+# 3D hodogram  
+showdahodo(trange, mag_rtn_4sa.br, mag_rtn_4sa.bt, mag_rtn_4sa.bn,
+           color_var=proton.density)
+
+# Advanced options
+showdahodo(trange, var1, var2, 
+           sort=True,           # Sort by color values
+           corr=True,           # Show correlation coefficient
+           brazil=True,         # Add instability thresholds
+           xlog_=True, ylog_=True)  # Log scales
+```
+
+### **`vdyes()` - Velocity Distribution Function Plotting**
+
+**NEW** Advanced VDF plotting function for PSP SPAN-I velocity distribution analysis. Automatically switches between static plots and interactive widgets based on available data.
+
+**Features:**
+```python
+# Single time point → Static 3-panel plot
+fig = vdyes(['2020/01/29 18:10:00.000', '2020/01/29 18:10:30.000'])
+
+# Multiple time points → Interactive widget with time slider
+widget = vdyes(['2020/01/29 17:00:00.000', '2020/01/29 19:00:00.000'])
+
+# Configure VDF parameters (Plotbot class-based approach)
+psp_span_vdf.theta_smart_padding = 150
+psp_span_vdf.enable_zero_clipping = False  
+psp_span_vdf.theta_x_axis_limits = (-800, 0)
+psp_span_vdf.vdf_colormap = 'plasma'
+psp_span_vdf.vdf_text_scaling = 1.2
+```
+
+**VDF Plot Types:**
+- **1D Collapsed**: Velocity-space distribution summed over all angles
+- **Theta-plane**: Vx vs Vz (meridional velocity space)
+- **Phi-plane**: Vx vs Vy (azimuthal velocity space)
+- **Interactive Widget**: Time slider with save functionality for time series analysis
 
 ### Positional X-Axis in Multiplot
 
@@ -395,6 +622,27 @@ ta_over_b.y_scale = 'log'
 ```
 
 Plotbot's `plotbot.data_classes.custom_variables.py` module manages these operations, ensuring that source data is available and calculations are updated when the time range changes. See `tests/test_custom_variables.py` and `tests/test_arithmetic.py` for more examples.
+
+### **NEW** Data Caching & Snapshots
+
+Never wait for calculations again! Plotbot now includes persistent data caching to dramatically speed up repeat analysis sessions.
+
+```python
+# At the end of your session, save your cached calculations:
+save_simple_snapshot('my_calculated_data.pkl') 
+
+# Load the cache at the beginning of your next session:
+load_simple_snapshot('my_calculated_data.pkl')
+
+# Best part: New calculations automatically merge with your imported cache!
+# Just save again at the end of your session to preserve everything.
+```
+
+**Benefits:**
+- **Instant startup**: Skip re-downloading and re-calculating previously processed data
+- **Seamless integration**: Cached data works identically to fresh downloads
+- **Smart merging**: New time ranges automatically combine with existing cache
+- **Session continuity**: Pick up exactly where you left off in previous sessions
 
 ### Proton Distribution Function Fits
 
