@@ -383,10 +383,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_08_17_v3.11"
+__version__ = "2025_08_18_v3.12"
 
 # Commit message for this version
-__commit_message__ = "v3.11 Docs: Reorganized README structure - moved misplaced Additional Example Notebooks header and relocated Using Plotbot's Data Classes section for better flow."
+__commit_message__ = "v3.12 Feat: Ignored plotbot_grid_composer_examples.ipynb and removed it from README.md"
 
 # Print the version and commit message
 print(f"""

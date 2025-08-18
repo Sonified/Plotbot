@@ -186,7 +186,6 @@ The primary way to learn and use Plotbot is through the included Jupyter Noteboo
 - `plotbot_multiplot_examples.ipynb` - Advanced multiplot features and options
 - `plotbot_alpha_proton_derived_examples.ipynb` - Alpha particle and derived variable examples
 - `plotbot_audification_examples.ipynb` - Audio generation from data
-- `plotbot_grid_composer_examples.ipynb` - ⚠️ Work in progress. Modular plotting system for combining multiple plot types.
 
 Each notebook includes detailed explanations, working code examples, and demonstrates best practices for that specific capability.
 
