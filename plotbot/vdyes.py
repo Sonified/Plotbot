@@ -288,27 +288,33 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
     # Create output widget for plots - remove all default styling
     vdf_output = widgets.Output()
     
-    # Time slider (like Hopf explorer time controls)
+    # Time slider without description (we'll add our own label)
     time_slider = IntSlider(
         value=0,
         min=0,
         max=len(available_times) - 1,
         step=1,
-        description='Time:',
-        layout=Layout(width='600px'),
-        style={'description_width': '50px'}
+        description='',  # No built-in description
+        layout=Layout(width='400px')
     )
     
-    # Time display label
-    time_label = Label(value=available_times[0].strftime("%Y-%m-%d %H:%M:%S"))
+    # Labels with consistent width for alignment
+    time_label_desc = Label(value="Time:", layout=Layout(width='50px'))
+    time_display = Label(value=available_times[0].strftime("%Y-%m-%d %H:%M:%S"), layout=Layout(width='200px'))
     
-    # Status label for messages
+    # Step controls with matching width
+    step_label_desc = Label(value="Step:", layout=Layout(width='50px'))
+    left_arrow_button = Button(description="◀", button_style="", layout=Layout(width='40px'))
+    right_arrow_button = Button(description="▶", button_style="", layout=Layout(width='40px'))
+    
+    # Status label for messages (with bold "Status" text using widget styling)
     status_label = Label(value="Status: Ready", layout=Layout(width='900px', margin='5px'))
+    status_label.style.font_weight = 'bold'
     
-    # Save buttons (like Hopf explorer save infrastructure)
-    save_current_button = Button(description="Save Current Image", button_style="success", layout=Layout(width='150px'))
-    save_all_button = Button(description="Render All Images", button_style="info", layout=Layout(width='150px'))
-    set_directory_button = Button(description="Change Save Directory", button_style="primary", layout=Layout(width='150px'))
+    # Save buttons (like Hopf explorer save infrastructure) - wider buttons for better usability
+    save_current_button = Button(description="Save Current Image", button_style="success", layout=Layout(width='180px'))
+    save_all_button = Button(description="Render All Images", button_style="info", layout=Layout(width='180px'))
+    set_directory_button = Button(description="Change Save Directory", button_style="primary", layout=Layout(width='200px'))
     
     # Global variables for save directory
     save_directory = [None]  # Use list to make it mutable in nested functions
@@ -380,13 +386,31 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
             plt.show()
             
             # Update time label
-            time_label.value = time_str
+            time_display.value = time_str
     
     def on_time_slider_change(change):
         """Handle time slider changes"""
         time_str = available_times[change['new']].strftime("%Y-%m-%d %H:%M:%S")
         status_label.value = f"Status: Displaying time {time_str}"
         update_vdf_plot(change['new'])
+    
+    def on_left_arrow_click(b):
+        """Handle left arrow click - go to previous time step"""
+        current_index = time_slider.value
+        if current_index > 0:
+            time_slider.value = current_index - 1
+            # The slider observer will handle the plot update
+        else:
+            status_label.value = "Status: Already at first time step"
+    
+    def on_right_arrow_click(b):
+        """Handle right arrow click - go to next time step"""
+        current_index = time_slider.value
+        if current_index < len(available_times) - 1:
+            time_slider.value = current_index + 1
+            # The slider observer will handle the plot update
+        else:
+            status_label.value = "Status: Already at last time step"
     
     def on_save_current_click(b):
         """Save current image"""
@@ -570,18 +594,24 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
     save_all_button.on_click(on_save_all_click)
     set_directory_button.on_click(on_set_directory_click)
     
+    # Connect step arrow button handlers
+    left_arrow_button.on_click(on_left_arrow_click)
+    right_arrow_button.on_click(on_right_arrow_click)
+    
     # Debug: Confirm button connections
     print("🔗 Button handlers connected successfully")
     
     # Connect slider observer immediately (like Hopf explorer)
     time_slider.observe(on_time_slider_change, names='value')
     
-    # Create widget layout
-    time_controls = HBox([time_slider, time_label], layout=Layout(justify_content="flex-start", margin='5px'))
+    # Create widget layout with proper alignment using consistent column widths
+    time_controls = HBox([time_label_desc, time_slider, time_display], layout=Layout(justify_content="flex-start", margin='5px'))
+    step_controls = HBox([step_label_desc, left_arrow_button, right_arrow_button], layout=Layout(justify_content="flex-start", margin='5px'))
     save_controls = HBox([set_directory_button, save_current_button, save_all_button], layout=Layout(justify_content="flex-start", margin='5px'))
     
     widget_layout = VBox([
         time_controls,
+        step_controls,
         save_controls,
         status_label,
         vdf_output
