@@ -206,6 +206,7 @@ from .multiplot_options import plt
 # Import main plotting functions
 from .plotbot_main import plotbot
 from .plotbot_interactive import plotbot_interactive
+from .plotbot_interactive_options import pbi
 from .showdahodo import showdahodo
 from .multiplot import multiplot
 from .multiplot_options import MultiplotOptions
@@ -322,6 +323,7 @@ __all__ = [
     'np',            # Make numpy directly available
     'plotbot',
     'plotbot_interactive',  # Interactive plotting with click-to-VDF functionality
+    'pbi',           # Interactive plotting options
     'showdahodo', 
     'multiplot',
     'vdyes',         # PSP SPAN-I VDF plotting function
@@ -386,10 +388,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_08_18_v3.14"
+__version__ = "2025_08_18_v3.15"
 
 # Commit message for this version
-__commit_message__ = "v3.14 Feat: Implemented plotbot_interactive() with click-to-VDF and scientific plot controls"
+__commit_message__ = "v3.15 Fix: Enhanced T⊥/T∥ LaTeX-to-Unicode conversion for both legend and y-axis labels"
 
 # Print the version and commit message
 print(f"""

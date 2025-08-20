@@ -11,8 +11,9 @@ from .get_data import get_data
 from .data_cubby import data_cubby
 from .plotbot_helpers import parse_axis_spec, debug_plot_variable
 from .time_utils import TimeRangeTracker
+from .plotbot_interactive_options import pbi
 
-def plotbot_interactive(trange, *args, backend='dash', port=8050, debug=False):
+def plotbot_interactive(trange, *args, backend='auto', port=None, debug=None):
     """
     Interactive plotting function for Plotbot with click-to-VDF functionality.
     
@@ -27,11 +28,11 @@ def plotbot_interactive(trange, *args, backend='dash', port=8050, debug=False):
     *args : object pairs
         Variable and axis pairs (e.g., mag_rtn_4sa.br, 1, proton.anisotropy, 2)
     backend : str, optional
-        Backend to use ('dash' for interactive, 'matplotlib' for standard plotbot)
+        Backend to use ('auto', 'dash', 'matplotlib'). Default: 'auto' (uses pbi.enabled)
     port : int, optional
-        Port for the interactive web interface (default: 8050)
+        Port for Dash server. Default: None (uses pbi.port)
     debug : bool, optional
-        Enable debug mode for the web server (default: False)
+        Enable debug mode. Default: None (uses pbi.debug)
     
     Returns
     -------
@@ -48,6 +49,22 @@ def plotbot_interactive(trange, *args, backend='dash', port=8050, debug=False):
     """
     
     print_manager.status("🚀 plotbot_interactive() starting...")
+    
+    # Apply global options if parameters not explicitly provided
+    if backend == 'auto':
+        backend = 'dash'  # Always use dash for interactive plots
+    if port is None:
+        port = 8050  # Default port
+    if debug is None:
+        debug = False  # Default debug
+    
+    print_manager.debug(f"Using backend: {backend}, port: {port}, debug: {debug}")
+    
+    # Check display mode
+    if pbi.options.web_display:
+        print_manager.status(f"🌐 Web display enabled - will open in browser")
+    else:
+        print_manager.status(f"📊 Inline display enabled - will show in Jupyter/VS Code")
     
     # Validate time range
     try:
@@ -185,7 +202,8 @@ def plotbot_interactive(trange, *args, backend='dash', port=8050, debug=False):
         app = create_dash_app(plot_vars, trange)
         
         print_manager.status("🌐 Launching interactive plot...")
-        app_thread = run_dash_app(app, port=port, debug=debug)
+        inline_mode = not pbi.options.web_display  # False = browser, True = inline
+        app_thread = run_dash_app(app, port=port, debug=debug, inline=inline_mode)
         
         print_manager.status("✅ plotbot_interactive() complete!")
         print_manager.status("📌 Click on any data point to generate VDF analysis!")

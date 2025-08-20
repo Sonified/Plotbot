@@ -115,4 +115,44 @@ plotbot_interactive(trange, mag_rtn_4sa.br, 1, proton.anisotropy, 2)
 - **Version**: 2025_08_18_v3.14
 - **Commit Message**: "v3.14 Feat: Implemented plotbot_interactive() with click-to-VDF and scientific plot controls"
 
+---
+
+## T⊥/T∥ Label Formatting Fixes
+
+### Issue Resolved
+- **Problem**: LaTeX formatting in temperature ratio labels not displaying correctly
+- **Symptoms**: Y-axis labels showing `T_\perp/T_\parallel` instead of proper Unicode symbols
+- **Root Cause**: Incomplete LaTeX-to-Unicode conversion in both legend and axis labels
+
+### Technical Fixes Applied:
+1. **Enhanced Y-axis Label Processing**:
+   - Extended LaTeX cleanup to y-axis labels (was only applied to legend before)
+   - Added comprehensive pattern matching for all temperature ratio variations
+   - Now handles: `$T_\perp/T_\parallel$`, `T_\perp/T_\parallel`, `$T_\perp$`, `$T_\parallel$`
+
+2. **Unicode Symbol Conversion**:
+   - `T_\perp` → `T⊥` (perpendicular symbol)
+   - `T_\parallel` → `T∥` (parallel symbol)  
+   - `T_\perp/T_\parallel` → `T⊥/T∥` (ratio display)
+   - Strips remaining LaTeX delimiters (`$` symbols)
+
+3. **Legend Interaction Behavior**:
+   - Reverted from `legendgroup` approach (was causing group toggling)
+   - Restored individual clickable legend items
+   - Each trace can be toggled independently
+   - Maintained single legend box positioned to right of plot
+
+### Files Modified:
+- `plotbot/plotbot_dash.py`: Enhanced LaTeX processing for both legend and y-axis labels
+
+### Test Results:
+- ✅ Y-axis labels now display `T⊥/T∥` correctly
+- ✅ Legend labels show proper Unicode symbols
+- ✅ Individual legend item clicking works as expected
+- ✅ Legend positioning maintained to right of plot area
+
+### Version Status (Updated)
+- **Version**: 2025_08_18_v3.15
+- **Commit Message**: "v3.15 Fix: Enhanced T⊥/T∥ LaTeX-to-Unicode conversion for both legend and y-axis labels"
+
 ## End of Log - 2025-08-18
