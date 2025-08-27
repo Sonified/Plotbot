@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jaye Meeting Notes - 2025-08-27</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+        }
+        h3 {
+            color: #2980b9;
+            margin-top: 25px;
+        }
+        .status-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .status-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .status-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        .code-block {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+        ul, ol {
+            padding-left: 25px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .emoji {
+            font-size: 1.2em;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><span class="emoji">🚀</span> Jaye Meeting Notes - 2025-08-27</h1>
+        <p><strong>Interactive Plotting System Development Summary</strong></p>
+        
+        <div style="background: #e8f4fd; border: 1px solid #bee5eb; border-radius: 5px; padding: 15px; margin: 15px 0;">
+            <h4><span class="emoji">🔬</span> <strong>PSP SPAN-I Interactive VDF Analysis</strong></h4>
+            <p><strong>Current Implementation Approach:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li><strong>🔧 Dual-method interpolation</strong>: <code>scipy.interpolate.griddata</code> with 'nearest' → 'linear' fallback</li>
+                <li><strong>📊 High-resolution grids</strong>: 100×100 regular grid (vs. default 50×50) for better data preservation</li>
+                <li><strong>🎯 Smart coverage detection</strong>: Switches to linear interpolation if nearest coverage <10%</li>
+                <li><strong>⚡ Real-time processing</strong>: Dash app with time slider for interactive VDF exploration</li>
+                <li><strong>📐 3-panel layout</strong>: 1D collapsed, θ-plane, and φ-plane velocity distributions</li>
+            </ul>
+            <p><em>Result: Successfully rendering VDF contours, but with inherent interpolation data loss (~93-94%)</em></p>
+        </div>
+        
+        <div class="status-success">
+            <h3><span class="emoji">📋</span> <strong>Executive Summary</strong></h3>
+            <ul>
+                <li><strong>✅ Major Success</strong>: 2D spectral data (EPAD, proton energy flux) working in interactive Plotly system</li>
+                <li><strong>⚠️ Core Challenge</strong>: Plotly's regular grid requirement vs. irregular scientific data</li>
+                <li><strong>🔄 Active Research</strong>: Multiple approaches for VDF contour plotting (scatter, interpolation, specialized libraries)</li>
+                <li><strong>⚖️ Architecture Trade-off</strong>: Web dashboard design vs. scientific multi-panel requirements</li>
+            </ul>
+        </div>
+        
+        <hr>
+        
+        <h2><span class="emoji">🔬</span> VDF (Velocity Distribution Function) Limitations in Plotly</h2>
+        
+        <h3><strong>Core Technical Issue</strong>: Irregular Grid Incompatibility</h3>
+        <div class="status-error">
+            <p><strong>Fundamental Problem</strong>: <span class="highlight">Plotly contour plots cannot handle irregular scientific grids natively</span>, requiring regular rectangular matrices that matplotlib's <code>contourf</code> handles seamlessly.</p>
+        </div>
+        
+        <ul>
+            <li><strong>Plotly's requirement</strong>: <code>go.Contour</code> only accepts 2D matrix data with uniform grid spacing</li>
+            <li><strong>Matplotlib's advantage</strong>: <code>tricontour</code>/<code>tricontourf</code> support native triangulation of scattered data</li>
+            <li><strong>Scientific impact</strong>: Affects VDFs, atmospheric data, detector arrays, and other non-uniform sampling datasets</li>
+        </ul>
+        
+        <h3><strong>Attempted Solutions & Results</strong>:</h3>
+        <ul>
+            <li><strong>scipy.interpolate.griddata</strong>: <span class="highlight">93-94% data loss</span> during grid conversion</li>
+            <li><strong>matplotlib triangulation</strong>: Better preservation but still requires preprocessing</li>
+            <li><strong>go.Scatter with coloring</strong>: Often superior performance and data fidelity</li>
+        </ul>
+        
+        <h3><strong>Root Cause</strong>:</h3>
+        <p>Scientific measurements naturally occur at irregular spatial/temporal locations, but Plotly's web dashboard origins assume regular business data grids.</p>
+        
+        <div class="status-warning">
+            <p><strong>Status</strong>: <span class="emoji">🔄</span> <strong>Active Research</strong> - Multiple approaches being tested (interpolation, scatter plots, specialized libraries)</p>
+        </div>
+        
+        <hr>
+        
+        <h2><span class="emoji">⚖️</span> Individual Figures vs. Plotly's Graph Philosophy</h2>
+        
+        <h3><strong>Fundamental Design Conflict</strong>:</h3>
+        
+        <table>
+            <tr>
+                <th><strong>Scientific Multi-Panel Plotting</strong></th>
+                <th><strong>Plotly Web Dashboard Design</strong></th>
+            </tr>
+            <tr>
+                <td>Multiple independent plots with individual colorbars</td>
+                <td>Single interactive chart with unified legend</td>
+            </tr>
+            <tr>
+                <td>Each panel has its own axis/colorbar positioning</td>
+                <td>Global legend area with automatic spacing</td>
+            </tr>
+            <tr>
+                <td>Designed for publication/analysis</td>
+                <td>Designed for business dashboards</td>
+            </tr>
+        </table>
+        
+        <h3><strong>Practical Trade-offs</strong>:</h3>
+        
+        <h4><span class="emoji">✅</span> <strong>Advantages of Plotly Integration</strong>:</h4>
+        <div class="status-success">
+            <ul>
+                <li><strong>Interactivity</strong>: Pan, zoom, hover on scientific data</li>
+                <li><strong>Web deployment</strong>: Share plots via browser links</li>
+                <li><strong>Unified codebase</strong>: Single system for both static and interactive plots</li>
+            </ul>
+        </div>
+        
+        <h4><span class="emoji">❌</span> <strong>Challenges with Plotly</strong>:</h4>
+        <div class="status-error">
+            <ul>
+                <li><strong>Colorbar positioning conflicts</strong> with multi-panel layouts</li>
+                <li><strong>Legend management</strong> becomes complex with mixed plot types</li>
+                <li><strong>Scientific formatting</strong> requires workarounds for publication standards</li>
+            </ul>
+        </div>
+        
+        <h3><strong>Current Solution Strategy</strong>:</h3>
+        <ul>
+            <li><strong>Hybrid approach</strong>: Leverage Plotly's strengths while working around dashboard limitations</li>
+            <li><strong>Smart positioning</strong>: Custom colorbar placement algorithms</li>
+            <li><strong>Fallback options</strong>: Individual figures when subplot conflicts arise</li>
+        </ul>
+        
+        <hr>
+        
+        <h2><span class="emoji">🎯</span> Recent Success: 2D Spectral Data Implementation</h2>
+        
+        <div class="status-success">
+            <h3><strong>Achievement</strong>:</h3>
+            <p>Successfully bridged matplotlib <code>pcolormesh</code> → Plotly <code>go.Heatmap</code> for interactive spectral analysis</p>
+            
+            <h3><strong>Key Fix</strong>:</h3>
+            <p>Intelligent y-axis reversal algorithm auto-detects energy channel order and corrects display orientation</p>
+            
+            <div class="code-block">
+# Auto-detects descending order (high→low energy) and reverses for proper display
+if y_labels[0] > y_labels[-1]:
+    y_labels = y_labels[::-1]      # Reverse labels: [18131→128] becomes [128→18131]  
+    z_data = z_data[:, ::-1]       # Reverse data columns to match
+            </div>
+            
+            <h3><strong>Status</strong>:</h3>
+            <p><span class="emoji">✅</span> <strong>Production Ready</strong> - EPAD and proton energy flux data working correctly</p>
+        </div>
+        
+        <hr>
+        
+        <h2><span class="emoji">📋</span> Recommendations & Next Steps:</h2>
+        
+        <h3><strong>Immediate Actions</strong>:</h3>
+        <ol>
+            <li><strong>VDF Approach</strong>: Test <code>go.Scatter</code> with marker coloring (often superior to interpolated contours)</li>
+            <li><strong>Alternative Libraries</strong>: Evaluate HoloViews with Plotly backend for native irregular grid support</li>
+            <li><strong>Hybrid Strategy</strong>: matplotlib for detailed VDF analysis, Plotly for interactive overview/screening</li>
+        </ol>
+        
+        <h3><strong>Architecture Decisions</strong>:</h3>
+        <ul>
+            <li><strong>Multi-panel Trade-offs</strong>: Accept some colorbar positioning limitations for interactivity benefits</li>
+            <li><strong>Publication Pipeline</strong>: Dual-output strategy (interactive for analysis, static for papers)</li>
+            <li><strong>Performance Strategy</strong>: Scatter plots for >10k irregular points, specialized tools for complex grids</li>
+        </ul>
+        
+        <hr>
+        
+        <p><em>Generated: 2025-08-27</em></p>
+    </div>
+</body>
+</html>

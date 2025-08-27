@@ -35,9 +35,19 @@ if y_data.ndim > 1:
 ### **Current Status**: ✅ **Working Implementation**
 
 - **EPAD strahl data**: Successfully displays as interactive heatmap with proper pitch angle labels
+- **Proton energy flux**: Fixed y-axis inversion with intelligent detection/reversal algorithm
 - **Mixed plot types**: Time series (line plots) + spectral data (heatmaps) in unified figure
 - **Interactive controls**: Standard Plotly toolbar with pan, zoom, hover functionality restored
 - **Publication ready**: Clean scientific formatting matching matplotlib standards
+
+#### **🔧 Latest Fix**: Intelligent Y-Axis Reversal
+```python
+# Auto-detects descending order (high→low energy) and reverses for proper display
+if y_labels[0] > y_labels[-1]:
+    y_labels = y_labels[::-1]      # Reverse labels: [18131→128] becomes [128→18131]  
+    z_data = z_data[:, ::-1]       # Reverse data columns to match
+```
+**Problem Solved**: Proton energy flux now displays correctly (low energy at bottom, high at top) matching matplotlib behavior.
 
 ### **Outstanding Challenge**: 😤 **Plotly's Multi-Panel Design Philosophy**
 
@@ -67,6 +77,65 @@ Result: Awkward colorbar positioning, legend conflicts
 - **Version**: v3.17  
 - **Commit**: "v3.17 Feat: Implemented 2D spectral data support for plotbot_interactive with Plotly heatmaps"
 - **Branch**: Ready for merge to main
+
+---
+
+## VS Code Configuration & Linter Fixes 🛠️⚡
+
+**Problem Solved**: Colleague's fresh VS Code install wasn't showing syntax highlighting/class colors despite .pyi files being present.
+
+### **Root Cause**:
+Fresh VS Code installations don't automatically:
+- Configure Python analysis paths to find .pyi stub files
+- Set up proper workspace-level settings for type checking
+- Point to project-specific Python environments
+
+### **Solution Implemented**: 
+**Workspace-level VS Code configuration** (committed to git for team-wide benefit):
+
+#### **`.vscode/settings.json`**:
+```json
+{
+    "python.analysis.stubPath": "./plotbot",
+    "python.analysis.extraPaths": ["./plotbot"],
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.indexing": true,
+    "python.defaultInterpreterPath": "./plotbot_env/bin/python",
+    "jupyter.defaultKernel": "plotbot_env"
+}
+```
+
+#### **`.vscode/extensions.json`**:
+```json
+{
+    "recommendations": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter",
+        "ms-python.debugpy"
+    ]
+}
+```
+
+### **Key Benefits**:
+1. **🎯 Automatic Setup**: Anyone who clones the repo gets proper VS Code configuration immediately
+2. **🔍 Enhanced IntelliSense**: Pylance now finds all .pyi files in `./plotbot/` and subdirectories  
+3. **💡 Smart Suggestions**: Type hints, autocomplete, and class coloring work out-of-the-box
+4. **🚀 Extension Recommendations**: VS Code automatically suggests essential Python/Jupyter extensions
+
+### **Bonus: VDF Module Linter Fixes** 🧹
+Addressed linter errors in VDF interactive modules:
+
+- **Import handling**: Added graceful fallback for `test_VDF_smart_bounds_debug` imports
+- **Function definitions**: Fixed duplicate `run_vdf_dash_app` declarations  
+- **Type annotations**: Added `# type: ignore` for cdflib compatibility issues
+- **Guard clauses**: Prevented unpacking of functions that raise ImportError
+
+### **Version & Deployment**:
+- **Version**: v3.18
+- **Commit**: "v3.18 Fix: Added VS Code workspace configuration for enhanced syntax highlighting and fixed VDF module linter errors"
+- **Impact**: Team productivity boost - no more manual VS Code configuration needed!
 
 ---
 

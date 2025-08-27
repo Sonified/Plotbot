@@ -11,7 +11,11 @@ import os
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from plotbot import plotbot, psp_orbit, mag_rtn_4sa, print_manager, plt
+import plotbot
+from plotbot import plotbot as plotbot_func, print_manager
+from plotbot.data_classes.psp_orbit import psp_orbit
+from plotbot.data_classes.psp_mag_rtn_4sa import mag_rtn_4sa
+from plotbot.multiplot_options import plt
 from speed_test import timing_tracker
 
 def test_orbit_performance():
@@ -29,13 +33,13 @@ def test_orbit_performance():
     # Run 1: First call (should be slow)
     timing_tracker.start_run(1, {"description": "First run - no caching"})
     step1 = timing_tracker.start_step("plotbot_call", {"trange": trange, "variable": "psp_orbit.r_sun"})
-    plotbot(trange, psp_orbit.r_sun, 1)
+    plotbot_func(trange, psp_orbit.r_sun, 1)
     timing_tracker.end_step(step1)
     
     # Run 2: Second call (should be cached and fast)
     timing_tracker.start_run(2, {"description": "Second run - cached"})
     step2 = timing_tracker.start_step("plotbot_call", {"trange": trange, "variable": "psp_orbit.r_sun"})
-    plotbot(trange, psp_orbit.r_sun, 1)
+    plotbot_func(trange, psp_orbit.r_sun, 1)
     timing_tracker.end_step(step2)
     
     # Start Magnetic Field test
@@ -44,13 +48,13 @@ def test_orbit_performance():
     # Run 1: First call (should be slow)
     timing_tracker.start_run(1, {"description": "First run - no caching"})
     step3 = timing_tracker.start_step("plotbot_call", {"trange": trange, "variable": "mag_rtn_4sa.br"})
-    plotbot(trange, mag_rtn_4sa.br, 1)
+    plotbot_func(trange, mag_rtn_4sa.br, 1)
     timing_tracker.end_step(step3)
     
     # Run 2: Second call (should be cached and fast)
     timing_tracker.start_run(2, {"description": "Second run - cached"})
     step4 = timing_tracker.start_step("plotbot_call", {"trange": trange, "variable": "mag_rtn_4sa.br"})
-    plotbot(trange, mag_rtn_4sa.br, 1)
+    plotbot_func(trange, mag_rtn_4sa.br, 1)
     timing_tracker.end_step(step4)
     
     # Print comprehensive report

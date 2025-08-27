@@ -119,7 +119,9 @@ def plotbot_interactive_vdf(trange, backend='auto', port=None, debug=None):
     dat = cdflib.CDF(VDfile[0])
     
     # Get time array to determine available data
-    epoch_dt64 = cdflib.cdfepoch.to_datetime(dat.varget('Epoch'))
+    epoch_cdf = dat.varget('Epoch')
+    # Type: ignore for cdflib compatibility
+    epoch_dt64 = cdflib.cdfepoch.to_datetime(epoch_cdf)  # type: ignore
     epoch = pd.to_datetime(epoch_dt64).to_pydatetime().tolist()
     
     # Filter time points to requested range
@@ -144,6 +146,7 @@ def plotbot_interactive_vdf(trange, backend='auto', port=None, debug=None):
     try:
         print("🔍 DEBUG: About to create VDF Dash app...")
         print_manager.status("🎛️ Creating interactive VDF Dash application...")
+        from .plotbot_dash_vdf import create_vdf_dash_app, run_vdf_dash_app
         app = create_vdf_dash_app(dat, available_times, available_indices, trange)
         
         print("🔍 DEBUG: Dash app created, about to launch...")

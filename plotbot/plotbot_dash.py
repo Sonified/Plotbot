@@ -27,6 +27,12 @@ def create_spectral_heatmap(fig, var, axis_num):
         # Extract spectral data arrays
         z_data = var.data  # 2D spectral data (time x energy/pitch_angle)
         
+        # DEBUG: Let's see what the data structure looks like
+        print_manager.status(f"🔍 [DATA DEBUG] var.subclass_name: {getattr(var, 'subclass_name', 'unknown')}")
+        print_manager.status(f"🔍 [DATA DEBUG] z_data shape: {z_data.shape}")
+        print_manager.status(f"🔍 [DATA DEBUG] z_data.T shape: {z_data.T.shape}")
+        print_manager.status(f"🔍 [DATA DEBUG] z_data range: {np.nanmin(z_data):.2e} to {np.nanmax(z_data):.2e}")
+        
         # Get time coordinates - for spectral data, this might be 2D mesh
         if hasattr(var, 'datetime_array') and var.datetime_array is not None:
             if var.datetime_array.ndim == 2:
@@ -38,25 +44,35 @@ def create_spectral_heatmap(fig, var, axis_num):
             x_data = np.arange(z_data.shape[0])
         
         # Get y-axis coordinates (e.g., pitch angles, energies)
+        # FIX: Use indices for heatmap, store actual values for labels
+        y_indices = np.arange(z_data.shape[1])  # Always use indices 0, 1, 2, 3...
+        y_labels = None  # Actual values for tick labels
+        
         if hasattr(var, 'additional_data') and var.additional_data is not None:
-            y_data = var.additional_data
+            # DEBUG: Let's see what the fuck is happening
+            print_manager.status(f"🔍 [Y-AXIS DEBUG] additional_data shape: {var.additional_data.shape}")
+            print_manager.status(f"🔍 [Y-AXIS DEBUG] additional_data ndim: {var.additional_data.ndim}")
+            print_manager.status(f"🔍 [Y-AXIS DEBUG] First 5 values: {var.additional_data.flat[:5]}")
+            print_manager.status(f"🔍 [Y-AXIS DEBUG] Last 5 values: {var.additional_data.flat[-5:]}")
             
-            # DEBUG: Let's see what we're actually getting - USE STATUS SO IT SHOWS UP
-            print_manager.status(f"🔍 [SPECTRAL DEBUG] Y-axis data type: {type(y_data)}")
-            print_manager.status(f"🔍 [SPECTRAL DEBUG] Y-axis data shape: {y_data.shape if hasattr(y_data, 'shape') else 'no shape'}")
-            print_manager.status(f"🔍 [SPECTRAL DEBUG] Y-axis data values (first 10): {y_data[:10] if hasattr(y_data, '__getitem__') else y_data}")
-            print_manager.status(f"🔍 [SPECTRAL DEBUG] Y-axis data dtype: {y_data.dtype if hasattr(y_data, 'dtype') else 'no dtype'}")
-            if hasattr(y_data, 'ndim'):
-                print_manager.status(f"🔍 [SPECTRAL DEBUG] Y-axis data dimensions: {y_data.ndim}D")
-                if y_data.ndim > 1:
-                    print_manager.status(f"🔍 [SPECTRAL DEBUG] First row: {y_data[0, :] if y_data.ndim == 2 else 'N/A'}")
-                    print_manager.status(f"🔍 [SPECTRAL DEBUG] We have 2D data! Using first row for y-axis...")
-                    y_data = y_data[0, :]  # Use first row if 2D
-            
-            print_manager.status(f"🔍 [SPECTRAL DEBUG] Final y_data for plotting: {y_data}")
+            if var.additional_data.ndim == 2:
+                # If 2D, take first row (energy channels assumed constant across time)
+                y_labels = var.additional_data[0, :]
+                print_manager.status(f"🔍 [Y-AXIS DEBUG] Using first row: {y_labels[:5]} ... {y_labels[-5:]}")
+            else:
+                # If 1D, use directly 
+                y_labels = var.additional_data
+                print_manager.status(f"🔍 [Y-AXIS DEBUG] Using 1D data: {y_labels[:5]} ... {y_labels[-5:]}")
         else:
-            y_data = np.arange(z_data.shape[1])
-            print_manager.debug(f"🔍 [SPECTRAL DEBUG] No y-axis data found, using indices: {y_data}")
+            print_manager.status(f"🔍 [Y-AXIS DEBUG] No additional_data found - using indices")
+        
+        # 🔧 INTELLIGENT REVERSAL: Check if y-axis values are in descending order
+        if y_labels is not None and len(y_labels) > 1 and y_labels[0] > y_labels[-1]:
+            print_manager.status(f"🔄 Detected descending y-axis values ({y_labels[0]:.1f} → {y_labels[-1]:.1f}), reversing for proper display")
+            y_labels = y_labels[::-1]  # Reverse the labels
+            # We need to reverse z_data along the second axis to match the reversed labels
+            z_data = z_data[:, ::-1]  # Reverse the data columns to match
+            print_manager.status(f"🔄 After reversal: ({y_labels[0]:.1f} → {y_labels[-1]:.1f})")
         
         # Handle colorscale and normalization
         colorscale = 'Jet'  # Default
@@ -100,10 +116,10 @@ def create_spectral_heatmap(fig, var, axis_num):
         else:
             z_plot_data = z_data.T
         
-        # Create heatmap trace
+        # Create heatmap trace with INDEX-BASED y-coordinates
         trace = go.Heatmap(
             x=x_data,
-            y=y_data,
+            y=y_indices,  # FIX: Use indices, not raw values
             z=z_plot_data,
             colorscale=colorscale,
             zmin=zmin,
@@ -114,27 +130,58 @@ def create_spectral_heatmap(fig, var, axis_num):
                     text=getattr(var, 'colorbar_label', 'Log Flux') if colorbar_scale == 'log' else getattr(var, 'colorbar_label', ''),
                     side='right'
                 ),
-                # TEMPORARILY REVERT: Let's fix y-axis first, then positioning
                 tickmode='auto'
             ),
             hovertemplate='Time: %{x}<br>' +
-                         'Pitch Angle: %{y:.0f}°<br>' +  # Clean pitch angle display
+                         ('Energy: %{customdata:.1f} keV<br>' if y_labels is not None else 'Channel: %{y:.0f}<br>') +
                          'Value: %{z:.3e}<br>' +
-                         '<extra></extra>'
+                         '<extra></extra>',
+            customdata=np.tile(y_labels, (len(x_data), 1)) if y_labels is not None else None
         )
         
         # Add trace to subplot
         fig.add_trace(trace, row=axis_num, col=1)
         
-        # Set y-axis label - clean formatting for spectral data
+        # FIX: Configure y-axis to show proper tick labels AND apply y_limit
+        if y_labels is not None:
+            # Set up custom tick labels showing actual values
+            # For reasonable number of ticks, subsample if needed
+            n_ticks = min(len(y_labels), 10)  # Max 10 ticks
+            tick_indices = np.linspace(0, len(y_labels)-1, n_ticks, dtype=int)
+            
+            fig.update_yaxes(
+                tickmode='array',
+                tickvals=tick_indices,
+                ticktext=[f'{y_labels[i]:.1f}' for i in tick_indices],
+                row=axis_num, col=1
+            )
+        
+        # CRITICAL: Apply y_limit if specified (matching matplotlib plotbot behavior)
+        if hasattr(var, 'y_limit') and var.y_limit:
+            print_manager.status(f"🎯 Applying y_limit: {var.y_limit}")
+            
+            # For spectral data, we need to map the y_limit values to indices
+            if y_labels is not None:
+                # Find indices corresponding to y_limit values
+                y_min_val, y_max_val = var.y_limit
+                
+                # Find closest indices for the limit values
+                y_min_idx = np.argmin(np.abs(y_labels - y_min_val))
+                y_max_idx = np.argmin(np.abs(y_labels - y_max_val))
+                
+                # Ensure proper ordering (min < max)
+                if y_min_idx > y_max_idx:
+                    y_min_idx, y_max_idx = y_max_idx, y_min_idx
+                
+                fig.update_yaxes(range=[y_min_idx, y_max_idx], row=axis_num, col=1)
+            else:
+                # Direct application if no y_labels
+                fig.update_yaxes(range=var.y_limit, row=axis_num, col=1)
+        
+        # Set y-axis label - use the variable's actual y_label
         if hasattr(var, 'y_label') and var.y_label:
-            # Clean up y-axis label formatting
-            y_label_clean = var.y_label
-            # Remove newlines and extra formatting for cleaner display
-            y_label_clean = y_label_clean.replace('\\n', ' ').replace('\n', ' ')
-            # For pitch angle data, use simple format
-            if 'pitch' in y_label_clean.lower() or 'angle' in y_label_clean.lower():
-                y_label_clean = 'Pitch Angle (degrees)'
+            # Clean up newlines for Plotly
+            y_label_clean = var.y_label.replace('\\n', ' ').replace('\n', ' ')
             fig.update_yaxes(title_text=y_label_clean, row=axis_num, col=1)
         
         print_manager.status(f"✅ Created spectral heatmap for {getattr(var, 'subclass_name', 'spectral data')}")
