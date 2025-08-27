@@ -207,6 +207,7 @@ from .multiplot_options import plt
 from .plotbot_main import plotbot
 from .plotbot_interactive import plotbot_interactive
 from .plotbot_interactive_options import pbi
+from .plotbot_interactive_vdf import plotbot_interactive_vdf
 from .showdahodo import showdahodo
 from .multiplot import multiplot
 from .multiplot_options import MultiplotOptions
@@ -323,6 +324,7 @@ __all__ = [
     'np',            # Make numpy directly available
     'plotbot',
     'plotbot_interactive',  # Interactive plotting with click-to-VDF functionality
+    'plotbot_interactive_vdf',  # Interactive VDF plotting with time slider
     'pbi',           # Interactive plotting options
     'showdahodo', 
     'multiplot',
@@ -388,10 +390,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_08_18_v3.15"
+__version__ = "2025_08_26_v3.16"
 
 # Commit message for this version
-__commit_message__ = "v3.15 Fix: Enhanced T⊥/T∥ LaTeX-to-Unicode conversion for both legend and y-axis labels"
+__commit_message__ = "v3.16 Develop: Plotly VDF interactive implementation - scatter approach (branch for development)"
 
 # Print the version and commit message
 print(f"""
