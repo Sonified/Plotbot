@@ -14,6 +14,143 @@ import webbrowser
 from .print_manager import print_manager
 from .vdyes import vdyes
 
+def create_spectral_heatmap(fig, var, axis_num):
+    """
+    Create spectral data as Plotly heatmap in figure (e.g., EPAD strahl).
+    
+    Args:
+        fig: Plotly figure object
+        var: Variable with spectral data
+        axis_num: Subplot number (1-based)
+    """
+    try:
+        # Extract spectral data arrays
+        z_data = var.data  # 2D spectral data (time x energy/pitch_angle)
+        
+        # Get time coordinates - for spectral data, this might be 2D mesh
+        if hasattr(var, 'datetime_array') and var.datetime_array is not None:
+            if var.datetime_array.ndim == 2:
+                # Use first column for time coordinates
+                x_data = var.datetime_array[:, 0]
+            else:
+                x_data = var.datetime_array
+        else:
+            x_data = np.arange(z_data.shape[0])
+        
+        # Get y-axis coordinates (e.g., pitch angles, energies)
+        if hasattr(var, 'additional_data') and var.additional_data is not None:
+            y_data = var.additional_data
+            
+            # DEBUG: Let's see what we're actually getting - USE STATUS SO IT SHOWS UP
+            print_manager.status(f"🔍 [SPECTRAL DEBUG] Y-axis data type: {type(y_data)}")
+            print_manager.status(f"🔍 [SPECTRAL DEBUG] Y-axis data shape: {y_data.shape if hasattr(y_data, 'shape') else 'no shape'}")
+            print_manager.status(f"🔍 [SPECTRAL DEBUG] Y-axis data values (first 10): {y_data[:10] if hasattr(y_data, '__getitem__') else y_data}")
+            print_manager.status(f"🔍 [SPECTRAL DEBUG] Y-axis data dtype: {y_data.dtype if hasattr(y_data, 'dtype') else 'no dtype'}")
+            if hasattr(y_data, 'ndim'):
+                print_manager.status(f"🔍 [SPECTRAL DEBUG] Y-axis data dimensions: {y_data.ndim}D")
+                if y_data.ndim > 1:
+                    print_manager.status(f"🔍 [SPECTRAL DEBUG] First row: {y_data[0, :] if y_data.ndim == 2 else 'N/A'}")
+                    print_manager.status(f"🔍 [SPECTRAL DEBUG] We have 2D data! Using first row for y-axis...")
+                    y_data = y_data[0, :]  # Use first row if 2D
+            
+            print_manager.status(f"🔍 [SPECTRAL DEBUG] Final y_data for plotting: {y_data}")
+        else:
+            y_data = np.arange(z_data.shape[1])
+            print_manager.debug(f"🔍 [SPECTRAL DEBUG] No y-axis data found, using indices: {y_data}")
+        
+        # Handle colorscale and normalization
+        colorscale = 'Jet'  # Default
+        if hasattr(var, 'colormap'):
+            # Map matplotlib colormaps to Plotly colorscales
+            cmap_mapping = {
+                'jet': 'Jet',
+                'viridis': 'Viridis',
+                'plasma': 'Plasma',
+                'inferno': 'Inferno',
+                'magma': 'Magma',
+                'hot': 'Hot',
+                'cool': 'Blues',
+                'rainbow': 'Rainbow'
+            }
+            colorscale = cmap_mapping.get(var.colormap, 'Jet')
+        
+        # Handle colorbar scale (log/linear)
+        zmin = None
+        zmax = None
+        colorbar_scale = getattr(var, 'colorbar_scale', 'linear')
+        
+        if hasattr(var, 'colorbar_limits') and var.colorbar_limits is not None:
+            zmin, zmax = var.colorbar_limits
+        
+        # For logarithmic scale, ensure positive values and proper range
+        if colorbar_scale == 'log':
+            # Ensure data is positive for log scale
+            z_plot_data = np.where(z_data.T <= 0, 1e-10, z_data.T)
+            
+            # Auto-calculate log limits if not provided
+            if zmin is None or zmax is None:
+                finite_data = z_plot_data[np.isfinite(z_plot_data) & (z_plot_data > 0)]
+                if len(finite_data) > 0:
+                    if zmin is None:
+                        zmin = np.percentile(finite_data, 1)  # 1st percentile
+                    if zmax is None:
+                        zmax = np.percentile(finite_data, 99)  # 99th percentile
+                else:
+                    zmin, zmax = 1e-10, 1.0
+        else:
+            z_plot_data = z_data.T
+        
+        # Create heatmap trace
+        trace = go.Heatmap(
+            x=x_data,
+            y=y_data,
+            z=z_plot_data,
+            colorscale=colorscale,
+            zmin=zmin,
+            zmax=zmax,
+            showscale=True,
+            colorbar=dict(
+                title=dict(
+                    text=getattr(var, 'colorbar_label', 'Log Flux') if colorbar_scale == 'log' else getattr(var, 'colorbar_label', ''),
+                    side='right'
+                ),
+                # TEMPORARILY REVERT: Let's fix y-axis first, then positioning
+                tickmode='auto'
+            ),
+            hovertemplate='Time: %{x}<br>' +
+                         'Pitch Angle: %{y:.0f}°<br>' +  # Clean pitch angle display
+                         'Value: %{z:.3e}<br>' +
+                         '<extra></extra>'
+        )
+        
+        # Add trace to subplot
+        fig.add_trace(trace, row=axis_num, col=1)
+        
+        # Set y-axis label - clean formatting for spectral data
+        if hasattr(var, 'y_label') and var.y_label:
+            # Clean up y-axis label formatting
+            y_label_clean = var.y_label
+            # Remove newlines and extra formatting for cleaner display
+            y_label_clean = y_label_clean.replace('\\n', ' ').replace('\n', ' ')
+            # For pitch angle data, use simple format
+            if 'pitch' in y_label_clean.lower() or 'angle' in y_label_clean.lower():
+                y_label_clean = 'Pitch Angle (degrees)'
+            fig.update_yaxes(title_text=y_label_clean, row=axis_num, col=1)
+        
+        print_manager.status(f"✅ Created spectral heatmap for {getattr(var, 'subclass_name', 'spectral data')}")
+        
+    except Exception as e:
+        print_manager.error(f"❌ Failed to create spectral heatmap: {str(e)}")
+        # Fallback to empty subplot
+        fig.add_annotation(
+            text=f"Spectral data error: {str(e)}",
+            x=0.5, y=0.5,
+            xref=f"x{axis_num} domain",
+            yref=f"y{axis_num} domain",
+            showarrow=False,
+            row=axis_num, col=1
+        )
+
 def create_dash_app(plot_vars, trange):
     """
     Create a Dash app with publication-ready styling that matches Plotbot's matplotlib aesthetic.
@@ -109,43 +246,51 @@ def create_dash_app(plot_vars, trange):
     for axis_num, vars_list in axis_vars.items():
         for var, is_right in vars_list:
             if hasattr(var, 'data') and var.data is not None:
-                if hasattr(var, 'datetime_array') and var.datetime_array is not None:
-                    times = var.datetime_array
+                # Check if this is spectral data
+                plot_type = getattr(var, 'plot_type', 'time_series')
+                
+                if plot_type == 'spectral':
+                    # Handle spectral data with heatmap
+                    create_spectral_heatmap(fig, var, axis_num)
                 else:
-                    times = np.arange(len(var.data))
-                
-                # Get variable name for legend with proper formatting
-                var_name = getattr(var, 'y_label', getattr(var, 'subclass_name', 'Variable'))
-                
-                # Clean up common formatting issues
-                if var_name:
-                    # Replace LaTeX-style formatting with proper Unicode symbols
-                    var_name = var_name.replace('$T_\\perp/T_\\parallel$', 'T⊥/T∥')
-                    var_name = var_name.replace('$T_\\perp$', 'T⊥')
-                    var_name = var_name.replace('$T_\\parallel$', 'T∥')
-                    var_name = var_name.replace('T_\\perp/T_\\parallel', 'T⊥/T∥')
-                    var_name = var_name.replace('T_\\perp', 'T⊥')
-                    var_name = var_name.replace('T_\\parallel', 'T∥')
-                    var_name = var_name.replace('\\perp', '⊥')
-                    var_name = var_name.replace('\\parallel', '∥')
-                    var_name = var_name.replace('$', '')  # Remove remaining LaTeX delimiters
-                
-                # Create trace
-                trace = go.Scatter(
-                    x=times,
-                    y=var.data,
-                    mode='lines',
-                    name=var_name,
-                    line=dict(color=colors[color_index % len(colors)], width=1),
-                    hovertemplate='<b>%{fullData.name}</b><br>' +
-                                'Time: %{x}<br>' +
-                                'Value: %{y:.3f}<br>' +
-                                '<extra></extra>'
-                )
-                
-                # Add trace to correct subplot and y-axis
-                fig.add_trace(trace, row=axis_num, col=1, secondary_y=is_right)
-                color_index += 1
+                    # Handle time series data (original code)
+                    if hasattr(var, 'datetime_array') and var.datetime_array is not None:
+                        times = var.datetime_array
+                    else:
+                        times = np.arange(len(var.data))
+                    
+                    # Get variable name for legend with proper formatting
+                    var_name = getattr(var, 'y_label', getattr(var, 'subclass_name', 'Variable'))
+                    
+                    # Clean up common formatting issues
+                    if var_name:
+                        # Replace LaTeX-style formatting with proper Unicode symbols
+                        var_name = var_name.replace('$T_\\perp/T_\\parallel$', 'T⊥/T∥')
+                        var_name = var_name.replace('$T_\\perp$', 'T⊥')
+                        var_name = var_name.replace('$T_\\parallel$', 'T∥')
+                        var_name = var_name.replace('T_\\perp/T_\\parallel', 'T⊥/T∥')
+                        var_name = var_name.replace('T_\\perp', 'T⊥')
+                        var_name = var_name.replace('T_\\parallel', 'T∥')
+                        var_name = var_name.replace('\\perp', '⊥')
+                        var_name = var_name.replace('\\parallel', '∥')
+                        var_name = var_name.replace('$', '')  # Remove remaining LaTeX delimiters
+                    
+                    # Create trace
+                    trace = go.Scatter(
+                        x=times,
+                        y=var.data,
+                        mode='lines',
+                        name=var_name,
+                        line=dict(color=colors[color_index % len(colors)], width=1),
+                        hovertemplate='<b>%{fullData.name}</b><br>' +
+                                    'Time: %{x}<br>' +
+                                    'Value: %{y:.3f}<br>' +
+                                    '<extra></extra>'
+                    )
+                    
+                    # Add trace to correct subplot and y-axis
+                    fig.add_trace(trace, row=axis_num, col=1, secondary_y=is_right)
+                    color_index += 1
             
             # Set axis labels with proper formatting
             if hasattr(var, 'y_label') and var.y_label:
@@ -202,7 +347,8 @@ def create_dash_app(plot_vars, trange):
                 'displayModeBar': True,
                 'scrollZoom': True,  # Enable two-finger scrolling for zoom
                 'doubleClick': 'reset',  # Double-click to reset zoom
-                'modeBarButtonsToRemove': ['pan2d', 'lasso2d', 'select2d'],
+                # RESTORE STANDARD PLOTLY TOOLBAR - remove the custom restrictions
+                'modeBarButtonsToRemove': ['lasso2d', 'select2d'],  # Keep pan2d available
                 'toImageButtonOptions': {
                     'format': 'png',
                     'filename': f'plotbot_interactive_{datetime.now().strftime("%Y%m%d_%H%M%S")}',
@@ -212,26 +358,6 @@ def create_dash_app(plot_vars, trange):
                 }
             }
         ),
-        
-        # Control mode toggle button
-        html.Div([
-            html.Button(
-                'Controls: Drag', 
-                id='mode-toggle-btn',
-                style={
-                    'backgroundColor': '#3498db', 
-                    'color': 'white', 
-                    'border': 'none', 
-                    'padding': '10px 20px', 
-                    'marginTop': '15px',
-                    'borderRadius': '5px',
-                    'fontSize': '14px',
-                    'cursor': 'pointer'
-                }
-            ),
-            html.P("Drag: Pan + scroll zoom (time axis only) | Select: Box zoom | Double-click to reset", 
-                   style={'fontSize': '12px', 'color': '#7f8c8d', 'marginTop': '5px', 'marginBottom': '0'})
-        ], style={'textAlign': 'center', 'marginTop': 10}),
         
         # VDF panel (initially hidden)
         html.Div(id='vdf-panel', children=[
@@ -333,73 +459,7 @@ def create_dash_app(plot_vars, trange):
         
         return current_style, "", ""
     
-    # Mode toggle callback
-    @app.callback(
-        [Output('mode-toggle-btn', 'children'),
-         Output('mode-toggle-btn', 'style'),
-         Output('main-plot', 'figure')],
-        [Input('mode-toggle-btn', 'n_clicks')],
-        [State('main-plot', 'figure')]
-    )
-    def toggle_interaction_mode(n_clicks, current_figure):
-        """Toggle between drag (pan) and select modes"""
-        # More robust state management - check current dragmode instead of just click count
-        current_dragmode = 'pan'  # Default
-        if current_figure and 'layout' in current_figure and 'dragmode' in current_figure['layout']:
-            current_dragmode = current_figure['layout']['dragmode']
-        
-        if n_clicks is None or n_clicks == 0:
-            # Initial state - drag mode
-            is_drag_mode = True
-        else:
-            # Toggle based on current state, not just click count
-            is_drag_mode = current_dragmode == 'zoom'  # If currently zoom, switch to drag
-        
-        # Set mode based on logic
-        if is_drag_mode:
-            button_text = 'Controls: Drag'
-            button_color = '#3498db'  # Blue
-            dragmode = 'pan'
-        else:
-            button_text = 'Controls: Select'
-            button_color = '#e67e22'  # Orange
-            dragmode = 'zoom'
-        
-        button_style = {
-            'backgroundColor': button_color, 
-            'color': 'white', 
-            'border': 'none', 
-            'padding': '10px 20px', 
-            'marginTop': '15px',
-            'borderRadius': '5px',
-            'fontSize': '14px',
-            'cursor': 'pointer'
-        }
-        
-        # Update figure dragmode while preserving other settings
-        if current_figure:
-            current_figure['layout']['dragmode'] = dragmode
-            # Ensure these settings are preserved
-            current_figure['layout']['hovermode'] = 'closest'
-            
-            # Configure axis behavior based on mode
-            if dragmode == 'zoom':
-                # In select/zoom mode: allow y-axis zooming for box selection
-                for key in current_figure['layout']:
-                    if key.startswith('yaxis'):
-                        if current_figure['layout'][key] is None:
-                            current_figure['layout'][key] = {}
-                        current_figure['layout'][key]['fixedrange'] = False
-            else:
-                # In drag/pan mode: fix y-axis range to prevent scroll zoom
-                for key in current_figure['layout']:
-                    if key.startswith('yaxis'):
-                        if current_figure['layout'][key] is None:
-                            current_figure['layout'][key] = {}
-                        current_figure['layout'][key]['fixedrange'] = True
-        
-        return button_text, button_style, current_figure
-    
+    # REMOVED: Custom mode toggle callback - now using standard Plotly toolbar
     print_manager.status("✅ Dash app created successfully!")
     return app
 

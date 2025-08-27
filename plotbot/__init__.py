@@ -390,10 +390,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_08_26_v3.16"
+__version__ = "2025_08_27_v3.17"
 
 # Commit message for this version
-__commit_message__ = "v3.16 Develop: Plotly VDF interactive implementation - scatter approach (branch for development)"
+__commit_message__ = "v3.17 Feat: Implemented 2D spectral data support for plotbot_interactive with Plotly heatmaps"
 
 # Print the version and commit message
 print(f"""

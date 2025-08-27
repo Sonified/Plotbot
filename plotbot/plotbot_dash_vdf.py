@@ -508,8 +508,9 @@ def create_vdf_plotly_figure_cached(cached_data):
 
 def create_plotly_vdf_plot(vx, vy, vdf_data, colormap='cool', title_suffix=""):
     """
-    Create VDF plot using scatter approach - proven to work better than contour for irregular VDF grids.
-    Based on community research showing scatter outperforms interpolated contours for scientific data.
+    Create proper VDF contour plot using interpolation for irregular grids.
+    VDF data represents continuous distributions, not discrete points.
+    Reverted from scatter approach to match matplotlib contourf behavior.
     """
     
     print(f"🔍 DEBUG create_plotly_vdf_plot: {title_suffix}")
@@ -520,19 +521,6 @@ def create_plotly_vdf_plot(vx, vy, vdf_data, colormap='cool', title_suffix=""):
     vdf_plot[vdf_plot <= 0] = np.nan
     vdf_plot[~np.isfinite(vdf_plot)] = np.nan
     
-    # Flatten all arrays for scatter plot
-    x_flat = vx.flatten()
-    y_flat = vy.flatten() 
-    z_flat = vdf_plot.flatten()
-    
-    # Remove NaN points
-    valid_mask = np.isfinite(x_flat) & np.isfinite(y_flat) & np.isfinite(z_flat)
-    x_valid = x_flat[valid_mask]
-    y_valid = y_flat[valid_mask]
-    z_valid = z_flat[valid_mask]
-    
-    print(f"  Valid data points: {len(z_valid)}/{len(z_flat)} ({100*len(z_valid)/len(z_flat):.1f}%)")
-    
     # Convert colormap
     colormap_mapping = {
         'cool': 'Blues',
@@ -542,40 +530,92 @@ def create_plotly_vdf_plot(vx, vy, vdf_data, colormap='cool', title_suffix=""):
     }
     plotly_colormap = colormap_mapping.get(colormap, 'Blues')
     
-    if len(z_valid) == 0:
-        print(f"  No valid data points - creating empty scatter")
-        # Return empty scatter if no valid data
-        return go.Scatter(
-            x=[], y=[], mode='markers',
-            name=f'No data ({title_suffix})',
-            showlegend=False
-        )
+    # Check if coordinates are uniform (regular grid)
+    x_uniform = np.allclose(vx[0, :], vx[-1, :], rtol=1e-3) if vx.ndim == 2 else True
+    y_uniform = np.allclose(vy[:, 0], vy[:, -1], rtol=1e-3) if vy.ndim == 2 else True
     
-    print(f"  Z range: {np.min(z_valid):.2e} to {np.max(z_valid):.2e}")
+    print(f"  Coordinate uniformity: X={x_uniform}, Y={y_uniform}")
     
-    # Create scatter plot with color mapping
-    scatter = go.Scatter(
-        x=x_valid,
-        y=y_valid,
-        mode='markers',
-        marker=dict(
-            color=z_valid,
-            colorscale=plotly_colormap,
-            size=8,  # Adjust size for visibility
-            colorbar=dict(
-                title=f'f (cm² s sr eV)⁻¹'
-            ) if title_suffix == 'θ-plane' else None,  # Only show colorbar for first plot
-            line=dict(width=0),  # No marker outlines for performance
-            opacity=0.8
-        ),
-        hovertemplate=f'Vx: %{{x:.1f}} km/s<br>Vy: %{{y:.1f}} km/s<br>VDF: %{{marker.color:.2e}}<br>{title_suffix}<extra></extra>',
-        showlegend=False,
-        name=title_suffix
+    if x_uniform and y_uniform:
+        # Regular grid - use coordinates directly
+        print(f"  Using regular grid approach")
+        x_coords = vx[0, :] if vx.ndim == 2 else vx
+        y_coords = vy[:, 0] if vy.ndim == 2 else vy
+        z_data = vdf_plot
+        
+    else:
+        # Irregular grid - interpolate to regular grid using research-recommended approach
+        print(f"  🔧 Irregular grid detected - interpolating to regular grid")
+        
+        # Get coordinate ranges
+        x_min, x_max = np.nanmin(vx), np.nanmax(vx)
+        y_min, y_max = np.nanmin(vy), np.nanmax(vy)
+        
+        print(f"    X range: {x_min:.1f} to {x_max:.1f} km/s")
+        print(f"    Y range: {y_min:.1f} to {y_max:.1f} km/s")
+        
+        # Research-recommended high resolution for better data preservation
+        grid_resolution = 100  # Higher resolution than default 50
+        x_coords = np.linspace(x_min, x_max, grid_resolution)
+        y_coords = np.linspace(y_min, y_max, grid_resolution)
+        
+        # Interpolate VDF data onto regular grid
+        from scipy.interpolate import griddata
+        
+        # Flatten the irregular coordinate grids and VDF data
+        points = np.column_stack((vx.ravel(), vy.ravel()))
+        values = vdf_plot.ravel()
+        
+        # Remove NaN values
+        valid_mask = np.isfinite(values)
+        points_valid = points[valid_mask]
+        values_valid = values[valid_mask]
+        
+        print(f"    Valid points for interpolation: {len(values_valid)}/{len(values)}")
+        
+        if len(values_valid) > 3:  # Need at least 3 points for interpolation
+            # Create regular grid
+            X_reg, Y_reg = np.meshgrid(x_coords, y_coords)
+            
+            # Interpolate onto regular grid using research-recommended approach
+            # Try 'nearest' first for better data preservation, fallback to 'linear'
+            z_data = griddata(points_valid, values_valid, (X_reg, Y_reg), method='nearest', fill_value=np.nan)
+            
+            # If too sparse, try linear interpolation
+            nearest_coverage = np.sum(np.isfinite(z_data)) / z_data.size
+            if nearest_coverage < 0.1:  # Less than 10% coverage
+                print(f"    Nearest interpolation sparse ({nearest_coverage:.1%}), trying linear...")
+                z_data = griddata(points_valid, values_valid, (X_reg, Y_reg), method='linear', fill_value=np.nan)
+            print(f"    ✅ Interpolated to {grid_resolution}x{grid_resolution} regular grid")
+        else:
+            print(f"    ⚠️ Not enough valid points, creating empty contour")
+            return go.Contour(x=[], y=[], z=[], colorscale=plotly_colormap, showscale=False)
+    
+    # Final data validation
+    finite_count = np.sum(np.isfinite(z_data))
+    total_count = z_data.size
+    print(f"  Final data: {finite_count}/{total_count} finite values")
+    print(f"  Z range: {np.nanmin(z_data):.2e} to {np.nanmax(z_data):.2e}")
+    
+    # Create Plotly Contour with proper settings to match matplotlib contourf
+    contour = go.Contour(
+        x=x_coords,
+        y=y_coords, 
+        z=z_data,
+        colorscale=plotly_colormap,
+        showscale=True if title_suffix == 'θ-plane' else False,  # Only show colorbar for first plot
+        line=dict(width=0),  # No contour lines, just fills like contourf
+        contours_coloring='heatmap',  # Fill contours like matplotlib contourf
+        hovertemplate=f'Vx: %{{x:.1f}} km/s<br>Vy: %{{y:.1f}} km/s<br>VDF: %{{z:.2e}}<br>{title_suffix}<extra></extra>',
+        connectgaps=True,  # Connect across small gaps
+        colorbar=dict(
+            title=f'f (cm² s sr eV)⁻¹'
+        ) if title_suffix == 'θ-plane' else None
     )
     
-    print(f"  ✅ Scatter plot created with {len(x_valid)} points for {title_suffix}")
+    print(f"  ✅ Contour plot created for {title_suffix}")
     
-    return scatter
+    return contour
 
 def run_vdf_dash_app(app, port=8051, debug=False):
     """
