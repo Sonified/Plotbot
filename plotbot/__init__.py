@@ -390,7 +390,7 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_08_27_v3.18"
+__version__ = "2025_08_27_v3.19"
 
 # Commit message for this version
 __commit_message__ = "v3.18 Fix: Added VS Code workspace configuration for enhanced syntax highlighting and fixed VDF module linter errors"

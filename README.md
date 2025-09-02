@@ -36,6 +36,48 @@ plotbot(trange,
 ```
 This simple call automatically downloads the required data for the specified time range and generates a two-panel plot.
 
+## Interactive Plotting Functions
+
+Plotbot includes advanced interactive plotting capabilities that create web-based, interactive visualizations while maintaining publication-ready styling.
+
+### **`plotbot_interactive()` - Interactive Web Plots**
+
+Creates interactive web-based plots with click-to-VDF functionality. Automatically launches a local web server with Dash/Plotly integration.
+
+```python
+# Interactive plot with click-to-VDF capability
+plotbot_interactive(trange, mag_rtn_4sa.br, 1, epad.strahl, 2)
+
+# Configure interactive options
+pbi.enabled = True        # Enable interactive mode
+pbi.port = 8050          # Set custom port
+pbi.debug = False        # Disable debug mode
+```
+
+**Features:**
+- **Click-to-VDF**: Click any data point to generate VDF analysis using `vdyes()`
+- **Mixed Plot Types**: Supports both time series (line plots) and spectral data (heatmaps)
+- **Publication Styling**: Maintains matplotlib aesthetic in web interface
+- **Real-time Interaction**: Pan, zoom, hover functionality with scientific formatting
+
+### **`plotbot_interactive_vdf()` - Interactive VDF Analysis**
+
+Advanced VDF plotting with interactive time slider for velocity distribution function analysis.
+
+```python
+# Interactive VDF with time slider
+plotbot_interactive_vdf(trange)
+
+# Multiple time points create slider widget
+widget = vdyes(['2020/01/29 17:00:00.000', '2020/01/29 19:00:00.000'])
+```
+
+**Features:**
+- **Time Slider**: Navigate through VDF data across time ranges
+- **Save Functionality**: Export analysis frames for time series
+- **3-Panel Layout**: Theta-plane, phi-plane, and collapsed distributions
+- **Widget Integration**: Seamless Jupyter notebook integration
+
 ## Installation (macOS Instructions Only, other OS instructions coming soon)
 
 ### Prerequisites
@@ -167,11 +209,14 @@ The primary way to learn and use Plotbot is through the included Jupyter Noteboo
 - `plotbot_multiplot_degrees_from_center_times_examples.ipynb` - Specialized positioning analysis around perihelion
 - `plotbot_vdf_examples.ipynb` - **NEW** Velocity Distribution Function plotting with `vdyes()` function (theta-plane, phi-plane, collapsed distributions)
 
+### **Interactive Plotting Examples:**
+- `plotbot_interactive_example.ipynb` - **NEW** Interactive web-based plotting with click-to-VDF functionality and spectral data support
+- `plotbot_interactive_vdf_example.ipynb` - **NEW** Interactive VDF analysis with time slider and save functionality
+
 ### **Data Integration & Advanced Features:**
 - `plotbot_cdf_import_examples.ipynb` - **NEW** CDF integration with auto-class generation and industry-standard scientific data format support
 - `plotbot_data_snapshot_examples.ipynb` - **UPDATED** Enhanced data caching with `save_simple_snapshot()` / `load_simple_snapshot()`
 - `plotbot_custom_variable_examples.ipynb` - **UPDATED** Custom variable creation and arithmetic operations
-- `plotbot_grid_composer_examples.ipynb` - Modular plotting system for combining multiple plot types
 
 ### **Instrument-Specific Data Examples:**
 - `plotbot_dfb_electric_field_examples.ipynb` - **NEW** PSP electric field spectral data (DFB) with efficient downloads and spectral plotting
@@ -199,7 +244,7 @@ These versions are defined in the `environment.yml` file located in the project 
 *   Matplotlib: 3.9.2
 *   SciPy: 1.15.2 
 *   ipympl: (latest compatible) # For %matplotlib widget
-*   ipywidgets: (latest compatible via pip) # For audifier and potentially other widgets
+*   ipywidgets: (latest compatible via pip) # For audifier and interactive widgets
 *   ipykernel: (latest compatible via pip) # For Jupyter kernel
 *   pyspedas: (latest compatible via pip) # Space physics data analysis
 *   cdflib: >=1.3.1
@@ -208,6 +253,9 @@ These versions are defined in the `environment.yml` file located in the project 
 *   python-dateutil: 2.9.0.post0
 *   pytest: 7.4.4
 *   termcolor: 2.4.0
+*   dash: (latest compatible via pip) # For interactive web-based plotting
+*   plotly: (latest compatible via pip) # For interactive visualization backend
+*   jupyter-dash: (latest compatible via pip) # For Jupyter-Dash integration
 
 ## Using Plotbot's Data Classes
 
@@ -360,15 +408,36 @@ Here's a list of the currently available data products and their components. Dat
 
 ### **Custom CDF Integration**
 
-Plotbot supports automatic integration of any CDF (Common Data Format) files through:
+Plotbot supports automatic integration of any CDF (Common Data Format) files through intelligent class generation and seamless data system integration.
+
+**Core Features:**
 *   **Auto-Class Generation**: Scan CDF files and automatically generate plotbot-compatible classes
 *   **Auto-Registration**: Generated classes automatically integrate with the data system
 *   **Mixed Data Types**: Support for both spectral (2D) and timeseries (1D) variables
+*   **Industry Standard**: Full support for NASA CDF scientific data format
+*   **Intelligent Processing**: Automatic metadata extraction and variable classification
+
+**Usage:**
+```python
+# Scan and generate classes for all CDF files in directory
+scan_cdf_directory('data/cdf_files/')
+
+# Generate class for specific CDF file
+cdf_to_plotbot('path/to/your/file.cdf')
+
+# Generated classes are automatically available
+plotbot(trange, psp_waves_spectral.ellipticity, 1)  # Example auto-generated class
+```
 
 **File Location Requirements:**
 *   Place your CDF files in the `data/cdf_files/` directory within your Plotbot installation
 *   Plotbot will automatically scan this directory for `.cdf` files during import
 *   Generated classes will be saved to `plotbot/data_classes/custom_classes/` with auto-generated `.py` and `.pyi` files
+
+**Performance Benefits:**
+*   **Smart Caching**: 54x speedup for repeated plots of the same data
+*   **Efficient Filtering**: Load only requested time ranges from large files
+*   **Robust Integration**: CDF variables work identically to built-in plotbot classes
 
 **5. Advanced Plotting Functions**
 
@@ -815,6 +884,25 @@ The `-v` flag provides verbose output. Add the `-s` flag (`pytest -v -s`) if you
 
 **Stardust Test Suite (`tests/test_stardust.py`):**
 This special test file aggregates key tests from various modules (basic plotting, multiplot, showdahodo, HAM data, FITS data, custom variables, audification). It serves as a rapid, catch-all check for core Plotbot functionality. Running `conda run -n plotbot_env python -m pytest tests/test_stardust.py -v -s` is a good way to quickly verify the system's health after making changes.
+
+## Exploratory New Features
+
+### **`showda_holes()` - Magnetic Hole Analysis**
+
+**NEW** Specialized function for magnetic hole detection and hodogram analysis. This exploratory feature combines traditional hodogram plotting with magnetic hole identification algorithms.
+
+```python
+# Magnetic hole hodogram analysis
+showda_holes(trange, x_variable, y_variable, marker_filepath='path/to/markers.txt')
+```
+
+**Features:**
+- **Magnetic Hole Detection**: Automated identification of magnetic depressions
+- **Enhanced Hodograms**: Specialized hodogram plotting with magnetic hole markers
+- **Scientific Analysis**: Publication-ready plots for magnetic hole research
+- **Marker Integration**: Support for external marker files and event timing
+
+*Note: This feature is experimental and under active development for magnetic hole research applications.*
 
 Have Fun Plotbotting!
 

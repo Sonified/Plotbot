@@ -1,0 +1,108 @@
+🚀 Installing Plotbot (No-Sudo, Homebrew + Micromamba)
+
+These steps assume you do not have administrator rights (sudo) on macOS.
+Homebrew will live in your home directory, and we’ll use micromamba with conda-forge only (no Anaconda).
+
+1. Install Homebrew (user-local, no sudo)
+
+Pick a prefix you own:
+
+export HOMEBREW_PREFIX="$HOME/homebrew"
+mkdir -p "$HOMEBREW_PREFIX"
+
+
+Clone Homebrew manually (if DNS/firewalls interfere, substitute the IP from nslookup github.com):
+
+GIT_SSL_NO_VERIFY=true \
+git clone https://github.com/Homebrew/brew "$HOMEBREW_PREFIX/Homebrew"
+
+cd "$HOMEBREW_PREFIX/Homebrew"
+git remote set-url origin https://github.com/Homebrew/brew
+
+
+Link the brew command:
+
+mkdir -p "$HOMEBREW_PREFIX/bin"
+ln -s "$HOMEBREW_PREFIX/Homebrew/bin/brew" "$HOMEBREW_PREFIX/bin/brew"
+
+
+Add to ~/.zprofile (or ~/.zshrc):
+
+export HOMEBREW_PREFIX="$HOME/homebrew"
+export PATH="$HOMEBREW_PREFIX/bin:$HOMEBREW_PREFIX/sbin:$PATH"
+export MANPATH="$HOMEBREW_PREFIX/share/man:$MANPATH"
+export INFOPATH="$HOMEBREW_PREFIX/share/info:$INFOPATH"
+export HOMEBREW_CASK_OPTS="--appdir=$HOME/Applications"
+export HOMEBREW_FORCE_VENDOR_RUBY=1
+
+
+Reload and verify:
+
+exec zsh
+brew --version
+
+2. Install micromamba + git
+brew install micromamba
+brew install git
+
+
+Initialize micromamba:
+
+$HOMEBREW_PREFIX/opt/micromamba/bin/micromamba shell init --shell zsh --root-prefix ~/micromamba
+exec zsh
+micromamba --version
+
+3. Clone the Plotbot repository
+
+Choose where you want to store the repo, for example a GitHub folder in your home directory:
+
+mkdir -p ~/GitHub && cd ~/GitHub
+
+
+Clone Plotbot and move into it:
+
+git clone https://github.com/Sonified/Plotbot.git && cd Plotbot && echo "✅ Download complete"
+
+4. Prepare a clean environment file
+
+The provided environment.yml may include defaults, which triggers Anaconda servers.
+We’ll generate a forge-only copy:
+
+awk '
+BEGIN{inchan=0}
+/^channels:/ {print "channels:\n  - conda-forge"; inchan=1; next}
+inchan && /^ *-/ { next }
+inchan && $0 !~ /^ *-/ { inchan=0 }
+/https?:\/\/repo\.anaconda\.com/ { next }
+{ gsub(/defaults::/,"") }
+$1 ~ /^- *anaconda($|[^A-Za-z0-9_-])/ { next }
+{ print }
+' environment.yml > environment.cf.yml
+
+
+Check that environment.cf.yml starts with:
+
+channels:
+  - conda-forge
+
+5. Create and activate the environment
+micromamba create -n plotbot_env -f ./environment.cf.yml --yes \
+  --no-rc --override-channels -c conda-forge --channel-priority strict
+
+micromamba activate plotbot_env
+
+6. Register the Jupyter kernel
+
+Inside the env:
+
+python -m pip install ipykernel
+python -m ipykernel install --user --name plotbot_env --display-name "Python (plotbot_env)"
+
+7. Sanity checks
+python -V
+pip -V
+jupyter kernelspec list | grep plotbot_env
+
+
+✅ Jupyter/VS Code should now show Python (plotbot_env) as a kernel option.
+✅ No calls to Anaconda’s repo; everything is from conda-forge.
