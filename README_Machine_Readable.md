@@ -1,6 +1,6 @@
 # Plotbot - AI Quick Reference
 
-**Mission**: Rapid space physics data visualization and analysis tool for Parker Solar Probe (PSP), WIND missions. Created by Dr. Jaye Verniero & Dr. Robert Alexander for publication-ready scientific plotting.
+**Mission**: Rapid space physics data visualization, audification, and analysis tool for multiple spacecraft, currently featuring Parker Solar Probe and WIND. Created by Dr. Jaye Verniero & Dr. Robert Alexander for publication-ready scientific plotting.
 
 **Philosophy**: Class-based architecture enabling intuitive data access (`mag_rtn.br`), automatic downloading, and seamless integration of multi-mission space physics data.
 

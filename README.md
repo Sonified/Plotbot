@@ -1,8 +1,8 @@
 # Plotbot
 
-A comprehensive tool for downloading and plotting space physics data, specializing in Parker Solar Probe analysis with multi-mission support. Created by Dr. Jaye Verniero and Dr. Robert Alexander. 
+A comprehensive tool for space physics data visualization, audification, and analysis for multiple spacecraft, currently featuring Parker Solar Probe and WIND. Created by Dr. Jaye Verniero and Dr. Robert Alexander. 
 
-**Multi-Mission Capabilities:** Parker Solar Probe (PSP), WIND, and extensible framework for additional space physics missions.
+**Multi-Mission Capabilities:** Currently featuring Parker Solar Probe and WIND, with an extensible framework for additional space physics missions.
 
 ## Features
 
@@ -82,47 +82,38 @@ widget = vdyes(['2020/01/29 17:00:00.000', '2020/01/29 19:00:00.000'])
 
 ### Prerequisites
 
+**The installation process varies depending on your system access:**
+
+#### For Standard Installation (Option 1)
+If you have administrator access and can install system-wide tools:
+
 1. **Install Command Line Tools for Xcode:**
-    
-    Command Line Tools are required for Git, Homebrew, and other development utilities. To install, open Terminal (cmd+space and type "terminal") and run:
     ```bash
     xcode-select --install
     ```
-    A popup will appear asking if you want to install the developer tools. Click "Install" and follow the prompts. This installation typically takes 5-10 minutes.
-    
-    If you skip this step, you might see this error when trying to use Git or Homebrew:
-    ```
-    xcrun: error: invalid active developer path (/Library/Developer/CommandLineTools), missing xcrun at: /Library/Developer/CommandLineTools/usr/bin/xcrun
-    ```
 
 2. **Install Homebrew Package Manager:**
-    
-    After Command Line Tools are installed, install Homebrew, which makes installing other tools much easier:
     ```bash
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     ```
 
 3. **Install Miniconda:**
-    
-    Plotbot uses Python and requires Miniconda to manage its dependencies. Install it with:
     ```bash
     brew install --cask miniconda && conda init "$(basename "${SHELL}")"
     ```
-    After running this command, close and reopen your terminal.
 
 4. **Install Git:**
-    
-    Git is needed to download the Plotbot code. If you don't have it installed, run:
     ```bash
     brew install git
     ```
 
-5. **Install Visual Studio Code (VS Code):** 
-    
-    VS Code is a popular, free, and powerful code editor that works very well with Jupyter Notebooks and Python. While you can use other editors, these instructions assume you're using VS Code. Install in terminal with:
+5. **Install VS Code (optional but recommended):**
     ```bash
     brew install --cask visual-studio-code
     ```
+
+#### For Micromamba Installation (Option 2)
+If you're on a restricted system (NASA, government, etc.) **no prerequisites needed!** The installation script will handle everything in your user directory without requiring administrator access.
 
 ### PlotBot Download and Setup
 
@@ -139,31 +130,54 @@ widget = vdyes(['2020/01/29 17:00:00.000', '2020/01/29 19:00:00.000'])
         rm -rf ~/GitHub/Plotbot
         ```
 
-    *   Clone this repository and change your working directory to the Plotbot directory. After you run this command you can follow the instructions in the terminal to complete the installation 💻:
+    *   Clone this repository and change your working directory to the Plotbot directory:
 
         ```bash
-        git clone https://github.com/Sonified/Plotbot.git && cd Plotbot && echo "✅ Download complete" && echo "" && echo "Copy and paste the following command, including the period, to initialize Conda for your shell: ./install_scripts/1_init_conda.sh" && echo ""
+        git clone https://github.com/Sonified/Plotbot.git && cd Plotbot && echo "✅ Download complete"
         ```
 
-2.  **Now Run the Environment Setup Scripts in the Same Terminal Window** 
+2.  **Run the Unified Installation Script** 
 
-    *   First, initialize Conda for your shell:
-       
-        ```bash
-        ./install_scripts/1_init_conda.sh
-        ```
+    The installation script will prompt you to choose between two installation methods:
+    
+    ```bash
+    ./install.sh
+    ```
 
-    *   Next, create the Plotbot environment from the YAML file:
-        
-        ```bash
-        ./install_scripts/2_setup_env.sh
-        ```
+    **Installation Options:**
+    - **Option 1: Standard Installation** (Recommended for most users)
+      - Uses conda/miniconda via Homebrew
+      - Full access to all conda channels
+      - Best for personal computers and standard environments
+      
+    - **Option 2: Micromamba Installation** (For restricted environments)
+      - Uses micromamba with conda-forge only
+      - No Anaconda defaults or proprietary channels  
+      - **Recommended for government systems (NASA, etc.)**
+      - No sudo required, installs in user directory
 
-    *   Finally, register Plotbot as a Jupyter kernel (👉 if VS Code is open, close ❌ and reopen 🟢 it after this):
-        
-        ```bash
-        ./install_scripts/3_register_kernel.sh
-        ````
+    The script will automatically handle all setup steps including conda/micromamba initialization, environment creation, and Jupyter kernel registration.
+
+    <details>
+    <summary><strong>🔧 Manual Installation (Advanced Users)</strong></summary>
+    
+    If you prefer to run the installation steps manually, you can use the individual scripts:
+
+    **For Standard Installation:**
+    ```bash
+    ./install_scripts/1_init_conda.sh
+    ./install_scripts/2_setup_env.sh
+    ./install_scripts/3_register_kernel.sh
+    ```
+
+    **For Micromamba Installation:**
+    ```bash
+    ./install_scripts/1_init_micromamba.sh
+    ./install_scripts/2_create_environment_cf.sh
+    ./install_scripts/3_setup_env_micromamba.sh
+    ./install_scripts/4_register_kernel_micromamba.sh
+    ```
+    </details>
 
 3.  **Open VS Code & Select the Environment**
 

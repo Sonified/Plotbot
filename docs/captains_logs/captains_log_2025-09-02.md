@@ -94,8 +94,70 @@
 - `README_Machine_Readable.md`: Removed version number line.
 - `plotbot/__init__.py`: Version re-incremented to `v3.19`.
 
+**Commit Message**: "v3.19 README Machine Readable Version Refinement"
+**Version Tag**: v3.19
+
 ## Next Steps
 
 1. **Validation Testing**: Ensure all documented features work as described
 2. **Interactive Examples**: Verify notebook examples align with new documentation
 3. **Consider version push**: Major documentation improvements worthy of version increment
+
+---
+
+## Unified Installation System Implementation 🚀
+
+**Major Feature**: Implemented unified installation system with support for NASA/government restricted environments.
+
+### **Key Implementation**:
+
+1. **🎯 Unified Entry Point**: 
+   - Created `install.sh` as single entry point that prompts users to choose installation method
+   - Option 1: Standard conda installation (existing workflow)
+   - Option 2: Micromamba installation for restricted environments
+
+2. **🏛️ NASA/Government System Support**:
+   - **Micromamba Installation Path**: No sudo required, conda-forge only
+   - **No Anaconda Dependencies**: Automatically strips anaconda defaults from environment.yml
+   - **User Directory Installation**: Homebrew installed in `$HOME/homebrew`
+   - **Complete Isolation**: No proprietary channels or system-wide dependencies
+
+3. **📦 Modular Architecture**:
+   - **Standard Path**: Uses existing scripts (`1_init_conda.sh`, `2_setup_env.sh`, `3_register_kernel.sh`)
+   - **Micromamba Path**: New parallel scripts (`1_init_micromamba.sh`, `2_create_environment_cf.sh`, `3_setup_env_micromamba.sh`, `4_register_kernel_micromamba.sh`)
+   - **No Interference**: Existing standard installation code completely untouched
+
+4. **🧪 Comprehensive Testing**:
+   - Created `test_installation.sh` for validation
+   - Tests script existence, syntax validation, environment file generation
+   - Validates user input handling and error cases
+
+5. **📚 Documentation Updates**:
+   - **README.md**: Updated with unified installation approach, clear option descriptions
+   - **Prerequisites Section**: Separated standard vs micromamba requirements  
+   - **Description Updates**: Fixed to reflect "multiple spacecraft, currently featuring Parker Solar Probe and WIND" and added audification
+
+### **User Experience**:
+- **Before**: Multi-step manual process requiring prerequisites
+- **After**: Single command `./install.sh` with guided choice and automatic handling
+
+### **Files Created/Modified**:
+- `install.sh` - Main unified installer
+- `install_scripts/install_standard.sh` - Standard installation wrapper
+- `install_scripts/install_micromamba.sh` - Micromamba installation wrapper  
+- `install_scripts/1_init_micromamba.sh` - Homebrew + micromamba setup
+- `install_scripts/2_create_environment_cf.sh` - conda-forge-only environment file generation
+- `install_scripts/3_setup_env_micromamba.sh` - Micromamba environment creation
+- `install_scripts/4_register_kernel_micromamba.sh` - Jupyter kernel registration
+- `install_scripts/test_installation.sh` - Validation test suite
+- `README.md` - Updated installation instructions and descriptions
+- `README_Machine_Readable.md` - Updated mission description
+
+### **Impact**:
+- **Accessibility**: NASA and government users can now install without sudo/anaconda access
+- **Maintainability**: Modular design preserves existing standard installation
+- **User Experience**: Single command installation with clear guidance
+- **Testing**: Comprehensive validation ensures reliability
+
+**Commit Message**: "v3.20 Feature: Unified Installation System with Micromamba Support for NASA/Government Systems"
+**Version Tag**: v3.20
