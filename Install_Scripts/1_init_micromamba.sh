@@ -122,7 +122,7 @@ if [ ! -d "$MICROMAMBA_ROOT_PREFIX" ]; then
     echo "🔧 Initializing micromamba..."
     
     # Get the actual micromamba path
-    MICROMAMBA_PATH=$(brew --prefix)/bin/micromamba
+    MICROMAMBA_PATH="$HOMEBREW_PREFIX/bin/micromamba"
     
     if [ ! -f "$MICROMAMBA_PATH" ]; then
         echo "❌ Error: micromamba not found at $MICROMAMBA_PATH"
@@ -142,7 +142,8 @@ else
     echo "✅ Micromamba already initialized"
 fi
 
-# Source the shell configuration to make micromamba available
+# Update PATH for current session AND source profile
+export PATH="$HOMEBREW_PREFIX/bin:$HOMEBREW_PREFIX/sbin:$PATH"
 source "$PROFILE_FILE"
 
 # Verify micromamba installation

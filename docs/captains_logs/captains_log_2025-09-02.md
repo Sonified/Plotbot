@@ -161,3 +161,55 @@
 
 **Commit Message**: "v3.20 Feature: Unified Installation System with Micromamba Support for NASA/Government Systems"
 **Version Tag**: v3.20
+
+---
+
+## Micromamba Installer Critical PATH Fix 🔧
+
+**Bug Fix**: Fixed circular dependency issue in micromamba initialization script that prevented universal compatibility.
+
+### **Problem Identified**:
+The micromamba installation script `install_scripts/1_init_micromamba.sh` failed during testing because it tried to use `$(brew --prefix)` before brew was in PATH, creating a circular dependency that blocked installation on clean systems.
+
+### **Root Cause**:
+- **Line 125**: `MICROMAMBA_PATH=$(brew --prefix)/bin/micromamba` attempted to call brew command before PATH was properly set
+- **Line 146**: Missing PATH export before sourcing profile file, causing timing issues with command availability
+
+### **Solution Implemented**:
+
+1. **Fixed Line 125** - Eliminated brew command dependency:
+   ```bash
+   # OLD (problematic):
+   MICROMAMBA_PATH=$(brew --prefix)/bin/micromamba
+   
+   # NEW (fixed):
+   MICROMAMBA_PATH="$HOMEBREW_PREFIX/bin/micromamba"
+   ```
+
+2. **Fixed Line 146** - Added explicit PATH export:
+   ```bash
+   # OLD (incomplete):
+   source "$PROFILE_FILE"
+   
+   # NEW (comprehensive):
+   export PATH="$HOMEBREW_PREFIX/bin:$HOMEBREW_PREFIX/sbin:$PATH"
+   source "$PROFILE_FILE"
+   ```
+
+### **Technical Impact**:
+- **Removes Circular Dependency**: No longer requires brew command to be in PATH before using brew-installed tools
+- **Universal Compatibility**: Works on all systems regardless of initial PATH configuration  
+- **Government/NASA Ready**: Ensures reliability for restricted environments where PATH management is critical
+- **Installation Robustness**: Eliminates timing-dependent failures during automated setup
+
+### **Testing Status**:
+- **Validated**: Fixed script tested and confirmed working on clean systems
+- **Ready for NASA**: Meets government environment requirements with no external dependencies
+- **Backward Compatible**: All existing functionality preserved
+
+### **Files Modified**:
+- `install_scripts/1_init_micromamba.sh`: Two critical PATH handling fixes
+- `plotbot/__init__.py`: Version updated to v3.21
+
+**Commit Message**: "v3.21 Fix: Micromamba initialization PATH issue for universal compatibility"
+**Version Tag**: v3.21
