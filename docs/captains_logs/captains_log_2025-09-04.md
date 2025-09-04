@@ -1,6 +1,6 @@
 # Captain's Log - 2025-09-04
 
-## Version: v3.23
+## Version: v3.24
 
 ## Major Installation System Overhaul
 
@@ -88,5 +88,14 @@ This overhaul transforms Plotbot from having a confusing, error-prone installati
 - **Version Fix**: Corrected erroneous v1.00 commit to proper v3.23
 - **Result**: Reduced repository size for new user downloads
 
-**Commit Message**: "v3.23 Removed tests/data from Git index as per .gitignore"
-**Version Tag**: v3.23
+**Commit Message**: "v3.24 Repository footprint optimization: Added plotly_tests/ to gitignore, updated documentation"
+**Version Tag**: v3.24
+**Git Hash**: 4fdecd8
+
+### Additional Footprint Reduction
+- **Additional cleanup**: Removed various temporary files, debug images, and test artifacts
+- **Net reduction**: 10,288 deletions vs 2,187 insertions (net -8,101 lines/data)
+- **Files removed**: matplotlib comparison images, plotly test files, debug plots, temporary notebooks
+- **Result**: Significant reduction in repository clone size for new users
+
+**Status**: Successfully pushed to GitHub origin/main
