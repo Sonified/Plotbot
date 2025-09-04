@@ -390,10 +390,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_04_v3.23"
+__version__ = "2025_09_04_v3.24"
 
 # Commit message for this version
-__commit_message__ = "v3.23 Removed tests/data from Git index as per .gitignore"
+__commit_message__ = "v3.24 Repository footprint optimization: Added plotly_tests/ to gitignore, updated documentation"
 
 # Print the version and commit message
 print(f"""
