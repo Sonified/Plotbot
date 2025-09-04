@@ -1,6 +1,6 @@
 # Captain's Log - 2025-09-04
 
-## Version: v3.22
+## Version: v3.23
 
 ## Major Installation System Overhaul
 
@@ -78,3 +78,15 @@
 - **Honest prerequisites** - no misleading "zero prerequisites" claims
 
 This overhaul transforms Plotbot from having a confusing, error-prone installation process to a professional, user-friendly setup experience that works reliably for all user types.
+
+## Repository Size Optimization
+
+### Issue: Large test data files tracked by Git
+- **Problem**: `tests/data/` directory containing large .cdf files (8.8MB and 4.5MB) were being tracked by Git
+- **Impact**: Increased repository download size for new users
+- **Solution**: Added `tests/data/` to `.gitignore` and removed from Git index using `git rm --cached -r tests/data/`
+- **Version Fix**: Corrected erroneous v1.00 commit to proper v3.23
+- **Result**: Reduced repository size for new user downloads
+
+**Commit Message**: "v3.23 Removed tests/data from Git index as per .gitignore"
+**Version Tag**: v3.23

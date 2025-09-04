@@ -390,10 +390,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_04_v3.22"
+__version__ = "2025_09_04_v3.23"
 
 # Commit message for this version
-__commit_message__ = "v3.22 Refactor: Complete installation system overhaul with improved environment naming, accurate documentation, and robust error handling"
+__commit_message__ = "v3.23 Removed tests/data from Git index as per .gitignore"
 
 # Print the version and commit message
 print(f"""

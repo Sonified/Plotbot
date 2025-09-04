@@ -80,3 +80,7 @@ tests/archive/
 /files_from_Jaye/
 
 plotbot_grid_composer_examples.ipynb
+
+tests/data/
+
+plotly_tests/
