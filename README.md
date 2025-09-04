@@ -80,17 +80,32 @@ widget = vdyes(['2020/01/29 17:00:00.000', '2020/01/29 19:00:00.000'])
 
 ## Installation (macOS Instructions Only, other OS instructions coming soon)
 
-### Prerequisites
+### 🚀 Recommended: Automatic Installation
 
-**The installation process varies depending on your system access:**
+**Minimal prerequisites:** Our installation script handles almost everything automatically.
 
-#### For Standard Installation (Option 1)
-If you have administrator access and can install system-wide tools:
+**Only requirement:** Git must be working (needed to download dependencies)
 
-1. **Install Command Line Tools for Xcode:**
-    ```bash
-    xcode-select --install
-    ```
+**Git sources (choose any):**
+- ✅ **Xcode Command Line Tools** - `xcode-select --install` (most common)
+- ✅ **GitHub Desktop** - includes command-line git  
+- ✅ **Homebrew** - `brew install git`
+- ✅ **Direct download** - git-scm.com
+
+**Installation features:**
+- ✅ **Works on any macOS system** (personal, work, government, NASA, etc.)
+- ✅ **No administrator/sudo access required** 
+- ✅ **Installs in your user directory only**
+- ✅ **Automatically sets up**: Homebrew, Micromamba, Python environment
+
+### Alternative: Manual Prerequisites (Advanced Users Only)
+
+<details>
+<summary><strong>🔧 Manual Installation Prerequisites (Click to expand)</strong></summary>
+
+If you prefer to install prerequisites manually or already have them:
+
+1. **Ensure Git is available** (see options above)
 
 2. **Install Homebrew Package Manager:**
     ```bash
@@ -102,18 +117,12 @@ If you have administrator access and can install system-wide tools:
     brew install --cask miniconda && conda init "$(basename "${SHELL}")"
     ```
 
-4. **Install Git:**
-    ```bash
-    brew install git
-    ```
-
-5. **Install VS Code (optional but recommended):**
+4. **Install VS Code (optional but recommended):**
     ```bash
     brew install --cask visual-studio-code
     ```
 
-#### For Micromamba Installation (Option 2)
-If you're on a restricted system (NASA, government, etc.) **no prerequisites needed!** The installation script will handle everything in your user directory without requiring administrator access.
+</details>
 
 ### PlotBot Download and Setup
 
@@ -145,16 +154,16 @@ If you're on a restricted system (NASA, government, etc.) **no prerequisites nee
     ```
 
     **Installation Options:**
-    - **Option 1: Standard Installation** (Recommended for most users)
-      - Uses conda/miniconda via Homebrew
-      - Full access to all conda channels
-      - Best for personal computers and standard environments
-      
-    - **Option 2: Micromamba Installation** (For restricted environments)
-      - Uses micromamba with conda-forge only
-      - No Anaconda defaults or proprietary channels  
-      - **Recommended for government systems (NASA, etc.)**
+    - **Option 1: Automatic Installation** (⭐ **Recommended for ALL users**)
+      - Uses micromamba with conda-forge 
+      - Zero prerequisites - handles everything automatically
+      - Works on **any** system (personal, work, government, NASA, etc.)
       - No sudo required, installs in user directory
+      
+    - **Option 2: Standard Installation** (For users with existing conda setup)
+      - Uses your existing conda/miniconda installation
+      - Full access to all conda channels
+      - Requires manual prerequisite installation
 
     The script will automatically handle all setup steps including conda/micromamba initialization, environment creation, and Jupyter kernel registration.
 
@@ -163,19 +172,19 @@ If you're on a restricted system (NASA, government, etc.) **no prerequisites nee
     
     If you prefer to run the installation steps manually, you can use the individual scripts:
 
-    **For Standard Installation:**
+    **For Automatic Installation (Micromamba):**
     ```bash
-    ./install_scripts/1_init_conda.sh
-    ./install_scripts/2_setup_env.sh
-    ./install_scripts/3_register_kernel.sh
+    ./Install_Scripts/1_init_micromamba.sh
+    ./Install_Scripts/2_create_environment_cf.sh
+    ./Install_Scripts/3_setup_env_micromamba.sh
+    ./Install_Scripts/4_register_kernel_micromamba.sh
     ```
 
-    **For Micromamba Installation:**
+    **For Standard Installation (Existing Conda):**
     ```bash
-    ./install_scripts/1_init_micromamba.sh
-    ./install_scripts/2_create_environment_cf.sh
-    ./install_scripts/3_setup_env_micromamba.sh
-    ./install_scripts/4_register_kernel_micromamba.sh
+    ./Install_Scripts/1_init_conda.sh
+    ./Install_Scripts/2_setup_env.sh
+    ./Install_Scripts/3_register_kernel.sh
     ```
     </details>
 
@@ -184,7 +193,7 @@ If you're on a restricted system (NASA, government, etc.) **no prerequisites nee
     *   Open VS Code.
     *   Open ✨`Plotbot.ipynb`✨
     *   Click the kernel selector (top-right).
-    *   Select "Python (Plotbot)".
+    *   Select "Plotbot (Micromamba)" or "Plotbot (Anaconda)" depending on your installation choice.
     *   Run the first cell to confirm setup.
 
 ## Quick Start

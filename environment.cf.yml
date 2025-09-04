@@ -1,7 +1,6 @@
-name: plotbot_anaconda
+name: plotbot_env
 channels:
   - conda-forge
-  - defaults
 dependencies:
   - python=3.12.4
   - numpy=1.26.4

@@ -390,10 +390,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_02_v3.21"
+__version__ = "2025_09_04_v3.22"
 
 # Commit message for this version
-__commit_message__ = "v3.21 Fix: Micromamba initialization PATH issue for universal compatibility"
+__commit_message__ = "v3.22 Refactor: Complete installation system overhaul with improved environment naming, accurate documentation, and robust error handling"
 
 # Print the version and commit message
 print(f"""
