@@ -1,3 +1,4 @@
+# STARTUP OPTIMIZATION: Heavy imports (numpy, pandas, cdflib) moved to method level for faster initialization
 """
 Auto-generated plotbot class for PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf
 Generated on: 2025-07-21T16:48:16.896906
@@ -6,9 +7,9 @@ Source: docs/implementation_plans/CDF_Integration/KP_wavefiles/PSP_WaveAnalysis_
 This class contains 96 variables from the CDF file.
 """
 
-import numpy as np
-import pandas as pd
-import cdflib
+# MOVED TO METHOD LEVEL: import numpy as np
+# MOVED TO METHOD LEVEL: import pandas as pd
+# MOVED TO METHOD LEVEL: import cdflib
 from datetime import datetime, timedelta, timezone
 import logging
 
@@ -331,6 +332,10 @@ class psp_spectral_waves_class:
     
     def calculate_variables(self, imported_data):
         """Calculate and store CDF variables"""
+        # LAZY IMPORT: Only import when actually needed
+        import numpy as np
+        import cdflib
+        
         # Dynamically find time variable from any CDF data
         time_var = None
         for var_name in imported_data.data.keys():
@@ -1266,6 +1271,9 @@ class psp_spectral_waves_class:
     
     def _find_frequency_data(self):
         """Dynamically find frequency data that matches spectral variables."""
+        # LAZY IMPORT: Only import when actually needed
+        import numpy as np
+        
         # Look for frequency variables that actually have data
         for var_name, var_data in self.raw_data.items():
             if ('freq' in var_name.lower() and 
@@ -1295,6 +1303,9 @@ class psp_spectral_waves_class:
     
     def set_ploptions(self):
         """Set up plotting options for all variables"""
+        # LAZY IMPORT: Only import when actually needed
+        import numpy as np
+        
         print_manager.dependency_management("Setting up plot options for psp_spectral_waves variables")
         
 

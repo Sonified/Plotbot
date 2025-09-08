@@ -1,4 +1,4 @@
-#!/bin/bash
+so#!/bin/bash
 
 echo "🔍 DEBUG: Detailed micromamba detection analysis"
 echo "=============================================="

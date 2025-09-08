@@ -1,8 +1,9 @@
+# STARTUP OPTIMIZATION: Heavy imports (numpy, pandas, cdflib) moved to method level for faster initialization
 # wind_mfi_classes.py - Calculates and stores WIND MFI magnetic field variables
 
-import numpy as np
-import pandas as pd
-import cdflib
+# MOVED TO METHOD LEVEL: import numpy as np
+# MOVED TO METHOD LEVEL: import pandas as pd
+# MOVED TO METHOD LEVEL: import cdflib
 from datetime import datetime, timedelta, timezone
 import logging
 import sys
@@ -173,6 +174,10 @@ class wind_mfi_h2_class:
     
     def calculate_variables(self, imported_data):
         """Calculate WIND MFI magnetic field variables from imported CDF data."""
+        # LAZY IMPORT: Only import when actually needed
+        import numpy as np
+        import cdflib
+        
         print_manager.processing("WIND MFI: Starting calculate_variables...")
 
         if imported_data is None or not hasattr(imported_data, 'data') or imported_data.data is None:
@@ -352,6 +357,9 @@ class wind_mfi_h2_class:
 
     def ensure_internal_consistency(self):
         """Ensures .time and .field are consistent with .datetime_array and .raw_data."""
+        # LAZY IMPORT: Only import when actually needed
+        import numpy as np
+        
         print_manager.dependency_management(f"*** WIND ENSURE ID:{id(self)} *** Called for {self.class_name}.{self.subclass_name if self.subclass_name else 'MAIN'}.")
         original_time_len = len(self.time) if hasattr(self, 'time') and self.time is not None and hasattr(self.time, '__len__') else 'None_or_NoLen'
         original_dt_len = len(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else 'None_or_NoLen'

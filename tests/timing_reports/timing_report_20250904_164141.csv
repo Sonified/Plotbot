@@ -1,0 +1,6 @@
+Import Timing Report - plotbot_full_initialization
+Generated at: 2025-09-04 16:41:41
+
+matplotlib.pyplot,0.507
+from plotbot import audifier,0.471
+numpy,0.000

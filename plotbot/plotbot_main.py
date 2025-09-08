@@ -28,19 +28,21 @@ from typing import Dict, List, Optional
 print("✅ Imported standard libraries and utilities.")
 
 # --- SCIENTIFIC COMPUTING LIBRARIES ---
-import numpy as np
-import pandas as pd
-import scipy
-from scipy import stats
-print("✅ Imported numpy, pandas, and scipy libraries.")
+# MOVED TO FUNCTION LEVEL: Heavy imports moved inside plotbot() function for faster startup
+# import numpy as np
+# import pandas as pd
+# import scipy
+# from scipy import stats
+print("✅ Deferred numpy, pandas, and scipy libraries (loaded when needed).")
 
 # --- PLOTTING LIBRARIES ---
-import matplotlib
+# MOVED TO FUNCTION LEVEL: Heavy imports moved inside plotbot() function for faster startup
+# import matplotlib
 # Enhanced plt with options is imported from __init__.py
-import matplotlib.colors as colors
-import matplotlib.dates as mdates
-import matplotlib.ticker as mticker
-print("✅ Imported matplotlib libraries.")
+# import matplotlib.colors as colors
+# import matplotlib.dates as mdates
+# import matplotlib.ticker as mticker
+print("✅ Deferred matplotlib libraries (loaded when needed).")
 
 # --- DATA HANDLING AND WEB ---
 import cdflib
@@ -85,11 +87,24 @@ from .plotbot_helpers import time_clip, parse_axis_spec, resample, debug_plot_va
 @timer_decorator("TIMER_PLOTBOT_ENTRY")
 def plotbot(trange, *args):
     """Plot multiple time series with shared x-axis and optional right y-axes."""
+    
+    # LAZY IMPORTS: Load heavy scientific libraries only when plotting
+    print_manager.status("🤖 Plotbot starting (loading scientific libraries)...")
+    
+    import numpy as np
+    import pandas as pd
+    import scipy
+    from scipy import stats
+    import matplotlib
+    import matplotlib.colors as colors
+    import matplotlib.dates as mdates
+    import matplotlib.ticker as mticker
+    
     from collections import defaultdict
     import matplotlib.pyplot as mpl_plt
     # mpl_plt.rcParams['font.size'] = 8
     
-    print_manager.status("🤖 Plotbot starting...")
+    print_manager.status("🤖 Plotbot libraries loaded, proceeding...")
     
     # 🚀 CRITICAL FIX: Clear TimeRangeTracker to prevent stale data from interfering with CLIP ONCE optimization
     from .time_utils import TimeRangeTracker
