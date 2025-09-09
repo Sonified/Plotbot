@@ -8,20 +8,22 @@ echo "for multiple spacecraft, currently featuring Parker Solar Probe and WIND."
 echo ""
 echo "Please select your installation method:"
 echo ""
-echo "1) ⭐ Micromamba Installation (Recommended for ALL users)"
+echo "1) ⭐ Micromamba Installation (Recommended / Quick)"
+echo "   - Lightweight and fast environment setup"
 echo "   - Zero prerequisites - handles everything automatically!"
 echo "   - Works in restricted environments (government, NASA, etc.)"
-echo "   - Uses micromamba with conda-forge"
 echo "   - No sudo required, installs in user directory"
 echo ""
-echo "2) Anaconda Installation (Traditional method)"
-echo "   - Uses conda/miniconda package manager"
-echo "   - Full access to all conda channels"
+echo "2) Anaconda Installation (Full Ecosystem)"
+echo "   - Complete conda package manager with all channels"
+echo "   - Access to entire Anaconda ecosystem"
 echo "   - Requires manual prerequisite installation"
+echo ""
+echo "3) Cancel"
 echo ""
 # Loop until we get a valid choice
 while true; do
-    read -p "Enter your choice (1 or 2): " -r INSTALL_CHOICE
+    read -p "Enter your choice (1, 2, or 3): " -r INSTALL_CHOICE
     echo ""
 
     case $INSTALL_CHOICE in
@@ -39,10 +41,16 @@ while true; do
         echo "   This will set up conda/miniconda and create the environment."
         echo ""
         echo "Starting anaconda installation..."
-        exec ./install_scripts/install_standard.sh
+        exec ./install_scripts/install_anaconda.sh
+        ;;
+    3)
+        echo ""
+        echo "🔹 Installation cancelled."
+        echo "   Thanks for considering Plotbot!"
+        exit 0
         ;;
     *)
-        echo "❌ Invalid choice '$INSTALL_CHOICE'. Please enter 1 or 2."
+        echo "❌ Invalid choice '$INSTALL_CHOICE'. Please enter 1, 2, or 3."
         echo ""
         continue
         ;;

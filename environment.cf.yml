@@ -1,4 +1,4 @@
-name: plotbot_env
+name: plotbot_anaconda
 channels:
   - conda-forge
 dependencies:

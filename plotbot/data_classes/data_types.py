@@ -352,6 +352,38 @@ data_types = {
 }
 
 
+# === DYNAMIC PATH CONSTRUCTION ===
+def get_local_path(data_type_key):
+    """
+    Get the local path for a data type, using the configurable data directory.
+    
+    Args:
+        data_type_key (str): The data type key (e.g., 'mag_RTN_4sa')
+        
+    Returns:
+        str: Full local path with current data_dir configuration
+    """
+    # Import here to avoid circular imports
+    from ..config import config
+    
+    if data_type_key not in data_types:
+        return None
+        
+    data_type_config = data_types[data_type_key]
+    original_local_path = data_type_config.get('local_path', '')
+    
+    # Replace 'data' at the beginning with the configured data_dir
+    if original_local_path.startswith('data'):
+        # Replace 'data' with config.data_dir
+        relative_path = original_local_path[4:]  # Remove 'data' prefix
+        if relative_path.startswith(os.sep):
+            relative_path = relative_path[1:]  # Remove leading separator
+        return os.path.join(config.data_dir, relative_path)
+    else:
+        # If path doesn't start with 'data', assume it's already correctly formatted
+        return original_local_path
+
+
 # === AUTO-REGISTER CUSTOM CDF CLASSES ===
 def add_cdf_data_types():
     """

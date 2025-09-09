@@ -9,7 +9,7 @@ from .print_manager import print_manager
 from .data_download_helpers import check_local_files, create_pattern_string, process_directory
 from .server_access import server_access
 from .time_utils import daterange, get_needed_6hour_blocks
-from .data_classes.data_types import data_types
+from .data_classes.data_types import data_types, get_local_path
 
 #====================================================================
 # FUNCTION: download_berkeley_data
@@ -119,7 +119,7 @@ def download_berkeley_data(trange, data_type):
                     dir_url=dir_url,
                     pattern_str=pattern_str,
                     date_info=date_info,
-                    base_local_path=config['local_path'].format(data_level=config['data_level'])
+                    base_local_path=get_local_path(data_type).format(data_level=config['data_level'])
                 )
             except Exception as e:
                 print("🤷🏾‍♂️ The data you're looking for can't be retrieved from the server, friend!")
@@ -146,7 +146,7 @@ def download_berkeley_data(trange, data_type):
                     dir_url=dir_url,
                     pattern_str=pattern_str,
                     date_info=date_info,
-                    base_local_path=config['local_path'].format(data_level=config['data_level'])
+                    base_local_path=get_local_path(data_type).format(data_level=config['data_level'])
                 )
             except Exception as e:
                 print("🤷🏾‍♂️ The data you're looking for can't be retrieved from the server, friend!")

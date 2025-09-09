@@ -15,7 +15,7 @@ import numpy as np
 from dateutil.parser import parse
 
 from .print_manager import print_manager
-from .data_classes.data_types import data_types # To get pyspedas datatype mapping
+from .data_classes.data_types import data_types, get_local_path # To get pyspedas datatype mapping
 from .time_utils import daterange
 # Add other necessary imports (time, etc.) as needed
 
@@ -182,7 +182,7 @@ def download_dfb_precise(trange, plotbot_key, config):
         
         # Construct remote and local paths
         remote_path = config['remote_path'] + year + '/'
-        local_path = os.path.join(config['local_path'], year + '/')
+        local_path = os.path.join(get_local_path(plotbot_key), year + '/')
         
         # File pattern for this specific date
         file_pattern = f'*{date_str}*.cdf'
@@ -309,7 +309,7 @@ def download_spdf_data(trange, plotbot_key):
             if config and config.get('file_time_format') == 'daily' and \
                 'local_path' in config and 'file_pattern_import' in config:
                 
-                local_path_template = config['local_path']
+                local_path_template = get_local_path(plotbot_key)
                 berkeley_pattern_tmpl = config['file_pattern_import'] # Berkeley case pattern
                 data_level = config.get('data_level', 'l2') # Default level if needed
                 

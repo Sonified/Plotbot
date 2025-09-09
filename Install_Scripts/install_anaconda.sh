@@ -75,11 +75,18 @@ if [ $kernel_status -ne 0 ]; then
 fi
 
 echo ""
+echo "🔧 Setting up IDE configuration..."
+source ./install_scripts/setup_ide.sh
+setup_ide_config "/opt/anaconda3/envs/plotbot_env/bin/python3" "plotbot_env"
+
+echo ""
 echo "🎉 Standard installation completed successfully!"
 echo ""
-echo "Next steps:"
-echo "1. Open VS Code"
-echo "2. Open Plotbot.ipynb"
-echo "3. Select 'Python (Plotbot)' as your kernel"
-echo "4. Run the first cell to confirm setup"
+echo "⭐ Next steps:"
+echo "1. Restart your terminal: exec zsh"
+echo "2. Open VS Code/Cursor"
+echo "3. Open Plotbot.ipynb"
+echo "4. Select 'Python (plotbot_env)' as your kernel"
+echo "5. Run the first cell to confirm setup"
+echo "6. Explore one of the example plotbot jupyter notebooks to test the setup"
 echo ""

@@ -27,7 +27,7 @@ def timer_decorator(timer_name):
 from .print_manager import print_manager, format_datetime_for_log
 from .time_utils import daterange
 from .data_tracker import global_tracker
-from .data_classes.data_types import data_types # UPDATED PATH
+from .data_classes.data_types import data_types, get_local_path # UPDATED PATH
 # from .data_cubby import data_cubby # MOVED inside import_data_function
 # from .plotbot_helpers import find_local_fits_csvs # This function is defined locally below
 
@@ -1179,7 +1179,7 @@ def import_data_function(trange, data_type):
         for single_date in daterange(start_time, end_time):
             year = single_date.year
             date_str = single_date.strftime('%Y%m%d')
-            local_dir = os.path.join(config['local_path'].format(data_level=config['data_level']), str(year))
+            local_dir = os.path.join(get_local_path(data_type).format(data_level=config['data_level']), str(year))
 
             if config['file_time_format'] == '6-hour':
                 # Determine relevant blocks (same logic as check_local_files)

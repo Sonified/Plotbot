@@ -7,6 +7,9 @@ from typing import Optional, Any
 class PlotbotConfig:
     # --- Public Attributes (with type hints) ---
     data_server: str # Options: 'dynamic', 'spdf', 'berkeley'
+    data_dir: str # Configurable data directory path
+    suppress_plots: bool # Plot display control
+    pyspedas_data_dir: str # Legacy property for backwards compatibility
     # Add hints for any other future config attributes here
     # Example: default_plot_style: Optional[str]
 

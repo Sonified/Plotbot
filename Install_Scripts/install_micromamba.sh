@@ -65,16 +65,22 @@ if [ $kernel_status -ne 0 ]; then
 fi
 
 echo ""
+echo "🔧 Setting up IDE configuration..."
+source ./install_scripts/setup_ide.sh
+setup_ide_config "$HOME/micromamba/envs/plotbot_micromamba/bin/python3" "plotbot_micromamba"
+
+echo ""
 echo "🎉 Micromamba installation completed successfully!"
 echo ""
 echo "✅ Homebrew installed in: \$HOME/homebrew"
-echo "✅ Micromamba environment: plotbot_env"
-echo "✅ Jupyter kernel registered: Python (plotbot_env)"
+echo "✅ Micromamba environment: plotbot_micromamba"
+echo "✅ Jupyter kernel registered: Python (plotbot_micromamba)"
 echo ""
-echo "Next steps:"
+echo "⭐ Next steps:"
 echo "1. Restart your terminal (exec zsh)"
-echo "2. Open VS Code"
+echo "2. Open VS Code/Cursor"
 echo "3. Open Plotbot.ipynb"
-echo "4. Select 'Python (plotbot_env)' as your kernel"
+echo "4. Select 'Python (plotbot_micromamba)' as your kernel"
 echo "5. Run the first cell to confirm setup"
+echo "6. Explore one of the example plotbot jupyter notebooks to test the setup"
 echo ""

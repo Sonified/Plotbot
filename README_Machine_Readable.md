@@ -106,7 +106,8 @@ conda run -n plotbot_env python -m pytest tests/test_stardust.py::test_stardust_
 **Setup**: `conda env create -f environment.yml && conda activate plotbot_env`  
 **Core**: Python 3.12.4, numpy 1.26.4, matplotlib 3.9.2, pandas 2.2.2, scipy 1.15.2  
 **Space Physics**: cdflib, pyspedas (multi-mission support)  
-**Interactive**: dash, plotly, jupyter-dash, ipywidgets
+**Interactive**: dash, plotly, jupyter-dash, ipywidgets  
+**IDE Setup**: Automatic during install (creates `.vscode/settings.json`)
 
 ## Version & Multi-Mission Support
 **Multi-Mission**: PSP (complete FIELDS, SWEAP support), WIND (MFI, SWE, 3DP), extensible framework for additional missions

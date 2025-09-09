@@ -6,7 +6,7 @@ from dateutil.parser import parse
 from bs4 import BeautifulSoup
 from .print_manager import print_manager, format_datetime_for_log
 from .time_utils import daterange, get_needed_6hour_blocks
-from .data_classes.data_types import data_types
+from .data_classes.data_types import data_types, get_local_path
 from .server_access import server_access
 
 #====================================================================
@@ -120,7 +120,7 @@ def check_local_files(trange: tuple, data_type: str) -> tuple[bool, list, list]:
         for single_date in daterange(start_time, end_time): # Iterate through each day in range
             year = single_date.year                                       # Extract year for directory structure
             date_str = single_date.strftime('%Y%m%d')                    # Format date as YYYYMMDD string
-            local_dir = os.path.join(config['local_path'].format(        # Construct path to year directory
+            local_dir = os.path.join(get_local_path(data_type).format(        # Construct path to year directory
                 data_level=config['data_level']), str(year))
             print_manager.debug(f"Checking files for date: {date_str} in {local_dir}")
 
