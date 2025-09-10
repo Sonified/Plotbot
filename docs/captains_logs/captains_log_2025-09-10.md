@@ -54,3 +54,21 @@ else:
 - **Commit Message**: "v3.28 Fix: Multiplot constrained_layout setting now properly respected, fixes title positioning"
 
 This fix resolves a fundamental layout control issue that was preventing proper title positioning and layout customization in multiplot functions.
+
+---
+
+## Version: v3.29
+
+## Minor Configuration Update
+
+### Change Made:
+- **Default Data Directory**: Updated `Plotbot.ipynb` to use `config.data_dir = 'default'` by default
+- **Previous**: Custom data directory was uncommented 
+- **Now**: Default data directory is active, custom is commented out
+
+### Files Modified:
+- `Plotbot.ipynb`: Changed default configuration to use standard data directory
+
+### Commit Details:
+- **Version**: v3.29
+- **Commit Message**: "v3.29 Config: Set default data directory to 'default' in Plotbot.ipynb"
