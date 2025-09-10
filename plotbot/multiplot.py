@@ -298,6 +298,10 @@ def multiplot(plot_list, **kwargs):
             var_info += f", shape={var.shape}"
         print_manager.custom_debug(var_info)
         
+        # ENHANCED DEBUG: Track encounter processing
+        enc_num = get_encounter_number(center_time)
+        print_manager.status(f"🚀 PROCESSING ENCOUNTER {enc_num} (Panel {i+1}) - Center time: {center_time}")
+        
         # Add time tracking for center time
         print_manager.time_tracking(f"Panel {i+1} center time: {center_time}")
         
@@ -438,19 +442,29 @@ def multiplot(plot_list, **kwargs):
                     if updated_var is not None:
                         # Update the plot_list with the potentially updated variable instance
                         plot_list[i] = (center_time, updated_var)
+                        enc_num = get_encounter_number(center_time)  # Get encounter number for context
+                        print_manager.status(f"✅ ENCOUNTER {enc_num} (Panel {i+1}) DATA SUCCESSFULLY LOADED!")
                         print_manager.custom_debug(f"✅ Refreshed variable reference in plot_list for {var.class_name}.{var.subclass_name}")
                         # <<< NEW DEBUG >>>
                         print_manager.debug(f"Loop 1, Panel {i+1}: Stored var ID in plot_list: {id(plot_list[i][1])}")
                         # <<< END NEW DEBUG >>>
-                        # Optional: Add check if data is now present
-                        # has_data_after_get = hasattr(updated_var, 'datetime_array') and updated_var.datetime_array is not None and len(updated_var.datetime_array) > 0
-                        # print_manager.custom_debug(f"  Variable has data after get_data: {has_data_after_get}")
+                        # Check if the updated variable has data
+                        if hasattr(updated_var, 'datetime_array') and updated_var.datetime_array is not None:
+                            data_points = len(updated_var.datetime_array)
+                            print_manager.status(f"✅ ENCOUNTER {enc_num}: Variable contains {data_points} data points")
+                        else:
+                            print_manager.warning(f"⚠️ ENCOUNTER {enc_num}: Variable updated but has no datetime_array!")
                     else:
-                        print_manager.warning(f"❌ Failed to get updated subclass {var.subclass_name} after get_data")
+                        enc_num = get_encounter_number(center_time)
+                        print_manager.error(f"🚨 ENCOUNTER {enc_num} (Panel {i+1}): Failed to get updated subclass {var.subclass_name} after get_data")
                 else:
-                    print_manager.warning(f"❌ Failed to get class instance {var.class_name} from data_cubby after get_data")
+                    enc_num = get_encounter_number(center_time)
+                    print_manager.error(f"🚨 ENCOUNTER {enc_num} (Panel {i+1}): Failed to get class instance {var.class_name} from data_cubby after get_data")
             except Exception as e:
-                print_manager.warning(f"❌ Error during get_data or variable update for {var.class_name}.{var.subclass_name}: {str(e)}")
+                enc_num = get_encounter_number(center_time)  # Get encounter number for context
+                print_manager.error(f"🚨 CRITICAL: ENCOUNTER {enc_num} (Panel {i+1}) DATA FETCH FAILED!")
+                print_manager.error(f"❌ Error during get_data or variable update for {var.class_name}.{var.subclass_name}: {str(e)}")
+                print_manager.error(f"❌ This encounter will show as BLACK/MISSING in the plot!")
                 print_manager.time_tracking(f"Panel {i+1} error during get_data for {var.class_name}.{var.subclass_name}: {str(e)}")
                 # Continue to the next variable in the plot_list
                 continue 
@@ -479,35 +493,39 @@ def multiplot(plot_list, **kwargs):
         else:
             figsize = (options.width, options.height_per_panel * n_panels)
             dpi = 300
-        # TEMPORARY DEBUG: Force constrained_layout=False to test colorbar positioning
-        print_manager.test(f"[TEST LAYOUT] Original constrained_layout setting: {options.constrained_layout}")
-        fig, axs = plt.subplots(n_panels, 1, figsize=figsize, dpi=dpi, constrained_layout=False)
-        print_manager.test(f"[TEST LAYOUT] Using constrained_layout=False for debugging")
-        print_manager.status(f"Using constrained_layout=False (forced for debugging) and applying manual margins.")
-        # FORCE manual margins since we're forcing constrained_layout=False
-        fig.subplots_adjust(
-            top=options.margin_top,
-            bottom=options.margin_bottom,
-            left=options.margin_left,
-            right=options.margin_right,
-            hspace=options.hspace_vertical_space_between_plots
-        )
-        print_manager.status(f"Set margins (top={options.margin_top}, bottom={options.margin_bottom}, left={options.margin_left}, right={options.margin_right}) and hspace={options.hspace_vertical_space_between_plots}")
+        # Use the user's constrained_layout setting
+        print_manager.test(f"[LAYOUT] Using user's constrained_layout setting: {options.constrained_layout}")
+        fig, axs = plt.subplots(n_panels, 1, figsize=figsize, dpi=dpi, constrained_layout=options.constrained_layout)
+        
+        if options.constrained_layout:
+            print_manager.status(f"Using constrained_layout=True - letting matplotlib handle all spacing automatically.")
+        else:
+            print_manager.status(f"Using constrained_layout=False - applying manual margins.")
+            fig.subplots_adjust(
+                top=options.margin_top,
+                bottom=options.margin_bottom,
+                left=options.margin_left,
+                right=options.margin_right,
+                hspace=options.hspace_vertical_space_between_plots
+            )
+            print_manager.status(f"Set margins (top={options.margin_top}, bottom={options.margin_bottom}, left={options.margin_left}, right={options.margin_right}) and hspace={options.hspace_vertical_space_between_plots}")
     else:
-        # TEMPORARY DEBUG: Force constrained_layout=False to test colorbar positioning
-        print_manager.test(f"[TEST LAYOUT] Original constrained_layout setting: {options.constrained_layout}")
-        fig, axs = plt.subplots(n_panels, 1, figsize=(options.width, options.height_per_panel * n_panels), constrained_layout=False)
-        print_manager.test(f"[TEST LAYOUT] Using constrained_layout=False for debugging")
-        print_manager.status(f"Using constrained_layout=False (forced for debugging) and applying manual margins.")
-        # FORCE manual margins since we're forcing constrained_layout=False
-        fig.subplots_adjust(
-            top=options.margin_top,
-            bottom=options.margin_bottom,
-            left=options.margin_left,
-            right=options.margin_right,
-            hspace=options.hspace_vertical_space_between_plots
-        )
-        print_manager.status(f"Set margins (top={options.margin_top}, bottom={options.margin_bottom}, left={options.margin_left}, right={options.margin_right}) and hspace={options.hspace_vertical_space_between_plots}")
+        # Use the user's constrained_layout setting
+        print_manager.test(f"[LAYOUT] Using user's constrained_layout setting: {options.constrained_layout}")
+        fig, axs = plt.subplots(n_panels, 1, figsize=(options.width, options.height_per_panel * n_panels), constrained_layout=options.constrained_layout)
+        
+        if options.constrained_layout:
+            print_manager.status(f"Using constrained_layout=True - letting matplotlib handle all spacing automatically.")
+        else:
+            print_manager.status(f"Using constrained_layout=False - applying manual margins.")
+            fig.subplots_adjust(
+                top=options.margin_top,
+                bottom=options.margin_bottom,
+                left=options.margin_left,
+                right=options.margin_right,
+                hspace=options.hspace_vertical_space_between_plots
+            )
+            print_manager.status(f"Set margins (top={options.margin_top}, bottom={options.margin_bottom}, left={options.margin_left}, right={options.margin_right}) and hspace={options.hspace_vertical_space_between_plots}")
     # Ensure axs is always a flat list of Axes
     import numpy as _np
     if not isinstance(axs, (list, _np.ndarray)):
@@ -531,9 +549,20 @@ def multiplot(plot_list, **kwargs):
         center_time_reference_str = None
         # <<< END NEW >>>
 
+        # ENHANCED DEBUG: Track encounter in plotting loop
+        enc_num = get_encounter_number(center_time)
+        print_manager.status(f"🎨 PLOTTING ENCOUNTER {enc_num} (Panel {i+1}) - Center time: {center_time}")
+        
         # <<< MODIFIED DEBUG >>>
         print_manager.custom_debug(f'Adding data to plot panel {i+1}/{n_panels}... Var ID from plot_list: {id(var)}\n')
         # <<< END MODIFIED DEBUG >>>
+        
+        # CRITICAL DEBUG: Check if variable has data before plotting
+        if hasattr(var, 'datetime_array') and var.datetime_array is not None:
+            data_points = len(var.datetime_array)
+            print_manager.status(f"✅ ENCOUNTER {enc_num}: Ready to plot with {data_points} data points")
+        else:
+            print_manager.error(f"🚨 ENCOUNTER {enc_num}: NO DATA AVAILABLE FOR PLOTTING! This will show as BLACK/MISSING!")
         # Add diagnostic for HAM feature status
         print_manager.debug(f"Panel {i+1} - HAM feature status: hamify={options.hamify}, ham_var={options.ham_var is not None}")
         # center_dt = pd.Timestamp(center_time) # Moved up
@@ -883,6 +912,12 @@ def multiplot(plot_list, **kwargs):
 
             if len(indices) > 0:
                 print_manager.time_tracking(f"Panel {i+1} time_clip returned {len(indices)} points: first={raw_datetime_array[indices[0]]}, last={raw_datetime_array[indices[-1]]}")
+                
+                # DEBUG: Track E14 and E15 specifically
+                if i+1 in [14, 15]:
+                    print(f"🔍 DEBUG E{i+1}: Found {len(indices)} time indices")
+                    print(f"🔍 DEBUG E{i+1}: Data shape: {np.array(var.all_data).shape}")
+                    print(f"🔍 DEBUG E{i+1}: Time range: {raw_datetime_array[indices[0]]} to {raw_datetime_array[indices[-1]]}")
                 
                 if hasattr(var, 'y_limit') and var.y_limit:
                     # Keep functionality but remove debug print
@@ -1866,13 +1901,19 @@ def multiplot(plot_list, **kwargs):
                         axs[i].set_xlabel(options.custom_x_axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
                                         labelpad=options.x_label_pad)
                     else:
-                        axs[i].set_xlabel(f"Relative Time ({options.relative_time_step_units} from Perihelion)", 
+                        relative_label = f"Relative Time ({options.relative_time_step_units} from Perihelion)"
+                        axs[i].set_xlabel(relative_label, 
                                         fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
                                         labelpad=options.x_label_pad)
             else:
                 axs[i].set_xticklabels(tick_labels)
                 if i < n_panels - 1:
                     axs[i].set_xlabel('')
+                else:
+                    relative_label = f"Relative Time ({options.relative_time_step_units} from Perihelion)"
+                    axs[i].set_xlabel(relative_label, 
+                                    fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size,
+                                    labelpad=options.x_label_pad)
     
             # Add these two lines to set tick label sizes when using relative time
             axs[i].tick_params(axis='x', labelsize=options.x_tick_label_font_size)
@@ -1978,7 +2019,7 @@ def multiplot(plot_list, **kwargs):
                     ax.set_xlabel('')
     
             # Apply tick size formatting for Time or Longitude axis
-            if not using_positional_axis: # Standard Time Formatting
+            if not using_positional_axis and not options.use_relative_time: # Standard Time Formatting (but not if using relative time)
                 locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
                 formatter = mdates.ConciseDateFormatter(locator)
                 ax.xaxis.set_major_locator(locator)
@@ -2148,18 +2189,22 @@ def multiplot(plot_list, **kwargs):
         # X-Axis Label AND Tick Label Visibility
         if options.use_single_x_axis:
             if i == len(axs) - 1: # If it's the bottom panel
-                ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size, labelpad=options.x_label_pad)
+                if not options.use_relative_time:
+                    # Only set label if not using relative time (which already set its own label)
+                    ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size, labelpad=options.x_label_pad)
                 ax.tick_params(axis='x', labelbottom=True) # Ensure tick labels are on for bottom
             else: # If it's not the bottom panel
                 ax.set_xlabel('')
                 ax.set_xticklabels([]) # Hide tick labels
                 ax.tick_params(axis='x', labelbottom=False) # Explicitly turn off tick labels
         else: # If not using single_x_axis (each panel gets its own)
-            ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size, labelpad=options.x_label_pad)
+            if not options.use_relative_time:
+                # Only set label if not using relative time (which already set its own label)
+                ax.set_xlabel(axis_label, fontweight='bold' if options.bold_x_axis_label else 'normal', fontsize=options.x_axis_label_font_size, labelpad=options.x_label_pad)
             ax.tick_params(axis='x', labelbottom=True) # Ensure tick labels are on for all panels
 
         # X-Axis Tick Formatter and Locator (consolidated)
-        if current_axis_mode == 'time':
+        if current_axis_mode == 'time' and not options.use_relative_time:
             locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
             formatter = mdates.ConciseDateFormatter(locator)
             ax.xaxis.set_major_locator(locator)

@@ -405,10 +405,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_04_v3.26"
+__version__ = "2025_09_10_v3.28"
 
 # Commit message for this version
-__commit_message__ = "v3.26 Development: Added startup optimization, timing utilities, and test improvements"
+__commit_message__ = "v3.28 Fix: Multiplot constrained_layout setting now properly respected, fixes title positioning"
 
 # Print the version and commit message
 print(f"""
