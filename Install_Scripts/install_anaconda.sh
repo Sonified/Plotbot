@@ -66,7 +66,18 @@ if [ $setup_status -ne 0 ]; then
 fi
 
 echo ""
-echo "🔹 Step 3/3: Registering Jupyter Kernel..."
+echo "🔹 Step 3/4: Installing Plotbot as Development Package..."
+echo "Running: conda run -n plotbot_env pip install -e ."
+conda run -n plotbot_env pip install -e .
+install_status=$?
+if [ $install_status -ne 0 ]; then
+    echo "❌ Error: Plotbot package installation failed with code $install_status."
+    exit 1
+fi
+echo "✅ Plotbot successfully installed as development package!"
+
+echo ""
+echo "🔹 Step 4/4: Registering Jupyter Kernel..."
 ./install_scripts/3_register_kernel.sh
 kernel_status=$?
 if [ $kernel_status -ne 0 ]; then
@@ -82,10 +93,13 @@ setup_ide_config "/opt/anaconda3/envs/plotbot_env/bin/python3" "plotbot_env"
 echo ""
 echo "🎉 Standard installation completed successfully!"
 echo ""
+echo "✅ Plotbot installed as development package (globally accessible in environment)"
+echo "✅ Magnetic Hole Finder included as installable module"
+echo ""
 echo "⭐ Next steps:"
 echo "1. Restart your terminal: exec zsh"
 echo "2. Open VS Code/Cursor"
-echo "3. Open Plotbot.ipynb"
+echo "3. Open example_notebooks/Plotbot.ipynb"
 echo "4. Select 'Python (plotbot_env)' as your kernel"
 echo "5. Run the first cell to confirm setup"
 echo "6. Explore one of the example plotbot jupyter notebooks to test the setup"

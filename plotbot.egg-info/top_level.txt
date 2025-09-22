@@ -1,0 +1,2 @@
+magnetic_hole_finder
+plotbot

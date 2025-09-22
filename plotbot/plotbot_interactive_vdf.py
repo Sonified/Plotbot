@@ -89,6 +89,7 @@ def plotbot_interactive_vdf(trange, backend='auto', port=None, debug=None):
     # Get VDF data using the same approach as vdyes() - bypass plotbot data system
     print_manager.status("📡 Downloading PSP SPAN-I VDF data using pyspedas...")
     
+    # Import pyspedas here for lazy loading
     import pyspedas
     import cdflib
     import pandas as pd

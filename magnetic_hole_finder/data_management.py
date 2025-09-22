@@ -21,9 +21,9 @@ from scipy.io.wavfile import write
 from scipy import interpolate
 import bisect
 
-# PySPEDAS and PyTPlot Libraries
-import pyspedas
-from pyspedas import time_string, time_double, tinterpol, tdpwrspc
+# PySPEDAS and PyTPlot Libraries - lazy loaded when needed
+# import pyspedas - moved to functions that use it
+# from pyspedas import time_string, time_double, tinterpol, tdpwrspc - moved to functions that use it
 import pytplot
 from pytplot import (
     tplot, store_data, get_data, tlimit, xlim, ylim, tplot_options, options,
@@ -75,7 +75,14 @@ if not os.path.exists(pickle_cache_dir):
     os.makedirs(pickle_cache_dir)
 
 def download_and_prepare_high_res_mag_data(trange):
-    pm = plotbot_print_manager if 'plotbot_print_manager' in globals() and plotbot_print_manager is not None else FallbackPrintManager()
+    # Simple fallback print manager if plotbot's print_manager isn't available
+    class SimplePrintManager:
+        def error(self, msg): print(f"ERROR: {msg}")
+        def warning(self, msg): print(f"WARNING: {msg}")
+        def status(self, msg): print(f"STATUS: {msg}")
+        def debug(self, msg): print(f"DEBUG: {msg}")
+    
+    pm = plotbot_print_manager if 'plotbot_print_manager' in globals() and plotbot_print_manager is not None else SimplePrintManager()
     plotbot_trange = trange # Use the trange directly as passed
 
     if plotbot_get_data is None or global_plotbot_mag_rtn is None:
@@ -356,7 +363,14 @@ def download_and_save_data(start_time, end_time):
                             end_time.strftime('%Y-%m-%d/%H:%M:%S.%f')]
     
     # Use a descriptive name for the print_manager
-    pm = plotbot_print_manager if 'plotbot_print_manager' in globals() and plotbot_print_manager is not None else FallbackPrintManager() # Use fallback if main is None
+    # Simple fallback print manager if plotbot's print_manager isn't available
+    class SimplePrintManager:
+        def error(self, msg): print(f"ERROR: {msg}")
+        def warning(self, msg): print(f"WARNING: {msg}")
+        def status(self, msg): print(f"STATUS: {msg}")
+        def debug(self, msg): print(f"DEBUG: {msg}")
+    
+    pm = plotbot_print_manager if 'plotbot_print_manager' in globals() and plotbot_print_manager is not None else SimplePrintManager() # Use fallback if main is None
     
     pm.status(f"Fetching data for chunk: {trange_plotbot_format[0]} to {trange_plotbot_format[1]} using Plotbot's get_data.")
 

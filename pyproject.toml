@@ -1,12 +1,61 @@
-[tool.pytest]
-testpaths = ["tests"]
-addopts = "-v"
-
 [build-system]
 requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "plotbot"
+version = "1.0.0"
+description = "Space physics data visualization, audification, and analysis tool for Parker Solar Probe and WIND"
+authors = [
+    {name = "Dr. Jaye Verniero"},
+    {name = "Dr. Robert Alexander"}
+]
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "numpy>=1.26.4,<2.3",  # Constrained for numba compatibility
+    "numba>=0.61.2",       # Used by plotbot data_cubby for performance
+    "matplotlib>=3.9.2", 
+    "pandas>=2.2.2",
+    "scipy>=1.15.2",
+    "cdflib>=1.3.1",
+    "beautifulsoup4>=4.12.3",
+    "requests>=2.32.2",
+    "python-dateutil>=2.9.0",
+    "ipywidgets",
+    "ipykernel",
+    "pyspedas",
+    "termcolor>=2.4.0",
+]
+
+[project.optional-dependencies]
+interactive = [
+    "dash",
+    "plotly", 
+    "jupyter-dash",
+]
+dev = [
+    "pytest>=7.4.4",
+]
+
+[tool.setuptools.packages.find]
+include = ["plotbot*", "magnetic_hole_finder*"]
+
 [tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*" 

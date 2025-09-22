@@ -5,6 +5,8 @@
 from .import_timer import start_timing, time_import, time_block, end_timing
 start_timing("plotbot_full_initialization")
 
+import os
+
 # Import and configure matplotlib first to ensure consistent styling
 mpl_plt = time_import('matplotlib.pyplot')
 np = time_import('numpy')
@@ -62,15 +64,14 @@ with time_block("wind_data_classes"):
 # Custom Class Imports (auto-generated)
 # To add new classes: run cdf_to_plotbot('path/to/file.cdf') and this will be updated
 # ------------------------------------------------------------------------------
-with time_block("custom_cdf_classes"):
-    from .data_classes.custom_classes.demo_spectral_waves import demo_spectral_waves, demo_spectral_waves_class
-    from .data_classes.custom_classes.demo_wave_power import demo_wave_power, demo_wave_power_class
-    from .data_classes.custom_classes.psp_simple_test import psp_simple_test, psp_simple_test_class
-    from .data_classes.custom_classes.psp_spectral_waves import psp_spectral_waves, psp_spectral_waves_class
-    from .data_classes.custom_classes.psp_waves_auto import psp_waves_auto, psp_waves_auto_class
-    from .data_classes.custom_classes.psp_waves_real_test import psp_waves_real_test, psp_waves_real_test_class
-    from .data_classes.custom_classes.psp_waves_spectral import psp_waves_spectral, psp_waves_spectral_class
-    from .data_classes.custom_classes.psp_waves_timeseries import psp_waves_timeseries, psp_waves_timeseries_class
+from .data_classes.custom_classes.demo_spectral_waves import demo_spectral_waves, demo_spectral_waves_class
+from .data_classes.custom_classes.demo_wave_power import demo_wave_power, demo_wave_power_class
+from .data_classes.custom_classes.psp_simple_test import psp_simple_test, psp_simple_test_class
+from .data_classes.custom_classes.psp_spectral_waves import psp_spectral_waves, psp_spectral_waves_class
+from .data_classes.custom_classes.psp_waves_auto import psp_waves_auto, psp_waves_auto_class
+from .data_classes.custom_classes.psp_waves_real_test import psp_waves_real_test, psp_waves_real_test_class
+from .data_classes.custom_classes.psp_waves_spectral import psp_waves_spectral, psp_waves_spectral_class
+from .data_classes.custom_classes.psp_waves_timeseries import psp_waves_timeseries, psp_waves_timeseries_class
 # ------------------------------------------------------------------------------
 # ==============================================================================
 
@@ -209,8 +210,9 @@ custom_vars = CustomVariablesContainer()
 print_manager.variable_testing("Initial custom variables state:")
 debug_custom_variables()
 
-# Import audification module
-audifier = time_import('audifier', from_module='plotbot')
+# Import audification module and audifier instance
+audifier_module = time_import('audifier', from_module='plotbot')
+from .audifier import audifier
 
 # Import our enhanced plt with options support
 with time_block("enhanced_plt"):
@@ -405,10 +407,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_10_v3.29"
+__version__ = "2025_09_18_v3.30"
 
 # Commit message for this version
-__commit_message__ = "v3.29 Config: Set default data directory to 'default' in Plotbot.ipynb"
+__commit_message__ = "v3.30 Feature: Implement pyspedas lazy loading and enhanced config.data_dir control"
 
 # Print the version and commit message
 print(f"""

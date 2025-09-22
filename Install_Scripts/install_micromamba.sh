@@ -56,7 +56,18 @@ if [ $setup_status -ne 0 ]; then
 fi
 
 echo ""
-echo "🔹 Step 4/4: Registering Jupyter Kernel..."
+echo "🔹 Step 4/5: Installing Plotbot as Development Package..."
+echo "Running: micromamba run -n plotbot_micromamba pip install -e ."
+micromamba run -n plotbot_micromamba pip install -e .
+install_status=$?
+if [ $install_status -ne 0 ]; then
+    echo "❌ Error: Plotbot package installation failed with code $install_status."
+    exit 1
+fi
+echo "✅ Plotbot successfully installed as development package!"
+
+echo ""
+echo "🔹 Step 5/5: Registering Jupyter Kernel..."
 ./install_scripts/4_register_kernel_micromamba.sh
 kernel_status=$?
 if [ $kernel_status -ne 0 ]; then
@@ -74,12 +85,14 @@ echo "🎉 Micromamba installation completed successfully!"
 echo ""
 echo "✅ Homebrew installed in: \$HOME/homebrew"
 echo "✅ Micromamba environment: plotbot_micromamba"
+echo "✅ Plotbot installed as development package (globally accessible)"
+echo "✅ Magnetic Hole Finder included as installable module"
 echo "✅ Jupyter kernel registered: Python (plotbot_micromamba)"
 echo ""
 echo "⭐ Next steps:"
 echo "1. Restart your terminal (exec zsh)"
 echo "2. Open VS Code/Cursor"
-echo "3. Open Plotbot.ipynb"
+echo "3. Open example_notebooks/Plotbot.ipynb"
 echo "4. Select 'Python (plotbot_micromamba)' as your kernel"
 echo "5. Run the first cell to confirm setup"
 echo "6. Explore one of the example plotbot jupyter notebooks to test the setup"

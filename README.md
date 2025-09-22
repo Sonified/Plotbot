@@ -191,7 +191,7 @@ If you prefer to install prerequisites manually or already have them:
 3.  **Open VS Code & Select the Environment**
 
     *   Open VS Code.
-    *   Open ✨`Plotbot.ipynb`✨
+    *   Open ✨`example_notebooks/Plotbot.ipynb`✨
     *   Click the kernel selector (top-right).
     *   Select "Plotbot (Micromamba)" or "Plotbot (Anaconda)" depending on your installation choice.
     *   Run the first cell to confirm setup.
@@ -225,35 +225,33 @@ In VS code hit 'Run All' and scroll down to see example plots:
 The primary way to learn and use Plotbot is through the included Jupyter Notebooks, which demonstrate specific plotting capabilities and data access methods:
 
 ### **Core Plotting Function Examples:**
-- `Plotbot.ipynb` - Complete overview with examples of `plotbot()`, `multiplot()`, `showdahodo()`, and `audifier()`
-- `plotbot_showdahodo_examples.ipynb` - **NEW** Hodogram (scatter) plotting with `showdahodo()` function for variable relationships and correlation analysis
-- `plotbot_multiplot_examples.ipynb` - Multi-panel time series analysis with `multiplot()` across encounters and events
-- `plotbot_multiplot_example_all_encounters.ipynb` - Comprehensive multi-encounter analysis examples
-- `plotbot_multiplot_degrees_from_center_times_examples.ipynb` - Specialized positioning analysis around perihelion
-- `plotbot_vdf_examples.ipynb` - **NEW** Velocity Distribution Function plotting with `vdyes()` function (theta-plane, phi-plane, collapsed distributions)
+- `example_notebooks/Plotbot.ipynb` - Complete overview with examples of `plotbot()`, `multiplot()`, `showdahodo()`, and `audifier()`
+- `example_notebooks/plotbot_showdahodo_examples.ipynb` - **NEW** Hodogram (scatter) plotting with `showdahodo()` function for variable relationships and correlation analysis
+- `example_notebooks/plotbot_multiplot_examples.ipynb` - Multi-panel time series analysis with `multiplot()` across encounters and events
+- `example_notebooks/plotbot_multiplot_example_all_encounters.ipynb` - Comprehensive multi-encounter analysis examples
+- `example_notebooks/plotbot_multiplot_degrees_from_center_times_examples.ipynb` - Specialized positioning analysis around perihelion
+- `example_notebooks/plotbot_vdf_examples.ipynb` - **NEW** Velocity Distribution Function plotting with `vdyes()` function (theta-plane, phi-plane, collapsed distributions)
 
 ### **Interactive Plotting Examples:**
-- `plotbot_interactive_example.ipynb` - **NEW** Interactive web-based plotting with click-to-VDF functionality and spectral data support
-- `plotbot_interactive_vdf_example.ipynb` - **NEW** Interactive VDF analysis with time slider and save functionality
+- `example_notebooks/plotbot_interactive_example.ipynb` - **NEW** Interactive web-based plotting with click-to-VDF functionality and spectral data support
+- `example_notebooks/plotbot_interactive_vdf_example.ipynb` - **NEW** Interactive VDF analysis with time slider and save functionality
 
 ### **Data Integration & Advanced Features:**
-- `plotbot_cdf_import_examples.ipynb` - **NEW** CDF integration with auto-class generation and industry-standard scientific data format support
-- `plotbot_data_snapshot_examples.ipynb` - **UPDATED** Enhanced data caching with `save_simple_snapshot()` / `load_simple_snapshot()`
-- `plotbot_custom_variable_examples.ipynb` - **UPDATED** Custom variable creation and arithmetic operations
+- `example_notebooks/plotbot_cdf_import_examples.ipynb` - **NEW** CDF integration with auto-class generation and industry-standard scientific data format support
+- `example_notebooks/plotbot_data_snapshot_examples.ipynb` - **UPDATED** Enhanced data caching with `save_simple_snapshot()` / `load_simple_snapshot()`
+- `example_notebooks/plotbot_custom_variable_examples.ipynb` - **UPDATED** Custom variable creation and arithmetic operations
 
 ### **Instrument-Specific Data Examples:**
-- `plotbot_dfb_electric_field_examples.ipynb` - **NEW** PSP electric field spectral data (DFB) with efficient downloads and spectral plotting
-- `plotbot_qtn_data_examples.ipynb` - **NEW** Quasi-thermal noise data for electron density and temperature measurements
-- `plotbot_qtn_integration.ipynb` - **NEW** Quasi-thermal noise integration workflows and advanced analysis
-- `plotbot_alpha_proton_derived_examples.ipynb` - Alpha particle and derived variable examples
-- `plotbot_alpha_integration_examples.ipynb` - Alpha particle integration workflows
-- `plotbot_psp_orbit_data_examples.ipynb` - **UPDATED** PSP orbital/positional data including Carrington coordinates
+- `example_notebooks/plotbot_dfb_electric_field_examples.ipynb` - **NEW** PSP electric field spectral data (DFB) with efficient downloads and spectral plotting
+- `example_notebooks/plotbot_qtn_data_examples.ipynb` - **NEW** Quasi-thermal noise data for electron density and temperature measurements
+- `example_notebooks/plotbot_qtn_integration.ipynb` - **NEW** Quasi-thermal noise integration workflows and advanced analysis
+- `example_notebooks/plotbot_alpha_proton_derived_examples.ipynb` - Alpha particle and derived variable examples
+- `example_notebooks/plotbot_alpha_integration_examples.ipynb` - Alpha particle integration workflows
+- `example_notebooks/plotbot_psp_orbit_data_examples.ipynb` - **UPDATED** PSP orbital/positional data including Carrington coordinates
 
 ### **Multi-Mission & Specialized Data:**
-- `plotbot_wind_data_examples.ipynb` - WIND mission data (MFI, SWE, 3DP instruments)
-- `plotbot_multiplot_examples.ipynb` - Advanced multiplot features and options
-- `plotbot_alpha_proton_derived_examples.ipynb` - Alpha particle and derived variable examples
-- `plotbot_audification_examples.ipynb` - Audio generation from data
+- `example_notebooks/plotbot_wind_data_examples.ipynb` - WIND mission data (MFI, SWE, 3DP instruments)
+- `example_notebooks/plotbot_audification_examples.ipynb` - Audio generation from data
 
 Each notebook includes detailed explanations, working code examples, and demonstrates best practices for that specific capability.
 
@@ -834,7 +832,7 @@ This is particularly useful when debugging test failures, as it reduces noise fr
 
 For those interested in contributing or understanding the internals:
 
-*   **`Plotbot.ipynb`**: The main Jupyter Notebook demonstrating usage.
+*   **`example_notebooks/Plotbot.ipynb`**: The main Jupyter Notebook demonstrating usage.
 *   **`plotbot/`**: Contains the core Python code.
     *   **`__init__.py`**: Makes the package importable and exposes key functions/classes.
     *   **`plotbot.py`**: Simple import helper.

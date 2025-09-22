@@ -5,7 +5,6 @@ files based on Plotbot data type keys and time ranges, utilizing the
 no_update=[True, False] strategy for offline reliability.
 """
 
-import pyspedas
 import os
 import glob # Added
 import plotbot # Added for config access
@@ -19,16 +18,21 @@ from .data_classes.data_types import data_types, get_local_path # To get pyspeda
 from .time_utils import daterange
 # Add other necessary imports (time, etc.) as needed
 
-# Import the precise download function for efficiency
-try:
-    from pyspedas import download as pyspedas_download
-except ImportError:
-    pyspedas_download = None
+# Import the precise download function for efficiency - moved to function level
 
 # Define the mapping from Plotbot keys to pyspedas specifics
 # (Borrowed from tests/test_pyspedas_download.py - may need refinement)
 # TODO: Formalize this mapping, potentially move to psp_data_types.py?
-PYSPEDAS_MAP = {
+def _get_pyspedas_map():
+    """
+    Get the PySpedas mapping dictionary. This function imports pyspedas
+    to ensure it reads the environment variables after config is set.
+    """
+    import pyspedas
+    print(f"DEBUG: pyspedas module attributes: {[attr for attr in dir(pyspedas) if not attr.startswith('_')]}")
+
+    
+    return {
     'mag_RTN_4sa': {
         'pyspedas_datatype': 'mag_rtn_4_sa_per_cyc',
         'pyspedas_func': pyspedas.psp.fields,
@@ -129,7 +133,7 @@ PYSPEDAS_MAP = {
         'pyspedas_func': pyspedas.wind.threedp,
         'kwargs': {}  # No level parameter needed
     }
-}
+    }
 
 def _get_dates_for_download(start_str, end_str):
     """Helper to get list of date strings formatted for file downloads (YYYYMMDD)."""
@@ -165,7 +169,10 @@ def download_dfb_precise(trange, plotbot_key, config):
     """
     print_manager.debug(f"[DFB_PRECISE_DOWNLOAD] Starting precise download for {plotbot_key}")
     
-    if pyspedas_download is None:
+    # Import pyspedas download function here
+    try:
+        from pyspedas import download as pyspedas_download
+    except ImportError:
         print_manager.error("pyspedas.download not available - falling back to regular method")
         return []
     
@@ -182,7 +189,10 @@ def download_dfb_precise(trange, plotbot_key, config):
         
         # Construct remote and local paths
         remote_path = config['remote_path'] + year + '/'
-        local_path = os.path.join(get_local_path(plotbot_key), year + '/')
+        # Use config.data_dir as base, not the full path from get_local_path()
+        # because pyspedas_download expects the root directory where it will create mission subdirectories
+        import plotbot
+        local_path = plotbot.config.data_dir
         
         # File pattern for this specific date
         file_pattern = f'*{date_str}*.cdf'
@@ -264,9 +274,13 @@ def download_spdf_data(trange, plotbot_key):
     Returns:
         list: List of relative paths to downloaded files or an empty list if download failed.
     """
+    # Import pyspedas here so it reads the environment variables AFTER config is set
+    import pyspedas
+    
     print_manager.debug(f"[DOWNLOAD_SPDF_ENTRY] Received trange: {trange}, data_type: {plotbot_key}")
     print_manager.debug(f"Attempting SPDF download for {plotbot_key} in range {trange}")
 
+    PYSPEDAS_MAP = _get_pyspedas_map()
     if plotbot_key not in PYSPEDAS_MAP:
         print_manager.warning(f"Pyspedas mapping not defined for {plotbot_key}. Cannot download from SPDF.")
         return []
@@ -319,10 +333,9 @@ def download_spdf_data(trange, plotbot_key):
                     year_str = date_str[:4]
                     try:
                         # Construct full path and pattern for this date
-                        # Assume paths in config are relative to workspace root
-                        WORKSPACE_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')) # Simple way to get workspace root
-                        relative_dir = local_path_template.format(data_level=data_level)
-                        expected_dir = os.path.join(WORKSPACE_ROOT, relative_dir, year_str)
+                        # get_local_path() already returns the absolute path including config.data_dir
+                        full_path = local_path_template.format(data_level=data_level)
+                        expected_dir = os.path.join(full_path, year_str)
 
                         if not os.path.isdir(expected_dir):
                             # print_manager.debug(f"  Directory not found for rename check: {expected_dir}")

@@ -39,7 +39,7 @@ if [ -d "/Applications/Visual Studio Code.app" ] || [ -d "$HOME/Applications/Vis
     echo "   2. 🟢 Open Terminal and run: code"
     echo "   3. In VS Code, press Cmd+Shift+P and type 'Python: Select Interpreter'"
     echo "   4. Select the Plotbot environment or browse to: $(conda info --base)/envs/plotbot_env/bin/python"
-    echo "   5. 📂 Open Plotbot.ipynb and select 'Python (Plotbot)' kernel"
+    echo "   5. 📂 Open example_notebooks/Plotbot.ipynb and select 'Python (Plotbot)' kernel"
     echo ""
 else
     echo ""

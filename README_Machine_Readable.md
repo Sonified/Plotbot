@@ -100,7 +100,7 @@ conda run -n plotbot_env python -m pytest tests/test_stardust.py::test_stardust_
 - `data_snapshots/` - Cached calculations  
 - `plotbot/data_classes/` - Class definitions, `data_types.py` config
 - `tests/` - Comprehensive test suite with space-themed output
-- Notebooks: `plotbot_*_examples.ipynb` (primary learning method)
+- Example notebooks: `example_notebooks/plotbot_*_examples.ipynb` (primary learning method)
 
 ## Environment & Dependencies  
 **Setup**: `conda env create -f environment.yml && conda activate plotbot_env`  

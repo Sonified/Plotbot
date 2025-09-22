@@ -1,7 +1,7 @@
 """
 Auto-generated plotbot class for PSP_wavePower_2021-04-29_v1.3.cdf
-Generated on: 2025-08-17T20:58:14.726105
-Source: data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf
+Generated on: 2025-09-18T17:04:47.417019
+Source: ../data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf
 
 This class contains 2 variables from the CDF file.
 """
@@ -42,7 +42,7 @@ class psp_waves_timeseries_class:
         
         
         # Store original CDF file path AND smart pattern for multi-file loading
-        object.__setattr__(self, '_original_cdf_file_path', 'data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf')
+        object.__setattr__(self, '_original_cdf_file_path', '../data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf')
         object.__setattr__(self, '_cdf_file_pattern', 'PSP_wavePower_2021-04-29_v1.3.cdf')
 
         if imported_data is None:
@@ -331,7 +331,7 @@ class psp_waves_timeseries_class:
     def restore_from_snapshot(self, snapshot_data):
         """Restore all relevant fields from a snapshot dictionary/object."""
         for key, value in snapshot_data.__dict__.items():
-            object.__setattr__(self, key, value)
+            setattr(self, key, value)
 
 # Initialize the class with no data
 psp_waves_timeseries = psp_waves_timeseries_class(None)

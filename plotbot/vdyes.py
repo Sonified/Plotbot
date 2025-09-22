@@ -12,7 +12,6 @@ import matplotlib.cm as cm
 from datetime import datetime, timedelta
 import sys
 import os
-import pyspedas
 import cdflib
 import bisect
 import pandas as pd
@@ -96,6 +95,9 @@ def vdyes(trange, force_static=False):
         print_manager.status(f"🎯 Single timestamp: expanding to download range {download_trange}")
     
     # Download using proven pyspedas approach (exactly like our working tests)
+    # Import pyspedas here for lazy loading
+    import pyspedas
+    
     # First try local files only (no_update=True for fast local check)
     VDfile = pyspedas.psp.spi(download_trange, datatype='spi_sf00_8dx32ex8a', level='l2', 
                               notplot=True, time_clip=True, downloadonly=True, get_support_data=True, 

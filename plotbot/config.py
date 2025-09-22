@@ -10,19 +10,18 @@ class PlotbotConfig:
     """
     def __init__(self):
         # --- Data Directory Configuration ---
-        # CRITICAL: Must be set BEFORE pyspedas is imported anywhere
-        # PySpedas caches configuration at import time, so environment variables
-        # set after import have no effect
+        # With lazy loading, this can be set anytime before pyspedas functions are used
         self._data_dir = 'data'  # Private attribute, use property for public access
         """
         Base directory for all data downloads. Both PySpedas and Berkeley downloads
         will use this directory. PySpedas will create subdirectories within this path 
         for different missions (e.g., {data_dir}/psp/, {data_dir}/wind/).
-        This must be set before pyspedas is imported anywhere in the codebase.
+        
+        With lazy loading, this can be changed anytime before calling VDF functions.
+        The environment variable is only set when the user explicitly changes data_dir.
         """
         
-        # Apply the PySpedas configuration immediately
-        self._configure_pyspedas_data_directory()
+        # DO NOT set environment variable on init - true lazy loading!
         
         # --- Data Server Selection ---
         self.data_server = 'dynamic'
@@ -52,7 +51,11 @@ Options:
     @data_dir.setter 
     def data_dir(self, value):
         """
-        Set the data directory path. Handles special case of 'default'.
+        Set the data directory path and automatically configure pyspedas.
+        
+        This setter automatically updates the SPEDAS_DATA_DIR environment variable
+        so that when pyspedas is eventually loaded (lazy loading), it will use 
+        the correct data directory.
         
         Args:
             value (str): New data directory path, or 'default' for original behavior
@@ -62,9 +65,16 @@ Options:
         else:
             new_dir = value
             
+        old_dir = self._data_dir
         self._data_dir = new_dir
+        
         # Immediately update PySpedas configuration
         self._configure_pyspedas_data_directory()
+        
+        # User feedback
+        if old_dir != new_dir:
+            print(f"📁 Plotbot data directory changed: {old_dir} → {new_dir}")
+            print(f"🔧 SPEDAS_DATA_DIR updated for pyspedas compatibility")
     
     @property
     def pyspedas_data_dir(self):
@@ -77,9 +87,17 @@ Options:
     def _configure_pyspedas_data_directory(self):
         """
         Configure PySpedas data directory via environment variable.
-        MUST be called before pyspedas is imported anywhere.
+        
+        With lazy loading, this can be called anytime before pyspedas functions
+        are used. The environment variable will be read when pyspedas is imported.
         """
-        os.environ['SPEDAS_DATA_DIR'] = self._data_dir
+        # Convert to absolute path to ensure PySpedas uses the correct directory
+        # regardless of the current working directory
+        abs_data_dir = os.path.abspath(self._data_dir)
+        os.environ['SPEDAS_DATA_DIR'] = abs_data_dir
+        
+        # Create the directory if it doesn't exist
+        os.makedirs(abs_data_dir, exist_ok=True)
         
 # --- Other Future Configuration Settings Can Go Here --- 
         # Example: self.default_plot_style = 'seaborn-v0_8-darkgrid'
