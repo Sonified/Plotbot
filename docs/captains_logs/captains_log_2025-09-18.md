@@ -73,6 +73,7 @@ This resolves a long-standing user experience issue and makes plotbot much more 
 ## 🚀 Version Release: v3.30
 
 **Version Tag**: `2025_09_18_v3.30`
+**Commit Hash**: `4366943`
 **Commit Message**: `v3.30 Feature: Implement pyspedas lazy loading and enhanced config.data_dir control`
 
 **Release Notes**: Major functionality improvement enabling true lazy loading of pyspedas dependencies and reliable custom data directory control for users.

@@ -193,6 +193,7 @@ tests/test_proton_trange_updates.py
 tests/test_psp_alpha_simple.py
 tests/test_psp_mag_br_norm.py
 tests/test_pyspedas_download.py
+tests/test_pyspedas_lazy_loading.py
 tests/test_sf00_proton_fits_integration.py
 tests/test_showdahodo.py
 tests/test_spectral_cdf_plotbot.py

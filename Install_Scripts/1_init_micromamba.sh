@@ -35,11 +35,14 @@ fi
 # Update PATH for current session
 export PATH="$HOMEBREW_PREFIX/bin:$HOMEBREW_PREFIX/sbin:$PATH"
 
-# Detect shell and profile file
-if [ -n "$ZSH_VERSION" ]; then
+# Detect shell and profile file using more reliable method
+SHELL_BASE="$(basename "${SHELL:-/bin/bash}")"
+if [ "$SHELL_BASE" = "zsh" ]; then
     SHELL_TYPE="zsh"
     PROFILE_FILE="$HOME/.zshrc"
-elif [ -n "$BASH_VERSION" ]; then
+    # Also update .zprofile for macOS zsh login shells
+    ZPROFILE_FILE="$HOME/.zprofile"
+elif [ "$SHELL_BASE" = "bash" ]; then
     SHELL_TYPE="bash"
     PROFILE_FILE="$HOME/.bash_profile"
     if [ ! -f "$PROFILE_FILE" ]; then
@@ -67,6 +70,23 @@ export HOMEBREW_FORCE_VENDOR_RUBY=1
 EOF
     
     echo "✅ Homebrew configuration added to $PROFILE_FILE"
+    
+    # For zsh, also add to .zprofile for login shells (macOS compatibility)
+    if [ "$SHELL_TYPE" = "zsh" ] && [ -n "$ZPROFILE_FILE" ]; then
+        if ! grep -q "HOMEBREW_PREFIX.*homebrew" "$ZPROFILE_FILE" 2>/dev/null; then
+            cat >> "$ZPROFILE_FILE" << 'EOF'
+
+# Homebrew (user installation)
+export HOMEBREW_PREFIX="$HOME/homebrew"
+export PATH="$HOMEBREW_PREFIX/bin:$HOMEBREW_PREFIX/sbin:$PATH"
+export MANPATH="$HOMEBREW_PREFIX/share/man:$MANPATH"
+export INFOPATH="$HOMEBREW_PREFIX/share/info:$INFOPATH"
+export HOMEBREW_CASK_OPTS="--appdir=$HOME/Applications"
+export HOMEBREW_FORCE_VENDOR_RUBY=1
+EOF
+            echo "✅ Homebrew configuration also added to $ZPROFILE_FILE"
+        fi
+    fi
 else
     echo "✅ Homebrew already configured in $PROFILE_FILE"
 fi

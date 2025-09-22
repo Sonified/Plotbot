@@ -407,10 +407,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_18_v3.30"
+__version__ = "2025_09_22_v3.31"
 
 # Commit message for this version
-__commit_message__ = "v3.30 Feature: Implement pyspedas lazy loading and enhanced config.data_dir control"
+__commit_message__ = "v3.31 Fix: Shell detection in micromamba installer for zsh compatibility (resolves Jaye's NASA laptop issue)"
 
 # Print the version and commit message
 print(f"""
