@@ -11,7 +11,8 @@ class PlotbotConfig:
     def __init__(self):
         # --- Data Directory Configuration ---
         # With lazy loading, this can be set anytime before pyspedas functions are used
-        self._data_dir = 'data'  # Private attribute, use property for public access
+        # CRITICAL FIX: Use absolute path to work correctly from any subdirectory
+        self._data_dir = self._get_default_data_dir()  # Private attribute, use property for public access
         """
         Base directory for all data downloads. Both PySpedas and Berkeley downloads
         will use this directory. PySpedas will create subdirectories within this path 
@@ -98,6 +99,27 @@ Options:
         
         # Create the directory if it doesn't exist
         os.makedirs(abs_data_dir, exist_ok=True)
+        
+    def _get_default_data_dir(self):
+        """
+        Get the default data directory as an absolute path relative to the project root.
+        
+        This ensures the data directory works correctly regardless of which subdirectory
+        the code is run from (e.g., running from example_notebooks/).
+        
+        Returns:
+            str: Absolute path to the default data directory
+        """
+        try:
+            # Get the directory containing this file (plotbot/config.py)
+            current_file_dir = os.path.dirname(os.path.abspath(__file__))
+            # Go up one level to get the project root (from plotbot/ to Plotbot/)
+            project_root = os.path.dirname(current_file_dir)
+            # Return absolute path to data directory
+            return os.path.join(project_root, 'data')
+        except Exception:
+            # Fallback: use 'data' relative to current working directory
+            return 'data'
         
 # --- Other Future Configuration Settings Can Go Here --- 
         # Example: self.default_plot_style = 'seaborn-v0_8-darkgrid'

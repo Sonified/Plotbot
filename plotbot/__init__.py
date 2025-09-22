@@ -407,10 +407,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_22_v3.32"
+__version__ = "2025_09_22_v3.35"
 
 # Commit message for this version
-__commit_message__ = "v3.32 Fix: Multiplot spectral colorbar positioning and DFB data path resolution"
+__commit_message__ = "v3.35 Fix: Ham data import path resolution and investigation of irregular time cadence issues"
 
 # Print the version and commit message
 print(f"""

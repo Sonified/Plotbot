@@ -726,7 +726,9 @@ def import_data_function(trange, data_type):
             end_step(step_key, step_start, {"error": "config error"})
             return None
 
-        ham_base_path = config.get('local_path')
+        # CRITICAL FIX: Use get_local_path to get absolute path that works from subdirectories
+        # get_local_path is already imported at the top of this file  
+        ham_base_path = get_local_path('ham')
         ham_patterns = config.get('file_pattern_import', ['*.csv'])  # Default to all CSVs if not specified
         datetime_column = config.get('datetime_column', 'datetime')  # Get datetime column name
 

@@ -1494,7 +1494,9 @@ def multiplot(plot_list, **kwargs):
             ham_class_instance = data_cubby.grab('ham')
             if ham_class_instance:
                 ham_var = ham_class_instance.get_subclass(getattr(options.ham_var, 'subclass_name', 'hamogram_30s'))
-                print_manager.debug(f"Panel {i+1}: Refreshed HAM variable reference from data_cubby")
+                # CRITICAL FIX: Update the original options.ham_var reference to point to the refreshed instance
+                options.ham_var = ham_var
+                print_manager.debug(f"Panel {i+1}: Refreshed HAM variable reference from data_cubby and updated options.ham_var")
             else:
                 print_manager.error(f"Panel {i+1}: Failed to get ham class from data_cubby")
             # Use ham_var for plotting below
