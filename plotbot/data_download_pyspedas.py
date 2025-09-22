@@ -189,10 +189,18 @@ def download_dfb_precise(trange, plotbot_key, config):
         
         # Construct remote and local paths
         remote_path = config['remote_path'] + year + '/'
-        # Use config.data_dir as base, not the full path from get_local_path()
-        # because pyspedas_download expects the root directory where it will create mission subdirectories
-        import plotbot
-        local_path = plotbot.config.data_dir
+        # FIXED: Use get_local_path() to properly respect custom config.data_dir
+        # The config['local_path'] is just a template - get_local_path() converts it to the actual path
+        import os
+        from plotbot.data_classes.data_types import get_local_path
+        local_path_template = get_local_path(plotbot_key)
+        # Format the template with the actual data level (e.g., replace {data_level} with l2)
+        data_level = config.get('data_level', 'l2')
+        local_path_base = local_path_template.format(data_level=data_level)
+        local_path = os.path.join(local_path_base, year)
+        # Ensure the directory exists before pyspedas tries to download
+        os.makedirs(local_path, exist_ok=True)
+        local_path = local_path + '/'  # pyspedas expects trailing slash
         
         # File pattern for this specific date
         file_pattern = f'*{date_str}*.cdf'

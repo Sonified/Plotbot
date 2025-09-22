@@ -493,11 +493,23 @@ def multiplot(plot_list, **kwargs):
         else:
             figsize = (options.width, options.height_per_panel * n_panels)
             dpi = 300
-        # Use the user's constrained_layout setting
-        print_manager.test(f"[LAYOUT] Using user's constrained_layout setting: {options.constrained_layout}")
-        fig, axs = plt.subplots(n_panels, 1, figsize=figsize, dpi=dpi, constrained_layout=options.constrained_layout)
+        # CRITICAL FIX: Check for spectral plots and force constrained_layout=False if found
+        # This prevents constrained_layout from interfering with manual colorbar positioning
+        has_spectral_plots = any(
+            hasattr(var, 'plot_type') and var.plot_type == 'spectral' 
+            for time, var in plot_list
+        )
         
-        if options.constrained_layout:
+        if has_spectral_plots and options.constrained_layout:
+            print_manager.status(f"🔧 SPECTRAL PLOTS DETECTED: Forcing constrained_layout=False to prevent colorbar positioning issues")
+            use_constrained_layout = False
+        else:
+            use_constrained_layout = options.constrained_layout
+            
+        print_manager.test(f"[LAYOUT] Final constrained_layout setting: {use_constrained_layout} (user setting: {options.constrained_layout}, has spectral: {has_spectral_plots})")
+        fig, axs = plt.subplots(n_panels, 1, figsize=figsize, dpi=dpi, constrained_layout=use_constrained_layout)
+        
+        if use_constrained_layout:
             print_manager.status(f"Using constrained_layout=True - letting matplotlib handle all spacing automatically.")
         else:
             print_manager.status(f"Using constrained_layout=False - applying manual margins.")
@@ -510,11 +522,23 @@ def multiplot(plot_list, **kwargs):
             )
             print_manager.status(f"Set margins (top={options.margin_top}, bottom={options.margin_bottom}, left={options.margin_left}, right={options.margin_right}) and hspace={options.hspace_vertical_space_between_plots}")
     else:
-        # Use the user's constrained_layout setting
-        print_manager.test(f"[LAYOUT] Using user's constrained_layout setting: {options.constrained_layout}")
-        fig, axs = plt.subplots(n_panels, 1, figsize=(options.width, options.height_per_panel * n_panels), constrained_layout=options.constrained_layout)
+        # CRITICAL FIX: Check for spectral plots and force constrained_layout=False if found
+        # This prevents constrained_layout from interfering with manual colorbar positioning
+        has_spectral_plots = any(
+            hasattr(var, 'plot_type') and var.plot_type == 'spectral' 
+            for time, var in plot_list
+        )
         
-        if options.constrained_layout:
+        if has_spectral_plots and options.constrained_layout:
+            print_manager.status(f"🔧 SPECTRAL PLOTS DETECTED: Forcing constrained_layout=False to prevent colorbar positioning issues")
+            use_constrained_layout = False
+        else:
+            use_constrained_layout = options.constrained_layout
+            
+        print_manager.test(f"[LAYOUT] Final constrained_layout setting: {use_constrained_layout} (user setting: {options.constrained_layout}, has spectral: {has_spectral_plots})")
+        fig, axs = plt.subplots(n_panels, 1, figsize=(options.width, options.height_per_panel * n_panels), constrained_layout=use_constrained_layout)
+        
+        if use_constrained_layout:
             print_manager.status(f"Using constrained_layout=True - letting matplotlib handle all spacing automatically.")
         else:
             print_manager.status(f"Using constrained_layout=False - applying manual margins.")
@@ -1434,21 +1458,16 @@ def multiplot(plot_list, **kwargs):
                                     pos = axs[i].get_position()
                                     print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: Axis position - x0={pos.x0:.3f}, y0={pos.y0:.3f}, x1={pos.x1:.3f}, y1={pos.y1:.3f}, width={pos.width:.3f}, height={pos.height:.3f}")
                                     
-                                    # DEBUGGING: Try different colorbar approaches
+                                    # RESTORED: Use the original working manual positioning from v2.99
+                                    # This was the approach that worked perfectly before!
                                     try:
-                                        # METHOD 1: Original manual positioning
+                                        # Original working positioning: width=0.02, full panel height
                                         cax = fig.add_axes([pos.x1 + 0.01, pos.y0, 0.02, pos.height])
                                         cbar = fig.colorbar(im, cax=cax)
-                                        print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: ✅ Colorbar added with manual positioning!")
+                                        print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: ✅ Colorbar added with ORIGINAL working manual positioning!")
                                     except Exception as cbar_e:
                                         print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: ❌ Manual colorbar failed: {str(cbar_e)}")
-                                        try:
-                                            # METHOD 2: Use matplotlib's automatic positioning
-                                            cbar = fig.colorbar(im, ax=axs[i], shrink=0.8, aspect=20)
-                                            print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: ✅ Colorbar added with automatic positioning!")
-                                        except Exception as cbar_e2:
-                                            print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: ❌ Automatic colorbar also failed: {str(cbar_e2)}")
-                                            cbar = None
+                                        cbar = None
 
                                     if hasattr(var, 'colorbar_label') and cbar is not None:
                                         cbar.set_label(var.colorbar_label)

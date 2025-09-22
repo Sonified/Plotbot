@@ -53,3 +53,57 @@ The installer now works reliably across different shell environments and install
 - Syntax validation: ✅ Passed (`bash -n` test)
 - Backward compatibility: ✅ All existing logic preserved
 - Only ~15 lines changed out of 180+ total lines
+
+---
+
+## Multiplot Spectral Colorbar Fix
+
+### Issue Identified
+User reported that spectral plot colorbars in multiplot were "flying out in the ether" - appearing too small, thin, and poorly positioned.
+
+### Root Cause Analysis
+**Two separate issues discovered:**
+
+1. **DFB Data Loading Bug**: 
+   - DFB precise download was saving files to `data/` instead of `data/psp/fields/l2/dfb_ac_spec/dv12hg/YYYY/`
+   - The `{data_level}` template wasn't being resolved in path construction
+   - Fixed in `plotbot/data_download_pyspedas.py`
+
+2. **Colorbar Positioning Problem**:
+   - Manual positioning logic was too complex and unreliable
+   - `constrained_layout=True` was interfering with manual colorbar positioning
+   - Found working v2.99 approach was simpler and more effective
+
+### Solution Implemented
+**DFB Path Fix:**
+- Fixed `get_local_path()` template resolution in `data_download_pyspedas.py` 
+- Ensured proper directory creation and data level formatting
+
+**Colorbar Fix:**
+- Restored original v2.99 manual positioning: `cax = fig.add_axes([pos.x1 + 0.01, pos.y0, 0.02, pos.height])`
+- Added automatic spectral plot detection to force `constrained_layout=False`
+- Width: 0.02 (proper thickness), Height: full panel height
+
+### Actions Taken
+- [x] Created comprehensive test to reproduce colorbar issues
+- [x] Fixed DFB download path template resolution bug  
+- [x] Restored v2.99 working colorbar positioning approach
+- [x] Added automatic spectral plot detection for layout control
+- [x] Tested with user's exact 3-panel epad.strahl example
+- [x] Verified colorbars now appear properly sized and positioned
+
+### Resolution Status: ✅ COMPLETE
+**Version**: v3.32
+**Commit Message**: "v3.32 Fix: Multiplot spectral colorbar positioning and DFB data path resolution"
+
+The multiplot spectral plots now display with properly positioned, appropriately sized colorbars.
+
+### Key Technical Changes
+1. **DFB Path Resolution** (`plotbot/data_download_pyspedas.py`):
+   - Fixed template string formatting for `{data_level}` placeholder
+   - Ensured files download to correct subdirectory structure
+
+2. **Colorbar Positioning** (`plotbot/multiplot.py`):
+   - Restored v2.99 manual positioning approach  
+   - Added automatic `constrained_layout=False` for spectral plots
+   - Simplified positioning logic for reliability
