@@ -98,19 +98,12 @@ def vdyes(trange, force_static=False):
     # Import pyspedas here for lazy loading
     import pyspedas
     
-    # First try local files only (no_update=True for fast local check)
+    # Use reliable download approach (no_update=False for proper file filtering)
+    # Note: no_update=True was removed due to false matches with wrong file types (L3 vs L2)
+    print_manager.status("📡 Checking/downloading VDF files with proper filtering...")
     VDfile = pyspedas.psp.spi(download_trange, datatype='spi_sf00_8dx32ex8a', level='l2', 
                               notplot=True, time_clip=True, downloadonly=True, get_support_data=True, 
-                              no_update=True)
-    
-    # If no local files found, allow download
-    if not VDfile:
-        print_manager.status("📡 No local VDF files found, attempting download...")
-        VDfile = pyspedas.psp.spi(download_trange, datatype='spi_sf00_8dx32ex8a', level='l2', 
-                                  notplot=True, time_clip=True, downloadonly=True, get_support_data=True, 
-                                  no_update=False)
-    else:
-        print_manager.status("✅ Using cached VDF files (no download needed)")
+                              no_update=False)
     
     if not VDfile:
         raise ValueError(f"No VDF files downloaded for trange: {trange}")
@@ -385,7 +378,7 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
             time_str = available_times[time_index].strftime("%Y-%m-%d %H:%M:%S")
             fig.suptitle(f'PSP SPAN-I VDF Widget - {time_str}', y=1.02, fontsize=16 * vdf_class.vdf_text_scaling)
             
-            plt.show()
+            # Note: plt.show() removed - plot displays automatically in widget output area
             
             # Update time label
             time_display.value = time_str
@@ -619,15 +612,8 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
         vdf_output
     ], layout=Layout(padding='0px'))
     
-    # Auto-display widget in Jupyter (like Hopf explorer)
-    try:
-        from IPython import get_ipython
-        from IPython.display import display
-        
-        if get_ipython() is not None and hasattr(get_ipython(), 'kernel'):
-            display(widget_layout)
-    except (ImportError, AttributeError):
-        pass
+    # Note: Widget will auto-display when returned (Jupyter behavior)
+    # Removed explicit display() call to prevent duplicate UI
     
     # Make ONE explicit plot call at the very end (Hopf explorer pattern)
     update_vdf_plot(0)

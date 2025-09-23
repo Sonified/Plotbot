@@ -239,7 +239,15 @@ User reported ham data appeared corrupted showing only single values (0.5) inste
 4. **Path independence**: Fixed directory-dependent behavior for consistent execution
 
 ### Resolution Status: ✅ INVESTIGATED & DOCUMENTED
-**Version**: v3.35  
-**Commit Message**: "v3.35 Fix: Ham data import path resolution and investigation of irregular time cadence issues"
+**Version**: v3.33  
+**Commit Message**: "v3.33 Fix: Ham data import path resolution and investigation of irregular time cadence issues"
 
 The issue root cause identified as data_cubby interaction with irregular time series. CSV files confirmed intact.
+
+### Pre-Push Summary
+**Ready for v3.33 push:**
+- ✅ Fixed critical path resolution bug for subdirectory execution (config.py, data_import.py)
+- ✅ Conducted comprehensive ham data investigation - CSV files verified intact  
+- ✅ Identified root cause: irregular time cadence (1.7s-58.4s) causing data_cubby artifacts
+- ✅ Captain's log updated with complete analysis and technical findings
+- ✅ Version incremented to v3.33 following server version v3.32

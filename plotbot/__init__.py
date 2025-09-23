@@ -407,10 +407,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_22_v3.35"
+__version__ = "2025_09_23_v3.35"
 
 # Commit message for this version
-__commit_message__ = "v3.35 Fix: Ham data import path resolution and investigation of irregular time cadence issues"
+__commit_message__ = "v3.35 Fix: VDF widget duplicate UI generation - removed duplicate display calls and extra plt.show()"
 
 # Print the version and commit message
 print(f"""
