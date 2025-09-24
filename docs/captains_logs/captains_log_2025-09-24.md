@@ -87,3 +87,39 @@ SPEDAS_DATA_DIR: /Users/robertalexander/GitHub/Plotbot/data
 - Test installer on fresh system with network restrictions
 - Monitor for any regressions from changes
 - Consider creating installation verification script
+
+## Major Architecture Refactor: The Great Rename (v3.41)
+
+### Accomplishment
+- **Mission Complete**: Successfully renamed `ploptions` → `plot_config` across entire codebase
+- **Goal**: Free up the `ploptions` name for user-facing global options module
+- **Scope**: 107 files changed, 2944 insertions, 2030 deletions
+
+### Technical Implementation
+**Automated Codebase-Wide Replacement**:
+1. ✅ **File renamed**: `ploptions.py` → `plot_config.py`
+2. ✅ **Class renamed**: `ploptions` → `plot_config`  
+3. ✅ **Parameters**: `plot_options=` → `plot_config=`
+4. ✅ **Attributes**: `.plot_options` → `.plot_config`
+5. ✅ **Imports**: `from plotbot.ploptions` → `from plotbot.plot_config`
+6. ✅ **Functions**: `retrieve_ploption_snapshot` → `retrieve_plot_config_snapshot`
+
+### Critical Bug Fixes
+- **plot_manager.py**: Fixed parameter name mismatches after automated rename
+- **Syntax Warnings**: Fixed invalid escape sequences in LaTeX strings (`\odot` → `r'\odot'`)
+
+### Strategic Impact
+- **Architecture**: Enables modular plotting system with composable figures
+- **User Experience**: Clears path for clean `ploptions.return_figure`/`ploptions.display_figure` API
+- **Future Development**: Sets foundation for modular vdyes with plotbot integration
+
+### Verification
+- ✅ Core system imports successfully
+- ✅ No SyntaxWarnings remaining  
+- ✅ All internal references updated correctly
+- ✅ Ready for next phase: user-facing ploptions module
+
+### Git Commit
+**Version**: v3.41  
+**Commit Message**: "v3.41 Major Refactor: Complete ploptions→plot_config rename across codebase - frees ploptions name for user-facing global options"  
+**Hash**: c62b101

@@ -114,11 +114,28 @@ def vdyes(trange, force_static=False):
     
     if not VDfile:
         raise ValueError(f"No VDF files downloaded for trange: {trange}")
-        
-    print_manager.status(f"📁 Downloaded: {VDfile[0]}")
+    
+    # Debug: Show ALL files returned by pyspedas
+    print_manager.status(f"📁 PySpedas returned {len(VDfile)} file(s):")
+    for i, file_path in enumerate(VDfile):
+        print_manager.status(f"   [{i}] {file_path}")
+    
+    # CRITICAL FIX: Filter to ensure we ONLY get the l2 file (l3 files don't contain VDF data!)
+    l2_files = [f for f in VDfile if 'spi_sf00_l2_8dx32ex8a' in f and 'l3' not in f]
+    
+    if l2_files:
+        selected_file = l2_files[0]  # Use first l2 file
+        print_manager.status(f"✅ Selected l2 VDF file: {selected_file}")
+    else:
+        # No l2 VDF files found - this is an error condition
+        l3_files = [f for f in VDfile if 'l3' in f]
+        if l3_files:
+            raise ValueError(f"❌ VDF Error: Only l3 files found ({l3_files}), but VDF data requires l2 files! l3 contains moments, not velocity distributions.")
+        else:
+            raise ValueError(f"❌ VDF Error: No l2 VDF files found in {VDfile}. VDF plotting requires 'spi_sf00_l2_8dx32ex8a' files.")
     
     # Process data using EXACT working approach
-    dat = cdflib.CDF(VDfile[0])
+    dat = cdflib.CDF(selected_file)
     
     # Get time array to determine mode
     epoch_dt64 = cdflib.cdfepoch.to_datetime(dat.varget('Epoch'))
