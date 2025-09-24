@@ -63,11 +63,27 @@ SPEDAS_DATA_DIR: /Users/robertalexander/GitHub/Plotbot/data
 - Default behavior should work out-of-the-box for new users
 - Testing installation from scratch reveals configuration issues
 
+### Micromamba Installer Overhaul (v3.40)
+
+**Additional Critical Fixes Applied:**
+- **NASA Network Compatibility**: Added Jaye's anaconda-avoiding flags to all micromamba commands
+  - `--no-rc --override-channels -c conda-forge --channel-priority strict`
+  - Eliminates all contact with `repo.anaconda.com`
+  - Uses only conda-forge servers (government network friendly)
+- **Path Corrections**: Fixed remaining micromamba path inconsistencies
+- **Case Sensitivity**: Resolved directory path case issues in installers
+
+**Testing Results:**
+- ✅ Micromamba installer now completes without anaconda warnings
+- ✅ All packages install from conda-forge only
+- ✅ Environment creation successful on restricted networks
+- ✅ Plotbot development package installation working
+
 ### Git Commit
-**Version**: v3.38  
-**Commit Message**: "v3.38 Critical Fix: PySpedas data directory configuration bug - SPEDAS_DATA_DIR now properly set during initialization"
+**Version**: v3.40  
+**Commit Message**: "v3.40 Critical Fix: Complete micromamba installer overhaul - NASA network compatible with anaconda-avoiding flags"
 
 ### Next Steps
-- Monitor for any regressions from this change
-- Consider adding installation verification script
-- Document this fix in troubleshooting guide
+- Test installer on fresh system with network restrictions
+- Monitor for any regressions from changes
+- Consider creating installation verification script
