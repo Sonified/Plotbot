@@ -407,10 +407,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_24_v3.43"
+__version__ = "2025_09_24_v3.44"
 
 # Commit message for this version
-__commit_message__ = "v3.43 Critical Fix: PySpedas no_update parameter bug - no_update=True ignores level='l2' causing wrong file selection"
+__commit_message__ = "v3.44 Performance Fix: Smart local VDF file checking - avoid unnecessary pyspedas calls when l2 files exist locally"
 
 # Print the version and commit message
 print(f"""

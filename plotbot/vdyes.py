@@ -94,25 +94,42 @@ def vdyes(trange, force_static=False):
                           end_dt.strftime('%Y/%m/%d %H:%M:%S.%f')[:-3]]
         print_manager.status(f"🎯 Single timestamp: expanding to download range {download_trange}")
     
-    # Download using proven pyspedas approach (exactly like our working tests)
-    # Import pyspedas here for lazy loading
-    import pyspedas
+    # SMART APPROACH: Check for local l2 file first, only download if missing
+    from pathlib import Path
+    from dateutil.parser import parse
+    from .config import config
     
-    # FIXED: Always use no_update=False so pyspedas respects level='l2' parameter
-    # no_update=True ignores the level parameter and returns any matching files!
-    VDfile = pyspedas.psp.spi(download_trange, datatype='spi_sf00_8dx32ex8a', level='l2', 
-                              notplot=True, time_clip=True, downloadonly=True, get_support_data=True, 
-                              no_update=False)
+    # Parse date from trange to construct expected file path
+    target_date = parse(download_trange[0].replace('/', ' '))
+    year_str = str(target_date.year)
+    date_str = target_date.strftime('%Y%m%d')
     
-    if not VDfile:
-        raise ValueError(f"No VDF files downloaded for trange: {trange}")
+    # Construct expected l2 VDF file path (following PSP data structure)
+    expected_l2_path = Path(config.data_dir) / "psp/sweap/spi/l2/spi_sf00_8dx32ex8a" / year_str / f"psp_swp_spi_sf00_l2_8dx32ex8a_{date_str}_v04.cdf"
     
-    # Debug: Show ALL files returned by pyspedas
-    print_manager.status(f"📁 PySpedas returned {len(VDfile)} file(s):")
+    if expected_l2_path.exists():
+        print_manager.status(f"✅ Using local l2 VDF file: {expected_l2_path}")
+        VDfile = [str(expected_l2_path)]
+    else:
+        print_manager.status(f"📡 l2 VDF file not found locally, downloading: {expected_l2_path}")
+        # Import pyspedas here for lazy loading
+        import pyspedas
+        
+        # CRITICAL: no_update=False is required! 
+        # no_update=True ignores the level='l2' parameter and returns ANY matching files
+        VDfile = pyspedas.psp.spi(download_trange, datatype='spi_sf00_8dx32ex8a', level='l2', 
+                                  notplot=True, time_clip=True, downloadonly=True, get_support_data=True, 
+                                  no_update=False)  # Must be False to respect level='l2'!
+        
+        if not VDfile:
+            raise ValueError(f"No VDF files downloaded for trange: {trange}")
+    
+    # Debug: Show what files we're working with
+    print_manager.status(f"📁 Working with {len(VDfile)} file(s):")
     for i, file_path in enumerate(VDfile):
         print_manager.status(f"   [{i}] {file_path}")
     
-    # CRITICAL FIX: Filter to ensure we ONLY get the l2 file (l3 files don't contain VDF data!)
+    # CRITICAL FIX: Ensure we only work with l2 files (l3 files don't contain VDF data!)
     l2_files = [f for f in VDfile if 'spi_sf00_l2_8dx32ex8a' in f and 'l3' not in f]
     
     if l2_files:

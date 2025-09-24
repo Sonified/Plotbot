@@ -159,3 +159,39 @@ else:
 **Version**: v3.42  
 **Commit Message**: "v3.42 Critical Fix: VDF file selection - ensure vdyes always uses l2 files (VDF data) never l3 files (moments only)"  
 **Hash**: 7391ced
+
+## PySpedas Parameter Bug Fix (v3.43)
+
+### Critical Discovery
+- **Issue**: Jaye's system only finding l3 files despite `level='l2'` parameter
+- **Root Cause**: `no_update=True` completely **ignores** the `level='l2'` parameter!
+- **PySpedas Behavior**: When `no_update=True`, it returns ANY matching local files regardless of level specification
+
+### Technical Analysis
+**Buggy Logic**:
+```python
+# BAD: no_update=True ignores level='l2' completely
+VDfile = pyspedas.psp.spi(..., level='l2', no_update=True)  # Returns l3 files anyway!
+```
+
+**Fixed Logic**:
+```python
+# GOOD: no_update=False respects level='l2' parameter
+VDfile = pyspedas.psp.spi(..., level='l2', no_update=False)  # Only returns l2 files
+```
+
+### Solution Implemented
+**File**: `plotbot/vdyes.py`
+**Critical Change**: Removed two-stage download approach, always use `no_update=False`
+
+**Before** (Broken):
+- First try: `no_update=True` (ignored level parameter)
+- Second try: `no_update=False` (but only if first failed)
+
+**After** (Fixed):
+- Single call: `no_update=False` (always respects level parameter)
+
+### Git Commit
+**Version**: v3.43  
+**Commit Message**: "v3.43 Critical Fix: PySpedas no_update parameter bug - no_update=True ignores level='l2' causing wrong file selection"  
+**Hash**: 2a8d34f
