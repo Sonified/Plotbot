@@ -6,8 +6,8 @@ echo "🚀 Setting up Plotbot in Jupyter..."
 source "$(conda info --base)/etc/profile.d/conda.sh"
 
 # Activate the environment
-conda activate plotbot_env || { 
-    echo "❌ Failed to activate plotbot_env. Please verify it exists with 'conda env list'"; 
+conda activate plotbot_anaconda || { 
+    echo "❌ Failed to activate plotbot_anaconda. Please verify it exists with 'conda env list'"; 
     exit 1; 
 }
 
@@ -18,13 +18,13 @@ echo "✓ Using Python: $(which python)"
 pip install ipykernel --quiet
 
 # Remove any existing kernel with the same name
-jupyter kernelspec uninstall -f plotbot_env 2>/dev/null || true
+jupyter kernelspec uninstall -f plotbot_anaconda 2>/dev/null || true
 
 # Register the kernel
-python -m ipykernel install --user --name=plotbot_env --display-name="Python (Plotbot)"
+python -m ipykernel install --user --name=plotbot_anaconda --display-name="Python (Plotbot)"
 
 # Verify the kernel was correctly installed
-if jupyter kernelspec list | grep -q plotbot_env; then
+if jupyter kernelspec list | grep -q plotbot_anaconda; then
     echo "✅ Success! Plotbot is now registered with Jupyter!"
 else
     echo "❌ Something went wrong with the Plotbot registration."
@@ -38,7 +38,7 @@ if [ -d "/Applications/Visual Studio Code.app" ] || [ -d "$HOME/Applications/Vis
     echo "   1. ❌ CLOSE VS Code completely if it's open"
     echo "   2. 🟢 Open Terminal and run: code"
     echo "   3. In VS Code, press Cmd+Shift+P and type 'Python: Select Interpreter'"
-    echo "   4. Select the Plotbot environment or browse to: $(conda info --base)/envs/plotbot_env/bin/python"
+    echo "   4. Select the Plotbot environment or browse to: $(conda info --base)/envs/plotbot_anaconda/bin/python"
     echo "   5. 📂 Open example_notebooks/Plotbot.ipynb and select 'Python (Plotbot)' kernel"
     echo ""
 else
@@ -46,7 +46,7 @@ else
     echo "📣 VS Code not detected. If you use VS Code:"
     echo "   After installation, you'll need to manually select the Python interpreter:"
     echo "   - Press Cmd+Shift+P and type 'Python: Select Interpreter'"
-    echo "   - Select the Plotbot environment or browse to: $(conda info --base)/envs/plotbot_env/bin/python"
+    echo "   - Select the Plotbot environment or browse to: $(conda info --base)/envs/plotbot_anaconda/bin/python"
     echo ""
 fi
 

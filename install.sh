@@ -21,12 +21,14 @@ echo "   - Requires manual prerequisite installation"
 echo ""
 echo "3) Cancel"
 echo ""
-# Loop until we get a valid choice
-while true; do
-    read -p "Enter your choice (1, 2, or 3): " -r INSTALL_CHOICE
-    echo ""
-
-    case $INSTALL_CHOICE in
+# Check if we're in an interactive shell
+if [[ $- == *i* ]] || [[ -t 0 ]]; then
+    # Interactive mode - use read loop
+    while true; do
+        read -p "Enter your choice (1, 2, or 3): " -r INSTALL_CHOICE
+        echo ""
+        
+        case $INSTALL_CHOICE in
     1)
         echo ""
         echo "🔹 You selected: Micromamba Installation"
@@ -57,3 +59,15 @@ while true; do
     esac
     break  # Exit the loop when we get a valid choice
 done
+else
+    # Non-interactive mode - show error and instructions
+    echo "❌ ERROR: This script requires interactive input but is running in non-interactive mode."
+    echo ""
+    echo "💡 Solutions:"
+    echo "   1. Run this script directly in your terminal (not through an AI tool)"
+    echo "   2. Or use individual install scripts directly:"
+    echo "      - For micromamba: ./Install_Scripts/install_micromamba.sh"  
+    echo "      - For anaconda:   ./Install_Scripts/install_anaconda.sh"
+    echo ""
+    exit 1
+fi

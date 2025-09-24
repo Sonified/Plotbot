@@ -181,6 +181,7 @@ tests/test_grid_composer_simple.py
 tests/test_ham_freshness.py
 tests/test_interactive_vdf_plotly.py
 tests/test_multiplot.py
+tests/test_multiplot_spectral_colorbar.py
 tests/test_multiplot_spectral_regression.py
 tests/test_multiplot_strahl_example_working.py
 tests/test_orbit_performance.py

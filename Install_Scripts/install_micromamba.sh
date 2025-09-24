@@ -13,7 +13,7 @@ echo "This process will:"
 echo "1. Install Homebrew in your home directory (no sudo required)"
 echo "2. Install micromamba via Homebrew"
 echo "3. Create a conda-forge-only environment file"
-echo "4. Set up the plotbot_env environment"
+echo "4. Set up the plotbot_micromamba environment"
 echo "5. Register the Jupyter kernel"
 echo ""
 

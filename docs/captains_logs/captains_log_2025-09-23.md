@@ -156,4 +156,55 @@ Key changes:
 - **Version**: v3.36
 - **Commit Message**: v3.36 Fix: VDF widget complete overhaul - single plot display, better UX, organized saves
 
+### Push Status
+✅ **Pushed to GitHub**: Hash `264458c` (copied to clipboard)
+- **Files**: `plotbot/vdyes.py`, `plotbot/__init__.py`, `docs/captains_logs/captains_log_2025-09-23.md`, example notebook
+- **Major achievement**: Single-plot VDF widget with clean UX and organized saves
+
+---
+
+## Installation Script Fixes: Environment Names and Non-Interactive Terminal Handling
+
+### Issues Resolved
+1. **Anaconda install environment name mismatches** causing kernel registration failures
+2. **Main installer infinite loop** in non-interactive terminal environments (Cursor AI terminal)
+
+### Root Causes & Solutions
+
+**1. Anaconda Environment Name Mismatches:**
+- **Problem**: `environment.yml` creates `plotbot_anaconda` but scripts referenced `plotbot_env`
+- **Files affected**: `Install_Scripts/3_register_kernel.sh`, `Install_Scripts/install_anaconda.sh`
+- **Solution**: Updated all references to use consistent `plotbot_anaconda` naming
+
+**2. Micromamba Script Documentation Issues:**
+- **Problem**: Help text referenced wrong environment/kernel names despite functional code being correct
+- **Files affected**: `Install_Scripts/4_register_kernel_micromamba.sh`, `Install_Scripts/install_micromamba.sh`
+- **Solution**: Fixed display messages and manual activation commands for consistency
+
+**3. Main Installer Non-Interactive Failure:**
+- **Problem**: `install.sh` had incomplete `if` statement for interactive detection causing infinite loop
+- **Root cause**: AI terminal environment became non-interactive (`TERM=dumb`, `not a tty`)
+- **Solution**: Added proper `else` clause with helpful error message and alternative instructions
+
+### Technical Implementation
+**Files modified:**
+- `install.sh` - Added complete non-interactive handling
+- `Install_Scripts/3_register_kernel.sh` - Fixed environment references
+- `Install_Scripts/install_anaconda.sh` - Fixed pip install and IDE config paths  
+- `Install_Scripts/4_register_kernel_micromamba.sh` - Fixed documentation strings
+- `Install_Scripts/install_micromamba.sh` - Fixed environment description text
+
+### Impact
+- ✅ **Anaconda installation** now works correctly with proper environment names
+- ✅ **Main installer** handles non-interactive environments gracefully 
+- ✅ **Consistent naming** across all installation scripts
+- ✅ **Better UX** with clear error messages and alternatives
+
+### Discovery
+Found that Cursor's AI terminal environment changed from interactive to non-interactive, breaking scripts that previously worked. This led to filing a bug report with Cursor team about the regression.
+
+### Version Information
+- **Version**: v3.37
+- **Commit Message**: v3.37 Fix: Repair anaconda install environment name mismatches and add non-interactive terminal handling to main installer
+
 ---
