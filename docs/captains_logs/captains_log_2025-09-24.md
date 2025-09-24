@@ -123,3 +123,39 @@ SPEDAS_DATA_DIR: /Users/robertalexander/GitHub/Plotbot/data
 **Version**: v3.41  
 **Commit Message**: "v3.41 Major Refactor: Complete ploptions→plot_config rename across codebase - frees ploptions name for user-facing global options"  
 **Hash**: c62b101
+
+## Critical VDF File Selection Fix (v3.42)
+
+### Problem Identified
+- **Issue**: Colleague experiencing wrong file selection in vdyes()
+- **Root Cause**: PySpedas returning both l2 and l3 files, but vdyes blindly taking first file (`VDfile[0]`)
+- **Data Error**: l3 files contain moments data (density, temperature), NOT velocity distribution functions
+
+### Technical Analysis
+**File Type Distinction**:
+- **l2 files** (`spi_sf00_l2_8dx32ex8a`): Raw velocity distribution function data ✅ (Required for vdyes)
+- **l3 files** (`spi_sf00_L3_mom`): Processed moments data ❌ (Wrong data type for VDF plotting)
+
+### Solution Implemented
+**File**: `plotbot/vdyes.py`
+**Changes**:
+1. **Debug Logging**: Show ALL files returned by pyspedas
+2. **Smart Filtering**: Only select l2 files, never l3
+3. **Clear Errors**: Explicit error messages when l3 files found instead of l2
+4. **No Fallback**: Never attempt to use l3 files for VDF data
+
+### New Logic
+```python
+# Debug: Show ALL files returned by pyspedas
+l2_files = [f for f in VDfile if 'spi_sf00_l2_8dx32ex8a' in f and 'l3' not in f]
+
+if l2_files:
+    selected_file = l2_files[0]  # Use first l2 file
+else:
+    raise ValueError("VDF data requires l2 files! l3 contains moments, not velocity distributions.")
+```
+
+### Git Commit
+**Version**: v3.42  
+**Commit Message**: "v3.42 Critical Fix: VDF file selection - ensure vdyes always uses l2 files (VDF data) never l3 files (moments only)"  
+**Hash**: 7391ced
