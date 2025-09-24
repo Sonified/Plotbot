@@ -78,7 +78,7 @@ def test_standalone_spectral_plot():
                     return False
 
                 # Use raw datetime array for time clipping, not the property (which is now clipped)
-                raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
                 time_indices = time_clip(raw_datetime_array, trange[0], trange[1])  # Get time range indices
                 if len(time_indices) == 0:
                     empty_plot = True

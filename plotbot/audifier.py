@@ -173,7 +173,7 @@ class Audifier:
         # Get indices for the time range
         try:
             # Use raw datetime array for clipping, not the property (which is now clipped)
-            datetime_array = components[0].plot_options.datetime_array if hasattr(components[0], 'plot_options') else components[0].datetime_array
+            datetime_array = components[0].plot_config.datetime_array if hasattr(components[0], 'plot_options') else components[0].datetime_array
             indices = np.where((datetime_array >= start_dt) & 
                               (datetime_array < stop_dt))[0]
         except TypeError as e:
@@ -539,7 +539,7 @@ class Audifier:
         file_names = {}
         
         # Generate markers using the raw datetime array to match how indices were computed
-        raw_datetime_array = processed_components[0].plot_options.datetime_array
+        raw_datetime_array = processed_components[0].plot_config.datetime_array
         marker_file = self.generate_markers(
             raw_datetime_array[indices],
             trange,

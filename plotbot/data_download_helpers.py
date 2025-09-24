@@ -460,7 +460,7 @@ def create_pattern_string(pattern_template, data_level, date_info):
 
     Returns:
         A string containing the compiled regex pattern ready for matching.
-        Example: 'psp_fld_l2_mag_rtn_4sa_20230101_v(\d+).cdf'
+        Example: r'psp_fld_l2_mag_rtn_4sa_20230101_v(\d+).cdf'
     """
     if date_info['is_hourly']:
         date_hour_str = f"{date_info['date_str']}{date_info['hour_str']}"

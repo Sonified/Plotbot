@@ -10,7 +10,7 @@ from typing import Optional, List
 
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from plotbot.time_utils import TimeRangeTracker
 from ._utils import _format_setattr_debug
 
@@ -32,13 +32,13 @@ class wind_swe_h5_class:
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.dependency_management("No data provided; initialized with empty attributes.")
         else:
             # Initialize with data if provided - we're currently using update() method instead, but preserved for future extensibility
             print_manager.dependency_management("Calculating WIND SWE H5 variables...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Successfully calculated WIND SWE H5 variables.")
     
     def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
@@ -60,7 +60,7 @@ class wind_swe_h5_class:
         print_manager.datacubby("\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
         
-        # Store current state before update (including any modified ploptions)
+        # Store current state before update (including any modified plot_config)
         current_plot_states = {}
         standard_components = ['t_elec']
         for comp_name in standard_components:
@@ -68,13 +68,13 @@ class wind_swe_h5_class:
                 manager = getattr(self, comp_name)
                 if isinstance(manager, plot_manager) and hasattr(manager, '_plot_state'):
                     current_plot_states[comp_name] = dict(manager._plot_state)
-                    print_manager.datacubby(f"Stored {comp_name} state: {retrieve_ploption_snapshot(current_plot_states[comp_name])}")
+                    print_manager.datacubby(f"Stored {comp_name} state: {retrieve_plot_config_snapshot(current_plot_states[comp_name])}")
 
         # Perform update
         self.calculate_variables(imported_data)
-        self.set_ploptions()
+        self.set_plot_config()
         
-        # Restore state (including any modified ploptions!)
+        # Restore state (including any modified plot_config!)
         print_manager.datacubby("Restoring saved state...")
         for comp_name, state in current_plot_states.items():
             if hasattr(self, comp_name):
@@ -82,9 +82,9 @@ class wind_swe_h5_class:
                 if isinstance(manager, plot_manager):
                     manager._plot_state.update(state)
                     for attr, value in state.items():
-                        if hasattr(manager.plot_options, attr):
-                            setattr(manager.plot_options, attr, value)
-                    print_manager.datacubby(f"Restored {comp_name} state: {retrieve_ploption_snapshot(state)}")
+                        if hasattr(manager.plot_config, attr):
+                            setattr(manager.plot_config, attr, value)
+                    print_manager.datacubby(f"Restored {comp_name} state: {retrieve_plot_config_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\n")
         
@@ -235,12 +235,12 @@ class wind_swe_h5_class:
         else:
             print_manager.warning("WIND SWE H5: Missing required electron temperature data (T_elec)")
 
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Set up the plotting options for electron temperature"""
         # Electron temperature
         self.t_elec = plot_manager(
             self.raw_data['t_elec'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_swe_h5',
                 var_name='t_elec',
                 class_name='wind_swe_h5',
@@ -274,9 +274,9 @@ class wind_swe_h5_class:
                 print_manager.dependency_management(f"    [ENSURE_CONSISTENCY] Set self.time to empty int64 array (datetime_array was empty).")
                 changed_time = True
                 
-        if changed_time and hasattr(self, 'set_ploptions'):
-            print_manager.dependency_management(f"    Calling self.set_ploptions() due to time consistency updates.")
-            self.set_ploptions()
+        if changed_time and hasattr(self, 'set_plot_config'):
+            print_manager.dependency_management(f"    Calling self.set_plot_config() due to time consistency updates.")
+            self.set_plot_config()
             
         print_manager.dependency_management(f"*** WIND_SWE_H5 ENSURE ID:{id(self)} *** Finished.")
 

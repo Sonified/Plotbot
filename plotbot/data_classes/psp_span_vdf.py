@@ -11,7 +11,7 @@ import bisect
 # Import our custom managers
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from plotbot.time_utils import TimeRangeTracker
 from ._utils import _format_setattr_debug
 
@@ -90,13 +90,13 @@ class psp_span_vdf_class:
         
         if imported_data is None:
             # Set empty plotting options if imported_data is None
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.dependency_management("VDF class initialized with empty attributes.")
         else:
             # Process VDF data if provided
             print_manager.dependency_management("Processing VDF data...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Successfully processed VDF data.")
     
     def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
@@ -684,18 +684,18 @@ class psp_span_vdf_class:
         object.__setattr__(vdf_subclass, 'subclass_name', subclass_name)
         
         # Configure plotting options for this subclass
-        vdf_subclass._configure_subclass_ploptions(subclass_name)
+        vdf_subclass._configure_subclass_plot_config(subclass_name)
         
         return vdf_subclass
     
-    def _configure_subclass_ploptions(self, subclass_name):
+    def _configure_subclass_plot_config(self, subclass_name):
         """Configure plotting options for specific VDF subclass."""
         
         if subclass_name == 'vdf_collapsed':
             # 1D collapsed VDF plot manager
             self.vdf_collapsed = plot_manager(
                 None,  # Data will be set during plotting
-                plot_options=ploptions(
+                plot_config=plot_config(
                     data_type='spi_sf00_8dx32ex8a',
                     var_name='vdf_collapsed',
                     class_name='psp_span_vdf',
@@ -716,7 +716,7 @@ class psp_span_vdf_class:
             # 2D theta plane contour plot manager
             self.vdf_theta_plane = plot_manager(
                 None,  # Data will be set during plotting
-                plot_options=ploptions(
+                plot_config=plot_config(
                     data_type='spi_sf00_8dx32ex8a',
                     var_name='vdf_theta_plane',
                     class_name='psp_span_vdf',
@@ -736,7 +736,7 @@ class psp_span_vdf_class:
             # 2D phi plane contour plot manager
             self.vdf_phi_plane = plot_manager(
                 None,  # Data will be set during plotting
-                plot_options=ploptions(
+                plot_config=plot_config(
                     data_type='spi_sf00_8dx32ex8a',
                     var_name='vdf_phi_plane',
                     class_name='psp_span_vdf',
@@ -757,7 +757,7 @@ class psp_span_vdf_class:
             perp_label = 'V_perp1' if 'perp1' in subclass_name else 'V_perp2'
             setattr(self, subclass_name, plot_manager(
                 None,  # Data will be set during plotting
-                plot_options=ploptions(
+                plot_config=plot_config(
                     data_type='spi_sf00_8dx32ex8a',
                     var_name=subclass_name,
                     class_name='psp_span_vdf',
@@ -773,12 +773,12 @@ class psp_span_vdf_class:
                 )
             ))
     
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Set default plotting options for VDF data following plotbot patterns."""
         # Main VDF plot manager (default theta plane view)
         self.vdf_main = plot_manager(
             None,  # Data will be set during plotting
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_sf00_8dx32ex8a',
                 var_name='vdf_theta_plane',
                 class_name='psp_span_vdf',
@@ -799,7 +799,7 @@ class psp_span_vdf_class:
         """Custom setattr to handle VDF data validation."""
         # Allow standard plotbot attributes
         allowed_attrs = [
-            'raw_data', 'datetime', 'datetime_array', 'ploptions', 
+            'raw_data', 'datetime', 'datetime_array', 'plot_config', 
             '_current_operation_trange', '_current_timeslice_index',
             'class_name', 'data_type', 'subclass_name', '_mass_p', '_charge_p',
             # VDF parameters now as direct attributes

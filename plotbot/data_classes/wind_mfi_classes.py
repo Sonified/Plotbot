@@ -11,7 +11,7 @@ from typing import Optional, List
 
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from plotbot.time_utils import TimeRangeTracker
 from ._utils import _format_setattr_debug
 
@@ -38,13 +38,13 @@ class wind_mfi_h2_class:
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.dependency_management("No data provided; initialized with empty attributes.")
         else:
             # Initialize with data if provided - we're currently using update() method instead, but preserved for future extensibility
             print_manager.dependency_management("Calculating WIND MFI variables...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Successfully calculated WIND MFI variables.")
     
     def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
@@ -66,7 +66,7 @@ class wind_mfi_h2_class:
         print_manager.datacubby("\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
         
-        # Store current state before update (including any modified ploptions)
+        # Store current state before update (including any modified plot_config)
         current_plot_states = {}
         standard_components = ['all', 'bx', 'by', 'bz', 'bmag', 'bgse']
         for comp_name in standard_components:
@@ -74,13 +74,13 @@ class wind_mfi_h2_class:
                 manager = getattr(self, comp_name)
                 if isinstance(manager, plot_manager) and hasattr(manager, '_plot_state'):
                     current_plot_states[comp_name] = dict(manager._plot_state)
-                    print_manager.datacubby(f"Stored {comp_name} state: {retrieve_ploption_snapshot(current_plot_states[comp_name])}")
+                    print_manager.datacubby(f"Stored {comp_name} state: {retrieve_plot_config_snapshot(current_plot_states[comp_name])}")
 
         # Perform update
         self.calculate_variables(imported_data)
-        self.set_ploptions()
+        self.set_plot_config()
         
-        # Restore state (including any modified ploptions!)
+        # Restore state (including any modified plot_config!)
         print_manager.datacubby("Restoring saved state...")
         for comp_name, state in current_plot_states.items():
             if hasattr(self, comp_name):
@@ -88,9 +88,9 @@ class wind_mfi_h2_class:
                 if isinstance(manager, plot_manager):
                     manager._plot_state.update(state)
                     for attr, value in state.items():
-                        if hasattr(manager.plot_options, attr):
-                            setattr(manager.plot_options, attr, value)
-                    print_manager.datacubby(f"Restored {comp_name} state: {retrieve_ploption_snapshot(state)}")
+                        if hasattr(manager.plot_config, attr):
+                            setattr(manager.plot_config, attr, value)
+                    print_manager.datacubby(f"Restored {comp_name} state: {retrieve_plot_config_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\n")
         
@@ -238,12 +238,12 @@ class wind_mfi_h2_class:
         else:
             print_manager.warning("WIND MFI: Missing required magnetic field data (BGSE and/or BF1)")
 
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Set up the plotting options for all magnetic field components"""
         # Initialize each component with plot_manager
         self.all = plot_manager(
             [self.raw_data['bx'], self.raw_data['by'], self.raw_data['bz']],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_mfi_h2',
                 var_name=['bx_gse', 'by_gse', 'bz_gse'],
                 class_name='wind_mfi_h2',
@@ -262,7 +262,7 @@ class wind_mfi_h2_class:
 
         self.bx = plot_manager(
             self.raw_data['bx'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_mfi_h2',
                 var_name='bx_gse',
                 class_name='wind_mfi_h2',
@@ -281,7 +281,7 @@ class wind_mfi_h2_class:
 
         self.by = plot_manager(
             self.raw_data['by'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_mfi_h2',
                 var_name='by_gse',
                 class_name='wind_mfi_h2',
@@ -300,7 +300,7 @@ class wind_mfi_h2_class:
 
         self.bz = plot_manager(
             self.raw_data['bz'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_mfi_h2',
                 var_name='bz_gse',
                 class_name='wind_mfi_h2',
@@ -319,7 +319,7 @@ class wind_mfi_h2_class:
 
         self.bmag = plot_manager(
             self.raw_data['bmag'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_mfi_h2',
                 var_name='bmag_gse',
                 class_name='wind_mfi_h2',
@@ -338,7 +338,7 @@ class wind_mfi_h2_class:
 
         self.bgse = plot_manager(
             self.raw_data['bgse'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_mfi_h2',
                 var_name='bgse_vector',
                 class_name='wind_mfi_h2',
@@ -409,9 +409,9 @@ class wind_mfi_h2_class:
                          self.field = None
                          changed_field = True
             
-            if (changed_time or changed_field) and hasattr(self, 'set_ploptions'):
-                print_manager.dependency_management(f"    Calling self.set_ploptions() due to consistency updates (time changed: {changed_time}, field changed: {changed_field}).")
-                self.set_ploptions()
+            if (changed_time or changed_field) and hasattr(self, 'set_plot_config'):
+                print_manager.dependency_management(f"    Calling self.set_plot_config() due to consistency updates (time changed: {changed_time}, field changed: {changed_field}).")
+                self.set_plot_config()
         else:
             print_manager.dependency_management(f"    Skipping consistency check (datetime_array or raw_data missing/None).")
         

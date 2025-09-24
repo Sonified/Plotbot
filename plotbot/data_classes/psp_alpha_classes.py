@@ -7,7 +7,7 @@ from typing import Optional, List
 # Import our custom managers
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from plotbot.time_utils import TimeRangeTracker
 from ._utils import _format_setattr_debug
 
@@ -62,13 +62,13 @@ class psp_alpha_class:
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.debug("No data provided; initialized with empty attributes.")
         else:
             # Initialize with data if provided
             print_manager.debug("Calculating alpha variables...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Successfully calculated alpha variables.")
 
     def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
@@ -111,11 +111,11 @@ class psp_alpha_class:
                 var = getattr(self, subclass_name)
                 if hasattr(var, '_plot_state'):
                     current_state[subclass_name] = dict(var._plot_state)
-                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_ploption_snapshot(current_state[subclass_name])}")
+                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_plot_config_snapshot(current_state[subclass_name])}")
 
         # Perform update
         self.calculate_variables(imported_data)
-        self.set_ploptions()
+        self.set_plot_config()
         
         # Restore state
         print_manager.datacubby("Restoring saved state...")
@@ -124,9 +124,9 @@ class psp_alpha_class:
                 var = getattr(self, subclass_name)
                 var._plot_state.update(state)
                 for attr, value in state.items():
-                    if hasattr(var.plot_options, attr):
-                        setattr(var.plot_options, attr, value)
-                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_ploption_snapshot(state)}")
+                    if hasattr(var.plot_config, attr):
+                        setattr(var.plot_config, attr, value)
+                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_plot_config_snapshot(state)}")
         
         print_manager.datacubby("=== End Alpha Update Debug ===\n")
 
@@ -368,7 +368,7 @@ class psp_alpha_class:
         
         return np.array(t_par), np.array(t_perp), np.array(anisotropy)
 
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Set up the plotting options for all alpha particle parameters"""
         print_manager.processing(f"[ALPHA_SET_PLOPT ENTRY] id(self): {id(self)}")
         datetime_array_exists = hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0
@@ -381,7 +381,7 @@ class psp_alpha_class:
         # Basic parameters with alpha-specific styling
         self.density = plot_manager(
             self.raw_data['density'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_sf0a_l3_mom',
                 var_name='dens',
                 class_name='psp_alpha',
@@ -400,7 +400,7 @@ class psp_alpha_class:
         
         self.temperature = plot_manager(
             self.raw_data['temperature'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_sf0a_l3_mom',
                 var_name='temp',
                 class_name='psp_alpha',
@@ -420,7 +420,7 @@ class psp_alpha_class:
         # Velocity Components (RTN)
         self.vr = plot_manager(
             self.raw_data['vr'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_sf0a_l3_mom',
                 var_name='vr',
                 class_name='psp_alpha',
@@ -439,7 +439,7 @@ class psp_alpha_class:
 
         self.vt = plot_manager(
             self.raw_data['vt'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_sf0a_l3_mom',
                 var_name='vt',
                 class_name='psp_alpha',
@@ -458,7 +458,7 @@ class psp_alpha_class:
 
         self.vn = plot_manager(
             self.raw_data['vn'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_sf0a_l3_mom',
                 var_name='vn',
                 class_name='psp_alpha',
@@ -478,7 +478,7 @@ class psp_alpha_class:
         # Temperature components
         self.t_par = plot_manager(
             self.raw_data['t_par'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_sf0a_l3_mom',
                 var_name='t_par',
                 class_name='psp_alpha',
@@ -497,7 +497,7 @@ class psp_alpha_class:
         
         self.t_perp = plot_manager(
             self.raw_data['t_perp'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_sf0a_l3_mom',
                 var_name='t_perp',
                 class_name='psp_alpha',
@@ -516,7 +516,7 @@ class psp_alpha_class:
         
         self.anisotropy = plot_manager(
             self.raw_data['anisotropy'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_sf0a_l3_mom',
                 var_name='anisotropy',
                 class_name='psp_alpha',
@@ -536,7 +536,7 @@ class psp_alpha_class:
         # Solar wind speed and Alfven parameters
         self.v_sw = plot_manager(
             self.raw_data['v_sw'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_sf0a_l3_mom',
                 var_name='v_sw',
                 class_name='psp_alpha',
@@ -556,7 +556,7 @@ class psp_alpha_class:
         # Distance from sun
         self.sun_dist_rsun = plot_manager(
             self.raw_data['sun_dist_rsun'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_sf0a_l3_mom',
                 var_name='sun_dist_rsun',
                 class_name='psp_alpha',
@@ -591,7 +591,7 @@ class psp_alpha_class:
             # Create an empty placeholder initially
             self._na_div_np_manager = plot_manager(
                 np.array([]),
-                plot_options=ploptions(
+                plot_config=plot_config(
                     var_name='na_div_np',
                     data_type='spi_sf0a_l3_mom',
                     class_name='psp_alpha',
@@ -617,7 +617,7 @@ class psp_alpha_class:
             success = self._calculate_alpha_proton_derived()
             if success and self.raw_data.get('na_div_np') is not None:
                 print_manager.dependency_management("[NA_DIV_NP_PROPERTY] Calculation successful, updating manager.")
-                options = self._na_div_np_manager.plot_options
+                options = self._na_div_np_manager.plot_config
                 
                 # Ensure the plot_options uses the PARENT's datetime_array
                 if hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0:
@@ -627,7 +627,7 @@ class psp_alpha_class:
 
                 self._na_div_np_manager = plot_manager(
                     self.raw_data['na_div_np'],
-                    plot_options=options 
+                    plot_config=options 
                 )
                 print_manager.dependency_management(f"[NA_DIV_NP_PROPERTY] Updated manager with data shape: {self.raw_data['na_div_np'].shape}")
             else:
@@ -648,7 +648,7 @@ class psp_alpha_class:
             # Create an empty placeholder initially
             self._ap_drift_manager = plot_manager(
                 np.array([]),
-                plot_options=ploptions(
+                plot_config=plot_config(
                     var_name='ap_drift',
                     data_type='spi_sf0a_l3_mom',
                     class_name='psp_alpha',
@@ -674,7 +674,7 @@ class psp_alpha_class:
             success = self._calculate_alpha_proton_derived()
             if success and self.raw_data.get('ap_drift') is not None:
                 print_manager.dependency_management("[AP_DRIFT_PROPERTY] Calculation successful, updating manager.")
-                options = self._ap_drift_manager.plot_options
+                options = self._ap_drift_manager.plot_config
                 
                 # Ensure the plot_options uses the PARENT's datetime_array
                 if hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0:
@@ -684,7 +684,7 @@ class psp_alpha_class:
 
                 self._ap_drift_manager = plot_manager(
                     self.raw_data['ap_drift'],
-                    plot_options=options 
+                    plot_config=options 
                 )
                 print_manager.dependency_management(f"[AP_DRIFT_PROPERTY] Updated manager with data shape: {self.raw_data['ap_drift'].shape}")
             else:
@@ -705,7 +705,7 @@ class psp_alpha_class:
             # Create an empty placeholder initially
             self._ap_drift_va_manager = plot_manager(
                 np.array([]),
-                plot_options=ploptions(
+                plot_config=plot_config(
                     var_name='ap_drift_va',
                     data_type='spi_sf0a_l3_mom',
                     class_name='psp_alpha',
@@ -731,7 +731,7 @@ class psp_alpha_class:
             success = self._calculate_alpha_proton_derived()
             if success and self.raw_data.get('ap_drift_va') is not None:
                 print_manager.dependency_management("[AP_DRIFT_VA_PROPERTY] Calculation successful, updating manager.")
-                options = self._ap_drift_va_manager.plot_options
+                options = self._ap_drift_va_manager.plot_config
                 
                 # Ensure the plot_options uses the PARENT's datetime_array
                 if hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0:
@@ -741,7 +741,7 @@ class psp_alpha_class:
 
                 self._ap_drift_va_manager = plot_manager(
                     self.raw_data['ap_drift_va'],
-                    plot_options=options 
+                    plot_config=options 
                 )
                 print_manager.dependency_management(f"[AP_DRIFT_VA_PROPERTY] Updated manager with data shape: {self.raw_data['ap_drift_va'].shape}")
             else:

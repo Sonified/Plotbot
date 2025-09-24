@@ -819,13 +819,13 @@ def _generate_plotbot_class_code(metadata: CDFMetadata, class_name: str) -> str:
     
     # Generate variable processing in calculate_variables
     calc_vars_code = []
-    set_ploptions_code = []
+    set_plot_config_code = []
     
     # Identify spectral variables for mesh creation
     spectral_vars = [var.name for var in metadata.variables if var.plot_type == 'spectral']
     
     # Helper function for spectral plot options with debugging
-    def generate_spectral_ploptions_with_debug(var):
+    def generate_spectral_plot_config_with_debug(var):
         return f"""        # DEBUG: Setting up {var.name} (spectral)
         print_manager.dependency_management("=== PLOPTIONS DEBUG: {var.name} ===")
         {var.name}_data = self.raw_data.get('{var.name}')
@@ -846,7 +846,7 @@ def _generate_plotbot_class_code(metadata: CDFMetadata, class_name: str) -> str:
         
         self.{var.name} = plot_manager(
             {var.name}_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='{class_name}',
                 var_name='{var.name}',
                 class_name='{class_name}',
@@ -895,11 +895,11 @@ def _generate_plotbot_class_code(metadata: CDFMetadata, class_name: str) -> str:
         
         # Plot options code
         if var.plot_type == 'spectral':
-            set_ploptions_code.append(generate_spectral_ploptions_with_debug(var))
+            set_plot_config_code.append(generate_spectral_plot_config_with_debug(var))
         else:
-            set_ploptions_code.append(f"""        self.{var.name} = plot_manager(
+            set_plot_config_code.append(f"""        self.{var.name} = plot_manager(
             self.raw_data['{var.name}'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='{class_name}',
                 var_name='{var.name}',
                 class_name='{class_name}',
@@ -936,7 +936,7 @@ import logging
 
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from plotbot.time_utils import TimeRangeTracker
 from .._utils import _format_setattr_debug
 
@@ -964,12 +964,12 @@ class {class_name}_class:
         object.__setattr__(self, '_cdf_file_pattern', '{generate_file_pattern_from_cdf(metadata.file_path, os.path.dirname(metadata.file_path))}')
 
         if imported_data is None:
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.dependency_management("No data provided; initialized with empty attributes.")
         else:
             print_manager.dependency_management(f"Calculating {class_name} variables...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status(f"Successfully calculated {class_name} variables.")
         
         # Auto-register with data_cubby (following plotbot pattern)
@@ -997,11 +997,11 @@ class {class_name}_class:
                 var = getattr(self, subclass_name)
                 if hasattr(var, '_plot_state'):
                     current_state[subclass_name] = dict(var._plot_state)
-                    print_manager.datacubby(f"Stored {{subclass_name}} state: {{retrieve_ploption_snapshot(current_state[subclass_name])}}")
+                    print_manager.datacubby(f"Stored {{subclass_name}} state: {{retrieve_plot_config_snapshot(current_state[subclass_name])}}")
 
         # Perform update
         self.calculate_variables(imported_data)
-        self.set_ploptions()
+        self.set_plot_config()
         
         # Restore state
         print_manager.datacubby("Restoring saved state...")
@@ -1010,9 +1010,9 @@ class {class_name}_class:
                 var = getattr(self, subclass_name)
                 var._plot_state.update(state)
                 for attr, value in state.items():
-                    if hasattr(var.plot_options, attr):
-                        setattr(var.plot_options, attr, value)
-                print_manager.datacubby(f"Restored {{subclass_name}} state: {{retrieve_ploption_snapshot(state)}}")
+                    if hasattr(var.plot_config, attr):
+                        setattr(var.plot_config, attr, value)
+                print_manager.datacubby(f"Restored {{subclass_name}} state: {{retrieve_plot_config_snapshot(state)}}")
         
         print_manager.datacubby("=== End Update Debug ===\\n")
         
@@ -1188,11 +1188,11 @@ class {class_name}_class:
             return freq_2d
         return freq_array
     
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Set up plotting options for all variables"""
         print_manager.dependency_management("Setting up plot options for {class_name} variables")
         
-{chr(10).join(set_ploptions_code)}
+{chr(10).join(set_plot_config_code)}
 
     def restore_from_snapshot(self, snapshot_data):
         """Restore all relevant fields from a snapshot dictionary/object."""
@@ -1227,7 +1227,7 @@ from typing import Optional, List, Dict, Any
 from numpy import ndarray
 from datetime import datetime
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions
+from plotbot.plot_config import plot_config
 
 class {class_name}_class:
     """CDF data class for {base_filename}"""
@@ -1250,7 +1250,7 @@ class {class_name}_class:
     def update(self, imported_data: Optional[Any], original_requested_trange: Optional[List[str]] = None) -> None: ...
     def get_subclass(self, subclass_name: str) -> Optional[plot_manager]: ...
     def calculate_variables(self, imported_data: Any) -> None: ...
-    def set_ploptions(self) -> None: ...
+    def set_plot_config(self) -> None: ...
     def restore_from_snapshot(self, snapshot_data: Any) -> None: ...
     def __getattr__(self, name: str) -> Any: ...
     def __setattr__(self, name: str, value: Any) -> None: ...

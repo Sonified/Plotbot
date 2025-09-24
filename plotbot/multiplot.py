@@ -708,7 +708,7 @@ def multiplot(plot_list, **kwargs):
                         pass # Keep pass to avoid syntax error
                     # print_manager.debug(f"Panel {i+1} pre-clip: Requested trange: {trange[0]} to {trange[1]}") # COMMENTED OUT
                     # <<< END ADDED DEBUG PRINTS >>>
-                    raw_datetime_array = single_var.plot_options.datetime_array if hasattr(single_var, 'plot_options') else single_var.datetime_array
+                    raw_datetime_array = single_var.plot_config.datetime_array if hasattr(single_var, 'plot_options') else single_var.datetime_array
                     indices = time_clip(raw_datetime_array, trange[0], trange[1])
                 else:
                     print_manager.warning(f"Empty datetime_array for panel {i+1} - cannot clip times")
@@ -929,7 +929,7 @@ def multiplot(plot_list, **kwargs):
                     pass # Keep pass to avoid syntax error
                 # print_manager.debug(f"Panel {i+1} pre-clip: Requested trange: {trange[0]} to {trange[1]}") # COMMENTED OUT
                 # <<< END ADDED DEBUG PRINTS >>>
-                raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
                 indices = time_clip(raw_datetime_array, trange[0], trange[1])
             else:
                 print_manager.warning(f"Empty datetime_array for panel {i+1} - cannot clip times")
@@ -1285,7 +1285,7 @@ def multiplot(plot_list, **kwargs):
                         print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: SPECTRAL PLOT TYPE DETECTED")
                         print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: Variable: {var.class_name}.{var.subclass_name}")
                         print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: Indices available: {len(indices)}")
-                        raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                        raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
                         datetime_clipped = raw_datetime_array[indices]
                         data_clipped = np.array(var.all_data)[indices] # Use improved data handling
                         print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: data_clipped shape: {data_clipped.shape}")

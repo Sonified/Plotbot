@@ -9,7 +9,7 @@ from typing import Optional, List
 # Import our custom managers
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from plotbot.time_utils import TimeRangeTracker
 from ._utils import _format_setattr_debug
 
@@ -54,14 +54,14 @@ class proton_hr_class:
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
-            self.set_ploptions()
+            self.set_plot_config()
             
             print_manager.debug("No data provided; initialized with empty attributes.")
         else:
             # Initialize with data if provided - we're currently using update() method instead, but preserved for future extensibility
             print_manager.debug("Calculating high-resolution proton variables...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Successfully calculated high-resolution proton variables.")
 
     def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
@@ -98,7 +98,7 @@ class proton_hr_class:
 
         print_manager.datacubby("\n=== Update Debug ===")
         
-        # Store current state before update (including any modified ploptions)
+        # Store current state before update (including any modified plot_config)
         current_state = {}
         for subclass_name in self.raw_data.keys():                             # Use keys()
             if hasattr(self, subclass_name):
@@ -106,22 +106,22 @@ class proton_hr_class:
                 if hasattr(var, '_plot_state'):
                     print_manager.datacubby(f"Starting {subclass_name} update...")
                     current_state[subclass_name] = dict(var._plot_state)       # Save current plot state
-                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_ploption_snapshot(current_state[subclass_name])}")
+                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_plot_config_snapshot(current_state[subclass_name])}")
 
         # Perform update
         self.calculate_variables(imported_data)                                # Update raw data arrays
-        self.set_ploptions()                                                  # Recreate plot managers
+        self.set_plot_config()                                                  # Recreate plot managers
         
-        # Restore state (including any modified ploptions!)
+        # Restore state (including any modified plot_config!)
         print_manager.datacubby("Restoring saved state...")
         for subclass_name, state in current_state.items():                    # Restore saved states
             if hasattr(self, subclass_name):
                 var = getattr(self, subclass_name)
                 var._plot_state.update(state)                                 # Restore plot state
                 for attr, value in state.items():
-                    if hasattr(var.plot_options, attr):
-                        setattr(var.plot_options, attr, value)                # Restore individual options
-                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_ploption_snapshot(state)}")
+                    if hasattr(var.plot_config, attr):
+                        setattr(var.plot_config, attr, value)                # Restore individual options
+                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_plot_config_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\n")
 
@@ -380,7 +380,7 @@ class proton_hr_class:
         
         return np.array(t_par), np.array(t_perp), np.array(anisotropy)
     
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Set up the plotting options for all proton parameters"""
         pm = print_manager # local alias
         pm.processing(f"[PROTON_HR_SET_PLOPT ENTRY] id(self): {id(self)}")
@@ -393,7 +393,7 @@ class proton_hr_class:
         # Temperature components
         self.t_par = plot_manager(
             self.raw_data['t_par'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='t_par',
                 class_name='proton_hr',
@@ -412,7 +412,7 @@ class proton_hr_class:
         
         self.t_perp = plot_manager(
             self.raw_data['t_perp'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='t_perp',
                 class_name='proton_hr',
@@ -431,7 +431,7 @@ class proton_hr_class:
         
         self.anisotropy = plot_manager(
             self.raw_data['anisotropy'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='anisotropy',
                 class_name='proton_hr',
@@ -451,7 +451,7 @@ class proton_hr_class:
         # Velocities
         self.v_alfven = plot_manager(  
             self.raw_data['v_alfven'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='v_alfven',
                 class_name='proton_hr',
@@ -470,7 +470,7 @@ class proton_hr_class:
         
         self.v_sw = plot_manager(
             self.raw_data['v_sw'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='v_sw',
                 class_name='proton_hr',
@@ -489,7 +489,7 @@ class proton_hr_class:
         
         self.m_alfven = plot_manager(
             self.raw_data['m_alfven'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='m_alfven',
                 class_name='proton_hr',
@@ -509,7 +509,7 @@ class proton_hr_class:
         # Plasma parameters
         self.beta_ppar = plot_manager(
             self.raw_data['beta_ppar'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='beta_ppar',
                 class_name='proton_hr',
@@ -528,7 +528,7 @@ class proton_hr_class:
         
         self.beta_pperp = plot_manager(
             self.raw_data['beta_pperp'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='beta_pperp',
                 class_name='proton_hr',
@@ -548,7 +548,7 @@ class proton_hr_class:
         # Pressures
         self.pressure_ppar = plot_manager(
             self.raw_data['pressure_ppar'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='pressure_ppar',
                 class_name='proton_hr',
@@ -567,7 +567,7 @@ class proton_hr_class:
         
         self.pressure_pperp = plot_manager(
             self.raw_data['pressure_pperp'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='pressure_pperp',
                 class_name='proton_hr',
@@ -586,7 +586,7 @@ class proton_hr_class:
         
         self.pressure = plot_manager(
             self.raw_data['pressure'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='pressure',
                 class_name='proton_hr',
@@ -606,7 +606,7 @@ class proton_hr_class:
         # Basic parameters
         self.density = plot_manager(
             self.raw_data['density'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='density',
                 class_name='proton_hr',
@@ -625,7 +625,7 @@ class proton_hr_class:
         
         self.temperature = plot_manager(
             self.raw_data['temperature'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='temperature',
                 class_name='proton_hr',
@@ -644,7 +644,7 @@ class proton_hr_class:
         
         self.bmag = plot_manager(
             self.raw_data['bmag'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='bmag',
                 class_name='proton_hr',
@@ -664,7 +664,7 @@ class proton_hr_class:
         # Velocity Components
         self.vr = plot_manager(
             self.raw_data['vr'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='vr',
                 class_name='proton_hr',
@@ -683,7 +683,7 @@ class proton_hr_class:
 
         self.vt = plot_manager(
             self.raw_data['vt'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='vt',
                 class_name='proton_hr',
@@ -702,7 +702,7 @@ class proton_hr_class:
 
         self.vn = plot_manager(
             self.raw_data['vn'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='vn',
                 class_name='proton_hr',
@@ -766,7 +766,7 @@ class proton_hr_class:
 
         self.energy_flux = plot_manager(
             self.raw_data['energy_flux'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='energy_flux',
                 class_name='proton_hr',
@@ -832,7 +832,7 @@ class proton_hr_class:
 
         self.theta_flux = plot_manager(
             self.raw_data['theta_flux'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='theta_flux',
                 class_name='proton_hr',
@@ -854,7 +854,7 @@ class proton_hr_class:
 
         self.phi_flux = plot_manager(
             self.raw_data['phi_flux'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spi_af00_L3_mom',
                 var_name='phi_flux',
                 class_name='proton_hr',

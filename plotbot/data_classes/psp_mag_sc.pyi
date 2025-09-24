@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Union
 from plotbot.print_manager import print_manager
 from plotbot.data_cubby import data_cubby
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 
 # Define a type alias for the imported data structure if possible
 # Replace 'Any' with a more specific type if available (e.g., the DataObject namedtuple)
@@ -37,6 +37,6 @@ class mag_sc_class:
     def __getattr__(self, name: str) -> Any: ...
     def __setattr__(self, name: str, value: Any) -> None: ...
     def calculate_variables(self, imported_data: ImportedDataType) -> None: ...
-    def set_ploptions(self) -> None: ...
+    def set_plot_config(self) -> None: ...
 
 mag_sc: mag_sc_class 

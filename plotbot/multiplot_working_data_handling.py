@@ -632,7 +632,7 @@ def multiplot(plot_list, **kwargs):
                     # print_manager.debug(f"Panel {i+1} pre-clip: Requested trange: {trange[0]} to {trange[1]}") # COMMENTED OUT
                     # <<< END ADDED DEBUG PRINTS >>>
                     # CRITICAL FIX: Use raw datetime array for time clipping, not the property (which is now clipped)
-                    raw_datetime_array = single_var.plot_options.datetime_array if hasattr(single_var, 'plot_options') else single_var.datetime_array
+                    raw_datetime_array = single_var.plot_config.datetime_array if hasattr(single_var, 'plot_options') else single_var.datetime_array
                     indices = time_clip(raw_datetime_array, trange[0], trange[1])
                 else:
                     print_manager.warning(f"Empty datetime_array for panel {i+1} - cannot clip times")
@@ -854,7 +854,7 @@ def multiplot(plot_list, **kwargs):
                 # print_manager.debug(f"Panel {i+1} pre-clip: Requested trange: {trange[0]} to {trange[1]}") # COMMENTED OUT
                 # <<< END ADDED DEBUG PRINTS >>>
                 # CRITICAL FIX: Use raw datetime array for time clipping, not the property (which is now clipped)
-                raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
                 indices = time_clip(raw_datetime_array, trange[0], trange[1])
             else:
                 print_manager.warning(f"Empty datetime_array for panel {i+1} - cannot clip times")

@@ -301,7 +301,7 @@ def test_psp_dfb_plotbot_integration():
         # Check AC dv12
         print(f"Checking psp_dfb.ac_spec_dv12...")
         var = psp_dfb.ac_spec_dv12
-        print(f"  Data type: {var.plot_options.data_type}")
+        print(f"  Data type: {var.plot_config.data_type}")
         print(f"  Data shape: {var.data.shape}")
         print(f"  Datetime array type: {type(var.datetime_array)}")
         if var.data.size > 0:
@@ -320,7 +320,7 @@ def test_psp_dfb_plotbot_integration():
         # Check AC dv34
         print(f"Checking psp_dfb.ac_spec_dv34...")
         var = psp_dfb.ac_spec_dv34
-        print(f"  Data type: {var.plot_options.data_type}")
+        print(f"  Data type: {var.plot_config.data_type}")
         print(f"  Data shape: {var.data.shape}")
         print(f"  Datetime array type: {type(var.datetime_array)}")
         if var.data.size > 0:
@@ -331,7 +331,7 @@ def test_psp_dfb_plotbot_integration():
         # Check DC dv12
         print(f"Checking psp_dfb.dc_spec_dv12...")
         var = psp_dfb.dc_spec_dv12
-        print(f"  Data type: {var.plot_options.data_type}")
+        print(f"  Data type: {var.plot_config.data_type}")
         print(f"  Data shape: {var.data.shape}")
         print(f"  Datetime array type: {type(var.datetime_array)}")
         if var.data.size > 0:

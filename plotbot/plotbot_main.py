@@ -468,7 +468,7 @@ def plotbot(trange, *args):
 
                     # Check if any data points fall within the specified time range
                     # Use raw datetime array for time clipping, not the property (which is now clipped)
-                    raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                    raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
                     time_indices = time_clip(raw_datetime_array, trange[0], trange[1])
                     if len(time_indices) == 0:
                         empty_plot = True
@@ -539,7 +539,7 @@ def plotbot(trange, *args):
                         continue
 
                     # Use raw datetime array for time clipping, not the property (which is now clipped)
-                    raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                    raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
                     time_indices = time_clip(raw_datetime_array, trange[0], trange[1])
                     if len(time_indices) == 0:
                         empty_plot = True
@@ -596,7 +596,7 @@ def plotbot(trange, *args):
                         continue
 
                     # Use raw datetime array for time clipping, not the property (which is now clipped)
-                    raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                    raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
                     time_indices = time_clip(raw_datetime_array, trange[0], trange[1])  # Get time range indices
                     if len(time_indices) == 0:
                         empty_plot = True
@@ -697,7 +697,7 @@ def plotbot(trange, *args):
                             debug_info += f"{', y_limit=' + str(var.y_limit) if hasattr(var, 'y_limit') else ''}"
                             debug_info += f" | sources=[{', '.join(src_var.class_name + '(has_data=' + str(hasattr(src_var, 'datetime_array') and len(src_var.datetime_array) > 0) + ')' for src_var in var.source_var) if hasattr(var, 'source_var') and var.source_var is not None else 'none'}]" if var.data_type == 'custom_data_type' else ''
                             # Use raw datetime array for time clipping, not the property (which is now clipped)
-                            raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                            raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
                             time_indices = time_clip(raw_datetime_array, trange[0], trange[1]) if hasattr(var, 'datetime_array') and var.datetime_array is not None else []
                             debug_info += f" | data: points={len(time_indices)}" + (f", shape={np.array(var)[time_indices].shape}, has_nans={np.isnan(np.array(var)[time_indices]).any()}" if len(time_indices) > 0 else " (no data in range)")
                             print_manager.debug(debug_info)

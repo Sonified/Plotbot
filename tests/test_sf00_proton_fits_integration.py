@@ -157,15 +157,15 @@ class TestFitsIntegration:
         # if not os.path.exists(cls.TEST_DATA_DIR):
         #     pytest.skip("Test data directory not found, skipping FITS integration tests.")
         
-        # --- Explicitly re-run set_ploptions for the proton_fits instance ---
+        # --- Explicitly re-run set_plot_config for the proton_fits instance ---
         # This ensures the instance uses the latest definitions from the class file
         try:
-            print("Re-running proton_fits.set_ploptions() to ensure fresh options...")
+            print("Re-running proton_fits.set_plot_config() to ensure fresh options...")
             # Ensure we use the correct imported instance name
-            proton_fits_instance.set_ploptions() 
-            print("proton_fits.set_ploptions() completed.")
+            proton_fits_instance.set_plot_config() 
+            print("proton_fits.set_plot_config() completed.")
         except Exception as e:
-            pytest.fail(f"Failed to re-run proton_fits.set_ploptions() during setup: {e}")
+            pytest.fail(f"Failed to re-run proton_fits.set_plot_config() during setup: {e}")
         # ---------------------------------------------------------------------
         print("--- End TestFitsIntegration Class Setup ---")
 

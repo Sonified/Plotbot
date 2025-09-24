@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Optional, Tuple, Any, Union, List, Dict, ClassVar, Sequence
 
 # Assume these types are defined elsewhere in plotbot and importable
-from .ploptions import ploptions
+from .plot_config import plot_config
 # from .data_classes.custom_variables import custom_variable # Only used internally in methods
 
 # Type alias for plot_manager itself for clarity in methods
@@ -22,9 +22,9 @@ class plot_manager(np.ndarray):
 
     # --- Instance Attributes (Type hints for attributes managed by plot_options or internal state) ---
     # These are accessed via properties but good to hint their existence/type
-    plot_options: ploptions
+    plot_options: plot_config
     _plot_state: Dict[str, Any]
-    _original_options: Optional[ploptions]
+    _original_options: Optional[plot_config]
     # Attributes potentially set by properties or methods
     _colorbar_label: Optional[str]
     _source_class_names: Optional[Any] # Type depends on what's stored
@@ -35,7 +35,7 @@ class plot_manager(np.ndarray):
     scalar_value: Optional[Any]
 
     # --- Special Methods ---
-    def __new__(cls, input_array: ArrayLike, plot_options: Optional[ploptions] = ...) -> 'plot_manager': ...
+    def __new__(cls, input_array: ArrayLike, plot_options: Optional[plot_config] = ...) -> 'plot_manager': ...
     def __array__(self, dtype: Optional[DTypeLike] = ...) -> 'plot_manager': ... # Returns plot_manager, not ndarray
     def __array_wrap__(self, out_arr: np.ndarray, context: Optional[Tuple[Any, ...]] = ...) -> Union[np.ndarray, 'plot_manager']: ...
     def __array_finalize__(self, obj: Optional[Any]) -> None: ...

@@ -30,7 +30,7 @@ try:
     else:
         print("epad.strahl has no additional_data")
         
-    print(f"epad.strahl.plot_options.datetime_array shape: {epad.strahl.plot_options.datetime_array.shape}")
+    print(f"epad.strahl.plot_config.datetime_array shape: {epad.strahl.plot_config.datetime_array.shape}")
     
     # Now try the plot
     print("\n=== Attempting plotbot call ===")

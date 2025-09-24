@@ -10,7 +10,7 @@ from typing import Optional, List # Added for type hinting
 
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from plotbot.time_utils import TimeRangeTracker
 from ._utils import _format_setattr_debug
 # import matplotlib.dates as mdates # Will be moved
@@ -41,13 +41,13 @@ class mag_rtn_4sa_class:
         print_manager.dependency_management(f"*** MAG_CLASS_INIT (mag_rtn_4sa_class) ID:{id(self)}: imported_data ID: {id(imported_data) if imported_data is not None else 'None'}. ***")
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.dependency_management("No data provided; initialized with empty attributes.")
         else:
             # Initialize with data if provided - we're currently using update() method instead, but preserved for future extensibility
             print_manager.dependency_management("Calculating mag rtn 4sa variables...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Successfully calculated mag rtn 4sa variables.")
     
     def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
@@ -67,7 +67,7 @@ class mag_rtn_4sa_class:
         print_manager.datacubby("\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
         
-        # Store current state before update (including any modified ploptions)
+        # Store current state before update (including any modified plot_config)
         current_plot_states = {}
         standard_components = ['all', 'br', 'bt', 'bn', 'bmag', 'pmag']
         for comp_name in standard_components:
@@ -75,7 +75,7 @@ class mag_rtn_4sa_class:
                 manager = getattr(self, comp_name)
                 if isinstance(manager, plot_manager) and hasattr(manager, '_plot_state'):
                     current_plot_states[comp_name] = dict(manager._plot_state)
-                    print_manager.datacubby(f"Stored {comp_name} state: {retrieve_ploption_snapshot(current_plot_states[comp_name])}")
+                    print_manager.datacubby(f"Stored {comp_name} state: {retrieve_plot_config_snapshot(current_plot_states[comp_name])}")
 
         # Special handling for br_norm: save state only if it's been fully initialized
         if hasattr(self, '_br_norm_manager') and \
@@ -83,13 +83,13 @@ class mag_rtn_4sa_class:
            self.raw_data.get('br_norm') is not None and \
            hasattr(self._br_norm_manager, '_plot_state'):
             current_plot_states['br_norm'] = dict(self._br_norm_manager._plot_state)
-            print_manager.datacubby(f"Stored br_norm (from _br_norm_manager) state: {retrieve_ploption_snapshot(current_plot_states['br_norm'])}")
+            print_manager.datacubby(f"Stored br_norm (from _br_norm_manager) state: {retrieve_plot_config_snapshot(current_plot_states['br_norm'])}")
 
         # Perform update
         self.calculate_variables(imported_data)                                # Update raw data arrays
-        self.set_ploptions()                                                  # Recreate plot managers for standard components
+        self.set_plot_config()                                                  # Recreate plot managers for standard components
         
-        # Restore state (including any modified ploptions!)
+        # Restore state (including any modified plot_config!)
         print_manager.datacubby("Restoring saved state...")
         print_manager.processing(f"[MAG_UPDATE_DEBUG] Entering loop to restore plot states. current_plot_states keys: {list(current_plot_states.keys())}")
         for comp_name, state in current_plot_states.items():
@@ -112,9 +112,9 @@ class mag_rtn_4sa_class:
             if target_manager:
                 target_manager._plot_state.update(state)
                 for attr, value in state.items():
-                    if hasattr(target_manager.plot_options, attr):
-                        setattr(target_manager.plot_options, attr, value)
-                print_manager.datacubby(f"Restored {comp_name} state to {'_br_norm_manager' if comp_name == 'br_norm' else comp_name}: {retrieve_ploption_snapshot(state)}")
+                    if hasattr(target_manager.plot_config, attr):
+                        setattr(target_manager.plot_config, attr, value)
+                print_manager.datacubby(f"Restored {comp_name} state to {'_br_norm_manager' if comp_name == 'br_norm' else comp_name}: {retrieve_plot_config_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\\n")
         
@@ -142,7 +142,7 @@ class mag_rtn_4sa_class:
                 print_manager.dependency_management(f"[MAG_CLASS_GET_SUBCLASS] '{subclass_name}' is an internal attribute, not returning via get_subclass.")
         
         # If not a direct attribute, check if it's a key in raw_data (original behavior for data components)
-        # This part might be redundant if set_ploptions correctly creates plot_manager instances as attributes.
+        # This part might be redundant if set_plot_config correctly creates plot_manager instances as attributes.
         # However, keeping it ensures that if raw_data keys are somehow requested directly, they can be accessed if they aren't also properties.
         if hasattr(self, 'raw_data') and self.raw_data and subclass_name in self.raw_data.keys():
             # This path should ideally be less common if plot_managers are set up for all raw_data items
@@ -150,7 +150,7 @@ class mag_rtn_4sa_class:
             # This could return the raw numpy array if the plot_manager wasn't set up as an attribute.
             component = self.raw_data.get(subclass_name)
             print_manager.dependency_management(f"[MAG_CLASS_GET_SUBCLASS] Found '{subclass_name}' as a key in raw_data. Type: {type(component)}. This might be raw data.")
-            return component # Could be a plot_manager if set_ploptions assigned it here, or raw data.
+            return component # Could be a plot_manager if set_plot_config assigned it here, or raw data.
 
         # If not found as a direct attribute or in raw_data keys
         print_manager.warning(f"[MAG_CLASS_GET_SUBCLASS] '{subclass_name}' is not a recognized subclass, property, or raw_data key for instance ID: {id(self)}.")
@@ -196,7 +196,7 @@ class mag_rtn_4sa_class:
             # Create an empty placeholder initially
             self._br_norm_manager = plot_manager(
                 np.array([]),
-                plot_options=ploptions(
+                plot_config=plot_config(
                     data_type='mag_RTN_4sa',
                     var_name='br_norm_rtn_4sa',
                     class_name='mag_rtn_4sa',
@@ -211,7 +211,7 @@ class mag_rtn_4sa_class:
                     line_style='-'
                 )
             )
-            print_manager.dependency_management(f"[BR_NORM_PROPERTY] Initial _br_norm_manager.plot_options.datetime_array len: {len(self._br_norm_manager.plot_options.datetime_array) if self._br_norm_manager.plot_options.datetime_array is not None else 'None'}")
+            print_manager.dependency_management(f"[BR_NORM_PROPERTY] Initial _br_norm_manager.plot_config.datetime_array len: {len(self._br_norm_manager.plot_config.datetime_array) if self._br_norm_manager.plot_config.datetime_array is not None else 'None'}")
 
         # If data is available, try to calculate
         br_exists_and_populated = hasattr(self, 'raw_data') and 'br' in self.raw_data and self.raw_data['br'] is not None and len(self.raw_data['br']) > 0
@@ -222,7 +222,7 @@ class mag_rtn_4sa_class:
             success = self._calculate_br_norm()
             if success and self.raw_data.get('br_norm') is not None:
                 print_manager.dependency_management("[BR_NORM_PROPERTY] _calculate_br_norm successful, updating _br_norm_manager.")
-                options = self._br_norm_manager.plot_options
+                options = self._br_norm_manager.plot_config
                 print_manager.dependency_management(f"[BR_NORM_PROPERTY] _br_norm_manager is being updated. Current options.datetime_array len: {len(options.datetime_array) if options.datetime_array is not None else 'None'}")
                 # if options.datetime_array is not None and len(options.datetime_array) > 0:
                 #     print_manager.dependency_management(f"[BR_NORM_PROPERTY] options.datetime_array[0]: {options.datetime_array[0]}, [-1]: {options.datetime_array[-1]}")
@@ -240,12 +240,12 @@ class mag_rtn_4sa_class:
 
                 self._br_norm_manager = plot_manager(
                     self.raw_data['br_norm'],
-                    plot_options=options 
+                    plot_config=options 
                 )
                 print_manager.dependency_management(f"[BR_NORM_PROPERTY] Updated _br_norm_manager with data shape: {self.raw_data['br_norm'].shape if self.raw_data['br_norm'] is not None else 'None'}")
-                print_manager.dependency_management(f"[BR_NORM_PROPERTY] New _br_norm_manager.plot_options.datetime_array len: {len(self._br_norm_manager.plot_options.datetime_array) if self._br_norm_manager.plot_options.datetime_array is not None else 'None'}")
-                if self._br_norm_manager.plot_options.datetime_array is not None and len(self._br_norm_manager.plot_options.datetime_array) > 0:
-                    print_manager.dependency_management(f"[BR_NORM_PROPERTY] New _br_norm_manager.plot_options.datetime_array[0]: {self._br_norm_manager.plot_options.datetime_array[0]}, [-1]: {self._br_norm_manager.plot_options.datetime_array[-1]}")
+                print_manager.dependency_management(f"[BR_NORM_PROPERTY] New _br_norm_manager.plot_config.datetime_array len: {len(self._br_norm_manager.plot_config.datetime_array) if self._br_norm_manager.plot_config.datetime_array is not None else 'None'}")
+                if self._br_norm_manager.plot_config.datetime_array is not None and len(self._br_norm_manager.plot_config.datetime_array) > 0:
+                    print_manager.dependency_management(f"[BR_NORM_PROPERTY] New _br_norm_manager.plot_config.datetime_array[0]: {self._br_norm_manager.plot_config.datetime_array[0]}, [-1]: {self._br_norm_manager.plot_config.datetime_array[-1]}")
 
             else:
                 print_manager.dependency_management(f"[BR_NORM_PROPERTY] _calculate_br_norm did not succeed or br_norm data is None. Success: {success}, br_norm data is None: {self.raw_data.get('br_norm') is None}")
@@ -461,7 +461,7 @@ class mag_rtn_4sa_class:
         if self.raw_data['br_norm'] is not None and hasattr(self, 'datetime_array') and self.datetime_array is not None:
             self.br_norm = plot_manager(
                 self.raw_data['br_norm'],
-                plot_options=ploptions(
+                plot_config=plot_config(
                     data_type='mag_RTN_4sa',    # Actual data product name
                     var_name='br_norm_rtn_4sa',  # Variable name
                     class_name='mag_rtn_4sa',   # Class handling this data
@@ -483,17 +483,17 @@ class mag_rtn_4sa_class:
             print_manager.dependency_management(f"Cannot create plot manager for br_norm: missing data or datetime_array")
             return False
 
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Create plot managers for each component with default options"""
         # STRATEGIC PRINT K
-        dt_len_in_set_ploptions = len(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else "None_or_NoAttr"
-        print_manager.dependency_management(f"[MAG_CLASS_DEBUG K] set_ploptions called for instance ID: {id(self)}. self.datetime_array len: {dt_len_in_set_ploptions}")
+        dt_len_in_set_plot_config = len(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else "None_or_NoAttr"
+        print_manager.dependency_management(f"[MAG_CLASS_DEBUG K] set_plot_config called for instance ID: {id(self)}. self.datetime_array len: {dt_len_in_set_plot_config}")
 
         print_manager.dependency_management(f"Setting up plot options for mag_rtn_4sa variables")
         
         self.all = plot_manager(
             [self.raw_data['br'], self.raw_data['bt'], self.raw_data['bn']],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='mag_RTN_4sa',    # Actual data product name
                 var_name=['br_rtn_4sa', 'bt_rtn_4sa', 'bn_rtn_4sa'],  # Variable names
                 class_name='mag_rtn_4sa',   # Class handling this data
@@ -513,7 +513,7 @@ class mag_rtn_4sa_class:
         
         self.br = plot_manager(
             self.raw_data['br'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='mag_RTN_4sa',    # Actual data product name
                 var_name='br_rtn_4sa',      # Variable name in data file
                 class_name='mag_rtn_4sa',   # Class handling this data type
@@ -532,7 +532,7 @@ class mag_rtn_4sa_class:
 
         self.bt = plot_manager(
             self.raw_data['bt'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='mag_RTN_4sa',    # Actual data product name
                 var_name='bt_rtn_4sa',      # Variable name in data file
                 class_name='mag_rtn_4sa',   # Class handling this data type
@@ -551,7 +551,7 @@ class mag_rtn_4sa_class:
 
         self.bn = plot_manager(
             self.raw_data['bn'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='mag_RTN_4sa',    # Actual data product name
                 var_name='bn_rtn_4sa',      # Variable name in data file
                 class_name='mag_rtn_4sa',   # Class handling this data type
@@ -570,7 +570,7 @@ class mag_rtn_4sa_class:
         
         self.bmag = plot_manager(
             self.raw_data['bmag'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='mag_RTN_4sa',    # Actual data product name
                 var_name='bmag_rtn_4sa',     # Variable name in data file
                 class_name='mag_rtn_4sa',   # Class handling this data type
@@ -589,7 +589,7 @@ class mag_rtn_4sa_class:
 
         self.pmag = plot_manager(
             self.raw_data['pmag'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='mag_RTN_4sa',    # Actual data product name
                 var_name='pmag_rtn_4sa',     # Variable name in data file
                 class_name='mag_rtn_4sa',   # Class handling this data type
@@ -670,9 +670,9 @@ class mag_rtn_4sa_class:
                          self.field = None
                          changed_field = True
             
-            if (changed_time or changed_field) and hasattr(self, 'set_ploptions'):
-                print_manager.dependency_management(f"    Calling self.set_ploptions() due to consistency updates (time changed: {changed_time}, field changed: {changed_field}).")
-                self.set_ploptions()
+            if (changed_time or changed_field) and hasattr(self, 'set_plot_config'):
+                print_manager.dependency_management(f"    Calling self.set_plot_config() due to consistency updates (time changed: {changed_time}, field changed: {changed_field}).")
+                self.set_plot_config()
         else:
             print_manager.dependency_management(f"    Skipping consistency check (datetime_array or raw_data missing/None).")
         

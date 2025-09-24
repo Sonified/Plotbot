@@ -9,7 +9,7 @@ from typing import Optional, List
 
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from plotbot.time_utils import TimeRangeTracker
 from ._utils import _format_setattr_debug
 
@@ -30,13 +30,13 @@ class psp_qtn_class:
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.dependency_management("No data provided; initialized with empty attributes.")
         else:
             # Initialize with data if provided - we're currently using update() method instead, but preserved for future extensibility
             print_manager.dependency_management("Calculating QTN variables...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Successfully calculated QTN variables.")
     
     def update(self, imported_data, original_requested_trange: Optional[List[str]] = None): #This is function is the exact same across all classes :)
@@ -58,7 +58,7 @@ class psp_qtn_class:
         print_manager.datacubby("\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
         
-        # Store current state before update (including any modified ploptions)
+        # Store current state before update (including any modified plot_config)
         current_plot_states = {}
         standard_components = ['density', 'temperature']
         for comp_name in standard_components:
@@ -66,13 +66,13 @@ class psp_qtn_class:
                 manager = getattr(self, comp_name)
                 if isinstance(manager, plot_manager) and hasattr(manager, '_plot_state'):
                     current_plot_states[comp_name] = dict(manager._plot_state)
-                    print_manager.datacubby(f"Stored {comp_name} state: {retrieve_ploption_snapshot(current_plot_states[comp_name])}")
+                    print_manager.datacubby(f"Stored {comp_name} state: {retrieve_plot_config_snapshot(current_plot_states[comp_name])}")
 
         # Perform update
         self.calculate_variables(imported_data)                                # Update raw data arrays
-        self.set_ploptions()                                                  # Recreate plot managers for standard components
+        self.set_plot_config()                                                  # Recreate plot managers for standard components
         
-        # Restore state (including any modified ploptions!)
+        # Restore state (including any modified plot_config!)
         print_manager.datacubby("Restoring saved state...")
         for comp_name, state in current_plot_states.items():                    # Restore saved states
             if hasattr(self, comp_name): # For standard components
@@ -80,9 +80,9 @@ class psp_qtn_class:
                 if isinstance(manager, plot_manager):
                     manager._plot_state.update(state)
                     for attr, value in state.items():
-                        if hasattr(manager.plot_options, attr):
-                            setattr(manager.plot_options, attr, value)
-                    print_manager.datacubby(f"Restored {comp_name} state: {retrieve_ploption_snapshot(state)}")
+                        if hasattr(manager.plot_config, attr):
+                            setattr(manager.plot_config, attr, value)
+                    print_manager.datacubby(f"Restored {comp_name} state: {retrieve_plot_config_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\\n")
         
@@ -212,12 +212,12 @@ class psp_qtn_class:
         print_manager.dependency_management(f"Temperature data shape: {temperature_data.shape if temperature_data is not None else 'None'}")
         print_manager.dependency_management(f"First TT2000 time: {self.time[0]}")
     
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Set up the plotting options for QTN density and temperature"""
         # Electron density with sky blue color (as requested)
         self.density = plot_manager(
             self.raw_data['density'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='sqtn_rfs_v1v2',       # Actual data product name
                 var_name='electron_density',     # Variable name
                 class_name='psp_qtn',           # Class handling this data
@@ -237,7 +237,7 @@ class psp_qtn_class:
         # Electron core temperature
         self.temperature = plot_manager(
             self.raw_data['temperature'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='sqtn_rfs_v1v2',       # Actual data product name
                 var_name='electron_temperature', # Variable name
                 class_name='psp_qtn',           # Class handling this data
@@ -279,9 +279,9 @@ class psp_qtn_class:
                 print_manager.dependency_management(f"    [ENSURE_CONSISTENCY] Set self.time to empty int64 array (datetime_array was empty).")
                 changed_time = True
             
-            if changed_time and hasattr(self, 'set_ploptions'):
-                print_manager.dependency_management(f"    Calling self.set_ploptions() due to consistency updates (time changed: {changed_time}).")
-                self.set_ploptions()
+            if changed_time and hasattr(self, 'set_plot_config'):
+                print_manager.dependency_management(f"    Calling self.set_plot_config() due to consistency updates (time changed: {changed_time}).")
+                self.set_plot_config()
         else:
             print_manager.dependency_management(f"    Skipping consistency check (datetime_array or raw_data missing/None).")
         

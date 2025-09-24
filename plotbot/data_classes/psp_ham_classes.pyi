@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from plotbot.print_manager import print_manager
 from plotbot.data_cubby import data_cubby
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions
+from plotbot.plot_config import plot_config
 
 # Define a type alias for the imported data structure if possible
 ImportedDataType = Any 
@@ -23,7 +23,7 @@ class ham_class:
     datetime_array: Optional[np.ndarray] # Python datetimes
 
     # --- Public Attributes (plot_manager instances) ---
-    # Add attributes for ALL plot_manager instances created in set_ploptions
+    # Add attributes for ALL plot_manager instances created in set_plot_config
     hamogram_30s: plot_manager
     hamogram_og_30s: plot_manager
     # hamogram_1m: plot_manager # Removed - Placeholder
@@ -59,9 +59,9 @@ class ham_class:
     def __getattr__(self, name: str) -> Any: ... # Changed return to Any based on implementation
     def __setattr__(self, name: str, value: Any) -> None: ...
     def calculate_variables(self, imported_data: ImportedDataType) -> None: ...
-    def _create_ham_scatter_ploptions(self, var_name: str, subclass_name: str, y_label: str, legend_label: str, color: str, marker_style: Tuple[int, int]=(5, 1), marker_size: int=20, alpha: float=0.2, y_limit: Optional[List[Optional[float]]]=None) -> ploptions: ...
-    def _create_ham_timeseries_ploptions(self, var_name: str, subclass_name: str, y_label: str, legend_label: str, color: str, y_limit: List[Optional[float]]=[0, None], line_width: int=1, line_style: str='-') -> ploptions: ...
-    def set_ploptions(self) -> None: ...
+    def _create_ham_scatter_plot_config(self, var_name: str, subclass_name: str, y_label: str, legend_label: str, color: str, marker_style: Tuple[int, int]=(5, 1), marker_size: int=20, alpha: float=0.2, y_limit: Optional[List[Optional[float]]]=None) -> plot_config: ...
+    def _create_ham_timeseries_plot_config(self, var_name: str, subclass_name: str, y_label: str, legend_label: str, color: str, y_limit: List[Optional[float]]=[0, None], line_width: int=1, line_style: str='-') -> plot_config: ...
+    def set_plot_config(self) -> None: ...
 
 # --- Module-level Instance ---
 ham: ham_class

@@ -70,7 +70,7 @@ if micromamba env list | grep -q "plotbot_micromamba" && [ -d "$MAMBA_ROOT_PREFI
         1)
             echo "🔹 Updating the existing 'plotbot_micromamba' environment..."
             echo "Running: micromamba env update -n plotbot_micromamba -f environment.cf.yml"
-            micromamba env update -n plotbot_micromamba -f environment.cf.yml --yes
+            micromamba env update -n plotbot_micromamba -f environment.cf.yml --yes --no-rc --override-channels -c conda-forge --channel-priority strict --no-rc --override-channels -c conda-forge --channel-priority strict
             update_status=$?
             if [ $update_status -ne 0 ]; then
                 echo "❌ Error: Environment update failed with code $update_status."
@@ -90,8 +90,8 @@ if micromamba env list | grep -q "plotbot_micromamba" && [ -d "$MAMBA_ROOT_PREFI
             else
                 echo "✅ Environment removed successfully!"
                 echo "🔹 Creating a new 'plotbot_micromamba' environment..."
-                echo "Running: micromamba create -n plotbot_micromamba -f environment.cf.yml"
-                micromamba create -n plotbot_micromamba -f environment.cf.yml --yes
+                echo "Running: micromamba create -n plotbot_micromamba -f environment.cf.yml --no-rc --override-channels -c conda-forge"
+                micromamba create -n plotbot_micromamba -f environment.cf.yml --yes --no-rc --override-channels -c conda-forge --channel-priority strict
                 create_status=$?
                 if [ $create_status -ne 0 ]; then
                     echo "❌ Error: Environment creation failed with code $create_status."
@@ -119,12 +119,12 @@ if micromamba env list | grep -q "plotbot_micromamba" && [ -d "$MAMBA_ROOT_PREFI
     done
 else
     echo "🔹 Creating 'plotbot_micromamba' environment with micromamba..."
-    echo "Running: micromamba create -n plotbot_micromamba -f environment.cf.yml"
+    echo "Running: micromamba create -n plotbot_micromamba -f environment.cf.yml --no-rc --override-channels -c conda-forge"
     echo ""
     echo "This may take several minutes as packages are downloaded and installed..."
     echo ""
     
-    micromamba create -n plotbot_micromamba -f environment.cf.yml --yes
+    micromamba create -n plotbot_micromamba -f environment.cf.yml --yes --no-rc --override-channels -c conda-forge --channel-priority strict
     create_status=$?
     
     if [ $create_status -ne 0 ]; then

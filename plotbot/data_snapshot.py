@@ -648,8 +648,8 @@ def save_data_snapshot(filename: Optional[str] = None,
                         temp_instance.ensure_internal_consistency()
                     
                     # Set any plot options that may be needed
-                    if hasattr(temp_instance, 'set_ploptions'):
-                        temp_instance.set_ploptions()
+                    if hasattr(temp_instance, 'set_plot_config'):
+                        temp_instance.set_plot_config()
                     
                     # Stash the merged instance back to data_cubby
                     pm.debug(f"[SAVE_SNAPSHOT_DEBUG] Stashing merged instance back to data_cubby with key {data_type_str}")
@@ -1161,7 +1161,7 @@ def load_data_snapshot(filename, classes=None, merge_segments=True):
                     global_instance.restore_from_snapshot(instance_from_snapshot)
                     pm.data_snapshot(f"  Restored {class_key} using restore_from_snapshot.")
                     if hasattr(global_instance, 'ensure_internal_consistency'): global_instance.ensure_internal_consistency()
-                    if hasattr(global_instance, 'set_ploptions'): global_instance.set_ploptions()
+                    if hasattr(global_instance, 'set_plot_config'): global_instance.set_plot_config()
                 except Exception as e_restore:
                     pm.error(f"  Error during restore_from_snapshot for {class_key}: {e_restore}. Stashing directly.")
                     data_cubby.stash(instance_from_snapshot, class_name=class_key) # Stash the loaded one directly
@@ -1309,8 +1309,8 @@ def load_data_snapshot(filename, classes=None, merge_segments=True):
                             merged_instance.ensure_internal_consistency()
                         
                         # Set plot options if available
-                        if hasattr(merged_instance, 'set_ploptions'):
-                            merged_instance.set_ploptions()
+                        if hasattr(merged_instance, 'set_plot_config'):
+                            merged_instance.set_plot_config()
                             
                     except Exception as e_merge:
                         pm.error(f"    Failed to merge segments for {base_class_name}: {e_merge}")
@@ -1329,8 +1329,8 @@ def load_data_snapshot(filename, classes=None, merge_segments=True):
                     global_instance.ensure_internal_consistency()
                 
                 # Set plot options
-                if hasattr(global_instance, 'set_ploptions'):
-                    global_instance.set_ploptions()
+                if hasattr(global_instance, 'set_plot_config'):
+                    global_instance.set_plot_config()
                 
                 # Special handling for tracker consistency 
                 tracker_range = _ensure_tracker_consistency(base_class_name, global_instance)

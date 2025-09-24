@@ -1089,14 +1089,14 @@ class data_cubby:
                         global_instance.time = np.array([], dtype=np.int64) # Ensure correct dtype for empty
                         pm.dependency_management(f"[CUBBY_UPDATE_DEBUG] datetime_array was empty or None, set time to empty int64 array.")
 
-                    # Call set_ploptions on the global_instance AFTER all raw data arrays are set
-                    # This is crucial because set_ploptions uses these arrays to initialize PlotManagers
-                    if hasattr(global_instance, 'set_ploptions'):
-                        global_instance.set_ploptions()
-                        dt_len_after_setploptions = len(global_instance.datetime_array) if hasattr(global_instance, 'datetime_array') and global_instance.datetime_array is not None else "None_or_NoAttr"
-                        min_dt_G = global_instance.datetime_array[0] if dt_len_after_setploptions not in ["None_or_NoAttr", 0] else "N/A"
-                        max_dt_G = global_instance.datetime_array[-1] if dt_len_after_setploptions not in ["None_or_NoAttr", 0] else "N/A"
-                        pm.dependency_management(f"[CUBBY_UPDATE_DEBUG G_POST_FINAL] Instance (ID: {id(global_instance)}) AFTER ALL MERGE LOGIC (before return True). datetime_array len: {dt_len_after_setploptions}, min: {min_dt_G}, max: {max_dt_G}")
+                    # Call set_plot_config on the global_instance AFTER all raw data arrays are set
+                    # This is crucial because set_plot_config uses these arrays to initialize PlotManagers
+                    if hasattr(global_instance, 'set_plot_config'):
+                        global_instance.set_plot_config()
+                        dt_len_after_setplot_config = len(global_instance.datetime_array) if hasattr(global_instance, 'datetime_array') and global_instance.datetime_array is not None else "None_or_NoAttr"
+                        min_dt_G = global_instance.datetime_array[0] if dt_len_after_setplot_config not in ["None_or_NoAttr", 0] else "N/A"
+                        max_dt_G = global_instance.datetime_array[-1] if dt_len_after_setplot_config not in ["None_or_NoAttr", 0] else "N/A"
+                        pm.dependency_management(f"[CUBBY_UPDATE_DEBUG G_POST_FINAL] Instance (ID: {id(global_instance)}) AFTER ALL MERGE LOGIC (before return True). datetime_array len: {dt_len_after_setplot_config}, min: {min_dt_G}, max: {max_dt_G}")
                         
                         # STRATEGIC PRINT CHECK_REGISTRY
                         instance_in_registry_check = cls.class_registry.get(data_type_str.lower()) # target_key is data_type_str.lower()
@@ -1111,9 +1111,9 @@ class data_cubby:
                             pm.dependency_management(f"[CUBBY_UPDATE_DEBUG CHECK_REGISTRY] Instance for key '{data_type_str.lower()}' NOT FOUND in class_registry after merge ops.")
                         return True
                     else:
-                         pm.warning(f"Global instance for {data_type_str} has no set_ploptions(). Plot managers might be stale.")
+                         pm.warning(f"Global instance for {data_type_str} has no set_plot_config(). Plot managers might be stale.")
                     
-                    pm.dependency_management(f"[CUBBY_UPDATE_DEBUG] Global instance fully updated and ploptions set.")
+                    pm.dependency_management(f"[CUBBY_UPDATE_DEBUG] Global instance fully updated and plot_config set.")
                     return True
                 except Exception as e:
                      # Using f-string for direct print of error

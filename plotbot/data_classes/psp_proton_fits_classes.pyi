@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Union
 from plotbot.print_manager import print_manager
 from plotbot.data_cubby import data_cubby
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions
+from plotbot.plot_config import plot_config
 
 # Define constants (optional in stub, but can help clarity)
 m: float
@@ -28,7 +28,7 @@ class proton_fits_class:
     # 'time' attribute is not explicitly set, but likely implicitly exists if datetime_array does
 
     # --- Public Attributes (plot_manager instances) ---
-    # Add attributes for ALL plot_manager instances created in set_ploptions
+    # Add attributes for ALL plot_manager instances created in set_plot_config
     np1: plot_manager
     np2: plot_manager
     Tperp1: plot_manager
@@ -89,8 +89,8 @@ class proton_fits_class:
     def __getattr__(self, name: str) -> Any: ... # Changed return to Any based on implementation
     def __setattr__(self, name: str, value: Any) -> None: ...
     def calculate_variables(self, imported_data: ImportedDataType) -> None: ...
-    def _create_fits_scatter_ploptions(self, var_name: str, subclass_name: str, y_label: str, legend_label: str, color: str) -> ploptions: ...
-    def set_ploptions(self) -> None: ...
+    def _create_fits_scatter_plot_config(self, var_name: str, subclass_name: str, y_label: str, legend_label: str, color: str) -> plot_config: ...
+    def set_plot_config(self) -> None: ...
 
 # --- Module-level Instance ---
 proton_fits: proton_fits_class

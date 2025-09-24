@@ -515,10 +515,10 @@ def test_custom_variables():
     
     # Create a plot_manager object for testing
     from ..plot_manager import plot_manager
-    from ..ploptions import ploptions
+    from ..plot_config import plot_config
     
     # Create proper plot options
-    plot_options = ploptions(
+    plot_options = plot_config(
         data_type="test",
         class_name="test", 
         subclass_name="sin",

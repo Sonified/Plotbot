@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import logging
 import matplotlib.pyplot as plt
-from .ploptions import ploptions
+from .plot_config import plot_config
 from .print_manager import print_manager
 from .data_classes.custom_variables import custom_variable  # UPDATED PATH
 
@@ -26,7 +26,7 @@ class plot_manager(np.ndarray):
     # Set up class-level interpolation settings
     interp_method = 'nearest'  # Default interpolation method ('nearest' or 'linear')
 
-    def __new__(cls, input_array, plot_options=None):
+    def __new__(cls, input_array, plot_config=None):
         obj = np.asarray(input_array).view(cls)
         # Add this new section for plot state
         if hasattr(input_array, '_plot_state'):
@@ -35,11 +35,11 @@ class plot_manager(np.ndarray):
             obj._plot_state = {}
         
         from .print_manager import print_manager
-        # Require plot_options to be provided
-        if plot_options is None:
-            raise ValueError("plot_options must be provided when creating a plot_manager instance")
+        # Require plot_config to be provided
+        if plot_config is None:
+            raise ValueError("plot_config must be provided when creating a plot_manager instance")
         
-        print_manager.zarr_integration(f"Using plot_options: data_type={getattr(plot_options, 'data_type', 'None')}, class={getattr(plot_options, 'class_name', 'None')}, subclass={getattr(plot_options, 'subclass_name', 'None')}")
+        print_manager.zarr_integration(f"Using plot_config: data_type={getattr(plot_config, 'data_type', 'None')}, class={getattr(plot_config, 'class_name', 'None')}, subclass={getattr(plot_config, 'subclass_name', 'None')}")
         
         # Keep existing code with better error handling
         if hasattr(input_array, '_original_options'):
@@ -47,26 +47,26 @@ class plot_manager(np.ndarray):
         else:
             # Safely create original options
             try:
-                from .ploptions import ploptions
-                if hasattr(plot_options, '__dict__'):
-                    obj._original_options = ploptions(**vars(plot_options))
+                from .plot_config import plot_config as plot_config_class
+                if hasattr(plot_config, '__dict__'):
+                    obj._original_options = plot_config_class(**vars(plot_config))
                 else:
-                    # Handle case where plot_options doesn't have __dict__
-                    obj._original_options = ploptions() if not isinstance(plot_options, dict) else ploptions(**plot_options)
+                    # Handle case where plot_config doesn't have __dict__
+                    obj._original_options = plot_config_class() if not isinstance(plot_config, dict) else plot_config_class(**plot_config)
             except Exception as e:
                 # Fallback to empty options
                 from .print_manager import print_manager
                 print_manager.warning(f"Error creating plot options: {str(e)}, using empty options")
-                from .ploptions import ploptions
-                obj._original_options = ploptions()
+                from .plot_config import plot_config as plot_config_class
+                obj._original_options = plot_config_class()
         
-        obj.plot_options = plot_options
+        obj.plot_config = plot_config
         return obj
 
     def __array__(self, dtype=None):
         # Create a new plot_manager instead of just returning the array
         arr = np.asarray(self.view(np.ndarray), dtype=dtype)
-        return plot_manager(arr, self.plot_options)
+        return plot_manager(arr, self.plot_config)
 
     def __array_wrap__(self, out_arr, context=None):
         if context is not None:
@@ -76,9 +76,9 @@ class plot_manager(np.ndarray):
             # Check if any of the arguments are plot_manager instances
             has_plot_manager = any(isinstance(arg, self.__class__) for arg in args)
             if has_plot_manager:
-                # If so, preserve the plot_options from the first plot_manager argument
-                plot_options = next((arg.plot_options for arg in args if isinstance(arg, self.__class__)), None)
-                return self.__class__(out_arr, plot_options=plot_options)
+                # If so, preserve the plot_config from the first plot_manager argument
+                plot_config_found = next((arg.plot_config for arg in args if isinstance(arg, self.__class__)), None)
+                return self.__class__(out_arr, plot_config=plot_config_found)
         # For other operations, return a regular numpy array
         return np.ndarray.__array_wrap__(self, out_arr, context)
     
@@ -91,11 +91,11 @@ class plot_manager(np.ndarray):
             self._plot_state = {}
         else:
             self._plot_state = dict(self._plot_state)
-        # Always ensure plot_options exists
-        self.plot_options = getattr(obj, 'plot_options', None)
-        if self.plot_options is None:
-            from .ploptions import ploptions
-            self.plot_options = ploptions()
+        # Always ensure plot_config exists
+        self.plot_config = getattr(obj, 'plot_config', None)
+        if self.plot_config is None:
+            from .plot_config import plot_config
+            self.plot_config = plot_config()
         if not hasattr(self, '_original_options'):
             self._original_options = getattr(obj, '_original_options', None)
 
@@ -137,8 +137,8 @@ class plot_manager(np.ndarray):
         
         # Perform clipping once and store results
         self._clipped_data = self.clip_to_original_trange(self.view(np.ndarray), value)
-        if self.plot_options.datetime_array is not None:
-            self._clipped_datetime_array = self._clip_datetime_array(self.plot_options.datetime_array, value)
+        if self.plot_config.datetime_array is not None:
+            self._clipped_datetime_array = self._clip_datetime_array(self.plot_config.datetime_array, value)
         else:
             self._clipped_datetime_array = None
     
@@ -201,8 +201,8 @@ class plot_manager(np.ndarray):
         print_manager.debug(f"🔍 [DEBUG] clip_to_original_trange called with trange: {original_trange}")
 
         if datetime_array is None:
-            # Use the ORIGINAL datetime array from plot_options, not the property
-            datetime_array = self.plot_options.datetime_array
+            # Use the ORIGINAL datetime array from plot_config, not the property
+            datetime_array = self.plot_config.datetime_array
 
         if datetime_array is None:
             print_manager.status("⚠️ No datetime array available, returning full data")
@@ -237,48 +237,48 @@ class plot_manager(np.ndarray):
     # Properties for data_type, class_name and subclass_name
     @property
     def data_type(self):
-        return self.plot_options.data_type
+        return self.plot_config.data_type
         
     @data_type.setter
     def data_type(self, value):
         self._plot_state['data_type'] = value
-        self.plot_options.data_type = value
+        self.plot_config.data_type = value
 
     @property
     def class_name(self):
-        return self.plot_options.class_name
+        return self.plot_config.class_name
 
     @class_name.setter 
     def class_name(self, value):
         self._plot_state['class_name'] = value
-        self.plot_options.class_name = value
+        self.plot_config.class_name = value
 
     @property
     def subclass_name(self):
-        return self.plot_options.subclass_name
+        return self.plot_config.subclass_name
 
     @subclass_name.setter
     def subclass_name(self, value):
         self._plot_state['subclass_name'] = value
-        self.plot_options.subclass_name = value
+        self.plot_config.subclass_name = value
 
     @property
     def plot_type(self):
-        return self.plot_options.plot_type
+        return self.plot_config.plot_type
 
     @plot_type.setter
     def plot_type(self, value):
         self._plot_state['plot_type'] = value
-        self.plot_options.plot_type = value
+        self.plot_config.plot_type = value
         
     @property
     def var_name(self):
-        return self.plot_options.var_name
+        return self.plot_config.var_name
 
     @var_name.setter
     def var_name(self, value):
         self._plot_state['var_name'] = value
-        self.plot_options.var_name = value
+        self.plot_config.var_name = value
 
     @property
     def datetime_array(self):
@@ -288,18 +288,18 @@ class plot_manager(np.ndarray):
             return self._clipped_datetime_array
             
         # Otherwise return full datetime array
-        return self.plot_options.datetime_array
+        return self.plot_config.datetime_array
 
     @datetime_array.setter
     def datetime_array(self, value):
         # FIX: For safety, directly use __setattr__ rather than going through _plot_state
         # which can trigger truth value evaluation of arrays
         try:
-            # First update the plot_options directly
-            if hasattr(self.plot_options, '_datetime_array'):
-                self.plot_options._datetime_array = value
+            # First update the plot_config directly
+            if hasattr(self.plot_config, '_datetime_array'):
+                self.plot_config._datetime_array = value
             else:
-                object.__setattr__(self.plot_options, 'datetime_array', value)
+                object.__setattr__(self.plot_config, 'datetime_array', value)
                 
             # Then update the _plot_state dictionary if needed
             if hasattr(self, '_plot_state'):
@@ -310,139 +310,139 @@ class plot_manager(np.ndarray):
         
     @property
     def y_label(self):
-        return self.plot_options.y_label
+        return self.plot_config.y_label
 
     @y_label.setter
     def y_label(self, value):
         self._plot_state['y_label'] = value
-        self.plot_options.y_label = value
+        self.plot_config.y_label = value
         
     @property
     def legend_label(self):
-        return self.plot_options.legend_label
+        return self.plot_config.legend_label
 
     @legend_label.setter
     def legend_label(self, value):
         self._plot_state['legend_label'] = value
-        self.plot_options.legend_label = value
+        self.plot_config.legend_label = value
 
     @property
     def color(self):
-        return self.plot_options.color
+        return self.plot_config.color
 
     @color.setter
     def color(self, value):
         self._plot_state['color'] = value
-        self.plot_options.color = value
+        self.plot_config.color = value
         
     @property
     def y_scale(self):
-        return self.plot_options.y_scale
+        return self.plot_config.y_scale
 
     @y_scale.setter
     def y_scale(self, value):
         self._plot_state['y_scale'] = value
-        self.plot_options.y_scale = value
+        self.plot_config.y_scale = value
         
     @property
     def y_limit(self):
-        return self.plot_options.y_limit
+        return self.plot_config.y_limit
 
     @y_limit.setter
     def y_limit(self, value):
         self._plot_state['y_limit'] = value
-        self.plot_options.y_limit = value
+        self.plot_config.y_limit = value
         
     @property
     def line_width(self):
-        return self.plot_options.line_width
+        return self.plot_config.line_width
 
     @line_width.setter
     def line_width(self, value):
         self._plot_state['line_width'] = value
-        self.plot_options.line_width = value
+        self.plot_config.line_width = value
         
     @property
     def line_style(self):
-        return self.plot_options.line_style
+        return self.plot_config.line_style
 
     @line_style.setter
     def line_style(self, value):
         self._plot_state['line_style'] = value
-        self.plot_options.line_style = value
+        self.plot_config.line_style = value
         
     @property
     def colormap(self):
-        return self.plot_options.colormap
+        return self.plot_config.colormap
 
     @colormap.setter
     def colormap(self, value):
         self._plot_state['colormap'] = value
-        self.plot_options.colormap = value
+        self.plot_config.colormap = value
         
     @property
     def colorbar_scale(self):
-        return self.plot_options.colorbar_scale
+        return self.plot_config.colorbar_scale
 
     @colorbar_scale.setter
     def colorbar_scale(self, value):
         self._plot_state['colorbar_scale'] = value
-        self.plot_options.colorbar_scale = value
+        self.plot_config.colorbar_scale = value
         
     @property
     def colorbar_limits(self):
-        return self.plot_options.colorbar_limits
+        return self.plot_config.colorbar_limits
 
     @colorbar_limits.setter
     def colorbar_limits(self, value):
         self._plot_state['colorbar_limits'] = value
-        self.plot_options.colorbar_limits = value
+        self.plot_config.colorbar_limits = value
         
     @property
     def additional_data(self):
-        return self.plot_options.additional_data
+        return self.plot_config.additional_data
 
     @additional_data.setter
     def additional_data(self, value):
         self._plot_state['additional_data'] = value
-        self.plot_options.additional_data = value
+        self.plot_config.additional_data = value
         
     @property
     def colorbar_label(self):
         if hasattr(self, '_colorbar_label'):
             return self._colorbar_label
-        return getattr(self.plot_options, 'colorbar_label', None)
+        return getattr(self.plot_config, 'colorbar_label', None)
         
     @colorbar_label.setter
     def colorbar_label(self, value):
         self._plot_state['colorbar_label'] = value
         self._colorbar_label = value
-        setattr(self.plot_options, 'colorbar_label', value)
+        setattr(self.plot_config, 'colorbar_label', value)
 
     # New properties for derived variable handling
     @property
     def source_class_names(self):
         if hasattr(self, '_source_class_names'):
             return self._source_class_names
-        return getattr(self.plot_options, 'source_class_names', None)
+        return getattr(self.plot_config, 'source_class_names', None)
         
     @source_class_names.setter
     def source_class_names(self, value):
         self._plot_state['source_class_names'] = value
         self._source_class_names = value
-        setattr(self.plot_options, 'source_class_names', value)
+        setattr(self.plot_config, 'source_class_names', value)
         
     @property
     def source_subclass_names(self):
         if hasattr(self, '_source_subclass_names'):
             return self._source_subclass_names
-        return getattr(self.plot_options, 'source_subclass_names', None)
+        return getattr(self.plot_config, 'source_subclass_names', None)
         
     @source_subclass_names.setter
     def source_subclass_names(self, value):
         self._plot_state['source_subclass_names'] = value
         self._source_subclass_names = value
-        setattr(self.plot_options, 'source_subclass_names', value)
+        setattr(self.plot_config, 'source_subclass_names', value)
 
     #Inline friendly error handling in __setattr__, consistent with your style
     def __setattr__(self, name, value):
@@ -451,7 +451,7 @@ class plot_manager(np.ndarray):
             object.__setattr__(self, name, value)
             return
         try:
-            if name in ['plot_options', '__dict__', '__doc__', '__module__', '_ipython_display_', '_original_options'] or name.startswith('_'):
+            if name in ['plot_config', '__dict__', '__doc__', '__module__', '_ipython_display_', '_original_options'] or name.startswith('_'):
                 # Directly set these special or private attributes
                 super().__setattr__(name, value)
                 return
@@ -465,8 +465,8 @@ class plot_manager(np.ndarray):
                         print_manager.datacubby("action='remove_from_plot_state'")
                     # Then set to original value
                     if hasattr(self._original_options, name):
-                        setattr(self.plot_options, name, getattr(self._original_options, name))
-                        print_manager.datacubby(f"Attribute name: {name}, Attribute value: {getattr(self.plot_options, name)}")
+                        setattr(self.plot_config, name, getattr(self._original_options, name))
+                        print_manager.datacubby(f"Attribute name: {name}, Attribute value: {getattr(self.plot_config, name)}")
                     else:
                         print_manager.warning(f"No default value found for {name}")
                     return
@@ -578,17 +578,17 @@ class plot_manager(np.ndarray):
             return self._plot_state
         elif '_plot_state' not in self.__dict__:
             self._plot_state = {}
-        # Fallback: If plot_options is missing, auto-initialize and warn
-        if 'plot_options' not in self.__dict__ or self.plot_options is None:
-            from .ploptions import ploptions
-            self.plot_options = ploptions()
+        # Fallback: If plot_config is missing, auto-initialize and warn
+        if 'plot_config' not in self.__dict__ or self.plot_config is None:
+            from .plot_config import plot_config
+            self.plot_config = plot_config()
         if hasattr(self, '_plot_state') and name in self._plot_state:
             return self._plot_state[name]
         # This is only called if an attribute is not found 
         # in the normal places (i.e., not found in __dict__ and not a dynamic attribute).
-        # For recognized attributes, return from plot_options if available
+        # For recognized attributes, return from plot_config if available
         if name in self.PLOT_ATTRIBUTES:
-            return getattr(self.plot_options, name, None)
+            return getattr(self.plot_config, name, None)
         # For unrecognized attributes (not found in _plot_state or as a PLOT_ATTRIBUTE)
         if not name.startswith('_'): # Ensure it's not an internal attribute we missed
             # Behavior for trying to GET an unrecognized attribute:
@@ -602,9 +602,9 @@ class plot_manager(np.ndarray):
         raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
     def _set_plot_option(self, attribute, value):
-        if not self.plot_options:
-            self.plot_options = ploptions()
-        setattr(self.plot_options, attribute, value)
+        if not self.plot_config:
+            self.plot_config = plot_config()
+        setattr(self.plot_config, attribute, value)
         
     @staticmethod
     def interpolate_to_times(source_times, source_values, target_times, method='nearest'):
@@ -859,7 +859,7 @@ class plot_manager(np.ndarray):
         """Helper method to perform arithmetic operations."""
         from .print_manager import print_manager
         from .data_classes.custom_variables import custom_variable
-        from .ploptions import ploptions
+        from .plot_config import plot_config
         import numpy as np
         
         # Special handling for unary operations (where other is None)
@@ -883,7 +883,7 @@ class plot_manager(np.ndarray):
                 var_name = f"{operation_name}_{getattr(self, 'subclass_name', 'var1')}"
                 
                 # Create result plot_manager
-                result_plot_options = ploptions(
+                result_plot_config = plot_config(
                     data_type="custom_data_type",
                     class_name="custom_class", 
                     subclass_name=var_name,
@@ -892,7 +892,7 @@ class plot_manager(np.ndarray):
                 )
                 
                 # Create the result
-                result_var = plot_manager(result, result_plot_options)
+                result_var = plot_manager(result, plot_config=result_plot_config)
                 
                 # Set metadata
                 object.__setattr__(result_var, 'operation', operation_name)
@@ -1001,7 +1001,7 @@ class plot_manager(np.ndarray):
 
         # --- Create result plot_manager ---
         # Use placeholder options initially, custom_variable will refine
-        result_plot_options = ploptions(
+        result_plot_config = plot_config(
             data_type="custom_data_type", # Let custom_variable set to custom_data_type
             class_name="custom_class", # Let custom_variable set to custom_class
             subclass_name=var_name, # Temporary, custom_variable uses this
@@ -1010,7 +1010,7 @@ class plot_manager(np.ndarray):
         )
         
         # Create the result using plot_manager constructor
-        result_var = plot_manager(result, result_plot_options)
+        result_var = plot_manager(result, plot_config=result_plot_config)
 
         # --- Set metadata on the result object ---
         # Explicitly using object.__setattr__ might be safer here

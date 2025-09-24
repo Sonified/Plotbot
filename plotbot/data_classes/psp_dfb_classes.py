@@ -9,7 +9,7 @@ from typing import Optional, List
 # Import our custom managers
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from plotbot.time_utils import TimeRangeTracker
 
 class psp_dfb_class:
@@ -37,13 +37,13 @@ class psp_dfb_class:
         
         if imported_data is None:
             # Set empty plotting options if imported_data is None
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.debug("No DFB data provided; initialized with empty attributes.")
         else:
             # Initialize with data if provided
             print_manager.debug("Calculating DFB electric field spectra variables...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Successfully calculated DFB electric field spectra variables.")
 
     def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
@@ -88,7 +88,7 @@ class psp_dfb_class:
             if self.datetime_array is None:
                 print_manager.processing(f"[DFB_UPDATE] First data - initializing instance")
                 self.calculate_variables(imported_data)
-                self.set_ploptions()
+                self.set_plot_config()
             else:
                 # This is additional data - we need to add new data types without breaking existing ones
                 print_manager.processing(f"[DFB_UPDATE] Additional data - adding new data types to existing instance")
@@ -99,7 +99,7 @@ class psp_dfb_class:
                 self.calculate_variables(imported_data)
                 
                 # After processing, recreate plot managers to include any new data
-                self.set_ploptions()
+                self.set_plot_config()
                 
             print_manager.processing(f"[DFB_UPDATE] Update complete. Final data types: {list(self.raw_data.keys())}")
         
@@ -201,12 +201,12 @@ class psp_dfb_class:
             print_manager.processing(f"[DFB_CALC_VARS] DC dv12: stored spectral data {log_dc_vals_dv12.shape}, frequency bins {freq_bins_2d.shape}, and times_mesh {times_mesh_dc_dv12.shape}")
 
         # Don't set anything to None - let missing data types just not be processed
-        # The set_ploptions method will handle missing data gracefully
+        # The set_plot_config method will handle missing data gracefully
         
         if ac_vals_dv12 is None and ac_vals_dv34 is None and dc_vals_dv12 is None:
             print_manager.processing("No DFB data provided; initialized with empty attributes.")
 
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Set up plotting options for DFB spectral data following EPAD pattern"""
         print_manager.processing(f"[DFB_SET_PLOPT ENTRY] id(self): {id(self)}")
         
@@ -217,7 +217,7 @@ class psp_dfb_class:
         ac_data = self.raw_data.get('ac_spec_dv12', None)
         self.ac_spec_dv12 = plot_manager(
             ac_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='dfb_ac_spec_dv12hg',
                 var_name='ac_spec_dv12',
                 class_name='psp_dfb',
@@ -240,7 +240,7 @@ class psp_dfb_class:
         ac_data = self.raw_data.get('ac_spec_dv34', None)
         self.ac_spec_dv34 = plot_manager(
             ac_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='dfb_ac_spec_dv34hg',
                 var_name='ac_spec_dv34',
                 class_name='psp_dfb',
@@ -263,7 +263,7 @@ class psp_dfb_class:
         dc_data = self.raw_data.get('dc_spec_dv12', None)
         self.dc_spec_dv12 = plot_manager(
             dc_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='dfb_dc_spec_dv12hg',
                 var_name='dc_spec_dv12',
                 class_name='psp_dfb',

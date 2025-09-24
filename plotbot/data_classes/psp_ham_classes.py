@@ -9,7 +9,7 @@ import cdflib # Needed for TT2000 conversion in calculate_variables
 from plotbot.print_manager import print_manager
 # from plotbot.data_cubby import data_cubby # REMOVED
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from plotbot.time_utils import TimeRangeTracker
 from ._utils import _format_setattr_debug
 
@@ -61,12 +61,12 @@ class ham_class:
         object.__setattr__(self, 'data_type', 'ham') # Explicitly set data_type
 
         if imported_data is None:
-            self.set_ploptions() # Set empty ploptions on init
+            self.set_plot_config() # Set empty plot_config on init
             print_manager.debug("Ham class: No data provided; initialized with empty attributes.")
         else:
             print_manager.debug("Ham class: Processing imported data...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Ham class: Successfully processed imported data.")
 
     def update(self, imported_data):
@@ -86,7 +86,7 @@ class ham_class:
              var = getattr(self, subclass_name)
              if hasattr(var, '_plot_state'):
                  current_state[subclass_name] = dict(var._plot_state)
-                 print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_ploption_snapshot(current_state[subclass_name])}")
+                 print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_plot_config_snapshot(current_state[subclass_name])}")
              else:
                  # Handle case where attribute exists but has no _plot_state (e.g., if data was None initially)
                  print_manager.debug(f"Attribute {subclass_name} has no _plot_state to store.")
@@ -96,7 +96,7 @@ class ham_class:
         self.calculate_variables(imported_data)
 
         # Recreate plot managers
-        self.set_ploptions()
+        self.set_plot_config()
 
         # Restore state
         print_manager.datacubby("Restoring saved state...")
@@ -107,9 +107,9 @@ class ham_class:
                 if isinstance(var, plot_manager) and hasattr(var, '_plot_state'):
                     var._plot_state.update(state)
                     for attr, value in state.items():
-                        if hasattr(var.plot_options, attr):
-                            setattr(var.plot_options, attr, value)
-                    print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_ploption_snapshot(state)}")
+                        if hasattr(var.plot_config, attr):
+                            setattr(var.plot_config, attr, value)
+                    print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_plot_config_snapshot(state)}")
                 else:
                     print_manager.debug(f"Could not restore state for {subclass_name}, plot_manager instance might be missing or invalid.")
 
@@ -267,11 +267,11 @@ class ham_class:
             self.time = None
             self.datetime_array = None
 
-    def _create_ham_scatter_ploptions(self, var_name, subclass_name, y_label, legend_label, color, marker_style=(5, 1), marker_size=20, alpha=0.2, y_limit=None):
+    def _create_ham_scatter_plot_config(self, var_name, subclass_name, y_label, legend_label, color, marker_style=(5, 1), marker_size=20, alpha=0.2, y_limit=None):
         """Helper method for standard ham scatter plot options."""
         # Default star marker (5, 1), size 20, alpha 0.2 if not overridden
-        # print('Running _create_ham_scatter_ploptions')
-        return ploptions(
+        # print('Running _create_ham_scatter_plot_config')
+        return plot_config(
             var_name=var_name,
             data_type='ham',
             class_name='ham',
@@ -288,10 +288,10 @@ class ham_class:
             y_limit=y_limit # Default to auto-limits
         )
 
-    def _create_ham_timeseries_ploptions(self, var_name, subclass_name, y_label, legend_label, color, y_limit=[0, None], line_width=1, line_style='-'):
+    def _create_ham_timeseries_plot_config(self, var_name, subclass_name, y_label, legend_label, color, y_limit=[0, None], line_width=1, line_style='-'):
         """Helper method for standard ham time series plot options."""
         # Default y_limit [0, None], lw 1, ls '-' if not overridden
-        return ploptions(
+        return plot_config(
             var_name=var_name,
             data_type='ham',
             class_name='ham',
@@ -307,7 +307,7 @@ class ham_class:
             y_limit=y_limit
         )
 
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Initialize or update plot_manager instances based on CSV headers and specs."""
 
         # --- Original Placeholders (Keep or Remove?) ---
@@ -315,7 +315,7 @@ class ham_class:
         # If keeping, ensure data is actually loaded for them if expected.
         self.hamstring = plot_manager(
              self.raw_data.get('hamstring'),
-             plot_options=self._create_ham_scatter_ploptions(
+             plot_config=self._create_ham_scatter_plot_config(
                  var_name='hamstring', subclass_name='hamstring',
                  y_label='Hamstring (Placeholder)', legend_label='Hamstring (Placeholder)', color='grey'
              )
@@ -327,7 +327,7 @@ class ham_class:
         # 1 - hamogram_30s (Time Series)
         self.hamogram_30s = plot_manager(
             self.raw_data.get('hamogram_30s'),
-            plot_options=self._create_ham_timeseries_ploptions(
+            plot_config=self._create_ham_timeseries_plot_config(
                 var_name='hamogram_30s', subclass_name='hamogram_30s',
                 y_label=r'Hamogram', legend_label=r'Hamogram_30s', color='palevioletred',
                 y_limit=[0, None], line_width=1, line_style='-' # Spec values
@@ -337,7 +337,7 @@ class ham_class:
         # 2 - hamogram_og_30s (Time Series)
         self.hamogram_og_30s = plot_manager(
             self.raw_data.get('hamogram_og_30s'),
-            plot_options=self._create_ham_timeseries_ploptions(
+            plot_config=self._create_ham_timeseries_plot_config(
                 var_name='hamogram_og_30s', subclass_name='hamogram_og_30s',
                 y_label=r'Hamogram_og_30s', legend_label=r'Hamogram_og_30s ', color='palevioletred',
                 y_limit=None, line_width=1, line_style='-' # Spec values (Note: y_limit=None)
@@ -347,7 +347,7 @@ class ham_class:
         # 3 - hamogram_2m (Time Series)
         self.hamogram_2m = plot_manager(
             self.raw_data.get('hamogram_2m'),
-            plot_options=self._create_ham_timeseries_ploptions(
+            plot_config=self._create_ham_timeseries_plot_config(
                 var_name='hamogram_2m', subclass_name='hamogram_2m',
                 y_label=r'Hamogram', legend_label=r'Hamogram_2m', color='palevioletred',
                 y_limit=[0, None], line_width=1, line_style='-' # Spec values
@@ -357,7 +357,7 @@ class ham_class:
         # 4 - hamogram_og_2m (Time Series)
         self.hamogram_og_2m = plot_manager(
             self.raw_data.get('hamogram_og_2m'),
-            plot_options=self._create_ham_timeseries_ploptions(
+            plot_config=self._create_ham_timeseries_plot_config(
                 var_name='hamogram_og_2m', subclass_name='hamogram_og_2m',
                 y_label=r'Hamogram_og_2m', legend_label=r'Hamogram_og_2m ', color='palevioletred',
                 y_limit=None, line_width=1, line_style='-' # Spec values (Note: y_limit=None)
@@ -367,7 +367,7 @@ class ham_class:
         # 5 - hamogram_20m (Time Series)
         self.hamogram_20m = plot_manager(
             self.raw_data.get('hamogram_20m'),
-            plot_options=self._create_ham_timeseries_ploptions(
+            plot_config=self._create_ham_timeseries_plot_config(
                 var_name='hamogram_20m', subclass_name='hamogram_20m',
                 y_label=r'Hamogram', legend_label=r'Hamogram_20m', color='palevioletred',
                 y_limit=[0, None], line_width=1, line_style='-' # Spec values
@@ -377,7 +377,7 @@ class ham_class:
         # 6 - hamogram_90m (Time Series)
         self.hamogram_90m = plot_manager(
             self.raw_data.get('hamogram_90m'),
-            plot_options=self._create_ham_timeseries_ploptions(
+            plot_config=self._create_ham_timeseries_plot_config(
                 var_name='hamogram_90m', subclass_name='hamogram_90m',
                 y_label=r'Hamogram', legend_label=r'Hamogram_90m', color='palevioletred',
                 y_limit=[0, None], line_width=1, line_style='-' # Spec values
@@ -387,7 +387,7 @@ class ham_class:
         # 7 - hamogram_4h (Time Series)
         self.hamogram_4h = plot_manager(
             self.raw_data.get('hamogram_4h'),
-            plot_options=self._create_ham_timeseries_ploptions(
+            plot_config=self._create_ham_timeseries_plot_config(
                 var_name='hamogram_4h', subclass_name='hamogram_4h',
                 y_label=r'Hamogram', legend_label=r'Hamogram_4h', color='palevioletred',
                 y_limit=[0, None], line_width=1, line_style='-' # Spec values
@@ -397,7 +397,7 @@ class ham_class:
         # 8 - hamogram_og_4h (Time Series)
         self.hamogram_og_4h = plot_manager(
             self.raw_data.get('hamogram_og_4h'),
-            plot_options=self._create_ham_timeseries_ploptions(
+            plot_config=self._create_ham_timeseries_plot_config(
                 var_name='hamogram_og_4h', subclass_name='hamogram_og_4h',
                 y_label=r'Hamogram_og_4h', legend_label=r'Hamogram_og_4h', color='palevioletred',
                 y_limit=None, line_width=1, line_style='-' # Spec values (Note: y_limit=None)
@@ -407,7 +407,7 @@ class ham_class:
         # 9 - trat_ham (Scatter) - CSV name: trat_ham, Spec name: ham_trat
         self.trat_ham = plot_manager(
             self.raw_data.get('trat_ham'),
-            plot_options=self._create_ham_scatter_ploptions(
+            plot_config=self._create_ham_scatter_plot_config(
                 var_name='trat_ham', subclass_name='trat_ham',
                 y_label=r'$T_\perp/T_\parallel$', legend_label=r'$(T_\perp/T_\parallel)_{{ham}}$', color='palevioletred',
                 marker_style=(5, 1), marker_size=50, alpha=0.9 # Spec values
@@ -417,7 +417,7 @@ class ham_class:
         # 10 - trat_ham_og (Scatter) - CSV name: trat_ham_og
         self.trat_ham_og = plot_manager(
             self.raw_data.get('trat_ham_og'),
-            plot_options=self._create_ham_scatter_ploptions(
+            plot_config=self._create_ham_scatter_plot_config(
                 var_name='trat_ham_og', subclass_name='trat_ham_og',
                 y_label=r'$(T_\perp/T_\parallel)_{{og}}$', legend_label=r'$(T_\perp/T_\parallel)_{{ham,og}}$', color='palevioletred',
                 marker_style=(5, 1), marker_size=50, alpha=0.9 # Spec values
@@ -427,7 +427,7 @@ class ham_class:
         # 11 - ham_core_drift (Scatter) - CSV name: ham_core_drift
         self.ham_core_drift = plot_manager(
             self.raw_data.get('ham_core_drift'),
-            plot_options=self._create_ham_scatter_ploptions(
+            plot_config=self._create_ham_scatter_plot_config(
                 var_name='ham_core_drift', subclass_name='ham_core_drift',
                 y_label='$v_{{drift}}$ km/s', legend_label=r'$(vd)_{{h-c}}$ km/s', color='palevioletred',
                 marker_style=(5, 1), marker_size=50, alpha=0.9 # Spec values
@@ -437,7 +437,7 @@ class ham_class:
         # 12 - ham_core_drift_va (Scatter) - CSV name: ham_core_drift_va
         self.ham_core_drift_va = plot_manager(
             self.raw_data.get('ham_core_drift_va'),
-            plot_options=self._create_ham_scatter_ploptions(
+            plot_config=self._create_ham_scatter_plot_config(
                 var_name='ham_core_drift_va', subclass_name='ham_core_drift_va',
                 y_label='$v_{{drift}}/v_{{A}}$', legend_label=r'$(v_{{d}}/v_{{A}})_{{h-c}}$', color='palevioletred',
                 marker_style=(5, 1), marker_size=50, alpha=0.9 # Spec values
@@ -447,7 +447,7 @@ class ham_class:
         # 13 - Nham_div_Ncore (Scatter) - CSV name: Nham_div_Ncore, Spec name: N_ham/N_core
         self.Nham_div_Ncore = plot_manager(
             self.raw_data.get('Nham_div_Ncore'),
-            plot_options=self._create_ham_scatter_ploptions(
+            plot_config=self._create_ham_scatter_plot_config(
                 var_name='Nham_div_Ncore', subclass_name='Nham_div_Ncore',
                 y_label=r'$N_{{s}}/N_{{core}}$', legend_label=r'$N_{{ham}}/N_{{core}}$', color='palevioletred',
                 marker_style=(5, 1), marker_size=20, alpha=0.2 # Spec values
@@ -457,7 +457,7 @@ class ham_class:
         # 14 - Nham_div_Ncore_og (Scatter) - CSV name: Nham_div_Ncore_og, Spec name: N_ham_og/N_core_og
         self.Nham_div_Ncore_og = plot_manager(
             self.raw_data.get('Nham_div_Ncore_og'),
-            plot_options=self._create_ham_scatter_ploptions(
+            plot_config=self._create_ham_scatter_plot_config(
                 var_name='Nham_div_Ncore_og', subclass_name='Nham_div_Ncore_og',
                 y_label=r'$N_{{s,og}}/N_{{core,og}}$', legend_label=r'$N_{{ham}}/N_{{core,og}}$', color='palevioletred',
                 marker_style=(5, 1), marker_size=20, alpha=0.2 # Spec values
@@ -467,7 +467,7 @@ class ham_class:
         # 15 - Nham_div_Ntot (Scatter) - CSV name: Nham_div_Ntot, Spec name: N_ham/N_tot
         self.Nham_div_Ntot = plot_manager(
             self.raw_data.get('Nham_div_Ntot'),
-            plot_options=self._create_ham_scatter_ploptions(
+            plot_config=self._create_ham_scatter_plot_config(
                 var_name='Nham_div_Ntot', subclass_name='Nham_div_Ntot',
                 y_label=r'$N_{{s}}/N_{{tot}}$', legend_label=r'$N_{{ham}}/N_{{tot}}$', color='palevioletred',
                 marker_style=(5, 1), marker_size=50, alpha=0.9 # Spec values
@@ -477,7 +477,7 @@ class ham_class:
         # 16 - Nham_div_Ntot_og (Scatter) - CSV name: Nham_div_Ntot_og, Spec name: N_ham_og/N_tot_og
         self.Nham_div_Ntot_og = plot_manager(
             self.raw_data.get('Nham_div_Ntot_og'),
-            plot_options=self._create_ham_scatter_ploptions(
+            plot_config=self._create_ham_scatter_plot_config(
                 var_name='Nham_div_Ntot_og', subclass_name='Nham_div_Ntot_og',
                 y_label=r'$N_{{s,og}}/N_{{tot,og}}$', legend_label=r'$N_{{ham,og}}/N_{{tot,og}}$', color='palevioletred',
                 marker_style=(5, 1), marker_size=50, alpha=0.9 # Spec values
@@ -487,7 +487,7 @@ class ham_class:
         # 17 - Tperp_ham_div_core (Scatter) - CSV name: Tperp_ham_div_core
         self.Tperp_ham_div_core = plot_manager(
             self.raw_data.get('Tperp_ham_div_core'),
-            plot_options=self._create_ham_scatter_ploptions(
+            plot_config=self._create_ham_scatter_plot_config(
                 var_name='Tperp_ham_div_core', subclass_name='Tperp_ham_div_core',
                 y_label=r'$T_{{\perp,h}}/T_{{\perp,c}}$', legend_label=r'$T_{{\perp,h}}/T_{{\perp,c}}$', color='palevioletred',
                 marker_style=(5, 1), marker_size=20, alpha=0.2 # Spec values
@@ -497,7 +497,7 @@ class ham_class:
         # 18 - Tperp_ham_div_core_og (Scatter) - CSV name: Tperp_ham_div_core_og
         self.Tperp_ham_div_core_og = plot_manager(
             self.raw_data.get('Tperp_ham_div_core_og'),
-            plot_options=self._create_ham_scatter_ploptions(
+            plot_config=self._create_ham_scatter_plot_config(
                 var_name='Tperp_ham_div_core_og', subclass_name='Tperp_ham_div_core_og',
                 y_label=r'$T_{{\perp,h}}/T_{{\perp,c}}$', legend_label=r'$T_{{\perp,h}}/T_{{\perp,c}}$', color='palevioletred', # Note: Spec legend label same as #17?
                 marker_style=(5, 1), marker_size=20, alpha=0.2 # Spec values
@@ -507,7 +507,7 @@ class ham_class:
         # 19 - Tperprat_driftva_hc (Scatter) - CSV name: Tperprat_driftva_hc
         self.Tperprat_driftva_hc = plot_manager(
             self.raw_data.get('Tperprat_driftva_hc'),
-            plot_options=self._create_ham_scatter_ploptions(
+            plot_config=self._create_ham_scatter_plot_config(
                 var_name='Tperprat_driftva_hc', subclass_name='Tperprat_driftva_hc',
                 y_label='ham param1', legend_label='ham param1', color='palevioletred',
                 marker_style=(5, 1), marker_size=20, alpha=0.2 # Spec values
@@ -517,7 +517,7 @@ class ham_class:
         # 20 - Tperprat_driftva_hc_og (Scatter) - CSV name: Tperprat_driftva_hc_og, Spec name: ham_param1_og
         self.Tperprat_driftva_hc_og = plot_manager(
             self.raw_data.get('Tperprat_driftva_hc_og'),
-            plot_options=self._create_ham_scatter_ploptions(
+            plot_config=self._create_ham_scatter_plot_config(
                 var_name='Tperprat_driftva_hc_og', subclass_name='Tperprat_driftva_hc_og',
                 y_label='ham param1 og', legend_label='ham param1 og', color='palevioletred',
                 marker_style=(5, 1), marker_size=20, alpha=0.2 # Spec values

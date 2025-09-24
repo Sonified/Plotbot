@@ -75,14 +75,14 @@ def create_test_variable(name, data, datetime_array=None, class_name="test", sub
         A plot_manager instance with the specified data and properties
     """
     import numpy as np
-    from plotbot.ploptions import ploptions
+    from plotbot.plot_config import plot_config
     from plotbot.plot_manager import plot_manager
     from plotbot.data_cubby import data_cubby
     
     if datetime_array is None:
         datetime_array = np.arange(len(data))
         
-    options = ploptions(
+    options = plot_config(
         data_type="test",
         class_name=class_name,
         subclass_name=subclass_name or name,

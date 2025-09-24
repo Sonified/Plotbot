@@ -180,8 +180,8 @@ if __name__ == "__main__":
             print(f"Bmag data shape: {wind_data.bmag.data.shape}")
             
             # Test plot options
-            print(f"\nBx color: {wind_data.bx_gse.plot_options['color']}")
-            print(f"Bmag legend: {wind_data.bmag.plot_options['legend_label']}")
+            print(f"\nBx color: {wind_data.bx_gse.plot_config['color']}")
+            print(f"Bmag legend: {wind_data.bmag.plot_config['legend_label']}")
             
         else:
             print("❌ Failed to load WIND data")

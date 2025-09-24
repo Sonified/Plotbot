@@ -1,9 +1,9 @@
-# plotbot/ploptions.pyi
+# plotbot/plot_config.pyi
 from typing import Any, List, Tuple, Optional
 import numpy as np
 from .print_manager import print_manager # Assuming print_manager is needed
 
-class ploptions:
+class plot_config:
     debug: bool
     data_type: Optional[str]
     class_name: Optional[str]
@@ -68,7 +68,7 @@ class ploptions:
     def save_state(self) -> None: ...
     def restore_state(self) -> None: ...
 
-def retrieve_ploption_snapshot(state_dict: dict) -> dict: ...
+def retrieve_plot_config_snapshot(state_dict: dict) -> dict: ...
 
 # Global instance
-plt: ploptions 
+plt: plot_config 

@@ -22,7 +22,7 @@ m_proton_kg = proton_mass_kg_scipy
 # Import our custom managers (UPDATED PATHS)
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from plotbot.time_utils import TimeRangeTracker
 # from plotbot.data_cubby import data_cubby # REMOVED
 # Import get_data and proton instance for dependency loading (within method if needed)
@@ -94,13 +94,13 @@ class proton_fits_class:
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.debug("No data provided; initialized with empty attributes.")
         else:
             # Initialize with data if provided
             print_manager.debug("Calculating proton fits variables internally...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Successfully calculated proton fits variables.")
 
     def update(self, imported_data): #This is function is the exact same across all classes :)
@@ -138,31 +138,31 @@ class proton_fits_class:
         print_manager.datacubby("\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
 
-        # Store current state before update (including any modified ploptions)
+        # Store current state before update (including any modified plot_config)
         current_state = {}
-        # Make sure to iterate over keys that will eventually have ploptions
+        # Make sure to iterate over keys that will eventually have plot_config
         plot_keys = [k for k, v in self.raw_data.items() if v is not None] # Or use predefined list
         for subclass_name in plot_keys:
             if hasattr(self, subclass_name):
                 var = getattr(self, subclass_name)
                 if hasattr(var, '_plot_state'):
                     current_state[subclass_name] = dict(var._plot_state)       # Save current plot state
-                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_ploption_snapshot(current_state[subclass_name])}")
+                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_plot_config_snapshot(current_state[subclass_name])}")
 
         # Perform update
         self.calculate_variables(imported_data)                                # Update raw data arrays
-        self.set_ploptions()                                                  # Recreate plot managers
+        self.set_plot_config()                                                  # Recreate plot managers
 
-        # Restore state (including any modified ploptions!)
+        # Restore state (including any modified plot_config!)
         print_manager.datacubby("Restoring saved state...")
         for subclass_name, state in current_state.items():                    # Restore saved states
             if hasattr(self, subclass_name):
                 var = getattr(self, subclass_name)
                 var._plot_state.update(state)                                 # Restore plot state
                 for attr, value in state.items():
-                    if hasattr(var.plot_options, attr):
-                        setattr(var.plot_options, attr, value)                # Restore individual options
-                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_ploption_snapshot(state)}")
+                    if hasattr(var.plot_config, attr):
+                        setattr(var.plot_config, attr, value)                # Restore individual options
+                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_plot_config_snapshot(state)}")
 
         print_manager.datacubby("=== End Update Debug ===\n")
 
@@ -241,7 +241,7 @@ class proton_fits_class:
         #     print_manager.debug('proton_fits setattr helper!')
         #     print(f"'{name}' is not a recognized attribute, friend!")
         #     available_attrs = list(self.raw_data.keys()) if hasattr(self, 'raw_data') and self.raw_data else []
-        #     # Also list plot_manager attributes set by set_ploptions
+        #     # Also list plot_manager attributes set by set_plot_config
         #     pm_attrs = [attr for attr in dir(self) if isinstance(getattr(self, attr, None), plot_manager) and not attr.startswith('_')]
         #     available_attrs.extend([a for a in pm_attrs if a not in available_attrs])
         #     print(f"Try one of these: {', '.join(sorted(available_attrs))}")
@@ -665,9 +665,9 @@ class proton_fits_class:
             self.datetime_array = None # Also clear time
             self.time = None
 
-    def _create_fits_scatter_ploptions(self, var_name, subclass_name, y_label, legend_label, color):
-        """Helper method to create ploptions for standard FITS scatter plots."""
-        return ploptions(
+    def _create_fits_scatter_plot_config(self, var_name, subclass_name, y_label, legend_label, color):
+        """Helper method to create plot_config for standard FITS scatter plots."""
+        return plot_config(
             var_name=var_name,
             data_type='proton_fits',
             class_name='proton_fits',
@@ -684,7 +684,7 @@ class proton_fits_class:
             y_limit=None               # Default
         )
 
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Initialize or update plot_manager instances with data and plot options."""
         
         # Initialize plot managers in the order specified by user (1-34)
@@ -692,7 +692,7 @@ class proton_fits_class:
         # 1. qz_p (Scatter, Size 20)
         self.qz_p = plot_manager( # Heat flux of the proton beam
             self.raw_data.get('qz_p'),
-            plot_options=ploptions(
+            plot_config=plot_config(
                 var_name='qz_p',
                 data_type='proton_fits',
                 class_name='proton_fits',
@@ -713,7 +713,7 @@ class proton_fits_class:
         # 2. vsw_mach (Scatter, Size 20)
         self.vsw_mach = plot_manager( # Solar wind Mach number - ATTRIBUTE NAME CHANGED
             self.raw_data.get('vsw_mach'), # Still gets raw 'vsw_mach' data
-            plot_options=ploptions(
+            plot_config=plot_config(
                 var_name='vsw_mach', 
                 data_type='proton_fits',
                 class_name='proton_fits',
@@ -734,7 +734,7 @@ class proton_fits_class:
         # 3. beta_ppar_pfits (Scatter, Size 20)
         self.beta_ppar_pfits = plot_manager( # Total Proton parallel beta - RESTORED ORIGINAL NAME
             self.raw_data.get('beta_ppar'), # Still gets raw 'beta_ppar' data
-            plot_options=ploptions(
+            plot_config=plot_config(
                 var_name='beta_ppar_pfits',
                 data_type='proton_fits',
                 class_name='proton_fits',
@@ -755,7 +755,7 @@ class proton_fits_class:
         # 4. beta_pperp_pfits (Scatter, Size 20)
         self.beta_pperp_pfits = plot_manager( # Total Proton perpendicular beta - RESTORED ORIGINAL NAME
             self.raw_data.get('beta_pperp'), # Still gets raw 'beta_pperp' data
-            plot_options=ploptions(
+            plot_config=plot_config(
                 var_name='beta_pperp_pfits', 
                 data_type='proton_fits',
                 class_name='proton_fits',
@@ -776,7 +776,7 @@ class proton_fits_class:
         # 5. beta_p_tot (Scatter, Size 20)
         self.beta_p_tot = plot_manager( # Total Proton beta - ATTRIBUTE NAME CHANGED
             self.raw_data.get('beta_p_tot'), # Still gets raw 'beta_p_tot' data
-            plot_options=ploptions(
+            plot_config=plot_config(
                 var_name='beta_p_tot', 
                 data_type='proton_fits',
                 class_name='proton_fits',
@@ -797,7 +797,7 @@ class proton_fits_class:
         # 6. ham_param (Scatter, Size 20)
         self.ham_param = plot_manager( # Hammerhead parameter
             self.raw_data.get('ham_param'),
-            plot_options=ploptions(
+            plot_config=plot_config(
                 var_name='ham_param',
                 data_type='proton_fits',
                 class_name='proton_fits',
@@ -818,7 +818,7 @@ class proton_fits_class:
         # 6. np1 (Scatter, Size 5)
         self.np1 = plot_manager( # Core density
             self.raw_data.get('np1'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='np1',
                 subclass_name='np1', # User list #6
                 y_label=r'Density (cm$^{-3}$)',
@@ -830,7 +830,7 @@ class proton_fits_class:
         # 7. np2 (Scatter, Size 5)
         self.np2 = plot_manager( # Beam density
             self.raw_data.get('np2'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='np2',
                 subclass_name='np2', # User list #7
                 y_label=r'Density (cm$^{-3}$)', 
@@ -842,7 +842,7 @@ class proton_fits_class:
         # 8. n_tot (Scatter, Size 5)
         self.n_tot = plot_manager( # Total beam+core density
             self.raw_data.get('n_tot'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='n_tot',
                 subclass_name='n_tot', # User list #8
                 y_label=r'Density (cm$^{-3}$)',
@@ -854,7 +854,7 @@ class proton_fits_class:
         # 9. np2/np1 (Scatter, Size 5)
         self.np2_np1_ratio = plot_manager( # Beam to core density ratio
             self.raw_data.get('np2_np1_ratio'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='np2_np1_ratio',
                 subclass_name='np2_np1_ratio', # MATCH ATTRIBUTE NAME (User list #9)
                 y_label=r'$\frac{n_{p2}}{n_{p1}}$', 
@@ -866,7 +866,7 @@ class proton_fits_class:
         # 10. vp1_x (Scatter, Size 5)
         self.vp1_x = plot_manager( # Core velocity x
             self.raw_data.get('vp1_x'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='vp1_x',
                 subclass_name='vp1_x', # User list #10
                 y_label=r'Velocity (km/s)',
@@ -878,7 +878,7 @@ class proton_fits_class:
         # 11. vp1_y (Scatter, Size 5)
         self.vp1_y = plot_manager( # Core velocity y
             self.raw_data.get('vp1_y'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='vp1_y',
                 subclass_name='vp1_y', # User list #11
                 y_label=r'Velocity (km/s)',
@@ -890,7 +890,7 @@ class proton_fits_class:
         # 12. vp1_z (Scatter, Size 5)
         self.vp1_z = plot_manager( # Core velocity z
             self.raw_data.get('vp1_z'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='vp1_z',
                 subclass_name='vp1_z', # User list #12
                 y_label=r'Velocity (km/s)',
@@ -902,7 +902,7 @@ class proton_fits_class:
         # 13. vp1_mag (Scatter, Size 5)
         self.vp1_mag = plot_manager( # Core velocity magnitude
             self.raw_data.get('vp1_mag'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='vp1_mag',
                 subclass_name='vp1_mag', # User list #13
                 y_label=r'Velocity (km/s)',
@@ -914,7 +914,7 @@ class proton_fits_class:
         # 14. vcm_x (Scatter, Size 5)
         self.vcm_x = plot_manager( # Center of mass velocity x
             self.raw_data.get('vcm_x'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='vcm_x',
                 subclass_name='vcm_x', # User list #14
                 y_label=r'Velocity (km/s)',
@@ -926,7 +926,7 @@ class proton_fits_class:
         # 15. vcm_y (Scatter, Size 5)
         self.vcm_y = plot_manager( # Center of mass velocity y
             self.raw_data.get('vcm_y'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='vcm_y',
                 subclass_name='vcm_y', # User list #15
                 y_label=r'Velocity (km/s)',
@@ -938,7 +938,7 @@ class proton_fits_class:
         # 16. vcm_z (Scatter, Size 5)
         self.vcm_z = plot_manager( # Center of mass velocity z
             self.raw_data.get('vcm_z'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='vcm_z',
                 subclass_name='vcm_z', # User list #16
                 y_label=r'Velocity (km/s)',
@@ -950,7 +950,7 @@ class proton_fits_class:
         # 17. vcm_mag (Scatter, Size 5)
         self.vcm_mag = plot_manager( # Center of mass velocity magnitude
             self.raw_data.get('vcm_mag'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='vcm_mag',
                 subclass_name='vcm_mag', # User list #17
                 y_label=r'Velocity (km/s)',
@@ -962,7 +962,7 @@ class proton_fits_class:
         # 18. vdrift (Scatter, Size 5)
         self.vdrift = plot_manager( # Drift speed
             self.raw_data.get('vdrift'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='vdrift',
                 subclass_name='vdrift', # User list #18
                 y_label=r'$V_{drift}$', 
@@ -974,7 +974,7 @@ class proton_fits_class:
         # 19. |vdrift| (Scatter, Size 5)
         self.vdrift_abs = plot_manager( # Absolute drift speed
             self.raw_data.get('vdrift_abs'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='vdrift_abs', 
                 subclass_name='vdrift_abs', # MATCH ATTRIBUTE NAME (User list #19)
                 y_label=r'$|V_{drift}|$', 
@@ -986,7 +986,7 @@ class proton_fits_class:
         # 20. vdrift_va_pfits (Scatter, Size 5)
         self.vdrift_va_pfits = plot_manager( # Normalized drift speed - ATTRIBUTE NAME CHANGED
             self.raw_data.get('vdrift_va'), # Still gets raw 'vdrift_va' data
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='vdrift_va', 
                 subclass_name='vdrift_va_pfits', # User list #20
                 y_label=r'$V_{drift}/V_A$', 
@@ -998,7 +998,7 @@ class proton_fits_class:
         # 21. Trat1 (Scatter, Size 5)
         self.Trat1 = plot_manager( # Temperature anisotropy of the core
             self.raw_data.get('Trat1'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='Trat1',
                 subclass_name='Trat1', # User list #21
                 y_label=r'$T_{\perp}/T_{\parallel}$',
@@ -1010,7 +1010,7 @@ class proton_fits_class:
         # 22. Trat2 (Scatter, Size 5)
         self.Trat2 = plot_manager( # Temperature anisotropy of the beam
             self.raw_data.get('Trat2'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='Trat2',
                 subclass_name='Trat2', # User list #22
                 y_label=r'$T_{\perp}/T_{\parallel}$',
@@ -1022,7 +1022,7 @@ class proton_fits_class:
         # 23. Trat_tot (Scatter, Size 5)
         self.Trat_tot = plot_manager( # Total temperature anisotropy
             self.raw_data.get('Trat_tot'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='Trat_tot',
                 subclass_name='Trat_tot', # User list #23
                 y_label=r'$T_\perp/T_\parallel$',
@@ -1034,7 +1034,7 @@ class proton_fits_class:
         # 24. Tpar1 (Scatter, Size 5)
         self.Tpar1 = plot_manager( # Temperature parallel of the core
             self.raw_data.get('Tpar1'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='Tpar1',
                 subclass_name='Tpar1', # User list #24
                 y_label=r'$T_{\parallel}$',
@@ -1046,7 +1046,7 @@ class proton_fits_class:
         # 25. Tpar2 (Scatter, Size 5)
         self.Tpar2 = plot_manager( # Temperature parallel of the beam
             self.raw_data.get('Tpar2'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='Tpar2',
                 subclass_name='Tpar2', # User list #25
                 y_label=r'$T_{\parallel}$',
@@ -1058,7 +1058,7 @@ class proton_fits_class:
         # 26. Tpar_tot (Scatter, Size 5)
         self.Tpar_tot = plot_manager( # Total temperature parallel
             self.raw_data.get('Tpar_tot'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='Tpar_tot',
                 subclass_name='Tpar_tot', # User list #26
                 y_label=r'$T_\parallel$',
@@ -1070,7 +1070,7 @@ class proton_fits_class:
         # 27. Tperp1 (Scatter, Size 5)
         self.Tperp1 = plot_manager( # Temperature perpendicular of the core
             self.raw_data.get('Tperp1'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='Tperp1',
                 subclass_name='Tperp1', # User list #27
                 y_label=r'$T_{\perp}$',
@@ -1082,7 +1082,7 @@ class proton_fits_class:
         # 28. Tperp2 (Scatter, Size 5)
         self.Tperp2 = plot_manager( # Temperature perpendicular of the beam
             self.raw_data.get('Tperp2'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='Tperp2',
                 subclass_name='Tperp2', # User list #28
                 y_label=r'$T_{\perp}$',
@@ -1094,7 +1094,7 @@ class proton_fits_class:
         # 29. Tperp_tot (Scatter, Size 5)
         self.Tperp_tot = plot_manager( # Total temperature perpendicular
             self.raw_data.get('Tperp_tot'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='Tperp_tot',
                 subclass_name='Tperp_tot', # User list #29
                 y_label=r'$T_{\perp}$', 
@@ -1106,7 +1106,7 @@ class proton_fits_class:
         # 30. Temp_tot (Scatter, Size 5)
         self.Temp_tot = plot_manager( # Total temperature
             self.raw_data.get('Temp_tot'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='Temp_tot',
                 subclass_name='Temp_tot', # User list #30
                 y_label=r'$Temp_{tot}$', 
@@ -1118,7 +1118,7 @@ class proton_fits_class:
         # 31. |qz_p| (Scatter, Size 5)
         self.abs_qz_p = plot_manager( # Absolute heat flux - ATTRIBUTE RENAMED to abs_qz_p
             self.raw_data.get('abs_qz_p'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='abs_qz_p',
                 subclass_name='abs_qz_p', # MATCH ATTRIBUTE NAME (User list #31) - UPDATED
                 y_label=r'$|Q_p| W/m^2$',
@@ -1130,7 +1130,7 @@ class proton_fits_class:
         # 32. chi_p (Scatter, Size 5)
         self.chi_p = plot_manager( # Chi of whole proton fit
             self.raw_data.get('chi_p'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='chi_p',            
                 subclass_name='chi_p',       # User list #32
                 y_label=r'$\chi_p$',        
@@ -1142,7 +1142,7 @@ class proton_fits_class:
         # 33. chi_p_norm (Scatter, Size 5)
         self.chi_p_norm = plot_manager( # Normalized chi of whole proton fit
             self.raw_data.get('chi_p_norm'),
-            plot_options=self._create_fits_scatter_ploptions(
+            plot_config=self._create_fits_scatter_plot_config(
                 var_name='chi_p_norm',
                 subclass_name='chi_p_norm', # User list #33
                 y_label=r'$\chi_p norm$', 
@@ -1154,7 +1154,7 @@ class proton_fits_class:
         # 34. valfven_pfits (Time Series)
         self.valfven_pfits = plot_manager( # Alfven speed (from FITS params) - ATTRIBUTE NAME CHANGED
             self.raw_data.get('valfven'), # Still gets raw 'valfven' data
-            plot_options=ploptions(
+            plot_config=plot_config(
                 var_name='valfven',
                 data_type='proton_fits',
                 class_name='proton_fits',

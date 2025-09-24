@@ -77,9 +77,9 @@ def load_simple_snapshot(filename):
                             object.__setattr__(plotbot_instance, attr_name, attr_value)
                     
                     # Recreate plot managers
-                    if hasattr(plotbot_instance, 'set_ploptions'):
-                        print(f"   [LOAD] Calling set_ploptions for: {cubby_key_from_snapshot}") # DEBUG
-                        plotbot_instance.set_ploptions()
+                    if hasattr(plotbot_instance, 'set_plot_config'):
+                        print(f"   [LOAD] Calling set_plot_config for: {cubby_key_from_snapshot}") # DEBUG
+                        plotbot_instance.set_plot_config()
                 else:
                     print(f"   [LOAD WARNING] Key '{cubby_key_from_snapshot}' was in snapshot but not in data_cubby after update. Skipping.")
             else:

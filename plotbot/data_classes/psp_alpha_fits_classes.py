@@ -13,7 +13,7 @@ import logging
 from plotbot.print_manager import print_manager
 from plotbot.data_cubby import data_cubby
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from plotbot.time_utils import TimeRangeTracker
 # Import dependencies if needed later for calculations
 # from ..get_data import get_data 
@@ -115,7 +115,7 @@ class alpha_fits_class: # Renamed class
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None
-            self.set_ploptions() # Will init empty plotters
+            self.set_plot_config() # Will init empty plotters
             print_manager.debug("alpha_fits_class: No data provided; initialized with empty attributes.")
         else:
             # Initialize with data if provided
@@ -123,11 +123,11 @@ class alpha_fits_class: # Renamed class
             self.calculate_variables(imported_data)
             # Check if calculate_variables successfully produced time array
             if self.time is not None and len(self.time) > 0:
-                 self.set_ploptions()
+                 self.set_plot_config()
                  print_manager.status("alpha_fits_class: Successfully calculated alpha fits variables.")
             else:
-                 # If calculation failed, still call set_ploptions to init empty plotters
-                 self.set_ploptions() 
+                 # If calculation failed, still call set_plot_config to init empty plotters
+                 self.set_plot_config() 
                  print_manager.warning("alpha_fits_class: Calculation failed or produced no time data. Plot options initialized empty.")
 
 
@@ -144,18 +144,18 @@ class alpha_fits_class: # Renamed class
         
         # Store current state
         current_state = {}
-        # Iterate through expected plottable attributes (keys in raw_data that get ploptions)
-        plot_keys = [k for k, v in self.raw_data.items() if v is not None] # Or use predefined list based on set_ploptions
+        # Iterate through expected plottable attributes (keys in raw_data that get plot_config)
+        plot_keys = [k for k, v in self.raw_data.items() if v is not None] # Or use predefined list based on set_plot_config
         for subclass_name in plot_keys:
              if hasattr(self, subclass_name):
                  var = getattr(self, subclass_name)
                  if hasattr(var, '_plot_state'):
                       current_state[subclass_name] = dict(var._plot_state)
-                      print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_ploption_snapshot(current_state[subclass_name])}")
+                      print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_plot_config_snapshot(current_state[subclass_name])}")
 
         # Perform update
         self.calculate_variables(imported_data)
-        self.set_ploptions()
+        self.set_plot_config()
         
         # Restore state
         print_manager.datacubby("Restoring saved state...")
@@ -164,9 +164,9 @@ class alpha_fits_class: # Renamed class
                 var = getattr(self, subclass_name)
                 var._plot_state.update(state)
                 for attr, value in state.items():
-                    if hasattr(var.plot_options, attr):
-                        setattr(var.plot_options, attr, value)
-                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_ploption_snapshot(state)}")
+                    if hasattr(var.plot_config, attr):
+                        setattr(var.plot_config, attr, value)
+                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_plot_config_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\\n")
 
@@ -558,12 +558,12 @@ class alpha_fits_class: # Renamed class
         data_cubby.stash(self, class_name='alpha_fits')
 
     # UPDATED HELPER DEFINITION with optional keyword args and defaults
-    def _create_alpha_scatter_ploptions(self, var_name, subclass_name, y_label, legend_label, color,
+    def _create_alpha_scatter_plot_config(self, var_name, subclass_name, y_label, legend_label, color,
                                        marker_style='o', marker_size=5, alpha=0.7, y_scale='linear', y_limit=None):
-        """Helper method to create ploptions for standard Alpha FITS scatter plots."""
+        """Helper method to create plot_config for standard Alpha FITS scatter plots."""
         dt_array = self.datetime_array if hasattr(self, 'datetime_array') and self.datetime_array is not None else None
         
-        return ploptions(
+        return plot_config(
             var_name=var_name,
             data_type='alpha_fits', 
             class_name='alpha_fits',
@@ -581,7 +581,7 @@ class alpha_fits_class: # Renamed class
             y_limit=y_limit               
         )
 
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Initialize or update plot_manager instances for the 17 target alpha FITS data variables."""
         print_manager.debug("alpha_fits_class: Setting plot options...")
         
@@ -595,7 +595,7 @@ class alpha_fits_class: # Renamed class
         # 1. na (Alpha Density) - Uses helper defaults
         self.na = plot_manager(
             get_data('na'),
-            plot_options=self._create_alpha_scatter_ploptions(
+            plot_config=self._create_alpha_scatter_plot_config(
                 var_name='na', 
                 subclass_name='na', 
                 y_label=r'$N_\alpha$ (cm$^{-3}$)', 
@@ -607,7 +607,7 @@ class alpha_fits_class: # Renamed class
         # 2. Tp_alpha (Total Alpha Temperature) - Uses helper defaults
         self.Tp_alpha = plot_manager(
             get_data('Tp_alpha'),
-            plot_options=self._create_alpha_scatter_ploptions(
+            plot_config=self._create_alpha_scatter_plot_config(
                 var_name='Tp_alpha', 
                 subclass_name='Tp_alpha', 
                 y_label=r'$T_{\alpha}$ (eV)', 
@@ -619,7 +619,7 @@ class alpha_fits_class: # Renamed class
         # 3. Trat_alpha (Alpha Temp. Anisotropy) - Uses helper defaults
         self.Trat_alpha = plot_manager(
             get_data('Trat_alpha'), # Contains masked 'Trata'
-            plot_options=self._create_alpha_scatter_ploptions(
+            plot_config=self._create_alpha_scatter_plot_config(
                 var_name='Trat_alpha', # Use the target key name
                 subclass_name='Trat_alpha', 
                 y_label=r'$T_{\perp} / T_{\parallel}$', 
@@ -631,7 +631,7 @@ class alpha_fits_class: # Renamed class
         # 4. va_x (Alpha Velocity X) - Uses helper defaults
         self.va_x = plot_manager(
             get_data('va_x'),
-            plot_options=self._create_alpha_scatter_ploptions(
+            plot_config=self._create_alpha_scatter_plot_config(
                 var_name='va_x',
                 subclass_name='va_x', 
                 y_label=r'Velocity (km/s)',
@@ -643,7 +643,7 @@ class alpha_fits_class: # Renamed class
         # 5. va_y (Alpha Velocity Y) - Uses helper defaults
         self.va_y = plot_manager(
             get_data('va_y'),
-            plot_options=self._create_alpha_scatter_ploptions(
+            plot_config=self._create_alpha_scatter_plot_config(
                 var_name='va_y',
                 subclass_name='va_y', 
                 y_label=r'Velocity (km/s)',
@@ -655,7 +655,7 @@ class alpha_fits_class: # Renamed class
         # 6. va_z (Alpha Velocity Z) - Uses helper defaults
         self.va_z = plot_manager(
             get_data('va_z'),
-            plot_options=self._create_alpha_scatter_ploptions(
+            plot_config=self._create_alpha_scatter_plot_config(
                 var_name='va_z',
                 subclass_name='va_z', 
                 y_label=r'Velocity (km/s)',
@@ -667,7 +667,7 @@ class alpha_fits_class: # Renamed class
         # 7. va_mag (Alpha Velocity Magnitude) - Uses helper defaults
         self.va_mag = plot_manager(
             get_data('va_mag'),
-            plot_options=self._create_alpha_scatter_ploptions(
+            plot_config=self._create_alpha_scatter_plot_config(
                 var_name='va_mag', 
                 subclass_name='va_mag', 
                 y_label=r'$|V_\alpha|$ (km/s)', 
@@ -679,7 +679,7 @@ class alpha_fits_class: # Renamed class
         # 8. vsw_mach_alpha (Alpha Mach Number) - Uses helper defaults
         self.vsw_mach_alpha = plot_manager(
             get_data('vsw_mach_alpha'),
-            plot_options=self._create_alpha_scatter_ploptions(
+            plot_config=self._create_alpha_scatter_plot_config(
                 var_name='vsw_mach_alpha', 
                 subclass_name='vsw_mach_alpha', 
                 y_label=r'$V_{\alpha}/V_A$', 
@@ -691,7 +691,7 @@ class alpha_fits_class: # Renamed class
         # 9. beta_alpha (Total Alpha Beta) - Uses helper defaults
         self.beta_alpha = plot_manager(
             get_data('beta_alpha'),
-            plot_options=self._create_alpha_scatter_ploptions(
+            plot_config=self._create_alpha_scatter_plot_config(
                 var_name='beta_alpha', 
                 subclass_name='beta_alpha', 
                 y_label=r'$\beta_{\alpha}$', 
@@ -703,7 +703,7 @@ class alpha_fits_class: # Renamed class
         # 10. vth_alpha (Total Alpha Thermal Speed) - Uses helper defaults
         self.vth_alpha = plot_manager(
             get_data('vth_alpha'),
-            plot_options=self._create_alpha_scatter_ploptions(
+            plot_config=self._create_alpha_scatter_plot_config(
                 var_name='vth_alpha', 
                 subclass_name='vth_alpha', 
                 y_label=r'$v_{th,\alpha}$ (km/s)', 
@@ -715,7 +715,7 @@ class alpha_fits_class: # Renamed class
         # 11. vth_par_alpha (Parallel Alpha Thermal Speed) - Uses helper defaults
         self.vth_par_alpha = plot_manager(
             get_data('vth_par_alpha'),
-            plot_options=self._create_alpha_scatter_ploptions(
+            plot_config=self._create_alpha_scatter_plot_config(
                 var_name='vth_par_alpha', 
                 subclass_name='vth_par_alpha', 
                 y_label=r'$v_{th,\parallel \alpha}$ (km/s)', 
@@ -727,7 +727,7 @@ class alpha_fits_class: # Renamed class
         # 12. vth_perp_alpha (Perpendicular Alpha Thermal Speed) - Uses helper defaults
         self.vth_perp_alpha = plot_manager(
             get_data('vth_perp_alpha'),
-            plot_options=self._create_alpha_scatter_ploptions(
+            plot_config=self._create_alpha_scatter_plot_config(
                 var_name='vth_perp_alpha', 
                 subclass_name='vth_perp_alpha', 
                 y_label=r'$v_{th,\perp \alpha}$ (km/s)', 
@@ -739,7 +739,7 @@ class alpha_fits_class: # Renamed class
         # 13. vth_drift (Drift Thermal Speed - Placeholder) - Needs overrides
         self.vth_drift = plot_manager(
             get_data('vth_drift'), # Contains NaNs
-            plot_options=self._create_alpha_scatter_ploptions( # Use helper
+            plot_config=self._create_alpha_scatter_plot_config( # Use helper
                 var_name='vth_drift',
                 subclass_name='vth_drift',
                 y_label=r'$v_{th,drift}$ (km/s)',
@@ -754,7 +754,7 @@ class alpha_fits_class: # Renamed class
         # 14. beta_par_alpha (Parallel Alpha Beta) - Uses helper defaults
         self.beta_par_alpha = plot_manager(
             get_data('beta_par_alpha'), # Key from calculate_variables
-            plot_options=self._create_alpha_scatter_ploptions(
+            plot_config=self._create_alpha_scatter_plot_config(
                 var_name='beta_par_alpha', # Key from calculate_variables
                 subclass_name='beta_par_alpha', 
                 y_label=r'$\beta_{\parallel, \alpha}$', 
@@ -766,7 +766,7 @@ class alpha_fits_class: # Renamed class
         # 15. beta_perp_alpha (Perpendicular Alpha Beta) - Uses helper defaults
         self.beta_perp_alpha = plot_manager(
             get_data('beta_perp_alpha'),
-            plot_options=self._create_alpha_scatter_ploptions(
+            plot_config=self._create_alpha_scatter_plot_config(
                 var_name='beta_perp_alpha', 
                 subclass_name='beta_perp_alpha', 
                 y_label=r'$\beta_{\perp, \alpha}$', 
@@ -778,7 +778,7 @@ class alpha_fits_class: # Renamed class
         # 16. chi_alpha (Alpha Chi Squared) - Uses helper defaults
         self.chi_alpha = plot_manager(
             get_data('chi_alpha'), # Key used in calculate_variables
-            plot_options=self._create_alpha_scatter_ploptions(
+            plot_config=self._create_alpha_scatter_plot_config(
                 var_name='chi_alpha', # Key used in calculate_variables
                 subclass_name='chi_alpha', 
                 y_label=r'$\chi^2_{\alpha}$', 
@@ -790,7 +790,7 @@ class alpha_fits_class: # Renamed class
         # 17. chi_alpha_norm (Normalized Alpha Chi Squared) - Uses helper defaults
         self.chi_alpha_norm = plot_manager(
             get_data('chi_alpha_norm'),
-            plot_options=self._create_alpha_scatter_ploptions(
+            plot_config=self._create_alpha_scatter_plot_config(
                 var_name='chi_alpha_norm', 
                 subclass_name='chi_alpha_norm', 
                 y_label=r'$\chi^2_{\alpha} / \nu$', 

@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 # Import necessary modules
 from plotbot.print_manager import print_manager
-from plotbot.ploptions import ploptions
+from plotbot.plot_config import plot_config
 
 # Configure print_manager for tests
 print_manager.enable_test()  # Enable only test output by default
@@ -61,18 +61,18 @@ def write_test_report():
         print(f"\nTest report written to: {report_file}")
 
 @pytest.fixture(autouse=True)
-def reset_ploptions():
-    """Reset the ploptions to default values before each test."""
+def reset_plot_config():
+    """Reset the plot_config to default values before each test."""
     # Store original settings
-    original_debug = ploptions.debug
+    original_debug = plot_config.debug
     
     # Reset options
-    ploptions.reset()
+    plot_config.reset()
     
     yield  # Allow test to run
     
     # Restore debug setting only
-    ploptions.debug = original_debug
+    plot_config.debug = original_debug
     
 # Register the write_test_report fixture to run for the whole session
 pytest.main.write_test_report = write_test_report 

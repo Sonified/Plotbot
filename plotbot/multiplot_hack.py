@@ -1141,7 +1141,7 @@ def multiplot(plot_list, **kwargs):
                         # CRITICAL FIX: Check if indices is empty before trying to plot spectral data
                         if len(indices) > 0:
                             # Use raw datetime array for clipping to match time_indices calculation (fix from plotbot_main.py)
-                            raw_datetime_array = var.plot_options.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                            raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
                             
                             # Handle potential mismatched dimensions for spectral data
                             if raw_datetime_array.ndim == 2:

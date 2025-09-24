@@ -345,7 +345,7 @@ def test_empty_plot_handling():
     """Test that plotbot correctly handles and debugs empty plots"""
     
     # TODO: This test is temporarily disabled. We'll revisit it later.
-    # It's currently failing with a NameError related to 'ploptions'.
+    # It's currently failing with a NameError related to 'plot_config'.
     # When we re-enable it, we'll need to fix the import or definition.
     pytest.skip("Test temporarily disabled - needs fixing")
     
@@ -371,7 +371,7 @@ def test_empty_plot_handling():
     from plotbot.plot_manager import plot_manager
     
     # Create first NaN variable
-    nan_var1 = plot_manager(nan_array1, plot_options=ploptions(
+    nan_var1 = plot_manager(nan_array1, plot_config=plot_config(
         data_type='test_type',
         class_name='test_class',
         subclass_name='nan_var1',
@@ -384,7 +384,7 @@ def test_empty_plot_handling():
     ))
     
     # Create second NaN variable
-    nan_var2 = plot_manager(nan_array2, plot_options=ploptions(
+    nan_var2 = plot_manager(nan_array2, plot_config=plot_config(
         data_type='test_type',
         class_name='test_class',
         subclass_name='nan_var2',

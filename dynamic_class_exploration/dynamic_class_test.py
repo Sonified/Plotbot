@@ -56,7 +56,7 @@ dummy_metadata = {
 class SimplePlotManager:
     def __init__(self, data_array, plot_options_dict, datetime_array=None):
         self.data = data_array
-        self.plot_options = plot_options_dict
+        self.plot_config = plot_options_dict
         self.datetime_array = datetime_array
         self.name = plot_options_dict.get('legend_label', 'Unknown Variable')
 
@@ -284,12 +284,12 @@ if __name__ == "__main__":
     var_sum_pm = dynamic_instance.var_sum
     print(f"dynamic_instance.var1: {var1_pm}")
     print(f"  var1 data: {var1_pm.data if var1_pm else 'N/A'}")
-    print(f"  var1 plot options: {var1_pm.plot_options if var1_pm else 'N/A'}")
+    print(f"  var1 plot options: {var1_pm.plot_config if var1_pm else 'N/A'}")
     print(f"dynamic_instance.var2: {var2_pm}")
     print(f"  var2 data: {var2_pm.data if var2_pm else 'N/A'}")
     print(f"dynamic_instance.var_sum: {var_sum_pm}")
     print(f"  var_sum data: {var_sum_pm.data if var_sum_pm else 'N/A'}")
-    print(f"  var_sum plot options: {var_sum_pm.plot_options if var_sum_pm else 'N/A'}")
+    print(f"  var_sum plot options: {var_sum_pm.plot_config if var_sum_pm else 'N/A'}")
     print("-" * 30)
     print("\nSimulating data import with different length for one variable...")
     simulated_times_2 = np.array([f'2024-01-01T00:00:0{i}Z' for i in range(3)], dtype='datetime64[s]')

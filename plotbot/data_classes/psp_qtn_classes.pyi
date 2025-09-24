@@ -4,7 +4,7 @@
 import numpy as np
 from typing import Optional, List, Any, Dict
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions
+from plotbot.plot_config import plot_config
 
 class psp_qtn_class:
     # Core attributes
@@ -29,7 +29,7 @@ class psp_qtn_class:
     
     def calculate_variables(self, imported_data: Any) -> None: ...
     
-    def set_ploptions(self) -> None: ...
+    def set_plot_config(self) -> None: ...
     
     def ensure_internal_consistency(self) -> None: ...
     

@@ -8,7 +8,7 @@ from plotbot_main import plotbot
 from print_manager import print_manager
 from server_access import server_access
 from .data_tracker import global_tracker
-from ploptions import ploptions
+from plot_config import plot_config
 from .data_cubby import data_cubby
 
 # Import helper functions
@@ -20,7 +20,7 @@ __all__ = [
     'print_manager',
     'server_access',
     'global_tracker',
-    'ploptions',
+    'plot_config',
     'data_cubby'
 ]
 

@@ -8,7 +8,7 @@ import logging
 
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from plotbot.time_utils import TimeRangeTracker
 from ._utils import _format_setattr_debug
 
@@ -32,13 +32,13 @@ class mag_sc_class:
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.dependency_management("No data provided; initialized with empty attributes.")
         else:
             # Initialize with data if provided - we're currently using update() method instead, but preserved for future extensibility
             print_manager.dependency_management("Calculating mag sc variables...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Successfully calculated mag sc variables.")
     
     def update(self, imported_data): #This is function is the exact same across all classes :)
@@ -53,29 +53,29 @@ class mag_sc_class:
         print_manager.datacubby("\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
         
-        # Store current state before update (including any modified ploptions)
+        # Store current state before update (including any modified plot_config)
         current_state = {}
         for subclass_name in self.raw_data.keys():                             # Use keys()
             if hasattr(self, subclass_name):
                 var = getattr(self, subclass_name)
                 if hasattr(var, '_plot_state'):
                     current_state[subclass_name] = dict(var._plot_state)       # Save current plot state
-                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_ploption_snapshot(current_state[subclass_name])}")
+                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_plot_config_snapshot(current_state[subclass_name])}")
 
         # Perform update
         self.calculate_variables(imported_data)                                # Update raw data arrays
-        self.set_ploptions()                                                  # Recreate plot managers
+        self.set_plot_config()                                                  # Recreate plot managers
         
-        # Restore state (including any modified ploptions!)
+        # Restore state (including any modified plot_config!)
         print_manager.datacubby("Restoring saved state...")
         for subclass_name, state in current_state.items():                    # Restore saved states
             if hasattr(self, subclass_name):
                 var = getattr(self, subclass_name)
                 var._plot_state.update(state)                                 # Restore plot state
                 for attr, value in state.items():
-                    if hasattr(var.plot_options, attr):
-                        setattr(var.plot_options, attr, value)                # Restore individual options
-                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_ploption_snapshot(state)}")
+                    if hasattr(var.plot_config, attr):
+                        setattr(var.plot_config, attr, value)                # Restore individual options
+                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_plot_config_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\\n")
         
@@ -194,17 +194,17 @@ class mag_sc_class:
 
         print_manager.dependency_management(f"--- [mag_sc.calculate_variables] END ---") # ADDED
     
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Set up the plotting options for all magnetic field components."""
-        print_manager.dependency_management(f"[mag_sc.set_ploptions ID:{id(self)}] Entered. self.datetime_array len: {len(self.datetime_array) if self.datetime_array is not None else 'None'}")
+        print_manager.dependency_management(f"[mag_sc.set_plot_config ID:{id(self)}] Entered. self.datetime_array len: {len(self.datetime_array) if self.datetime_array is not None else 'None'}")
         if self.raw_data and self.raw_data.get('bx') is not None: # Corrected typo from 'br' to 'bx'
              print_manager.dependency_management(f"  self.raw_data['bx'] len: {len(self.raw_data['bx'])}")
         else:
-             print_manager.dependency_management(f"  self.raw_data['bx'] is None or self.raw_data is None for set_ploptions")
+             print_manager.dependency_management(f"  self.raw_data['bx'] is None or self.raw_data is None for set_plot_config")
         # Initialize each component with plot_manager (Copied from previous state)
         self.all = plot_manager(
             [self.raw_data['bx'], self.raw_data['by'], self.raw_data['bz']],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='mag_SC',         # Actual data product name
                 var_name=['bx_sc', 'by_sc', 'bz_sc'],  # Variable names
                 class_name='mag_sc',        # Class handling this data
@@ -223,7 +223,7 @@ class mag_sc_class:
 
         self.bx = plot_manager(
             self.raw_data['bx'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='mag_SC',         # Actual data product name
                 var_name='bx_sc',           # Variable name
                 class_name='mag_sc',        # Class handling this data
@@ -242,7 +242,7 @@ class mag_sc_class:
 
         self.by = plot_manager(
             self.raw_data['by'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='mag_SC',         # Actual data product name
                 var_name='by_sc',           # Variable name
                 class_name='mag_sc',        # Class handling this data
@@ -261,7 +261,7 @@ class mag_sc_class:
 
         self.bz = plot_manager(
             self.raw_data['bz'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='mag_SC',         # Actual data product name
                 var_name='bz_sc',           # Variable name
                 class_name='mag_sc',        # Class handling this data
@@ -280,7 +280,7 @@ class mag_sc_class:
 
         self.bmag = plot_manager(
             self.raw_data['bmag'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='mag_SC',         # Actual data product name
                 var_name='bmag_sc',         # Variable name
                 class_name='mag_sc',        # Class handling this data
@@ -299,7 +299,7 @@ class mag_sc_class:
 
         self.pmag = plot_manager(
             self.raw_data['pmag'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='mag_SC',         # Actual data product name
                 var_name='pmag_sc',         # Variable name
                 class_name='mag_sc',        # Class handling this data
@@ -376,9 +376,9 @@ class mag_sc_class:
                          self.field = None
                          changed_field = True
             
-            if (changed_time or changed_field) and hasattr(self, 'set_ploptions'):
-                print_manager.dependency_management(f"    Calling self.set_ploptions() due to consistency updates (time changed: {changed_time}, field changed: {changed_field}).")
-                self.set_ploptions()
+            if (changed_time or changed_field) and hasattr(self, 'set_plot_config'):
+                print_manager.dependency_management(f"    Calling self.set_plot_config() due to consistency updates (time changed: {changed_time}, field changed: {changed_field}).")
+                self.set_plot_config()
         else:
             print_manager.dependency_management(f"    Skipping consistency check (datetime_array or raw_data missing/None).")
         

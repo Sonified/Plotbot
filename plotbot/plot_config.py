@@ -1,7 +1,7 @@
 import numpy as np
 
 # 🎉 Define the generalized plotting options class 🎉
-class ploptions:
+class plot_config:
     """A wrapper for storing plot-related config attributes"""
     # Class-level debug attribute
     debug = False
@@ -82,9 +82,9 @@ class ploptions:
         # Safer setter implementation that avoids truth value comparisons
         self._datetime_array = value
 
-print('initialized ploptions')
+print('initialized plot_config')
 
-def retrieve_ploption_snapshot(state_dict):
+def retrieve_plot_config_snapshot(state_dict):
     """Helper function to create a readable snapshot of plot options state.
     
     Args:

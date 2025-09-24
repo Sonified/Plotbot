@@ -8,7 +8,7 @@ from typing import Optional, List
 
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from ._utils import _format_setattr_debug
 
 # 🛰️ Define the main class to store PSP orbital/positional data 🛰️
@@ -38,13 +38,13 @@ class psp_orbit_class:
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.dependency_management("No data provided; initialized with empty attributes.")
         else:
             # Initialize with data if provided
             print_manager.dependency_management("Processing PSP orbital data...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Successfully processed PSP orbital data.")
     
     def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
@@ -71,11 +71,11 @@ class psp_orbit_class:
                 manager = getattr(self, comp_name)
                 if isinstance(manager, plot_manager) and hasattr(manager, '_plot_state'):
                     current_plot_states[comp_name] = dict(manager._plot_state)
-                    print_manager.datacubby(f"Stored {comp_name} state: {retrieve_ploption_snapshot(current_plot_states[comp_name])}")
+                    print_manager.datacubby(f"Stored {comp_name} state: {retrieve_plot_config_snapshot(current_plot_states[comp_name])}")
 
         # Perform update
         self.calculate_variables(imported_data, original_requested_trange=original_requested_trange)
-        self.set_ploptions()
+        self.set_plot_config()
         
         # Restore state
         print_manager.datacubby("Restoring saved state...")
@@ -85,9 +85,9 @@ class psp_orbit_class:
                 if isinstance(manager, plot_manager):
                     manager._plot_state.update(state)
                     for attr, value in state.items():
-                        if hasattr(manager.plot_options, attr):
-                            setattr(manager.plot_options, attr, value)
-                    print_manager.datacubby(f"Restored {comp_name} state: {retrieve_ploption_snapshot(state)}")
+                        if hasattr(manager.plot_config, attr):
+                            setattr(manager.plot_config, attr, value)
+                    print_manager.datacubby(f"Restored {comp_name} state: {retrieve_plot_config_snapshot(state)}")
         
         print_manager.datacubby("=== End PSP Orbit Update Debug ===\n")
     
@@ -367,19 +367,19 @@ class psp_orbit_class:
         
         return speed
     
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Set up the plotting options for all orbital components"""
         
         self.r_sun = plot_manager(
             self.raw_data['r_sun'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_orbit_data',
                 var_name='r_sun',
                 class_name='psp_orbit',
                 subclass_name='r_sun',
                 plot_type='time_series',
                 datetime_array=self.datetime_array,
-                y_label='Distance (R$\odot$)',
+                y_label=r'Distance (R$\odot$)',
                 legend_label='Heliocentric Distance',
                 color='orange',
                 y_scale='linear',
@@ -391,7 +391,7 @@ class psp_orbit_class:
 
         self.carrington_lon = plot_manager(
             self.raw_data['carrington_lon'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_orbit_data',
                 var_name='carrington_lon',
                 class_name='psp_orbit',
@@ -410,7 +410,7 @@ class psp_orbit_class:
 
         self.carrington_lat = plot_manager(
             self.raw_data['carrington_lat'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_orbit_data',
                 var_name='carrington_lat',
                 class_name='psp_orbit',
@@ -429,7 +429,7 @@ class psp_orbit_class:
 
         self.heliocentric_distance_au = plot_manager(
             self.raw_data['heliocentric_distance_au'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_orbit_data',
                 var_name='heliocentric_distance_au',
                 class_name='psp_orbit',
@@ -448,7 +448,7 @@ class psp_orbit_class:
 
         self.orbital_speed = plot_manager(
             self.raw_data['orbital_speed'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_orbit_data',
                 var_name='orbital_speed',
                 class_name='psp_orbit',
@@ -468,14 +468,14 @@ class psp_orbit_class:
         # Always create ICRF coordinate plot managers (even if data is None)
         self.icrf_x = plot_manager(
             self.raw_data['icrf_x'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_orbit_data',
                 var_name='icrf_x',
                 class_name='psp_orbit',
                 subclass_name='icrf_x',
                 plot_type='time_series',
                 datetime_array=self.datetime_array,
-                y_label='ICRF X (R$\odot$)',
+                y_label=r'ICRF X (R$\odot$)',
                 legend_label='ICRF X Coordinate',
                 color='darkred',
                 y_scale='linear',
@@ -487,14 +487,14 @@ class psp_orbit_class:
 
         self.icrf_y = plot_manager(
             self.raw_data['icrf_y'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_orbit_data',
                 var_name='icrf_y',
                 class_name='psp_orbit',
                 subclass_name='icrf_y',
                 plot_type='time_series',
                 datetime_array=self.datetime_array,
-                y_label='ICRF Y (R$\odot$)',
+                y_label=r'ICRF Y (R$\odot$)',
                 legend_label='ICRF Y Coordinate',
                 color='darkgreen',
                 y_scale='linear',
@@ -506,14 +506,14 @@ class psp_orbit_class:
 
         self.icrf_z = plot_manager(
             self.raw_data['icrf_z'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_orbit_data',
                 var_name='icrf_z',
                 class_name='psp_orbit',
                 subclass_name='icrf_z',
                 plot_type='time_series',
                 datetime_array=self.datetime_array,
-                y_label='ICRF Z (R$\odot$)',
+                y_label=r'ICRF Z (R$\odot$)',
                 legend_label='ICRF Z Coordinate',
                 color='darkblue',
                 y_scale='linear',
@@ -526,7 +526,7 @@ class psp_orbit_class:
         # Orbital mechanics validation plot managers
         self.angular_momentum = plot_manager(
             self.raw_data['angular_momentum'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_orbit_data',
                 var_name='angular_momentum',
                 class_name='psp_orbit',
@@ -546,7 +546,7 @@ class psp_orbit_class:
         # Velocity component plot managers
         self.velocity_x = plot_manager(
             self.raw_data['velocity_x'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_orbit_data',
                 var_name='velocity_x',
                 class_name='psp_orbit',
@@ -565,7 +565,7 @@ class psp_orbit_class:
 
         self.velocity_y = plot_manager(
             self.raw_data['velocity_y'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_orbit_data',
                 var_name='velocity_y',
                 class_name='psp_orbit',
@@ -584,7 +584,7 @@ class psp_orbit_class:
 
         self.velocity_z = plot_manager(
             self.raw_data['velocity_z'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_orbit_data',
                 var_name='velocity_z',
                 class_name='psp_orbit',

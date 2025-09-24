@@ -9,7 +9,7 @@ from typing import Optional, List # Added for type hinting
 # Import our custom managers (UPDATED PATHS)
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from plotbot.time_utils import TimeRangeTracker
 from plotbot.utils import get_encounter_number
 from ._utils import _format_setattr_debug
@@ -31,13 +31,13 @@ class epad_strahl_class:
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.debug("No data provided; initialized with empty attributes.")
         else:
             # Initialize with data if provided - we're currently using update() method instead, but preserved for future extensibility
             print_manager.debug("Calculating EPAD strahl variables...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Successfully calculated EPAD strahl variables.")
 
         # Stash the instance in data_cubby for later retrieval / to avoid circular references
@@ -61,29 +61,29 @@ class epad_strahl_class:
         print_manager.datacubby("\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
         
-        # Store current state before update (including any modified ploptions)
+        # Store current state before update (including any modified plot_config)
         current_state = {}
         for subclass_name in self.raw_data.keys():                             # Use keys()
             if hasattr(self, subclass_name):
                 var = getattr(self, subclass_name)
                 if hasattr(var, '_plot_state'):
                     current_state[subclass_name] = dict(var._plot_state)       # Save current plot state
-                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_ploption_snapshot(current_state[subclass_name])}")
+                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_plot_config_snapshot(current_state[subclass_name])}")
 
         # Perform update
         self.calculate_variables(imported_data)                                # Update raw data arrays
-        self.set_ploptions()                                                  # Recreate plot managers
+        self.set_plot_config()                                                  # Recreate plot managers
         
-        # Restore state (including any modified ploptions!)
+        # Restore state (including any modified plot_config!)
         print_manager.datacubby("Restoring saved state...")
         for subclass_name, state in current_state.items():                    # Restore saved states
             if hasattr(self, subclass_name):
                 var = getattr(self, subclass_name)
                 var._plot_state.update(state)                                 # Restore plot state
                 for attr, value in state.items():
-                    if hasattr(var.plot_options, attr):
-                        setattr(var.plot_options, attr, value)                # Restore individual options
-                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_ploption_snapshot(state)}")
+                    if hasattr(var.plot_config, attr):
+                        setattr(var.plot_config, attr, value)                # Restore individual options
+                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_plot_config_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\n")
 
@@ -199,7 +199,7 @@ class epad_strahl_class:
         self.raw_data['centroids'] = centroids # Already part of self.raw_data initialization
         # 'pitch_angle_y_values' is already set above
 
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Set up the plotting options for strahl data"""
         print_manager.processing(f"[EPAD_SET_PLOPT ENTRY] id(self): {id(self)}")
         print_manager.processing(f"[EPAD_SET_PLOPT] self.datetime_array (id: {id(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else 'N/A'}) len: {len(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else 'None'}. Range: {self.datetime_array[0]} to {self.datetime_array[-1]}" if hasattr(self, 'datetime_array') and self.datetime_array is not None and len(self.datetime_array) > 0 else "[EPAD_SET_PLOPT] self.datetime_array is empty/None or N/A")
@@ -257,7 +257,7 @@ class epad_strahl_class:
 
         self.strahl = plot_manager(
             self.raw_data['strahl'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spe_sf0_pad',
                 var_name='log_strahl',
                 class_name='epad',
@@ -286,7 +286,7 @@ class epad_strahl_class:
 
         self.centroids = plot_manager(
             self.raw_data['centroids'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spe_sf0_pad',
                 var_name='strahl_centroids',
                 class_name='epad',
@@ -338,13 +338,13 @@ class epad_strahl_high_res_class:
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.debug("No data provided; initialized with empty attributes.")
         else:
             # Initialize with data if provided - we're currently using update() method instead, but preserved for future extensibility
             print_manager.debug("Calculating high-resolution EPAD strahl variables...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Successfully calculated high-resolution EPAD strahl variables.")
 
         # Stash the instance in data_cubby for later retrieval / to avoid circular references
@@ -366,29 +366,29 @@ class epad_strahl_high_res_class:
         print_manager.datacubby("\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
         
-        # Store current state before update (including any modified ploptions)
+        # Store current state before update (including any modified plot_config)
         current_state = {}
         for subclass_name in self.raw_data.keys():                             # Use keys()
             if hasattr(self, subclass_name):
                 var = getattr(self, subclass_name)
                 if hasattr(var, '_plot_state'):
                     current_state[subclass_name] = dict(var._plot_state)       # Save current plot state
-                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_ploption_snapshot(current_state[subclass_name])}")
+                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_plot_config_snapshot(current_state[subclass_name])}")
 
         # Perform update
         self.calculate_variables(imported_data)                                # Update raw data arrays
-        self.set_ploptions()                                                  # Recreate plot managers
+        self.set_plot_config()                                                  # Recreate plot managers
         
-        # Restore state (including any modified ploptions!)
+        # Restore state (including any modified plot_config!)
         print_manager.datacubby("Restoring saved state...")
         for subclass_name, state in current_state.items():                    # Restore saved states
             if hasattr(self, subclass_name):
                 var = getattr(self, subclass_name)
                 var._plot_state.update(state)                                 # Restore plot state
                 for attr, value in state.items():
-                    if hasattr(var.plot_options, attr):
-                        setattr(var.plot_options, attr, value)                # Restore individual options
-                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_ploption_snapshot(state)}")
+                    if hasattr(var.plot_config, attr):
+                        setattr(var.plot_config, attr, value)                # Restore individual options
+                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_plot_config_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\n")
 
@@ -515,7 +515,7 @@ class epad_strahl_high_res_class:
         self.raw_data['centroids'] = centroids # Already part of self.raw_data initialization
         # 'pitch_angle_y_values' is already set above
     
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Set up the plotting options for high-resolution strahl data"""
         # Add the times_mesh regeneration logic for epad_strahl_high_res_class as well
         times_mesh_exists_hr = hasattr(self, 'times_mesh') and self.times_mesh is not None
@@ -547,7 +547,7 @@ class epad_strahl_high_res_class:
 
         self.strahl = plot_manager(
             self.raw_data['strahl'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spe_af0_pad',
                 var_name='log_strahl_hr',
                 class_name='epad_hr',
@@ -571,7 +571,7 @@ class epad_strahl_high_res_class:
         # Initialize centroids with plot_manager
         self.centroids = plot_manager(
             self.raw_data['centroids'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='spe_af0_pad',
                 var_name='strahl_centroids',
                 class_name='epad_hr',

@@ -10,7 +10,7 @@ from typing import Optional, List
 
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from plotbot.time_utils import TimeRangeTracker
 from ._utils import _format_setattr_debug
 
@@ -42,13 +42,13 @@ class wind_3dp_pm_class:
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.dependency_management("No data provided; initialized with empty attributes.")
         else:
             # Initialize with data if provided - we're currently using update() method instead, but preserved for future extensibility
             print_manager.dependency_management("Calculating WIND 3DP PM variables...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Successfully calculated WIND 3DP PM variables.")
     
     def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
@@ -70,7 +70,7 @@ class wind_3dp_pm_class:
         print_manager.datacubby("\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
         
-        # Store current state before update (including any modified ploptions)
+        # Store current state before update (including any modified plot_config)
         current_plot_states = {}
         standard_components = ['p_vels', 'vx', 'vy', 'vz', 'v_mag', 'all_v', 'p_dens', 'p_temp', 'a_dens', 'a_temp', 'valid']
         for comp_name in standard_components:
@@ -78,13 +78,13 @@ class wind_3dp_pm_class:
                 manager = getattr(self, comp_name)
                 if isinstance(manager, plot_manager) and hasattr(manager, '_plot_state'):
                     current_plot_states[comp_name] = dict(manager._plot_state)
-                    print_manager.datacubby(f"Stored {comp_name} state: {retrieve_ploption_snapshot(current_plot_states[comp_name])}")
+                    print_manager.datacubby(f"Stored {comp_name} state: {retrieve_plot_config_snapshot(current_plot_states[comp_name])}")
 
         # Perform update
         self.calculate_variables(imported_data)
-        self.set_ploptions()
+        self.set_plot_config()
         
-        # Restore state (including any modified ploptions!)
+        # Restore state (including any modified plot_config!)
         print_manager.datacubby("Restoring saved state...")
         for comp_name, state in current_plot_states.items():
             if hasattr(self, comp_name):
@@ -92,9 +92,9 @@ class wind_3dp_pm_class:
                 if isinstance(manager, plot_manager):
                     manager._plot_state.update(state)
                     for attr, value in state.items():
-                        if hasattr(manager.plot_options, attr):
-                            setattr(manager.plot_options, attr, value)
-                    print_manager.datacubby(f"Restored {comp_name} state: {retrieve_ploption_snapshot(state)}")
+                        if hasattr(manager.plot_config, attr):
+                            setattr(manager.plot_config, attr, value)
+                    print_manager.datacubby(f"Restored {comp_name} state: {retrieve_plot_config_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\n")
         
@@ -470,7 +470,7 @@ class wind_3dp_pm_class:
                 print_manager.dependency_management(f"{var_name}: None")
         print_manager.dependency_management(f"First TT2000 time: {self.time[0]}")
 
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Set up plot_manager instances for all WIND 3DP PM variables (following PSP proton styling patterns)."""
         print_manager.processing("WIND 3DP PM: Setting up plot options...")
 
@@ -479,7 +479,7 @@ class wind_3dp_pm_class:
         # All velocity components together (following PSP pattern)
         self.all_v = plot_manager(
             self.raw_data['all_v'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_3dp_pm',
                 var_name=['vx_gse', 'vy_gse', 'vz_gse'],
                 class_name='wind_3dp_pm',
@@ -499,7 +499,7 @@ class wind_3dp_pm_class:
         # Individual velocity components (following PSP styling)
         self.vx = plot_manager(
             self.raw_data['vx'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_3dp_pm',
                 var_name='vx_gse',
                 class_name='wind_3dp_pm',
@@ -518,7 +518,7 @@ class wind_3dp_pm_class:
 
         self.vy = plot_manager(
             self.raw_data['vy'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_3dp_pm',
                 var_name='vy_gse',
                 class_name='wind_3dp_pm',
@@ -537,7 +537,7 @@ class wind_3dp_pm_class:
 
         self.vz = plot_manager(
             self.raw_data['vz'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_3dp_pm',
                 var_name='vz_gse',
                 class_name='wind_3dp_pm',
@@ -557,7 +557,7 @@ class wind_3dp_pm_class:
         # Velocity magnitude
         self.v_mag = plot_manager(
             self.raw_data['v_mag'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_3dp_pm',
                 var_name='v_mag',
                 class_name='wind_3dp_pm',
@@ -577,7 +577,7 @@ class wind_3dp_pm_class:
         # Full velocity vector (for advanced use)
         self.p_vels = plot_manager(
             self.raw_data['p_vels'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_3dp_pm',
                 var_name='p_vels_vector',
                 class_name='wind_3dp_pm',
@@ -599,7 +599,7 @@ class wind_3dp_pm_class:
         # Proton density (following PSP proton.density styling)
         self.p_dens = plot_manager(
             self.raw_data['p_dens'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_3dp_pm',
                 var_name='p_dens',
                 class_name='wind_3dp_pm',
@@ -619,7 +619,7 @@ class wind_3dp_pm_class:
         # Proton temperature (following PSP proton.temperature styling)
         self.p_temp = plot_manager(
             self.raw_data['p_temp'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_3dp_pm',
                 var_name='p_temp',
                 class_name='wind_3dp_pm',
@@ -641,7 +641,7 @@ class wind_3dp_pm_class:
         # Alpha particle density (new product type)
         self.a_dens = plot_manager(
             self.raw_data['a_dens'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_3dp_pm',
                 var_name='a_dens',
                 class_name='wind_3dp_pm',
@@ -661,7 +661,7 @@ class wind_3dp_pm_class:
         # Alpha particle temperature (new product type)
         self.a_temp = plot_manager(
             self.raw_data['a_temp'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_3dp_pm',
                 var_name='a_temp',
                 class_name='wind_3dp_pm',
@@ -683,7 +683,7 @@ class wind_3dp_pm_class:
         # Data quality flags (integer values)
         self.valid = plot_manager(
             self.raw_data['valid'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_3dp_pm',
                 var_name='valid',
                 class_name='wind_3dp_pm',
@@ -733,7 +733,7 @@ class wind_3dp_pm_class:
             self.time = snapshot_data['time']
             
         # Reinitialize plot options
-        self.set_ploptions()
+        self.set_plot_config()
         
         print_manager.dependency_management("WIND 3DP PM: Snapshot restoration complete")
 

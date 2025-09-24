@@ -26,7 +26,7 @@ with time_block("core_components"):
     from .print_manager import print_manager
     from .server_access import server_access 
     from .data_tracker import global_tracker
-    from .ploptions import ploptions
+    from .plot_config import plot_config
     from .data_cubby import data_cubby
     from .plot_manager import plot_manager
     from .config import config
@@ -351,7 +351,7 @@ __all__ = [
     'print_manager', 
     'server_access',
     'global_tracker',
-    'ploptions',
+    'plot_config',
     'data_cubby',
     'plot_manager',
     'mag_rtn_4sa', 
@@ -407,10 +407,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_24_v3.40"
+__version__ = "2025_09_24_v3.41"
 
 # Commit message for this version
-__commit_message__ = "v3.40 Critical Fix: Complete micromamba installer overhaul - NASA network compatible with anaconda-avoiding flags"
+__commit_message__ = "v3.41 Major Refactor: Complete ploptions→plot_config rename across codebase - frees ploptions name for user-facing global options"
 
 # Print the version and commit message
 print(f"""

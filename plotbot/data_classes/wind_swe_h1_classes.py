@@ -10,7 +10,7 @@ from typing import Optional, List
 
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from plotbot.time_utils import TimeRangeTracker
 from ._utils import _format_setattr_debug
 
@@ -36,13 +36,13 @@ class wind_swe_h1_class:
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.dependency_management("No data provided; initialized with empty attributes.")
         else:
             # Initialize with data if provided - we're currently using update() method instead, but preserved for future extensibility
             print_manager.dependency_management("Calculating WIND SWE H1 variables...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Successfully calculated WIND SWE H1 variables.")
     
     def update(self, imported_data, original_requested_trange: Optional[List[str]] = None):
@@ -64,7 +64,7 @@ class wind_swe_h1_class:
         print_manager.datacubby("\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
         
-        # Store current state before update (including any modified ploptions)
+        # Store current state before update (including any modified plot_config)
         current_plot_states = {}
         standard_components = ['proton_wpar', 'proton_wperp', 'proton_anisotropy', 'alpha_w', 'fit_flag']
         for comp_name in standard_components:
@@ -72,13 +72,13 @@ class wind_swe_h1_class:
                 manager = getattr(self, comp_name)
                 if isinstance(manager, plot_manager) and hasattr(manager, '_plot_state'):
                     current_plot_states[comp_name] = dict(manager._plot_state)
-                    print_manager.datacubby(f"Stored {comp_name} state: {retrieve_ploption_snapshot(current_plot_states[comp_name])}")
+                    print_manager.datacubby(f"Stored {comp_name} state: {retrieve_plot_config_snapshot(current_plot_states[comp_name])}")
 
         # Perform update
         self.calculate_variables(imported_data)
-        self.set_ploptions()
+        self.set_plot_config()
         
-        # Restore state (including any modified ploptions!)
+        # Restore state (including any modified plot_config!)
         print_manager.datacubby("Restoring saved state...")
         for comp_name, state in current_plot_states.items():
             if hasattr(self, comp_name):
@@ -86,9 +86,9 @@ class wind_swe_h1_class:
                 if isinstance(manager, plot_manager):
                     manager._plot_state.update(state)
                     for attr, value in state.items():
-                        if hasattr(manager.plot_options, attr):
-                            setattr(manager.plot_options, attr, value)
-                    print_manager.datacubby(f"Restored {comp_name} state: {retrieve_ploption_snapshot(state)}")
+                        if hasattr(manager.plot_config, attr):
+                            setattr(manager.plot_config, attr, value)
+                    print_manager.datacubby(f"Restored {comp_name} state: {retrieve_plot_config_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\n")
         
@@ -408,14 +408,14 @@ class wind_swe_h1_class:
                 print_manager.dependency_management(f"{var_name}: None")
         print_manager.dependency_management(f"First TT2000 time: {self.time[0]}")
 
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Set up plot_manager instances for all WIND SWE H1 variables."""
         print_manager.processing("WIND SWE H1: Setting up plot options...")
 
         # Proton parallel thermal speed (following PSP proton styling)
         self.proton_wpar = plot_manager(
             self.raw_data['proton_wpar'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_swe_h1',
                 var_name='proton_wpar',
                 class_name='wind_swe_h1',
@@ -435,7 +435,7 @@ class wind_swe_h1_class:
         # Proton perpendicular thermal speed (following PSP proton styling)
         self.proton_wperp = plot_manager(
             self.raw_data['proton_wperp'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_swe_h1',
                 var_name='proton_wperp',
                 class_name='wind_swe_h1',
@@ -455,7 +455,7 @@ class wind_swe_h1_class:
         # Proton anisotropy (following PSP proton anisotropy styling)
         self.proton_anisotropy = plot_manager(
             self.raw_data['proton_anisotropy'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_swe_h1',
                 var_name='proton_anisotropy',
                 class_name='wind_swe_h1',
@@ -475,7 +475,7 @@ class wind_swe_h1_class:
         # Alpha particle thermal speed (new product type for WIND)
         self.alpha_w = plot_manager(
             self.raw_data['alpha_w'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_swe_h1',
                 var_name='alpha_w',
                 class_name='wind_swe_h1',
@@ -495,7 +495,7 @@ class wind_swe_h1_class:
         # Fit quality flag (integer values)
         self.fit_flag = plot_manager(
             self.raw_data['fit_flag'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='wind_swe_h1',
                 var_name='fit_flag',
                 class_name='wind_swe_h1',
@@ -539,7 +539,7 @@ class wind_swe_h1_class:
             self.time = snapshot_data['time']
             
         # Reinitialize plot options
-        self.set_ploptions()
+        self.set_plot_config()
         
         print_manager.dependency_management("WIND SWE H1: Snapshot restoration complete")
 

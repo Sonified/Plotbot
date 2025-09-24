@@ -14,7 +14,7 @@ import logging
 
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from .._utils import _format_setattr_debug
 
 class test_structure_class:
@@ -45,12 +45,12 @@ class test_structure_class:
         object.__setattr__(self, '_cdf_file_pattern', 'PSP_wavePower_2021-04-29_v1.3.cdf')
 
         if imported_data is None:
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.dependency_management("No data provided; initialized with empty attributes.")
         else:
             print_manager.dependency_management("Calculating test_structure variables...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Successfully calculated test_structure variables.")
         
         # Auto-register with data_cubby (following plotbot pattern)
@@ -78,11 +78,11 @@ class test_structure_class:
                 var = getattr(self, subclass_name)
                 if hasattr(var, '_plot_state'):
                     current_state[subclass_name] = dict(var._plot_state)
-                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_ploption_snapshot(current_state[subclass_name])}")
+                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_plot_config_snapshot(current_state[subclass_name])}")
 
         # Perform update
         self.calculate_variables(imported_data)
-        self.set_ploptions()
+        self.set_plot_config()
         
         # Restore state
         print_manager.datacubby("Restoring saved state...")
@@ -91,9 +91,9 @@ class test_structure_class:
                 var = getattr(self, subclass_name)
                 var._plot_state.update(state)
                 for attr, value in state.items():
-                    if hasattr(var.plot_options, attr):
-                        setattr(var.plot_options, attr, value)
-                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_ploption_snapshot(state)}")
+                    if hasattr(var.plot_config, attr):
+                        setattr(var.plot_config, attr, value)
+                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_plot_config_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\n")
         
@@ -260,14 +260,14 @@ class test_structure_class:
             return freq_2d
         return freq_array
     
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Set up plotting options for all variables"""
         print_manager.dependency_management("Setting up plot options for test_structure variables")
         
 
         self.wavePower_LH = plot_manager(
             self.raw_data['wavePower_LH'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='test_structure',
                 var_name='wavePower_LH',
                 class_name='test_structure',
@@ -286,7 +286,7 @@ class test_structure_class:
 
         self.wavePower_RH = plot_manager(
             self.raw_data['wavePower_RH'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='test_structure',
                 var_name='wavePower_RH',
                 class_name='test_structure',

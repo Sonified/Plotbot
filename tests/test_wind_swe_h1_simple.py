@@ -53,9 +53,9 @@ def test_wind_swe_h1_simple():
                 
                 # Check if it has plot options
                 if hasattr(var_obj, 'plot_options'):
-                    print(f"   📈 Y-axis label: {var_obj.plot_options.y_label}")
-                    print(f"   📈 Legend label: {var_obj.plot_options.legend_label}")
-                    print(f"   🎨 Plot color: {var_obj.plot_options.color}")
+                    print(f"   📈 Y-axis label: {var_obj.plot_config.y_label}")
+                    print(f"   📈 Legend label: {var_obj.plot_config.legend_label}")
+                    print(f"   🎨 Plot color: {var_obj.plot_config.color}")
             else:
                 print(f"❌ Missing variable: {var_name}")
         

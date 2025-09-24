@@ -14,7 +14,7 @@ import logging
 
 from plotbot.print_manager import print_manager
 from plotbot.plot_manager import plot_manager
-from plotbot.ploptions import ploptions, retrieve_ploption_snapshot
+from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from .._utils import _format_setattr_debug
 
 class psp_waves_test_class:
@@ -233,12 +233,12 @@ class psp_waves_test_class:
         object.__setattr__(self, '_cdf_file_pattern', 'PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf')
 
         if imported_data is None:
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.dependency_management("No data provided; initialized with empty attributes.")
         else:
             print_manager.dependency_management("Calculating psp_waves_test variables...")
             self.calculate_variables(imported_data)
-            self.set_ploptions()
+            self.set_plot_config()
             print_manager.status("Successfully calculated psp_waves_test variables.")
         
         # Auto-register with data_cubby (following plotbot pattern)
@@ -266,11 +266,11 @@ class psp_waves_test_class:
                 var = getattr(self, subclass_name)
                 if hasattr(var, '_plot_state'):
                     current_state[subclass_name] = dict(var._plot_state)
-                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_ploption_snapshot(current_state[subclass_name])}")
+                    print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_plot_config_snapshot(current_state[subclass_name])}")
 
         # Perform update
         self.calculate_variables(imported_data)
-        self.set_ploptions()
+        self.set_plot_config()
         
         # Restore state
         print_manager.datacubby("Restoring saved state...")
@@ -279,9 +279,9 @@ class psp_waves_test_class:
                 var = getattr(self, subclass_name)
                 var._plot_state.update(state)
                 for attr, value in state.items():
-                    if hasattr(var.plot_options, attr):
-                        setattr(var.plot_options, attr, value)
-                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_ploption_snapshot(state)}")
+                    if hasattr(var.plot_config, attr):
+                        setattr(var.plot_config, attr, value)
+                print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_plot_config_snapshot(state)}")
         
         print_manager.datacubby("=== End Update Debug ===\n")
         
@@ -1294,14 +1294,14 @@ class psp_waves_test_class:
             return freq_2d
         return freq_array
     
-    def set_ploptions(self):
+    def set_plot_config(self):
         """Set up plotting options for all variables"""
         print_manager.dependency_management("Setting up plot options for psp_waves_test variables")
         
 
         self.FFT_time_1 = plot_manager(
             self.raw_data['FFT_time_1'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_1',
                 class_name='psp_waves_test',
@@ -1320,7 +1320,7 @@ class psp_waves_test_class:
 
         self.Frequencies = plot_manager(
             self.raw_data['Frequencies'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies',
                 class_name='psp_waves_test',
@@ -1357,7 +1357,7 @@ class psp_waves_test_class:
         
         self.ellipticity_b = plot_manager(
             ellipticity_b_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='ellipticity_b',
                 class_name='psp_waves_test',
@@ -1383,7 +1383,7 @@ class psp_waves_test_class:
 
         self.FFT_time_2 = plot_manager(
             self.raw_data['FFT_time_2'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_2',
                 class_name='psp_waves_test',
@@ -1402,7 +1402,7 @@ class psp_waves_test_class:
 
         self.Frequencies_1 = plot_manager(
             self.raw_data['Frequencies_1'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_1',
                 class_name='psp_waves_test',
@@ -1439,7 +1439,7 @@ class psp_waves_test_class:
         
         self.wave_normal_b = plot_manager(
             wave_normal_b_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='wave_normal_b',
                 class_name='psp_waves_test',
@@ -1465,7 +1465,7 @@ class psp_waves_test_class:
 
         self.FFT_time_3 = plot_manager(
             self.raw_data['FFT_time_3'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_3',
                 class_name='psp_waves_test',
@@ -1484,7 +1484,7 @@ class psp_waves_test_class:
 
         self.Frequencies_2 = plot_manager(
             self.raw_data['Frequencies_2'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_2',
                 class_name='psp_waves_test',
@@ -1521,7 +1521,7 @@ class psp_waves_test_class:
         
         self.coherency_b = plot_manager(
             coherency_b_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='coherency_b',
                 class_name='psp_waves_test',
@@ -1547,7 +1547,7 @@ class psp_waves_test_class:
 
         self.FFT_time_4 = plot_manager(
             self.raw_data['FFT_time_4'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_4',
                 class_name='psp_waves_test',
@@ -1566,7 +1566,7 @@ class psp_waves_test_class:
 
         self.Frequencies_3 = plot_manager(
             self.raw_data['Frequencies_3'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_3',
                 class_name='psp_waves_test',
@@ -1603,7 +1603,7 @@ class psp_waves_test_class:
         
         self.B_power_para = plot_manager(
             B_power_para_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='B_power_para',
                 class_name='psp_waves_test',
@@ -1629,7 +1629,7 @@ class psp_waves_test_class:
 
         self.FFT_time_5 = plot_manager(
             self.raw_data['FFT_time_5'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_5',
                 class_name='psp_waves_test',
@@ -1648,7 +1648,7 @@ class psp_waves_test_class:
 
         self.Frequencies_4 = plot_manager(
             self.raw_data['Frequencies_4'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_4',
                 class_name='psp_waves_test',
@@ -1685,7 +1685,7 @@ class psp_waves_test_class:
         
         self.B_power_perp = plot_manager(
             B_power_perp_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='B_power_perp',
                 class_name='psp_waves_test',
@@ -1711,7 +1711,7 @@ class psp_waves_test_class:
 
         self.FFT_time_6 = plot_manager(
             self.raw_data['FFT_time_6'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_6',
                 class_name='psp_waves_test',
@@ -1730,7 +1730,7 @@ class psp_waves_test_class:
 
         self.Frequencies_5 = plot_manager(
             self.raw_data['Frequencies_5'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_5',
                 class_name='psp_waves_test',
@@ -1767,7 +1767,7 @@ class psp_waves_test_class:
         
         self.Wave_Power_b = plot_manager(
             Wave_Power_b_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Wave_Power_b',
                 class_name='psp_waves_test',
@@ -1793,7 +1793,7 @@ class psp_waves_test_class:
 
         self.FFT_time_7 = plot_manager(
             self.raw_data['FFT_time_7'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_7',
                 class_name='psp_waves_test',
@@ -1812,7 +1812,7 @@ class psp_waves_test_class:
 
         self.Frequencies_6 = plot_manager(
             self.raw_data['Frequencies_6'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_6',
                 class_name='psp_waves_test',
@@ -1849,7 +1849,7 @@ class psp_waves_test_class:
         
         self.S_mag = plot_manager(
             S_mag_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='S_mag',
                 class_name='psp_waves_test',
@@ -1875,7 +1875,7 @@ class psp_waves_test_class:
 
         self.FFT_time_8 = plot_manager(
             self.raw_data['FFT_time_8'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_8',
                 class_name='psp_waves_test',
@@ -1894,7 +1894,7 @@ class psp_waves_test_class:
 
         self.Frequencies_7 = plot_manager(
             self.raw_data['Frequencies_7'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_7',
                 class_name='psp_waves_test',
@@ -1931,7 +1931,7 @@ class psp_waves_test_class:
         
         self.S_Theta = plot_manager(
             S_Theta_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='S_Theta',
                 class_name='psp_waves_test',
@@ -1957,7 +1957,7 @@ class psp_waves_test_class:
 
         self.FFT_time_9 = plot_manager(
             self.raw_data['FFT_time_9'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_9',
                 class_name='psp_waves_test',
@@ -1976,7 +1976,7 @@ class psp_waves_test_class:
 
         self.Frequencies_8 = plot_manager(
             self.raw_data['Frequencies_8'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_8',
                 class_name='psp_waves_test',
@@ -2013,7 +2013,7 @@ class psp_waves_test_class:
         
         self.S_Phi = plot_manager(
             S_Phi_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='S_Phi',
                 class_name='psp_waves_test',
@@ -2039,7 +2039,7 @@ class psp_waves_test_class:
 
         self.FFT_time_10 = plot_manager(
             self.raw_data['FFT_time_10'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_10',
                 class_name='psp_waves_test',
@@ -2058,7 +2058,7 @@ class psp_waves_test_class:
 
         self.Frequencies_9 = plot_manager(
             self.raw_data['Frequencies_9'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_9',
                 class_name='psp_waves_test',
@@ -2095,7 +2095,7 @@ class psp_waves_test_class:
         
         self.Sn = plot_manager(
             Sn_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Sn',
                 class_name='psp_waves_test',
@@ -2121,7 +2121,7 @@ class psp_waves_test_class:
 
         self.FFT_time_11 = plot_manager(
             self.raw_data['FFT_time_11'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_11',
                 class_name='psp_waves_test',
@@ -2140,7 +2140,7 @@ class psp_waves_test_class:
 
         self.Frequencies_10 = plot_manager(
             self.raw_data['Frequencies_10'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_10',
                 class_name='psp_waves_test',
@@ -2177,7 +2177,7 @@ class psp_waves_test_class:
         
         self.Sp = plot_manager(
             Sp_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Sp',
                 class_name='psp_waves_test',
@@ -2203,7 +2203,7 @@ class psp_waves_test_class:
 
         self.FFT_time_12 = plot_manager(
             self.raw_data['FFT_time_12'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_12',
                 class_name='psp_waves_test',
@@ -2222,7 +2222,7 @@ class psp_waves_test_class:
 
         self.Frequencies_11 = plot_manager(
             self.raw_data['Frequencies_11'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_11',
                 class_name='psp_waves_test',
@@ -2259,7 +2259,7 @@ class psp_waves_test_class:
         
         self.Sq = plot_manager(
             Sq_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Sq',
                 class_name='psp_waves_test',
@@ -2285,7 +2285,7 @@ class psp_waves_test_class:
 
         self.Bfield_time = plot_manager(
             self.raw_data['Bfield_time'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Bfield_time',
                 class_name='psp_waves_test',
@@ -2304,7 +2304,7 @@ class psp_waves_test_class:
 
         self.Bn = plot_manager(
             self.raw_data['Bn'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Bn',
                 class_name='psp_waves_test',
@@ -2323,7 +2323,7 @@ class psp_waves_test_class:
 
         self.Bfield_time_1 = plot_manager(
             self.raw_data['Bfield_time_1'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Bfield_time_1',
                 class_name='psp_waves_test',
@@ -2342,7 +2342,7 @@ class psp_waves_test_class:
 
         self.Bp = plot_manager(
             self.raw_data['Bp'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Bp',
                 class_name='psp_waves_test',
@@ -2361,7 +2361,7 @@ class psp_waves_test_class:
 
         self.Bfield_time_2 = plot_manager(
             self.raw_data['Bfield_time_2'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Bfield_time_2',
                 class_name='psp_waves_test',
@@ -2380,7 +2380,7 @@ class psp_waves_test_class:
 
         self.Bq = plot_manager(
             self.raw_data['Bq'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Bq',
                 class_name='psp_waves_test',
@@ -2399,7 +2399,7 @@ class psp_waves_test_class:
 
         self.FFT_time_13 = plot_manager(
             self.raw_data['FFT_time_13'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_13',
                 class_name='psp_waves_test',
@@ -2418,7 +2418,7 @@ class psp_waves_test_class:
 
         self.Frequencies_12 = plot_manager(
             self.raw_data['Frequencies_12'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_12',
                 class_name='psp_waves_test',
@@ -2455,7 +2455,7 @@ class psp_waves_test_class:
         
         self.Bn_fft = plot_manager(
             Bn_fft_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Bn_fft',
                 class_name='psp_waves_test',
@@ -2481,7 +2481,7 @@ class psp_waves_test_class:
 
         self.FFT_time_14 = plot_manager(
             self.raw_data['FFT_time_14'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_14',
                 class_name='psp_waves_test',
@@ -2500,7 +2500,7 @@ class psp_waves_test_class:
 
         self.Frequencies_13 = plot_manager(
             self.raw_data['Frequencies_13'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_13',
                 class_name='psp_waves_test',
@@ -2537,7 +2537,7 @@ class psp_waves_test_class:
         
         self.Bp_fft = plot_manager(
             Bp_fft_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Bp_fft',
                 class_name='psp_waves_test',
@@ -2563,7 +2563,7 @@ class psp_waves_test_class:
 
         self.FFT_time_15 = plot_manager(
             self.raw_data['FFT_time_15'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_15',
                 class_name='psp_waves_test',
@@ -2582,7 +2582,7 @@ class psp_waves_test_class:
 
         self.Frequencies_14 = plot_manager(
             self.raw_data['Frequencies_14'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_14',
                 class_name='psp_waves_test',
@@ -2619,7 +2619,7 @@ class psp_waves_test_class:
         
         self.Bq_fft = plot_manager(
             Bq_fft_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Bq_fft',
                 class_name='psp_waves_test',
@@ -2645,7 +2645,7 @@ class psp_waves_test_class:
 
         self.FFT_time_16 = plot_manager(
             self.raw_data['FFT_time_16'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_16',
                 class_name='psp_waves_test',
@@ -2664,7 +2664,7 @@ class psp_waves_test_class:
 
         self.Frequencies_15 = plot_manager(
             self.raw_data['Frequencies_15'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_15',
                 class_name='psp_waves_test',
@@ -2701,7 +2701,7 @@ class psp_waves_test_class:
         
         self.ellipticity_e = plot_manager(
             ellipticity_e_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='ellipticity_e',
                 class_name='psp_waves_test',
@@ -2727,7 +2727,7 @@ class psp_waves_test_class:
 
         self.FFT_time_17 = plot_manager(
             self.raw_data['FFT_time_17'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_17',
                 class_name='psp_waves_test',
@@ -2746,7 +2746,7 @@ class psp_waves_test_class:
 
         self.Frequencies_16 = plot_manager(
             self.raw_data['Frequencies_16'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_16',
                 class_name='psp_waves_test',
@@ -2783,7 +2783,7 @@ class psp_waves_test_class:
         
         self.wave_normal_e = plot_manager(
             wave_normal_e_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='wave_normal_e',
                 class_name='psp_waves_test',
@@ -2809,7 +2809,7 @@ class psp_waves_test_class:
 
         self.FFT_time_18 = plot_manager(
             self.raw_data['FFT_time_18'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_18',
                 class_name='psp_waves_test',
@@ -2828,7 +2828,7 @@ class psp_waves_test_class:
 
         self.Frequencies_17 = plot_manager(
             self.raw_data['Frequencies_17'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_17',
                 class_name='psp_waves_test',
@@ -2865,7 +2865,7 @@ class psp_waves_test_class:
         
         self.coherency_e = plot_manager(
             coherency_e_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='coherency_e',
                 class_name='psp_waves_test',
@@ -2891,7 +2891,7 @@ class psp_waves_test_class:
 
         self.FFT_time_19 = plot_manager(
             self.raw_data['FFT_time_19'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_19',
                 class_name='psp_waves_test',
@@ -2910,7 +2910,7 @@ class psp_waves_test_class:
 
         self.Frequencies_18 = plot_manager(
             self.raw_data['Frequencies_18'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_18',
                 class_name='psp_waves_test',
@@ -2947,7 +2947,7 @@ class psp_waves_test_class:
         
         self.E_power_para = plot_manager(
             E_power_para_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='E_power_para',
                 class_name='psp_waves_test',
@@ -2973,7 +2973,7 @@ class psp_waves_test_class:
 
         self.FFT_time_20 = plot_manager(
             self.raw_data['FFT_time_20'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_20',
                 class_name='psp_waves_test',
@@ -2992,7 +2992,7 @@ class psp_waves_test_class:
 
         self.Frequencies_19 = plot_manager(
             self.raw_data['Frequencies_19'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_19',
                 class_name='psp_waves_test',
@@ -3029,7 +3029,7 @@ class psp_waves_test_class:
         
         self.E_power_perp = plot_manager(
             E_power_perp_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='E_power_perp',
                 class_name='psp_waves_test',
@@ -3055,7 +3055,7 @@ class psp_waves_test_class:
 
         self.FFT_time_21 = plot_manager(
             self.raw_data['FFT_time_21'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_21',
                 class_name='psp_waves_test',
@@ -3074,7 +3074,7 @@ class psp_waves_test_class:
 
         self.Frequencies_20 = plot_manager(
             self.raw_data['Frequencies_20'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_20',
                 class_name='psp_waves_test',
@@ -3111,7 +3111,7 @@ class psp_waves_test_class:
         
         self.Wave_Power_e = plot_manager(
             Wave_Power_e_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Wave_Power_e',
                 class_name='psp_waves_test',
@@ -3137,7 +3137,7 @@ class psp_waves_test_class:
 
         self.FFT_time_22 = plot_manager(
             self.raw_data['FFT_time_22'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_22',
                 class_name='psp_waves_test',
@@ -3156,7 +3156,7 @@ class psp_waves_test_class:
 
         self.Frequencies_21 = plot_manager(
             self.raw_data['Frequencies_21'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_21',
                 class_name='psp_waves_test',
@@ -3193,7 +3193,7 @@ class psp_waves_test_class:
         
         self.En_fft = plot_manager(
             En_fft_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='En_fft',
                 class_name='psp_waves_test',
@@ -3219,7 +3219,7 @@ class psp_waves_test_class:
 
         self.FFT_time_23 = plot_manager(
             self.raw_data['FFT_time_23'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_23',
                 class_name='psp_waves_test',
@@ -3238,7 +3238,7 @@ class psp_waves_test_class:
 
         self.Frequencies_22 = plot_manager(
             self.raw_data['Frequencies_22'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_22',
                 class_name='psp_waves_test',
@@ -3275,7 +3275,7 @@ class psp_waves_test_class:
         
         self.Ep_fft = plot_manager(
             Ep_fft_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Ep_fft',
                 class_name='psp_waves_test',
@@ -3301,7 +3301,7 @@ class psp_waves_test_class:
 
         self.FFT_time_24 = plot_manager(
             self.raw_data['FFT_time_24'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_24',
                 class_name='psp_waves_test',
@@ -3320,7 +3320,7 @@ class psp_waves_test_class:
 
         self.Frequencies_23 = plot_manager(
             self.raw_data['Frequencies_23'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_23',
                 class_name='psp_waves_test',
@@ -3357,7 +3357,7 @@ class psp_waves_test_class:
         
         self.Eq_fft = plot_manager(
             Eq_fft_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Eq_fft',
                 class_name='psp_waves_test',
@@ -3383,7 +3383,7 @@ class psp_waves_test_class:
 
         self.FFT_time_25 = plot_manager(
             self.raw_data['FFT_time_25'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_25',
                 class_name='psp_waves_test',
@@ -3402,7 +3402,7 @@ class psp_waves_test_class:
 
         self.Frequencies_24 = plot_manager(
             self.raw_data['Frequencies_24'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_24',
                 class_name='psp_waves_test',
@@ -3439,7 +3439,7 @@ class psp_waves_test_class:
         
         self.kx_B = plot_manager(
             kx_B_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='kx_B',
                 class_name='psp_waves_test',
@@ -3465,7 +3465,7 @@ class psp_waves_test_class:
 
         self.FFT_time_26 = plot_manager(
             self.raw_data['FFT_time_26'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_26',
                 class_name='psp_waves_test',
@@ -3484,7 +3484,7 @@ class psp_waves_test_class:
 
         self.Frequencies_25 = plot_manager(
             self.raw_data['Frequencies_25'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_25',
                 class_name='psp_waves_test',
@@ -3521,7 +3521,7 @@ class psp_waves_test_class:
         
         self.ky_B = plot_manager(
             ky_B_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='ky_B',
                 class_name='psp_waves_test',
@@ -3547,7 +3547,7 @@ class psp_waves_test_class:
 
         self.FFT_time_27 = plot_manager(
             self.raw_data['FFT_time_27'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_27',
                 class_name='psp_waves_test',
@@ -3566,7 +3566,7 @@ class psp_waves_test_class:
 
         self.Frequencies_26 = plot_manager(
             self.raw_data['Frequencies_26'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_26',
                 class_name='psp_waves_test',
@@ -3603,7 +3603,7 @@ class psp_waves_test_class:
         
         self.kz_B = plot_manager(
             kz_B_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='kz_B',
                 class_name='psp_waves_test',
@@ -3629,7 +3629,7 @@ class psp_waves_test_class:
 
         self.FFT_time_28 = plot_manager(
             self.raw_data['FFT_time_28'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_28',
                 class_name='psp_waves_test',
@@ -3648,7 +3648,7 @@ class psp_waves_test_class:
 
         self.Frequencies_27 = plot_manager(
             self.raw_data['Frequencies_27'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_27',
                 class_name='psp_waves_test',
@@ -3685,7 +3685,7 @@ class psp_waves_test_class:
         
         self.kx_E = plot_manager(
             kx_E_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='kx_E',
                 class_name='psp_waves_test',
@@ -3711,7 +3711,7 @@ class psp_waves_test_class:
 
         self.FFT_time_29 = plot_manager(
             self.raw_data['FFT_time_29'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_29',
                 class_name='psp_waves_test',
@@ -3730,7 +3730,7 @@ class psp_waves_test_class:
 
         self.Frequencies_28 = plot_manager(
             self.raw_data['Frequencies_28'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_28',
                 class_name='psp_waves_test',
@@ -3767,7 +3767,7 @@ class psp_waves_test_class:
         
         self.ky_E = plot_manager(
             ky_E_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='ky_E',
                 class_name='psp_waves_test',
@@ -3793,7 +3793,7 @@ class psp_waves_test_class:
 
         self.FFT_time_30 = plot_manager(
             self.raw_data['FFT_time_30'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='FFT_time_30',
                 class_name='psp_waves_test',
@@ -3812,7 +3812,7 @@ class psp_waves_test_class:
 
         self.Frequencies_29 = plot_manager(
             self.raw_data['Frequencies_29'],
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='Frequencies_29',
                 class_name='psp_waves_test',
@@ -3849,7 +3849,7 @@ class psp_waves_test_class:
         
         self.kz_E = plot_manager(
             kz_E_data,
-            plot_options=ploptions(
+            plot_config=plot_config(
                 data_type='psp_waves_test',
                 var_name='kz_E',
                 class_name='psp_waves_test',
