@@ -98,12 +98,19 @@ def vdyes(trange, force_static=False):
     # Import pyspedas here for lazy loading
     import pyspedas
     
-    # Use reliable download approach (no_update=False for proper file filtering)
-    # Note: no_update=True was removed due to false matches with wrong file types (L3 vs L2)
-    print_manager.status("📡 Checking/downloading VDF files with proper filtering...")
+    # First try local files only (no_update=True for fast local check)
     VDfile = pyspedas.psp.spi(download_trange, datatype='spi_sf00_8dx32ex8a', level='l2', 
                               notplot=True, time_clip=True, downloadonly=True, get_support_data=True, 
-                              no_update=False)
+                              no_update=True)
+    
+    # If no local files found, allow download
+    if not VDfile:
+        print_manager.status("📡 No local VDF files found, attempting download...")
+        VDfile = pyspedas.psp.spi(download_trange, datatype='spi_sf00_8dx32ex8a', level='l2', 
+                                  notplot=True, time_clip=True, downloadonly=True, get_support_data=True, 
+                                  no_update=False)
+    else:
+        print_manager.status("✅ Using cached VDF files (no download needed)")
     
     if not VDfile:
         raise ValueError(f"No VDF files downloaded for trange: {trange}")
@@ -284,8 +291,9 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
     vdf_output = widgets.Output()
     
     # Time slider without description (we'll add our own label)
+    # Start at index 1 instead of 0 for better user experience
     time_slider = IntSlider(
-        value=0,
+        value=min(1, len(available_times) - 1),  # Start at 1 if possible, else 0
         min=0,
         max=len(available_times) - 1,
         step=1,
@@ -295,7 +303,8 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
     
     # Labels with consistent width for alignment
     time_label_desc = Label(value="Time:", layout=Layout(width='50px'))
-    time_display = Label(value=available_times[0].strftime("%Y-%m-%d %H:%M:%S"), layout=Layout(width='200px'))
+    initial_time_index = min(1, len(available_times) - 1)
+    time_display = Label(value=available_times[initial_time_index].strftime("%Y-%m-%d %H:%M:%S"), layout=Layout(width='200px'))
     
     # Step controls with matching width
     step_label_desc = Label(value="Step:", layout=Layout(width='50px'))
@@ -313,6 +322,15 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
     
     # Global variables for save directory
     save_directory = [None]  # Use list to make it mutable in nested functions
+    
+    def setup_default_save_directory():
+        """Set up default save directory with vdf_plots subfolder"""
+        if save_directory[0] is None:
+            # Create vdf_plots subfolder in current directory
+            default_dir = os.path.join(os.getcwd(), 'vdf_plots')
+            os.makedirs(default_dir, exist_ok=True)  # Create if doesn't exist
+            save_directory[0] = default_dir
+            status_label.value = f"Status: 📁 Created VDF plots folder: {save_directory[0]} (images will save here)"
     
     def update_vdf_plot(time_index):
         """Update VDF plot for given time index"""
@@ -378,7 +396,9 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
             time_str = available_times[time_index].strftime("%Y-%m-%d %H:%M:%S")
             fig.suptitle(f'PSP SPAN-I VDF Widget - {time_str}', y=1.02, fontsize=16 * vdf_class.vdf_text_scaling)
             
-            # Note: plt.show() removed - plot displays automatically in widget output area
+            # Display the specific figure object instead of plt.show()
+            display(fig)
+            plt.close(fig)  # Clean up to prevent memory leaks
             
             # Update time label
             time_display.value = time_str
@@ -409,10 +429,7 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
     
     def on_save_current_click(b):
         """Save current image"""
-        if save_directory[0] is None:
-            # Default to current working directory (where Jupyter notebook is running)
-            save_directory[0] = os.getcwd()
-            status_label.value = f"Status: 📁 Using default save directory: {save_directory[0]}"
+        setup_default_save_directory()
         
         # Save current plot with human-readable filename
         current_time = available_times[time_slider.value]
@@ -487,12 +504,8 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
     
     def on_save_all_click(b):
         """Render and save all time slices"""
+        setup_default_save_directory()
         status_label.value = f"Status: 🎬 Rendering {len(available_times)} VDF images..."
-        
-        if save_directory[0] is None:
-            # Default to current working directory (where Jupyter notebook is running)
-            save_directory[0] = os.getcwd()
-            status_label.value = f"Status: 📁 Using default save directory: {save_directory[0]}"
         for i, time_obj in enumerate(available_times):
             filename = f"VDF_{time_obj.strftime('%Y-%m-%d_%Hh_%Mm_%Ss')}.png"
             filepath = os.path.join(save_directory[0], filename)
@@ -615,11 +628,12 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
     # Note: Widget will auto-display when returned (Jupyter behavior)
     # Removed explicit display() call to prevent duplicate UI
     
-    # Make ONE explicit plot call at the very end (Hopf explorer pattern)
-    update_vdf_plot(0)
+    # Make initial plot call for the starting slider position
+    initial_index = min(1, len(available_times) - 1)
+    update_vdf_plot(initial_index)
     
     print_manager.status(f"✅ VDF widget created! {len(available_times)} time points available")
     print_manager.status(f"   Time range: {available_times[0]} to {available_times[-1]}")
-    print_manager.status(f"   💾 Save location: Current directory ({os.getcwd()}) - Use 'Change Save Directory' to modify")
+    print_manager.status(f"   💾 Save location: Will create './vdf_plots/' - Click 'Change Save Directory' button above to choose different folder")
     
     return widget_layout

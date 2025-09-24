@@ -103,4 +103,57 @@ plt.show()  # Creates standalone plot (REMOVED)
 - **Version**: v3.35
 - **Commit Message**: v3.35 Fix: VDF widget duplicate UI generation - removed duplicate display calls and extra plt.show()
 
+### Push Status
+✅ **Pushed to GitHub**: Hash `7224fb7` (copied to clipboard)
+- **Commit 1**: VDF widget duplicate UI fix
+- **Commit 2**: Example notebook improvements and density ham test file rename
+- **Files**: `plotbot/vdyes.py`, `plotbot/__init__.py`, multiple example notebooks
+
+---
+
+## Major Fix: VDF Widget Complete Overhaul - Single Plot Display + UX
+
+### Issue Resolution
+After extensive debugging, achieved clean single-plot VDF widget through systematic fixes:
+
+**Problems solved:**
+1. **Plot accumulation** - Old plots stacking instead of replacing
+2. **Missing initial plot** - Widget loading blank requiring manual interaction  
+3. **Display inconsistencies** - Various matplotlib/widget integration issues
+4. **Poor save UX** - Files cluttering main directory
+
+### Root Causes & Solutions
+
+**1. Plot Display Pattern:**
+- **Problem**: Complex matplotlib figure management in widget contexts
+- **Solution**: Clean pattern: `clear_output(wait=True)` + `display(fig)` + `plt.close(fig)`
+
+**2. Widget Initialization:**
+- **Problem**: Slider observer only triggers on changes, not initial value
+- **Solution**: Explicit `update_vdf_plot(initial_index)` + start at index 1
+
+**3. Save Organization:**
+- **Improvement**: Auto-create `./vdf_plots/` subfolder for clean file management
+- **Improvement**: Clear status messages explaining save behavior
+
+### Technical Implementation
+**File**: `plotbot/vdyes.py`
+
+Key changes:
+- Reverted to git commit `6f9fb6f` (last working state) then applied minimal fixes
+- Used `display(fig)` instead of `plt.show()` for better widget integration  
+- Start slider at index 1 with explicit initial plot call
+- Auto-directory creation with `os.makedirs(default_dir, exist_ok=True)`
+
+### Impact
+- ✅ **Single clean widget** with immediate plot display
+- ✅ **Smooth plot updates** when moving slider
+- ✅ **Organized saves** in dedicated `./vdf_plots/` folder
+- ✅ **Better UX** with helpful status messages
+- ✅ **Memory efficient** with proper figure cleanup
+
+### Version Information
+- **Version**: v3.36
+- **Commit Message**: v3.36 Fix: VDF widget complete overhaul - single plot display, better UX, organized saves
+
 ---

@@ -407,10 +407,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_23_v3.35"
+__version__ = "2025_09_23_v3.36"
 
 # Commit message for this version
-__commit_message__ = "v3.35 Fix: VDF widget duplicate UI generation - removed duplicate display calls and extra plt.show()"
+__commit_message__ = "v3.36 Fix: VDF widget complete overhaul - single plot display, better UX, organized saves"
 
 # Print the version and commit message
 print(f"""
