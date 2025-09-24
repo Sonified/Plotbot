@@ -58,7 +58,7 @@ fi
 echo ""
 echo "🔹 Step 4/5: Installing Plotbot as Development Package..."
 echo "Running: micromamba run -n plotbot_micromamba pip install -e ."
-$HOME/homebrew/opt/micromamba/bin/micromamba run -n plotbot_micromamba pip install -e .
+$HOME/homebrew/bin/micromamba run -n plotbot_micromamba pip install -e .
 install_status=$?
 if [ $install_status -ne 0 ]; then
     echo "❌ Error: Plotbot package installation failed with code $install_status."
