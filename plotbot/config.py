@@ -18,11 +18,13 @@ class PlotbotConfig:
         will use this directory. PySpedas will create subdirectories within this path 
         for different missions (e.g., {data_dir}/psp/, {data_dir}/wind/).
         
-        With lazy loading, this can be changed anytime before calling VDF functions.
-        The environment variable is only set when the user explicitly changes data_dir.
+        CRITICAL FIX: The environment variable MUST be set during initialization so 
+        PySpedas uses the correct data directory from the start.
         """
         
-        # DO NOT set environment variable on init - true lazy loading!
+        # CRITICAL FIX: Configure PySpedas data directory on initialization
+        # This ensures SPEDAS_DATA_DIR is set before any PySpedas imports
+        self._configure_pyspedas_data_directory()
         
         # --- Data Server Selection ---
         self.data_server = 'dynamic'

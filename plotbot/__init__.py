@@ -407,10 +407,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_23_v3.37"
+__version__ = "2025_09_24_v3.38"
 
 # Commit message for this version
-__commit_message__ = "v3.37 Fix: Repair anaconda install environment name mismatches and add non-interactive terminal handling to main installer"
+__commit_message__ = "v3.38 Critical Fix: PySpedas data directory configuration bug - SPEDAS_DATA_DIR now properly set during initialization"
 
 # Print the version and commit message
 print(f"""
