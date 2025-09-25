@@ -84,3 +84,7 @@ plotbot_grid_composer_examples.ipynb
 tests/data/
 
 plotly_tests/
+
+# Python environments and package metadata (should not be committed)
+plotbot_venv/
+*.egg-info/
