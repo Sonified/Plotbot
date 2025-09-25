@@ -95,19 +95,11 @@ def plotbot_interactive_vdf(trange, backend='auto', port=None, debug=None):
     import pandas as pd
     
     # Download using proven pyspedas approach (exactly like vdyes())
-    # First try local files only (no_update=True for fast local check)
+    # FIXED: Always use no_update=False so pyspedas respects level='l2' parameter
+    # no_update=True ignores the level parameter and returns any matching files!
     VDfile = pyspedas.psp.spi(trange, datatype='spi_sf00_8dx32ex8a', level='l2', 
                               notplot=True, time_clip=True, downloadonly=True, get_support_data=True, 
-                              no_update=True)
-    
-    # If no local files found, allow download
-    if not VDfile:
-        print_manager.status("📡 No local VDF files found, attempting download...")
-        VDfile = pyspedas.psp.spi(trange, datatype='spi_sf00_8dx32ex8a', level='l2', 
-                                  notplot=True, time_clip=True, downloadonly=True, get_support_data=True, 
-                                  no_update=False)
-    else:
-        print_manager.status("✅ Using cached VDF files (no download needed)")
+                              no_update=False)  # Must be False to respect level='l2'!
     
     if not VDfile:
         print_manager.error("❌ No VDF files found for time range")

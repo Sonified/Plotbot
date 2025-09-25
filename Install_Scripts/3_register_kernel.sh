@@ -30,24 +30,3 @@ else
     echo "❌ Something went wrong with the Plotbot registration."
     exit 1
 fi
-
-# Check for VS Code installation and add instructions
-if [ -d "/Applications/Visual Studio Code.app" ] || [ -d "$HOME/Applications/Visual Studio Code.app" ]; then
-    echo ""
-    echo "📣 VS Code Instructions:"
-    echo "   1. ❌ CLOSE VS Code completely if it's open"
-    echo "   2. 🟢 Open Terminal and run: code"
-    echo "   3. In VS Code, press Cmd+Shift+P and type 'Python: Select Interpreter'"
-    echo "   4. Select the Plotbot environment or browse to: $(conda info --base)/envs/plotbot_anaconda/bin/python"
-    echo "   5. 📂 Open example_notebooks/Plotbot.ipynb and select 'Python (Plotbot)' kernel"
-    echo ""
-else
-    echo ""
-    echo "📣 VS Code not detected. If you use VS Code:"
-    echo "   After installation, you'll need to manually select the Python interpreter:"
-    echo "   - Press Cmd+Shift+P and type 'Python: Select Interpreter'"
-    echo "   - Select the Plotbot environment or browse to: $(conda info --base)/envs/plotbot_anaconda/bin/python"
-    echo ""
-fi
-
-echo "🌟 Happy Plotbotting! 🌟"

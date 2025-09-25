@@ -214,6 +214,9 @@ debug_custom_variables()
 audifier_module = time_import('audifier', from_module='plotbot')
 from .audifier import audifier
 
+# Import ploptions for figure control
+from .ploptions import ploptions
+
 # Import our enhanced plt with options support
 with time_block("enhanced_plt"):
     from .multiplot_options import plt
@@ -343,6 +346,7 @@ __all__ = [
     'plotbot_interactive',  # Interactive plotting with click-to-VDF functionality
     'plotbot_interactive_vdf',  # Interactive VDF plotting with time slider
     'pbi',           # Interactive plotting options
+    'ploptions',     # Global plotbot figure control options
     'showdahodo', 
     'multiplot',
     'vdyes',         # PSP SPAN-I VDF plotting function
@@ -407,10 +411,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_24_v3.44"
+__version__ = "2025_09_25_v3.46"
 
 # Commit message for this version
-__commit_message__ = "v3.44 Performance Fix: Smart local VDF file checking - avoid unnecessary pyspedas calls when l2 files exist locally"
+__commit_message__ = "v3.46 Installer Optimization: Fast conda version checking, fixed timeout handling, simplified user prompts, and optimized installer flow"
 
 # Print the version and commit message
 print(f"""

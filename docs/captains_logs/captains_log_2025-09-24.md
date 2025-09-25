@@ -195,3 +195,33 @@ VDfile = pyspedas.psp.spi(..., level='l2', no_update=False)  # Only returns l2 f
 **Version**: v3.43  
 **Commit Message**: "v3.43 Critical Fix: PySpedas no_update parameter bug - no_update=True ignores level='l2' causing wrong file selection"  
 **Hash**: 2a8d34f
+
+## Smart Local File Checking Implementation (v3.44)
+
+### Performance Enhancement
+- **Goal**: Avoid unnecessary pyspedas calls when VDF files already exist locally
+- **Approach**: Manual file path construction and existence checking (like Jaye's reference code)
+
+### Technical Implementation
+**Smart Logic Flow**:
+1. **Construct Expected Path**: Build exact l2 file path based on PSP data structure
+2. **Check Existence**: Use `Path.exists()` to verify file is available locally  
+3. **Skip PySpedas**: If file exists, use it directly without calling pyspedas
+4. **Download Only If Needed**: Only call pyspedas if file missing
+
+**File Path Pattern**:
+```python
+# Example: /data/psp/sweap/spi/l2/spi_sf00_8dx32ex8a/2023/psp_swp_spi_sf00_l2_8dx32ex8a_20230622_v04.cdf
+expected_l2_path = Path(config.data_dir) / "psp/sweap/spi/l2/spi_sf00_8dx32ex8a" / year_str / f"psp_swp_spi_sf00_l2_8dx32ex8a_{date_str}_v04.cdf"
+```
+
+### Benefits
+- **Performance**: Eliminates unnecessary network calls when data exists
+- **Reliability**: No dependence on pyspedas file ordering or parameter bugs
+- **User Experience**: Faster VDF plot generation when using cached data
+- **Documentation**: Added clear comments about why `no_update=False` is required
+
+### Git Commit
+**Version**: v3.44  
+**Commit Message**: "v3.44 Performance Fix: Smart local VDF file checking - avoid unnecessary pyspedas calls when l2 files exist locally"  
+**Hash**: 647bcaf

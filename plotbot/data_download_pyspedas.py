@@ -16,9 +16,106 @@ from dateutil.parser import parse
 from .print_manager import print_manager
 from .data_classes.data_types import data_types, get_local_path # To get pyspedas datatype mapping
 from .time_utils import daterange
+from pathlib import Path
+from datetime import timedelta
 # Add other necessary imports (time, etc.) as needed
 
 # Import the precise download function for efficiency - moved to function level
+
+def smart_check_local_pyspedas_files(plotbot_key, trange):
+    """Smart local file checking for pyspedas data types.
+    
+    Constructs expected file paths using data_types.py configuration and checks
+    if files exist locally before calling pyspedas.
+    
+    Args:
+        plotbot_key (str): The Plotbot data type key (e.g., 'mag_RTN_4sa')
+        trange (list): Time range [start, end]
+        
+    Returns:
+        list: List of existing local file paths, or None if files not found
+    """
+    from .config import config
+    
+    # Check if we have configuration for this data type
+    if plotbot_key not in data_types:
+        print_manager.debug(f"No data_types configuration for {plotbot_key}, skipping smart check")
+        return None
+    
+    data_config = data_types[plotbot_key]
+    
+    # Only do smart checking for data types with clear file patterns
+    if 'local_path' not in data_config or 'file_pattern' not in data_config:
+        print_manager.debug(f"Missing file pattern configuration for {plotbot_key}, skipping smart check")
+        return None
+    
+    try:
+        # Parse date range
+        start_dt = parse(trange[0].replace('/', ' '))
+        end_dt = parse(trange[1].replace('/', ' '))
+        
+        # Build expected file paths based on data type configuration
+        local_path_template = data_config['local_path']
+        file_pattern = data_config.get('spdf_file_pattern', data_config['file_pattern'])  # Use SPDF pattern if available
+        data_level = data_config['data_level']
+        file_time_format = data_config['file_time_format']
+        
+        # Construct local path by replacing placeholders
+        local_path = local_path_template.format(data_level=data_level)
+        base_path = Path(config.data_dir) / local_path
+        
+        expected_files = []
+        
+        if file_time_format == 'daily':
+            # Daily files - one file per day
+            current_date = start_dt.date()
+            end_date = end_dt.date()
+            
+            while current_date <= end_date:
+                year_str = str(current_date.year)
+                date_str = current_date.strftime('%Y%m%d')
+                
+                # Remove regex patterns and construct actual filename
+                filename_pattern = file_pattern.format(data_level=data_level, date_str=date_str)
+                # Convert regex pattern to actual filename (assume v04 version)
+                filename = filename_pattern.replace(r'(\d{{2}})', '04').replace(r'v(\d{{2}})', 'v04').replace(r'(\d+)', '04')
+                
+                # Full file path
+                file_path = base_path / year_str / filename
+                expected_files.append(str(file_path))
+                
+                current_date += timedelta(days=1)
+                
+        elif file_time_format == '6-hour':
+            # 6-hour files - multiple files per day
+            from .time_utils import get_needed_6hour_blocks
+            needed_blocks = get_needed_6hour_blocks(trange)
+            
+            for date_str, hour_str in needed_blocks:
+                year_str = date_str[:4]
+                date_hour_str = f"{date_str}{hour_str}"
+                
+                filename_pattern = file_pattern.format(data_level=data_level, date_hour_str=date_hour_str)
+                filename = filename_pattern.replace(r'(\d{{2}})', '04').replace(r'v(\d{{2}})', 'v04').replace(r'(\d+)', '04')
+                
+                file_path = base_path / year_str / filename  
+                expected_files.append(str(file_path))
+        
+        # Check which files actually exist
+        existing_files = [f for f in expected_files if Path(f).exists()]
+        
+        if existing_files:
+            print_manager.status(f"✅ Smart check found {len(existing_files)} local {plotbot_key} file(s):")
+            for f in existing_files:
+                print_manager.status(f"   📁 {f}")
+            return existing_files
+        else:
+            print_manager.status(f"📡 Smart check: {plotbot_key} files not found locally, will download")
+            return None
+            
+    except Exception as e:
+        print_manager.debug(f"Smart file check failed for {plotbot_key}: {e}, falling back to pyspedas")
+        return None
 
 # Define the mapping from Plotbot keys to pyspedas specifics
 # (Borrowed from tests/test_pyspedas_download.py - may need refinement)
@@ -272,8 +369,8 @@ def _get_dates_in_range(start_str, end_str):
 def download_spdf_data(trange, plotbot_key):
     """Attempts to download data using pyspedas from SPDF.
     
-    Uses the no_update=[True, False] strategy for offline reliability.
-    Checks local files first, then attempts download if not found.
+    SMART APPROACH: Checks for local files first using data_types.py patterns,
+    only calls pyspedas if files are missing. Preserves all server config logic.
 
     Args:
         trange (list): Time range ['.start', 'end']
@@ -282,11 +379,19 @@ def download_spdf_data(trange, plotbot_key):
     Returns:
         list: List of relative paths to downloaded files or an empty list if download failed.
     """
+    print_manager.debug(f"[DOWNLOAD_SPDF_ENTRY] Received trange: {trange}, data_type: {plotbot_key}")
+    print_manager.debug(f"Attempting SPDF download for {plotbot_key} in range {trange}")
+
+    # SMART CHECK: Look for local files first before calling pyspedas
+    local_files = smart_check_local_pyspedas_files(plotbot_key, trange)
+    if local_files:
+        print_manager.status(f"✅ Using local {plotbot_key} files (skipping pyspedas)")
+        return local_files
+
     # Import pyspedas here so it reads the environment variables AFTER config is set
     import pyspedas
     
-    print_manager.debug(f"[DOWNLOAD_SPDF_ENTRY] Received trange: {trange}, data_type: {plotbot_key}")
-    print_manager.debug(f"Attempting SPDF download for {plotbot_key} in range {trange}")
+    print_manager.status(f"📡 Local files not found, proceeding with pyspedas download for {plotbot_key}")
 
     PYSPEDAS_MAP = _get_pyspedas_map()
     if plotbot_key not in PYSPEDAS_MAP:
@@ -436,7 +541,9 @@ def download_spdf_data(trange, plotbot_key):
         returned_data = pyspedas_func(
             trange=trange,
             datatype=pyspedas_datatype,
-            no_update=False, # Always check online / download if needed
+            # CRITICAL: no_update=False is required!
+            # no_update=True ignores level/datatype parameters and returns ANY matching files
+            no_update=False, # Must be False to respect level and datatype specifications!
             downloadonly=True,
             notplot=True,
             **kwargs

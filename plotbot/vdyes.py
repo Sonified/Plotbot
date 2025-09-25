@@ -27,28 +27,32 @@ plt.rcParams['figure.facecolor'] = 'white'
 plt.rcParams['axes.facecolor'] = 'white'
 plt.rcParams['savefig.facecolor'] = 'white'
 
-def vdyes(trange, force_static=False):
+def vdyes(trange, *variables, force_static=False):
     """
     VDF plotting - the fine way! (renamed from VDFine)
+    Enhanced version that can create composite plots with plotbot data.
     Uses Plotbot's class-based parameter system like epad.strahl.colorbar_limits.
     
     Automatically switches between static plot and interactive widget based on available data:
     - Static Mode: Single time point found → 3-panel VDF plot  
     - Widget Mode: Multiple time points found → Interactive time slider with controls
+    - Composite Mode: Variables provided → VDF plot + plotbot time series below
     
     Args:
         trange: Time range for VDF plotting (e.g., ['2020/01/29 00:00:00.000', '2020/01/30 00:00:00.000'])
+        *variables: Optional plotbot variables to create composite plot (NEW!)
         force_static: Force static mode even when multiple time points available (default: False)
     
     Returns:
-        matplotlib.figure.Figure: The 3-panel VDF plot (static mode)
+        matplotlib.figure.Figure: The VDF plot or composite plot (static mode)
         ipywidgets.Widget: Interactive VDF widget (widget mode)
         
     Logic:
         1. Download VDF data for the requested trange
         2. Count available time points in the data
-        3. If 1 time point → static plot of that time slice
-        4. If >1 time points → interactive widget with time slider
+        3. If variables provided → create composite VDF + plotbot plot
+        4. If 1 time point → static plot of that time slice
+        5. If >1 time points → interactive widget with time slider
         
     Example Usage:
         # Set parameters on the class instance (Plotbot way)
@@ -56,17 +60,29 @@ def vdyes(trange, force_static=False):
         psp_span_vdf.enable_zero_clipping = False
         psp_span_vdf.theta_x_axis_limits = (-800, 0)  # Use Jaye's bounds
         
-        # Single time found → Static plot
+        # VDF only - Single time found → Static plot
         fig = vdyes(['2020/01/29 18:10:00.000', '2020/01/29 18:10:30.000'])
         
-        # Multiple times found → Interactive widget  
+        # VDF only - Multiple times found → Interactive widget  
         widget = vdyes(['2020/01/29 17:00:00.000', '2020/01/29 19:00:00.000'])
+        
+        # NEW: Composite VDF + plotbot time series
+        fig = vdyes(['2020/01/29 17:00:00.000', '2020/01/29 19:00:00.000'], mag_rtn_4sa.br)
+        fig = vdyes(trange, [mag_rtn_4sa.br, mag_rtn_4sa.bt])  # Multiple variables
     """
     
     from .print_manager import print_manager
     from .data_classes.psp_span_vdf import psp_span_vdf
+    from .ploptions import ploptions
     
     print_manager.status(f"🚀 vdyes() - Processing trange: {trange}")
+    
+    # Check if this is a composite plot request
+    if variables:
+        print_manager.status(f"🎯 Composite mode: Creating VDF + plotbot plot with {len(variables)} variable(s)")
+        return _create_composite_vdf_plotbot_plot(trange, variables)
+    
+    print_manager.status("📊 VDF-only mode: Creating standard VDF plot")
     
     # Import our proven working VDF processing functions
     sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'tests'))
@@ -663,3 +679,107 @@ def _create_vdf_widget(dat, available_times, available_indices, trange):
     print_manager.status(f"   💾 Save location: Will create './vdf_plots/' - Click 'Change Save Directory' button above to choose different folder")
     
     return widget_layout
+
+
+def _create_composite_vdf_plotbot_plot(trange, variables):
+    """Create composite plot with VDF on top and plotbot time series below."""
+    from .print_manager import print_manager
+    from .data_classes.psp_span_vdf import psp_span_vdf
+    from .ploptions import ploptions
+    
+    print_manager.status("🎨 Creating composite VDF + plotbot plot...")
+    
+    # First, create VDF plot (force static mode for composite)
+    print_manager.status("📊 Step 1: Creating VDF plot...")
+    vdf_fig = vdyes(trange, force_static=True)  # Recursive call without variables
+    
+    # Configure ploptions to get plotbot figure without displaying
+    original_display = ploptions.display_figure
+    original_return = ploptions.return_figure
+    
+    ploptions.display_figure = False  # Don't show plotbot plot
+    ploptions.return_figure = True    # Do return the figure
+    
+    try:
+        # Import plotbot here to avoid circular imports
+        from .plotbot_main import plotbot
+        
+        print_manager.status("📈 Step 2: Creating plotbot time series...")
+        
+        # Create plotbot plot - pass all variables as separate arguments with axis numbers
+        if len(variables) == 1:
+            # Single variable
+            plotbot_fig = plotbot(trange, variables[0], 1)
+        else:
+            # Multiple variables - use old syntax with axis numbers
+            args = [trange]
+            for i, var in enumerate(variables):
+                args.extend([var, i+1])  # var1 -> axis 1, var2 -> axis 2, etc.
+            plotbot_fig = plotbot(*args)
+            
+    finally:
+        # Restore original ploptions
+        ploptions.display_figure = original_display
+        ploptions.return_figure = original_return
+    
+    print_manager.status("🔗 Step 3: Combining VDF and plotbot plots...")
+    
+    # Use image buffer approach to combine figures (avoids matplotlib artist issues)
+    import io
+    import matplotlib.pyplot as plt
+    
+    # Just glue the images together - no fancy subplot nonsense
+    import numpy as np
+    
+    # Render both figures to image arrays
+    buf1 = io.BytesIO()
+    vdf_fig.savefig(buf1, format='png', dpi=150, bbox_inches='tight')
+    buf1.seek(0)
+    img1 = plt.imread(buf1)
+    buf1.close()
+    
+    buf2 = io.BytesIO()
+    plotbot_fig.savefig(buf2, format='png', dpi=150, bbox_inches='tight')
+    buf2.seek(0)
+    img2 = plt.imread(buf2)
+    buf2.close()
+    
+    # Resize images to same width while preserving aspect ratios
+    # Meet in the middle - use average width so both get scaled
+    target_width = int((img1.shape[1] + img2.shape[1]) / 2)
+    
+    from PIL import Image
+    
+    # Scale both images proportionally to target width
+    def resize_proportionally(img, target_width):
+        pil_img = Image.fromarray((img * 255).astype(np.uint8))
+        original_width, original_height = pil_img.size
+        
+        # Calculate new height to preserve aspect ratio
+        scale_factor = target_width / original_width
+        new_height = int(original_height * scale_factor)
+        
+        # Resize with proper aspect ratio
+        pil_img = pil_img.resize((target_width, new_height), Image.Resampling.LANCZOS)
+        return np.array(pil_img) / 255.0
+    
+    # Resize both images to target width with preserved aspect ratios
+    img1 = resize_proportionally(img1, target_width)
+    img2 = resize_proportionally(img2, target_width)
+    
+    # Now concatenate images vertically (VDF on top, plotbot below)
+    combined_img = np.vstack([img1, img2])
+    
+    # Create simple figure to display concatenated image
+    composite_fig, ax = plt.subplots(figsize=(12, 10))
+    ax.imshow(combined_img)
+    ax.axis('off')
+    composite_fig.tight_layout(pad=0)
+    
+    # Clean up individual figures
+    plt.close(vdf_fig)
+    plt.close(plotbot_fig)
+    
+    print_manager.status("✅ Composite plot complete!")
+    
+    return composite_fig

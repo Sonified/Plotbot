@@ -46,7 +46,8 @@ plotbot/multiplot_options.py
 plotbot/multiplot_options.pyi
 plotbot/multiplot_working_data_handling.py
 plotbot/ploptions.py
-plotbot/ploptions.pyi
+plotbot/plot_config.py
+plotbot/plot_config.pyi
 plotbot/plot_manager.py
 plotbot/plot_manager.pyi
 plotbot/plot_manager_data_REFERENCE.py
@@ -171,6 +172,7 @@ tests/test_audifier.py
 tests/test_br_norm_calculation.py
 tests/test_br_norm_lazy_loading.py
 tests/test_class_data_alignment.py
+tests/test_conda_update_methods.py
 tests/test_custom_variables_working.py
 tests/test_data_class_timing.py
 tests/test_data_download.py

@@ -70,7 +70,7 @@ if micromamba env list | grep -q "plotbot_micromamba" && [ -d "$MAMBA_ROOT_PREFI
         1)
             echo "🔹 Updating the existing 'plotbot_micromamba' environment..."
             echo "Running: micromamba env update -n plotbot_micromamba -f environment.cf.yml"
-            micromamba env update -n plotbot_micromamba -f environment.cf.yml --yes
+            micromamba env update -n plotbot_micromamba -f environment.cf.yml --yes --no-rc --override-channels -c conda-forge --channel-priority strict
             update_status=$?
             if [ $update_status -ne 0 ]; then
                 echo "❌ Error: Environment update failed with code $update_status."

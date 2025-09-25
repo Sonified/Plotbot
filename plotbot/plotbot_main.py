@@ -64,6 +64,7 @@ print("✅ Imported cdflib, BeautifulSoup, requests, dateutil, and datetime libr
 from .print_manager import print_manager
 from .server_access import server_access
 from .data_tracker import global_tracker
+from .ploptions import ploptions
 from .data_cubby import data_cubby
 from .data_download_berkeley import download_berkeley_data
 from .data_import import import_data_function
@@ -122,32 +123,108 @@ def plotbot(trange, *args):
         print(f"Oops! 🤗 Start time ({trange[0]}) must be before end time ({trange[1]})")
         return False
 
-    # Validate argument pairs
-    if len(args) % 2 != 0:
-        print("\nOops! 🤗 Arguments must be in pairs of (data, axis_number).")
-        print("\nFor example:")
-        print("plotbot(trange,")
-        print("        data1, 1,")
-        print("        data2, 2,")
-        print("        data3, '2r')")  # Show that right axis is possible
-        print("\nCheck your arguments and try again!")
-        return False
+    # New flexible argument parsing - supports multiple syntax patterns
+    def parse_args_new_syntax(args):
+        """Parse arguments with new flexible syntax"""
+        parsed_vars = []  # List of (variable, axis_spec) tuples
         
-    # Additional validation for data types
-    for i in range(0, len(args), 2):
-        if not hasattr(args[i], 'data_type'):
-            print(f"\nOops! 🤗 Argument {i+1} doesn't look like a plottable data object.")
-            print("Start with trange, then each odd-numbered argument must be a data class e.g. mag_rtn_4sa.br")
-            print("Each even-numbered argument must be an axis specification (number or string).")
-            print("Note: 1 for left axis, '1r' for right axis")
-            print("A well-structured example: plotbot(trange, mag_rtn_4sa.br, 1, mag_rtn_4sa.bt, 2, mag_rtn_4sa.bn, '2r')")
+        for arg in args:
+            if isinstance(arg, list):
+                # List format: [var] or [var1, var2] or [var, "r"]
+                if len(arg) == 1:
+                    # Single variable in list: [var] → axis 1 left
+                    var = arg[0]
+                    if not hasattr(var, 'data_type'):
+                        raise ValueError(f"Item in list is not a plottable variable: {var}")
+                    parsed_vars.append((var, 1))
+                    
+                elif len(arg) == 2 and arg[1] == "r":
+                    # Right axis format: [var, "r"] → axis 1 right
+                    var = arg[0]
+                    if not hasattr(var, 'data_type'):
+                        raise ValueError(f"Item in list is not a plottable variable: {var}")
+                    parsed_vars.append((var, "1r"))
+                    
+                else:
+                    # Multiple variables: [var1, var2, ...] → all on axis 1 left
+                    for var in arg:
+                        if not hasattr(var, 'data_type'):
+                            raise ValueError(f"Item in list is not a plottable variable: {var}")
+                        parsed_vars.append((var, 1))
+                        
+            elif hasattr(arg, 'data_type'):
+                # Single variable: var → axis 1 left
+                parsed_vars.append((arg, 1))
+                
+            else:
+                raise ValueError(f"Argument is not a variable or list: {arg}")
+                
+        return parsed_vars
+    
+    # Check if using new or old syntax
+    using_new_syntax = True
+    try:
+        # Try new syntax first
+        if len(args) % 2 == 0:
+            # Could be old syntax - check if every second argument is axis spec
+            for i in range(1, len(args), 2):
+                if not isinstance(args[i], (int, str)):
+                    # Not old syntax, must be new
+                    break
+                if not hasattr(args[i-1], 'data_type'):
+                    # Not old syntax, must be new  
+                    break
+            else:
+                # All checks passed - this is old syntax
+                using_new_syntax = False
+    except:
+        pass
+    
+    if using_new_syntax:
+        # Parse with new syntax
+        try:
+            parsed_args = parse_args_new_syntax(args)
+        except ValueError as e:
+            print(f"\nOops! 🤗 {e}")
+            print("\nNew syntax examples:")
+            print("plotbot(trange, variable)                    # Single var → axis 1")
+            print("plotbot(trange, [var1, var2])               # Multiple vars → axis 1")  
+            print("plotbot(trange, [variable, 'r'])            # Variable → axis 1 right")
+            print("\nOld syntax still works:")
+            print("plotbot(trange, var1, 1, var2, 2)           # var1→axis1, var2→axis2")
+            return False
+    else:
+        # Parse with old syntax
+        if len(args) % 2 != 0:
+            print("\nOops! 🤗 Arguments must be in pairs of (data, axis_number).")
+            print("\nFor example:")
+            print("plotbot(trange,")
+            print("        data1, 1,")
+            print("        data2, 2,")
+            print("        data3, '2r')")  # Show that right axis is possible
+            print("\nCheck your arguments and try again!")
             return False
             
-        if not (isinstance(args[i+1], (int, str))):
-            print(f"\nOops! 🤗 Axis specification at position {i+2} must be a number or string.")
-            print("Note: 1 for left axis, '1r' for right axis")
-            print("A well-structured example: plotbot(trange, mag_rtn_4sa.br, 1, mag_rtn_4sa.bt, 2, mag_rtn_4sa.bn, '2r')")
-            return False
+        # Additional validation for data types
+        for i in range(0, len(args), 2):
+            if not hasattr(args[i], 'data_type'):
+                print(f"\nOops! 🤗 Argument {i+1} doesn't look like a plottable data object.")
+                print("Start with trange, then each odd-numbered argument must be a data class e.g. mag_rtn_4sa.br")
+                print("Each even-numbered argument must be an axis specification (number or string).")
+                print("Note: 1 for left axis, '1r' for right axis")
+                print("A well-structured example: plotbot(trange, mag_rtn_4sa.br, 1, mag_rtn_4sa.bt, 2, mag_rtn_4sa.bn, '2r')")
+                return False
+                
+            if not (isinstance(args[i+1], (int, str))):
+                print(f"\nOops! 🤗 Axis specification at position {i+2} must be a number or string.")
+                print("Note: 1 for left axis, '1r' for right axis")
+                print("A well-structured example: plotbot(trange, mag_rtn_4sa.br, 1, mag_rtn_4sa.bt, 2, mag_rtn_4sa.bn, '2r')")
+                return False
+        
+        # Convert old syntax to new format
+        parsed_args = []
+        for i in range(0, len(args), 2):
+            parsed_args.append((args[i], args[i+1]))
 
     #====================================================================
     # INITIALIZE DATA STRUCTURES
@@ -160,12 +237,10 @@ def plotbot(trange, *args):
     #====================================================================
     # PROCESS VARIABLE ARGUMENTS AND BUILD DATA STRUCTURES
     #====================================================================
-    for i in range(0, len(args), 2):
-        var = args[i]
-        axis_spec = args[i+1]
+    for var, axis_spec in parsed_args:
         
         # Debug information about the variable being processed
-        print_manager.variable_testing(f"DEBUG - Processing variable {i//2 + 1}:")
+        print_manager.variable_testing(f"DEBUG - Processing variable:")
         print_manager.variable_testing(f"  Type: {type(var)}")
         print_manager.variable_testing(f"  Class name: {var.class_name}")
         print_manager.variable_testing(f"  Subclass name: {var.subclass_name}")
@@ -785,7 +860,12 @@ def plotbot(trange, *args):
     duration_ms = (timer_end - timer_start) * 1000
     print_manager.speed_test(f"[TIMER_PLOTTING] Plotting section: {duration_ms:.2f}ms")
     
-    plt.show()                                                    # Display the complete figure
+    # Handle figure display and return based on ploptions
+    if ploptions.display_figure:
+        plt.show()                                                # Display the complete figure
+    
+    if ploptions.return_figure:
+        return fig                                                # Return figure object
     # return True
 
 print('\n🤖 Plotbot Initialized')

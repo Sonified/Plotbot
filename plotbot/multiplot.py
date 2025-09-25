@@ -10,6 +10,7 @@ from .plotbot_helpers import time_clip
 # Import specific functions from multiplot_helpers instead of using wildcard import
 from .multiplot_helpers import get_plot_colors, apply_panel_color, apply_bottom_axis_color, validate_log_scale_limits
 from .multiplot_options import plt, MultiplotOptions
+from .ploptions import ploptions
 # Import get_data for custom variables
 from .get_data import get_data
 # Import the XAxisPositionalDataMapper helper
@@ -2275,6 +2276,13 @@ def multiplot(plot_list, **kwargs):
     
     print_manager.debug("=== Multiplot Complete ===\n")
     
-    return fig, axs
+    # Handle figure display and return based on ploptions
+    if ploptions.display_figure:
+        plt.show()
+    
+    if ploptions.return_figure:
+        return fig
+    else:
+        return fig, axs  # Backward compatibility when not returning figure
 
 print('📈📉 Multiplot Initialized')

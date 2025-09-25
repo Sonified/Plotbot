@@ -91,6 +91,11 @@ source ./install_scripts/setup_ide.sh
 setup_ide_config "/opt/anaconda3/envs/plotbot_anaconda/bin/python3" "plotbot_anaconda"
 
 echo ""
+echo "🔧 Setting up auto-activation..."
+echo 'conda activate plotbot_anaconda 2>/dev/null || true' >> ~/.zshrc
+echo "✅ Auto-activation configured!"
+
+echo ""
 echo "🎉 Standard installation completed successfully!"
 echo ""
 echo "✅ Plotbot installed as development package (globally accessible in environment)"
@@ -104,3 +109,4 @@ echo "4. Select 'Python (Plotbot)' as your kernel"
 echo "5. Run the first cell to confirm setup"
 echo "6. Explore one of the example plotbot jupyter notebooks to test the setup"
 echo ""
+echo "🌟 Happy Plotbotting! 🌟"

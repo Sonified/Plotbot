@@ -98,16 +98,23 @@ if conda env list | grep -q plotbot_anaconda; then
         3)
             echo "✅ Keeping existing environment unchanged."
             echo "   You can run this script again later if you want to update."
-            echo "" 
-            echo "Copy and paste the following command, including the period, to register Plotbot as a Jupyter kernel: ./install_scripts/3_register_kernel.sh"
-            echo ""
             exit 0
             ;;
         *)
-            echo "❌ Invalid option. Exiting without making changes."
-            exit 1
+            # Try to extract first digit for common mistakes like "13" instead of "3"
+            FIRST_DIGIT=$(echo "$choice" | head -c 1)
+            if [[ "$FIRST_DIGIT" =~ ^[1-3]$ ]]; then
+                echo "⚠️  Assuming you meant option $FIRST_DIGIT (you typed: $choice)"
+                choice="$FIRST_DIGIT"
+                continue  # Re-run the case statement with the corrected choice
+            else
+                echo "❌ Invalid option '$choice'. Please enter 1, 2, or 3."
+                echo ""
+                continue  # Ask again instead of exiting
+            fi
             ;;
     esac
+    break  # Exit the loop after any valid choice
 else
     echo "🔹 Creating 'plotbot_anaconda' environment..."
     echo "Running: conda env create -f environment.yml"
@@ -121,6 +128,4 @@ else
     fi
 fi
 
-echo "" 
-echo "Copy and paste the following command, including the period, to register Plotbot as a Jupyter kernel: ./install_scripts/3_register_kernel.sh"
-echo ""
+echo "✅ Environment setup completed successfully!"
