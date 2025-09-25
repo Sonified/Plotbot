@@ -411,10 +411,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_25_v3.46"
+__version__ = "2025_09_25_v3.47"
 
 # Commit message for this version
-__commit_message__ = "v3.46 Installer Optimization: Fast conda version checking, fixed timeout handling, simplified user prompts, and optimized installer flow"
+__commit_message__ = "v3.47 Maintenance: Added gitignore protection for venv/egg-info and fixed install_scripts directory case normalization for IDE consistency"
 
 # Print the version and commit message
 print(f"""
