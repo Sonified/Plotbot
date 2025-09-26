@@ -71,6 +71,7 @@ from .data_classes.custom_classes.psp_spectral_waves import psp_spectral_waves, 
 from .data_classes.custom_classes.psp_waves_auto import psp_waves_auto, psp_waves_auto_class
 from .data_classes.custom_classes.psp_waves_real_test import psp_waves_real_test, psp_waves_real_test_class
 from .data_classes.custom_classes.psp_waves_spectral import psp_waves_spectral, psp_waves_spectral_class
+from .data_classes.custom_classes.psp_waves_test import psp_waves_test, psp_waves_test_class
 from .data_classes.custom_classes.psp_waves_timeseries import psp_waves_timeseries, psp_waves_timeseries_class
 # ------------------------------------------------------------------------------
 # ==============================================================================
@@ -402,6 +403,18 @@ __all__ = [
     'psp_waves_spectral',  # Custom generated class
     'psp_waves_timeseries',  # Custom generated class
     # --- END AUTO-GENERATED __all__ ENTRIES ---
+
+    # --- AUTO-GENERATED CUSTOM CLASS __ALL__ ENTRIES ---
+    'demo_spectral_waves',  # Custom generated class
+    'demo_wave_power',  # Custom generated class
+    'psp_simple_test',  # Custom generated class
+    'psp_spectral_waves',  # Custom generated class
+    'psp_waves_auto',  # Custom generated class
+    'psp_waves_real_test',  # Custom generated class
+    'psp_waves_spectral',  # Custom generated class
+    'psp_waves_test',  # Custom generated class
+    'psp_waves_timeseries',  # Custom generated class
+# --- END AUTO-GENERATED __ALL__ ENTRIES ---
 ]
 
 # Colors for printing
@@ -411,10 +424,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_25_v3.47"
+__version__ = "2025_09_26_v3.48"
 
 # Commit message for this version
-__commit_message__ = "v3.47 Maintenance: Added gitignore protection for venv/egg-info and fixed install_scripts directory case normalization for IDE consistency"
+__commit_message__ = "v3.48 Fix: Micromamba installer path detection - robust failsafe approach with brew --prefix fallbacks"
 
 # Print the version and commit message
 print(f"""

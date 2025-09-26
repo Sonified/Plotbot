@@ -3,8 +3,8 @@
 echo "🔹 Registering Plotbot as Jupyter kernel (Micromamba)..."
 echo ""
 
-# Set up micromamba environment variables
-export MAMBA_EXE="$HOME/homebrew/bin/micromamba"
+# Set up micromamba environment variables using Homebrew's location
+export MAMBA_EXE="$(brew --prefix micromamba)/bin/micromamba"
 export MAMBA_ROOT_PREFIX="$HOME/micromamba"
 
 # Add homebrew to PATH if not already there

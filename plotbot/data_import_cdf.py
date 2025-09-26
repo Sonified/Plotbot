@@ -972,10 +972,8 @@ class {class_name}_class:
             self.set_plot_config()
             print_manager.status(f"Successfully calculated {class_name} variables.")
         
-        # Auto-register with data_cubby (following plotbot pattern)
-        from plotbot.data_cubby import data_cubby
-        data_cubby.stash(self, class_name='{class_name}')
-        print_manager.dependency_management(f"Registered {class_name} with data_cubby")
+        # NOTE: Registration with data_cubby is handled externally to avoid 
+        # instance conflicts during merge operations (like mag_rtn classes)
     
     def update(self, imported_data, original_requested_trange=None):
         """Method to update class with new data."""
@@ -990,29 +988,34 @@ class {class_name}_class:
         print_manager.datacubby("\\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {{self.__class__.__name__}} update...")
         
-        # Store current state before update
-        current_state = {{}}
-        for subclass_name in self.raw_data.keys():
-            if hasattr(self, subclass_name):
-                var = getattr(self, subclass_name)
-                if hasattr(var, '_plot_state'):
-                    current_state[subclass_name] = dict(var._plot_state)
-                    print_manager.datacubby(f"Stored {{subclass_name}} state: {{retrieve_plot_config_snapshot(current_state[subclass_name])}}")
+        # Store current state before update (including any modified plot_config)
+        current_plot_states = {{}}
+        standard_components = {[var.name for var in metadata.variables]}
+        for comp_name in standard_components:
+            if hasattr(self, comp_name):
+                manager = getattr(self, comp_name)
+                if isinstance(manager, plot_manager) and hasattr(manager, '_plot_state'):
+                    current_plot_states[comp_name] = dict(manager._plot_state)
+                    print_manager.datacubby(f"Stored {{comp_name}} state: {{retrieve_plot_config_snapshot(current_plot_states[comp_name])}}")
 
         # Perform update
-        self.calculate_variables(imported_data)
-        self.set_plot_config()
+        self.calculate_variables(imported_data)                                # Update raw data arrays
+        self.set_plot_config()                                                  # Recreate plot managers for standard components
         
-        # Restore state
+        # Ensure internal consistency after update (mirror mag_rtn pattern)
+        self.ensure_internal_consistency()
+        
+        # Restore state (including any modified plot_config!)
         print_manager.datacubby("Restoring saved state...")
-        for subclass_name, state in current_state.items():
-            if hasattr(self, subclass_name):
-                var = getattr(self, subclass_name)
-                var._plot_state.update(state)
-                for attr, value in state.items():
-                    if hasattr(var.plot_config, attr):
-                        setattr(var.plot_config, attr, value)
-                print_manager.datacubby(f"Restored {{subclass_name}} state: {{retrieve_plot_config_snapshot(state)}}")
+        for comp_name, state in current_plot_states.items():                    # Restore saved states
+            if hasattr(self, comp_name):
+                manager = getattr(self, comp_name)
+                if isinstance(manager, plot_manager):
+                    manager._plot_state.update(state)
+                    for attr, value in state.items():
+                        if hasattr(manager.plot_config, attr):
+                            setattr(manager.plot_config, attr, value)
+                    print_manager.datacubby(f"Restored {{comp_name}} state: {{retrieve_plot_config_snapshot(state)}}")
         
         print_manager.datacubby("=== End Update Debug ===\\n")
         
@@ -1068,6 +1071,7 @@ class {class_name}_class:
         available_attrs = list(self.raw_data.keys()) if self.raw_data else []
         print(f"'{{name}}' is not a recognized attribute, friend!")                
         print(f"Try one of these: {{', '.join(available_attrs)}}")
+        raise AttributeError(f"'{{self.__class__.__name__}}' object has no attribute '{{name}}'")
     
     def __setattr__(self, name, value):
         # Allow direct setting of dunder OR single underscore methods/attributes
@@ -1190,14 +1194,65 @@ class {class_name}_class:
     
     def set_plot_config(self):
         """Set up plotting options for all variables"""
+        dt_len = len(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else "None_or_NoAttr"
+        print_manager.dependency_management(f"[CDF_CLASS_DEBUG] set_plot_config called for instance ID: {{id(self)}}. self.datetime_array len: {{dt_len}}")
         print_manager.dependency_management("Setting up plot options for {class_name} variables")
         
 {chr(10).join(set_plot_config_code)}
 
+    def ensure_internal_consistency(self):
+        """Ensures .time and core data attributes are consistent with .datetime_array and .raw_data."""
+        print_manager.dependency_management(f"*** ENSURE CONSISTENCY ID:{{id(self)}} *** Called for {{self.class_name}}.{{self.subclass_name if self.subclass_name else 'MAIN'}}.")
+        
+        # Track what changed to avoid unnecessary operations
+        changed_time = False
+        changed_config = False
+        
+        # STEP 1: Reconstruct self.time from datetime_array (critical after merges)
+        if hasattr(self, 'datetime_array') and self.datetime_array is not None:
+            if len(self.datetime_array) > 0:
+                new_time_array = self.datetime_array.astype('datetime64[ns]').astype(np.int64)
+                if not hasattr(self, 'time') or self.time is None or not np.array_equal(self.time, new_time_array):
+                    self.time = new_time_array
+                    print_manager.dependency_management(f"    [ENSURE_CONSISTENCY] Updated self.time via direct int64 cast. New len: {{len(self.time)}}")
+                    changed_time = True
+            elif not hasattr(self, 'time') or self.time is None or (hasattr(self.time, '__len__') and len(self.time) != 0):
+                self.time = np.array([], dtype=np.int64)
+                print_manager.dependency_management(f"    [ENSURE_CONSISTENCY] Set self.time to empty int64 array (datetime_array was empty).")
+                changed_time = True
+        
+        # STEP 2: Sync plot manager datetime references (existing logic)
+        if hasattr(self, 'datetime_array') and self.datetime_array is not None and \\
+           hasattr(self, 'raw_data') and self.raw_data:
+            
+            for var_name in self.raw_data.keys():
+                if hasattr(self, var_name):
+                    var_manager = getattr(self, var_name)
+                    if hasattr(var_manager, 'plot_config') and hasattr(var_manager.plot_config, 'datetime_array'):
+                        if var_manager.plot_config.datetime_array is None or \\
+                           (hasattr(var_manager.plot_config.datetime_array, '__len__') and 
+                            len(var_manager.plot_config.datetime_array) != len(self.datetime_array)):
+                            var_manager.plot_config.datetime_array = self.datetime_array
+                            print_manager.dependency_management(f"    [ENSURE_CONSISTENCY] Updated {{var_name}} plot_config.datetime_array")
+                            changed_config = True
+        
+        # STEP 3: Only call set_plot_config if data structures actually changed
+        if changed_time and hasattr(self, 'set_plot_config'):
+            print_manager.dependency_management(f"    Calling self.set_plot_config() due to time reconstruction.")
+            self.set_plot_config()
+        
+        # Log final state
+        if changed_time or changed_config:
+            print_manager.dependency_management(f"*** ENSURE CONSISTENCY ID:{{id(self)}} *** CHANGES WERE MADE (time: {{changed_time}}, config: {{changed_config}}).")
+        else:
+            print_manager.dependency_management(f"*** ENSURE CONSISTENCY ID:{{id(self)}} *** NO CHANGES MADE.")
+        
+        print_manager.dependency_management(f"*** ENSURE CONSISTENCY ID:{{id(self)}} *** Finished.")
+
     def restore_from_snapshot(self, snapshot_data):
         """Restore all relevant fields from a snapshot dictionary/object."""
         for key, value in snapshot_data.__dict__.items():
-            setattr(self, key, value)
+            object.__setattr__(self, key, value)
 
 # Initialize the class with no data
 {class_name} = {class_name}_class(None)

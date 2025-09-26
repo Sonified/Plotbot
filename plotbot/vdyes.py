@@ -744,13 +744,12 @@ def _create_composite_vdf_plotbot_plot(trange, variables):
     img2 = plt.imread(buf2)
     buf2.close()
     
-    # Resize images to same width while preserving aspect ratios
-    # Meet in the middle - use average width so both get scaled
-    target_width = int((img1.shape[1] + img2.shape[1]) / 2)
+    # Fixed scaling approach - VDF at 100%, plotbot scales to match VDF width
+    vdf_scale_factor = 1  # VDF at 100% of original size
     
     from PIL import Image
     
-    # Scale both images proportionally to target width
+    # Scale images proportionally 
     def resize_proportionally(img, target_width):
         pil_img = Image.fromarray((img * 255).astype(np.uint8))
         original_width, original_height = pil_img.size
@@ -763,12 +762,15 @@ def _create_composite_vdf_plotbot_plot(trange, variables):
         pil_img = pil_img.resize((target_width, new_height), Image.Resampling.LANCZOS)
         return np.array(pil_img) / 255.0
     
-    # Resize both images to target width with preserved aspect ratios
-    img1 = resize_proportionally(img1, target_width)
-    img2 = resize_proportionally(img2, target_width)
+    # VDF gets scaled to 90% of its original size
+    vdf_target_width = int(img1.shape[1] * vdf_scale_factor)
+    img1_final = resize_proportionally(img1, vdf_target_width)
+    
+    # Plotbot gets scaled to match VDF's new width
+    img2_final = resize_proportionally(img2, vdf_target_width)
     
     # Now concatenate images vertically (VDF on top, plotbot below)
-    combined_img = np.vstack([img1, img2])
+    combined_img = np.vstack([img1_final, img2_final])
     
     # Create simple figure to display concatenated image
     composite_fig, ax = plt.subplots(figsize=(12, 10))

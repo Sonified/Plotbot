@@ -140,6 +140,8 @@ plotbot/data_classes/custom_classes/psp_waves_real_test.py
 plotbot/data_classes/custom_classes/psp_waves_real_test.pyi
 plotbot/data_classes/custom_classes/psp_waves_spectral.py
 plotbot/data_classes/custom_classes/psp_waves_spectral.pyi
+plotbot/data_classes/custom_classes/psp_waves_test.py
+plotbot/data_classes/custom_classes/psp_waves_test.pyi
 plotbot/data_classes/custom_classes/psp_waves_timeseries.py
 plotbot/data_classes/custom_classes/psp_waves_timeseries.pyi
 tests/test_07_28_data_property_fixes.py

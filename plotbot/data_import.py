@@ -356,6 +356,7 @@ def import_data_function(trange, data_type):
     
     # Parse times using flexible parser and ensure UTC timezone
     try:
+        from dateutil.parser import parse
         start_time = parse(trange[0]).replace(tzinfo=timezone.utc) # Ensure UTC
         end_time = parse(trange[1]).replace(tzinfo=timezone.utc)   # Ensure UTC
         print_manager.time_tracking(f"Parsed time range: {format_datetime_for_log(start_time)} to {format_datetime_for_log(end_time)}")
@@ -982,18 +983,47 @@ def import_data_function(trange, data_type):
             cdf_base_path = os.path.join(project_root, cdf_base_path)
             print_manager.debug(f"Resolved CDF base path to: {cdf_base_path}")
         
-        # Find CDF files
+        # Find CDF files using smart pattern discovery
         cdf_files = []
-        if original_cdf_file and os.path.exists(original_cdf_file):
-            # Use the exact file from metadata
+        
+        # SMART SCAN: Try pattern-based discovery first
+        if class_instance and hasattr(class_instance, '_cdf_file_pattern') and cdf_base_path and os.path.exists(cdf_base_path):
+            import glob
+            pattern = class_instance._cdf_file_pattern
+            pattern_path = os.path.join(cdf_base_path, pattern)
+            matching_files = glob.glob(pattern_path)
+            
+            if matching_files:
+                cdf_files = matching_files
+                print_manager.debug(f"🎯 Smart scan found {len(cdf_files)} files using pattern: {pattern}")
+                for f in cdf_files:
+                    print_manager.debug(f"   📄 {os.path.basename(f)}")
+                
+                # Apply time filtering if trange is available and we have multiple files
+                if len(cdf_files) > 1 and 'trange' in locals():
+                    try:
+                        from dateutil.parser import parse
+                        from .data_import_cdf import filter_cdf_files_by_time
+                        start_time = parse(trange[0])
+                        end_time = parse(trange[1])
+                        filtered_files = filter_cdf_files_by_time(cdf_files, start_time, end_time)
+                        if filtered_files:
+                            cdf_files = filtered_files
+                            print_manager.debug(f"⚡ Time filter reduced to {len(cdf_files)} relevant files")
+                    except Exception as e:
+                        print_manager.debug(f"Time filtering failed, using all pattern matches: {e}")
+        
+        # Fallback 1: Use exact file from metadata
+        if not cdf_files and original_cdf_file and os.path.exists(original_cdf_file):
             cdf_files = [original_cdf_file]
-            print_manager.debug(f"Using exact CDF file from metadata: {os.path.basename(original_cdf_file)}")
-        elif cdf_base_path and os.path.exists(cdf_base_path):
-            # Search for CDF files in directory (either resolved from metadata or fallback)
+            print_manager.debug(f"📌 Fallback to exact file from metadata: {os.path.basename(original_cdf_file)}")
+        
+        # Fallback 2: Search for all CDF files in directory
+        if not cdf_files and cdf_base_path and os.path.exists(cdf_base_path):
             for file in os.listdir(cdf_base_path):
                 if file.endswith('.cdf'):
                     cdf_files.append(os.path.join(cdf_base_path, file))
-            print_manager.debug(f"Found {len(cdf_files)} CDF files in directory: {cdf_base_path}")
+            print_manager.debug(f"🔍 Final fallback found {len(cdf_files)} CDF files in directory: {cdf_base_path}")
         
         if not cdf_files:
             print_manager.error(f"No CDF files found for {data_type}")
@@ -1001,7 +1031,7 @@ def import_data_function(trange, data_type):
             end_step(step_key, step_start, {"error": "no cdf files"})
             return None
         
-        # Use the first (or only) CDF file found
+        # Use the first file found (or merge multiple files later)
         cdf_file_path = cdf_files[0]
         print_manager.debug(f"Using CDF file: {os.path.basename(cdf_file_path)}")
         

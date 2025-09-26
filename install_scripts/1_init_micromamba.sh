@@ -141,11 +141,55 @@ if [ ! -d "$MICROMAMBA_ROOT_PREFIX" ]; then
     echo ""
     echo "🔧 Initializing micromamba..."
     
-    # Get the actual micromamba path
-    MICROMAMBA_PATH="$HOMEBREW_PREFIX/bin/micromamba"
+    # Find micromamba with failsafe approach
+    MICROMAMBA_PATH=""
     
-    if [ ! -f "$MICROMAMBA_PATH" ]; then
-        echo "❌ Error: micromamba not found at $MICROMAMBA_PATH"
+    # Method 1: Ask Homebrew directly (most reliable for our installation)
+    if BREW_PREFIX=$(brew --prefix micromamba 2>/dev/null); then
+        CANDIDATE="$BREW_PREFIX/bin/micromamba"
+        if [ -f "$CANDIDATE" ] && [ -x "$CANDIDATE" ]; then
+            MICROMAMBA_PATH="$CANDIDATE"
+            echo "✅ Found micromamba via Homebrew: $MICROMAMBA_PATH"
+        fi
+    fi
+    
+    # Method 2: Fallback to PATH-based detection
+    if [ -z "$MICROMAMBA_PATH" ]; then
+        if COMMAND_PATH=$(command -v micromamba 2>/dev/null); then
+            # Resolve if it's a function/alias to get the actual binary
+            if [ -f "$COMMAND_PATH" ] && [ -x "$COMMAND_PATH" ]; then
+                MICROMAMBA_PATH="$COMMAND_PATH"
+                echo "✅ Found micromamba in PATH: $MICROMAMBA_PATH"
+            fi
+        fi
+    fi
+    
+    # Method 3: Common fallback locations
+    if [ -z "$MICROMAMBA_PATH" ]; then
+        FALLBACK_PATHS=(
+            "$HOMEBREW_PREFIX/bin/micromamba"
+            "$HOMEBREW_PREFIX/opt/micromamba/bin/micromamba"
+        )
+        
+        for path in "${FALLBACK_PATHS[@]}"; do
+            if [ -f "$path" ] && [ -x "$path" ]; then
+                MICROMAMBA_PATH="$path"
+                echo "✅ Found micromamba at fallback location: $MICROMAMBA_PATH"
+                break
+            fi
+        done
+    fi
+    
+    # Final check
+    if [ -z "$MICROMAMBA_PATH" ]; then
+        echo "❌ Error: micromamba not found anywhere!"
+        echo "   Checked:"
+        echo "   - Homebrew registry: brew --prefix micromamba"
+        echo "   - System PATH: command -v micromamba"
+        echo "   - Common locations: $HOMEBREW_PREFIX/bin/ and $HOMEBREW_PREFIX/opt/"
+        echo ""
+        echo "   This suggests the Homebrew installation failed."
+        echo "   Try running: brew install micromamba"
         exit 1
     fi
     

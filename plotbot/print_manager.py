@@ -120,6 +120,7 @@ class print_manager_class:
     ZARR_INTEGRATION = False  # Disabled by default; enable for Zarr debugging
     DEPENDENCY_MANAGEMENT = False # New style for dependency management prints
     SPEED_TEST = False # New category for performance timing tests
+    STYLE_PRESERVATION = False # New category for styling preservation debugging
     
     # Colors for class-level access
     BLACK = '\033[30m'
@@ -160,6 +161,7 @@ class print_manager_class:
         self.data_snapshot_enabled = False # <<< ADDED: Flag for snapshot messages
         self.dependency_management_enabled = False # Flag for dependency management prints
         self.speed_test_enabled = False # Flag for performance timing tests
+        self.style_preservation_enabled = False # Flag for style preservation debugging
         # print(f"[RAW_PM_INIT] Initial self.processing_enabled: {self.processing_enabled}") # ADDED DIAGNOSTIC
         # print(f"[PM_DEBUG] __init__: Default _pyspedas_verbose = {self._pyspedas_verbose}") # Remove print
         
@@ -175,6 +177,7 @@ class print_manager_class:
         self.snapshot_prefix = "[SNAPSHOT] " # <<< ADDED: Prefix for snapshot messages
         self.dependency_management_prefix = "[DEPENDENCY] " # Prefix for dependency management prints
         self.speed_test_prefix = "[SPEED] " # Prefix for performance timing tests
+        self.style_preservation_prefix = "[STYLE_PRESERVATION] " # Prefix for style preservation debugging
         
         # Severity levels
         self.level_warning = "[WARNING] "    # Warnings
@@ -697,6 +700,25 @@ class print_manager_class:
     def show_speed_test(self, value):
         """Set whether speed test output is enabled."""
         self.speed_test_enabled = value
+
+    def style_preservation(self, msg):
+        """Print style preservation debugging messages if enabled."""
+        if self.style_preservation_enabled:
+            prefix = self.style_preservation_prefix if self.category_prefix_enabled else ""
+            print(self._format_message(f"{prefix}{msg}"))
+
+    @property
+    def show_style_preservation(self):
+        """Get the current state of style preservation debug output."""
+        return self.style_preservation_enabled
+
+    @show_style_preservation.setter
+    def show_style_preservation(self, value):
+        """Set whether style preservation debug output is enabled."""
+        if not isinstance(value, bool):
+            print("[PRINT_MANAGER_WARNING] show_style_preservation must be set to True or False.")
+            return
+        self.style_preservation_enabled = value
 
 # Create a singleton instance
 print_manager = print_manager_class()
