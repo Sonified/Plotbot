@@ -1136,61 +1136,59 @@ class data_cubby:
                     global_instance.time = np.array([], dtype=np.int64) # Ensure correct dtype for empty
                     pm.dependency_management(f"[CUBBY_UPDATE_DEBUG] datetime_array was empty or None, set time to empty int64 array.")
 
-                # Call set_plot_config on the global_instance AFTER all raw data arrays are set
-                # This is crucial because set_plot_config uses these arrays to initialize PlotManagers
+                # STYLE PRESERVATION FIX: Save state, call set_plot_config(), restore state
+                # This mirrors the pattern used in each class's update() method
+                # We MUST call set_plot_config() because plot_managers hold views of the OLD arrays
                 if hasattr(global_instance, 'set_plot_config'):
-                    # STYLE_PRESERVATION: Before calling set_plot_config()
-                    pm.style_preservation(f"🔧 PRE_SET_PLOT_CONFIG for '{data_type_str}' (ID: {id(global_instance)})")
-                    if hasattr(global_instance, '__dict__'):
-                        from plotbot.plot_manager import plot_manager
-                        pre_plot_managers = {k: v for k, v in global_instance.__dict__.items() if isinstance(v, plot_manager)}
-                        pm.style_preservation(f"   📊 Current plot_managers before recreation: {list(pre_plot_managers.keys())}")
-                        for pm_name, pm_obj in pre_plot_managers.items():
-                            if hasattr(pm_obj, '_plot_state'):
-                                color = getattr(pm_obj._plot_state, 'color', 'Not Set')
-                                legend_label = getattr(pm_obj._plot_state, 'legend_label', 'Not Set')
-                                pm.style_preservation(f"   🎨 {pm_name} (PRE): color='{color}', legend_label='{legend_label}'")
-                            else:
-                                pm.style_preservation(f"   ❌ {pm_name} (PRE): No _plot_state found")
-
+                    # STEP 1: Save current styling state from plot_managers
+                    pm.style_preservation(f"💾 Saving plot_manager states before set_plot_config()")
+                    current_state = {}
+                    for subclass_name in merged_raw_data.keys():
+                        if hasattr(global_instance, subclass_name):
+                            var = getattr(global_instance, subclass_name)
+                            if hasattr(var, '_plot_state'):
+                                current_state[subclass_name] = dict(var._plot_state)
+                                pm.style_preservation(f"   💾 Saved {subclass_name}: {var._plot_state}")
+                    
+                    # STEP 2: Recreate plot_managers with merged data
+                    pm.style_preservation(f"🔧 Calling set_plot_config() to recreate plot_managers with merged data")
                     global_instance.set_plot_config()
-
-                    # STYLE_PRESERVATION: After set_plot_config() completes
-                    pm.style_preservation(f"✅ POST_SET_PLOT_CONFIG for '{data_type_str}' (ID: {id(global_instance)})")
-                    if hasattr(global_instance, '__dict__'):
-                        from plotbot.plot_manager import plot_manager
-                        post_plot_managers = {k: v for k, v in global_instance.__dict__.items() if isinstance(v, plot_manager)}
-                        pm.style_preservation(f"   📊 New plot_managers after recreation: {list(post_plot_managers.keys())}")
-                        for pm_name, pm_obj in post_plot_managers.items():
-                            if hasattr(pm_obj, '_plot_state'):
-                                color = getattr(pm_obj._plot_state, 'color', 'Not Set')
-                                legend_label = getattr(pm_obj._plot_state, 'legend_label', 'Not Set')
-                                pm.style_preservation(f"   🎨 {pm_name} (POST): color='{color}', legend_label='{legend_label}'")
-                                if color == 'Not Set' or legend_label == 'Not Set':
-                                    pm.style_preservation(f"   ⚠️  STYLE_LOSS detected in {pm_name}!")
-                            else:
-                                pm.style_preservation(f"   ❌ {pm_name} (POST): No _plot_state found")
-                    dt_len_after_setplot_config = len(global_instance.datetime_array) if hasattr(global_instance, 'datetime_array') and global_instance.datetime_array is not None else "None_or_NoAttr"
-                    min_dt_G = global_instance.datetime_array[0] if dt_len_after_setplot_config not in ["None_or_NoAttr", 0] else "N/A"
-                    max_dt_G = global_instance.datetime_array[-1] if dt_len_after_setplot_config not in ["None_or_NoAttr", 0] else "N/A"
-                    pm.dependency_management(f"[CUBBY_UPDATE_DEBUG G_POST_FINAL] Instance (ID: {id(global_instance)}) AFTER ALL MERGE LOGIC (before return True). datetime_array len: {dt_len_after_setplot_config}, min: {min_dt_G}, max: {max_dt_G}")
-
-                    # STRATEGIC PRINT CHECK_REGISTRY
-                    instance_in_registry_check = cls.class_registry.get(data_type_str.lower()) # target_key is data_type_str.lower()
-                    if instance_in_registry_check is not None:
-                        reg_len = len(instance_in_registry_check.datetime_array) if hasattr(instance_in_registry_check, 'datetime_array') and instance_in_registry_check.datetime_array is not None else "None_or_NoAttr"
-                        reg_min_dt = instance_in_registry_check.datetime_array[0] if reg_len not in ["None_or_NoAttr", 0] else "N/A"
-                        reg_max_dt = instance_in_registry_check.datetime_array[-1] if reg_len not in ["None_or_NoAttr", 0] else "N/A"
-                        pm.dependency_management(f"[CUBBY_UPDATE_DEBUG CHECK_REGISTRY] Instance in class_registry['{data_type_str.lower()}'] (ID: {id(instance_in_registry_check)}) state. dt_len: {reg_len}, min: {reg_min_dt}, max: {reg_max_dt}")
-                        if instance_in_registry_check is not global_instance:
-                            pm.warning(f"[CUBBY_UPDATE_DEBUG CHECK_REGISTRY] Instance in registry (ID: {id(instance_in_registry_check)}) is NOT THE SAME OBJECT as global_instance (ID: {id(global_instance)}) just updated!")
-                    else:
-                        pm.dependency_management(f"[CUBBY_UPDATE_DEBUG CHECK_REGISTRY] Instance for key '{data_type_str.lower()}' NOT FOUND in class_registry after merge ops.")
-                    return True
+                    
+                    # STEP 3: Restore styling state to new plot_managers
+                    pm.style_preservation(f"🔧 Restoring saved states to recreated plot_managers")
+                    for subclass_name, state in current_state.items():
+                        if hasattr(global_instance, subclass_name):
+                            var = getattr(global_instance, subclass_name)
+                            if hasattr(var, '_plot_state'):
+                                var._plot_state.update(state)
+                            # Also restore to plot_config attributes
+                            for attr, value in state.items():
+                                if hasattr(var.plot_config, attr):
+                                    setattr(var.plot_config, attr, value)
+                            pm.style_preservation(f"   🔧 Restored {subclass_name}: {state}")
+                    
+                    pm.style_preservation(f"✅ MERGE_COMPLETE for '{data_type_str}' - Styling preserved!")
                 else:
-                    pm.warning(f"Global instance for {data_type_str} has no set_plot_config(). Plot managers might be stale.")
+                    pm.warning(f"Global instance for {data_type_str} has no set_plot_config(). Plot managers will have stale data!")
                 
-                pm.dependency_management(f"[CUBBY_UPDATE_DEBUG] Global instance fully updated and plot_config set.")
+                dt_len_after_merge = len(global_instance.datetime_array) if hasattr(global_instance, 'datetime_array') and global_instance.datetime_array is not None else "None_or_NoAttr"
+                min_dt_G = global_instance.datetime_array[0] if dt_len_after_merge not in ["None_or_NoAttr", 0] else "N/A"
+                max_dt_G = global_instance.datetime_array[-1] if dt_len_after_merge not in ["None_or_NoAttr", 0] else "N/A"
+                pm.dependency_management(f"[CUBBY_UPDATE_DEBUG G_POST_FINAL] Instance (ID: {id(global_instance)}) AFTER ALL MERGE LOGIC (before return True). datetime_array len: {dt_len_after_merge}, min: {min_dt_G}, max: {max_dt_G}")
+
+                # STRATEGIC PRINT CHECK_REGISTRY
+                instance_in_registry_check = cls.class_registry.get(data_type_str.lower()) # target_key is data_type_str.lower()
+                if instance_in_registry_check is not None:
+                    reg_len = len(instance_in_registry_check.datetime_array) if hasattr(instance_in_registry_check, 'datetime_array') and instance_in_registry_check.datetime_array is not None else "None_or_NoAttr"
+                    reg_min_dt = instance_in_registry_check.datetime_array[0] if reg_len not in ["None_or_NoAttr", 0] else "N/A"
+                    reg_max_dt = instance_in_registry_check.datetime_array[-1] if reg_len not in ["None_or_NoAttr", 0] else "N/A"
+                    pm.dependency_management(f"[CUBBY_UPDATE_DEBUG CHECK_REGISTRY] Instance in class_registry['{data_type_str.lower()}'] (ID: {id(instance_in_registry_check)}) state. dt_len: {reg_len}, min: {reg_min_dt}, max: {reg_max_dt}")
+                    if instance_in_registry_check is not global_instance:
+                        pm.warning(f"[CUBBY_UPDATE_DEBUG CHECK_REGISTRY] Instance in registry (ID: {id(instance_in_registry_check)}) is NOT THE SAME OBJECT as global_instance (ID: {id(global_instance)}) just updated!")
+                else:
+                    pm.dependency_management(f"[CUBBY_UPDATE_DEBUG CHECK_REGISTRY] Instance for key '{data_type_str.lower()}' NOT FOUND in class_registry after merge ops.")
+                
+                pm.dependency_management(f"[CUBBY_UPDATE_DEBUG] Global instance fully updated (merge complete).")
                 return True
             except Exception as e:
                 # Using f-string for direct print of error

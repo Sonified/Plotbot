@@ -197,3 +197,122 @@ else:
 - Moved shape_mismatch_analysis.md to `docs/` folder for documentation
 
 **Version**: v3.50
+
+---
+
+## Styling Preservation Fix: Merge Path
+
+### Problem
+User-customized styling (colors, labels) was being lost during merge operations when loading overlapping or new time ranges.
+
+**Example:**
+```python
+mag_rtn_4sa.br.color = "purple"  # Set custom color
+plotbot(trange1, mag_rtn_4sa.br, 1)  # First load - purple ✅
+plotbot(trange2, mag_rtn_4sa.br, 1)  # Second load - green (default) ❌
+```
+
+### Root Cause Analysis
+
+**Architecture Review:**
+- Plotbot's core philosophy: Persistent global class instances
+- Users set styling directly on global instances
+- Two data loading paths:
+  1. **UPDATE PATH**: Instance has no data → calls `instance.update()` ✅
+  2. **MERGE PATH**: Instance has data → merges arrays then calls `set_plot_config()` ❌
+
+**The Bug:**
+- `set_plot_config()` recreates plot_managers from scratch
+- Wiped out all user customizations (colors, labels, etc.)
+- Only happened during MERGE path (new/overlapping time ranges)
+- Didn't happen during UPDATE path or cache hits
+
+**Why it wasn't obvious:**
+- First load: UPDATE path → no problem
+- Same time range: Cache hit, skips everything → no problem  
+- Different/overlapping range: MERGE path → styling lost!
+
+### The Fix
+**Applied "Option 3 - Save/Restore Pattern":**
+
+Implemented the same pattern that classes use in their own `update()` methods: save styling state, recreate plot_managers, restore styling state.
+
+**Why we MUST call set_plot_config():**
+- Plot_managers create numpy **views** of data arrays
+- When we do: `global_instance.raw_data = merged_raw_data`
+- Plot_managers still hold views of the **OLD** arrays!
+- We must recreate them to point to the new merged data
+
+**The Solution:**
+```python
+# STEP 1: Save styling state from current plot_managers
+current_state = {}
+for subclass_name in merged_raw_data.keys():
+    if hasattr(global_instance, subclass_name):
+        var = getattr(global_instance, subclass_name)
+        if hasattr(var, '_plot_state'):
+            current_state[subclass_name] = dict(var._plot_state)
+
+# STEP 2: Recreate plot_managers with merged data
+global_instance.set_plot_config()  # Now they point to merged arrays
+
+# STEP 3: Restore styling state to new plot_managers
+for subclass_name, state in current_state.items():
+    if hasattr(global_instance, subclass_name):
+        var = getattr(global_instance, subclass_name)
+        var._plot_state.update(state)
+        for attr, value in state.items():
+            if hasattr(var.plot_config, attr):
+                setattr(var.plot_config, attr, value)
+```
+
+**This pattern:**
+- ✅ Recreates plot_managers with merged data (fixes stale views)
+- ✅ Preserves user styling (saves/restores state)
+- ✅ Mirrors the class's own `update()` method pattern
+
+### Testing
+Created `debug_scripts/test_styling_preservation.py` to verify fix.
+
+**Results:**
+```
+Before fix:
+  After first load: color=purple ✅
+  After merge: color=forestgreen ❌ (reverted to default)
+
+After fix:
+  After first load: color=purple ✅
+  After merge: color=purple ✅ (PRESERVED!)
+```
+
+### Files Modified
+- `plotbot/data_cubby.py` lines 1139-1192 (save/restore pattern in merge path)
+- `plotbot/data_import_cdf.py` lines 978-1067 (updated generator template with style preservation logging)
+- `debug_scripts/test_styling_preservation.py` (new test file)
+
+### Generator Improvement
+Updated the CDF class generator template to include comprehensive style preservation logging in the `update()` method. All future auto-generated CDF classes will now have:
+- Entry/exit logging with operation type
+- Before/after state capture visualization
+- Save/restore operation tracking
+- Final verification with warnings if styling is lost
+
+This debugging infrastructure helped identify the bug and will prevent future regressions.
+
+### Status: FIXED ✅
+Styling now persists correctly across merge operations while maintaining full data functionality.
+
+---
+
+## Git Push v3.51
+
+**Commit Message**: `v3.51 Fix: Styling preservation in merge path - save/restore pattern + improved CDF generator template`
+
+**Changes**:
+- Fixed styling preservation in data_cubby merge path using save/restore pattern
+- Properly recreates plot_managers with merged data (fixes stale array views)
+- Preserves user customizations (colors, labels) through state save/restore
+- Updated CDF class generator to include comprehensive style preservation logging
+- All future auto-generated CDF classes will have built-in debugging hooks
+
+**Version**: v3.51

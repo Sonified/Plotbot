@@ -424,10 +424,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_29_v3.50"
+__version__ = "2025_09_29_v3.51"
 
 # Commit message for this version
-__commit_message__ = "v3.50 Critical Fix: CDF import time filtering bug causing shape mismatch crashes - reversed Dim_Sizes logic"
+__commit_message__ = "v3.51 Fix: Styling preservation in merge path - save/restore pattern + improved CDF generator template"
 
 # Print the version and commit message
 print(f"""

@@ -977,6 +977,9 @@ class {class_name}_class:
     
     def update(self, imported_data, original_requested_trange=None):
         """Method to update class with new data."""
+        # STYLE_PRESERVATION: Entry point
+        print_manager.style_preservation(f"🔄 UPDATE_ENTRY for {{self.__class__.__name__}} (ID: {{id(self)}}) - operation_type: UPDATE")
+        
         if original_requested_trange is not None:
             self._current_operation_trange = original_requested_trange
             print_manager.dependency_management(f"[{{self.__class__.__name__}}] Updated _current_operation_trange to: {{self._current_operation_trange}}")
@@ -988,25 +991,53 @@ class {class_name}_class:
         print_manager.datacubby("\\n=== Update Debug ===")
         print_manager.datacubby(f"Starting {{self.__class__.__name__}} update...")
         
+        # STYLE_PRESERVATION: Before state preservation
+        if hasattr(self, '__dict__'):
+            from plotbot.plot_manager import plot_manager
+            plot_managers = {{k: v for k, v in self.__dict__.items() if isinstance(v, plot_manager)}}
+            print_manager.style_preservation(f"   📊 Existing plot_managers before preservation: {{list(plot_managers.keys())}}")
+            for pm_name, pm_obj in plot_managers.items():
+                if hasattr(pm_obj, '_plot_state'):
+                    color = getattr(pm_obj._plot_state, 'color', 'Not Set')
+                    legend_label = getattr(pm_obj._plot_state, 'legend_label', 'Not Set')
+                    print_manager.style_preservation(f"   🎨 {{pm_name}}: color='{{color}}', legend_label='{{legend_label}}'")
+                else:
+                    print_manager.style_preservation(f"   ❌ {{pm_name}}: No _plot_state found")
+        
         # Store current state before update (including any modified plot_config)
         current_plot_states = {{}}
         standard_components = {[var.name for var in metadata.variables]}
+        
+        # STYLE_PRESERVATION: During state save
+        print_manager.style_preservation(f"💾 STATE_SAVE for {{self.__class__.__name__}} - capturing states for subclasses: {{standard_components}}")
+        
         for comp_name in standard_components:
             if hasattr(self, comp_name):
                 manager = getattr(self, comp_name)
                 if isinstance(manager, plot_manager) and hasattr(manager, '_plot_state'):
                     current_plot_states[comp_name] = dict(manager._plot_state)
                     print_manager.datacubby(f"Stored {{comp_name}} state: {{retrieve_plot_config_snapshot(current_plot_states[comp_name])}}")
+                    print_manager.style_preservation(f"   💾 Saved {{comp_name}}: color='{{current_plot_states[comp_name].get('color', 'Not Set')}}', legend_label='{{current_plot_states[comp_name].get('legend_label', 'Not Set')}}'")
 
         # Perform update
+        # STYLE_PRESERVATION: After calculate_variables(), before set_plot_config()
+        print_manager.style_preservation(f"🔄 PRE_SET_PLOT_CONFIG in {{self.__class__.__name__}} - about to recreate plot_managers")
+        
         self.calculate_variables(imported_data)                                # Update raw data arrays
+        print_manager.style_preservation(f"✅ RAW_DATA_UPDATED for {{self.__class__.__name__}} - calculate_variables() completed")
+        
         self.set_plot_config()                                                  # Recreate plot managers for standard components
+        print_manager.style_preservation(f"✅ PLOT_MANAGERS_RECREATED for {{self.__class__.__name__}} - set_plot_config() completed")
         
         # Ensure internal consistency after update (mirror mag_rtn pattern)
         self.ensure_internal_consistency()
         
         # Restore state (including any modified plot_config!)
         print_manager.datacubby("Restoring saved state...")
+        
+        # STYLE_PRESERVATION: During state restore
+        print_manager.style_preservation(f"🔧 STATE_RESTORE for {{self.__class__.__name__}} - applying saved states to recreated plot_managers")
+        
         for comp_name, state in current_plot_states.items():                    # Restore saved states
             if hasattr(self, comp_name):
                 manager = getattr(self, comp_name)
@@ -1016,6 +1047,22 @@ class {class_name}_class:
                         if hasattr(manager.plot_config, attr):
                             setattr(manager.plot_config, attr, value)
                     print_manager.datacubby(f"Restored {{comp_name}} state: {{retrieve_plot_config_snapshot(state)}}")
+                    print_manager.style_preservation(f"   🔧 Restored {{comp_name}}: color='{{state.get('color', 'Not Set')}}', legend_label='{{state.get('legend_label', 'Not Set')}}'")
+        
+        # STYLE_PRESERVATION: Exit point - Final custom values confirmation
+        print_manager.style_preservation(f"✅ UPDATE_EXIT for {{self.__class__.__name__}} - Final state verification:")
+        if hasattr(self, '__dict__'):
+            from plotbot.plot_manager import plot_manager
+            final_plot_managers = {{k: v for k, v in self.__dict__.items() if isinstance(v, plot_manager)}}
+            for pm_name, pm_obj in final_plot_managers.items():
+                if hasattr(pm_obj, '_plot_state'):
+                    color = getattr(pm_obj._plot_state, 'color', 'Not Set')
+                    legend_label = getattr(pm_obj._plot_state, 'legend_label', 'Not Set')
+                    print_manager.style_preservation(f"   🎨 FINAL {{pm_name}}: color='{{color}}', legend_label='{{legend_label}}'")
+                    if color == 'Not Set' or legend_label == 'Not Set':
+                        print_manager.style_preservation(f"   ⚠️  FINAL_STYLE_LOSS detected in {{pm_name}}!")
+                else:
+                    print_manager.style_preservation(f"   ❌ FINAL {{pm_name}}: No _plot_state found")
         
         print_manager.datacubby("=== End Update Debug ===\\n")
         
