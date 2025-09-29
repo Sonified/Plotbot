@@ -424,10 +424,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_29_v3.49"
+__version__ = "2025_09_29_v3.50"
 
 # Commit message for this version
-__commit_message__ = "v3.49 Fix: Micromamba installer PATH ordering bug - add brew to PATH before using it"
+__commit_message__ = "v3.50 Critical Fix: CDF import time filtering bug causing shape mismatch crashes - reversed Dim_Sizes logic"
 
 # Print the version and commit message
 print(f"""

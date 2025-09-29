@@ -1125,12 +1125,17 @@ def import_data_function(trange, data_type):
                             var_info = cdf_file.varinq(var_name)
                             var_shape = var_info.Dim_Sizes
                             
-                            # If variable is 1D (like frequencies), load without time filtering
-                            if len(var_shape) == 0 or (len(var_shape) == 1 and var_shape[0] <= 1000):
+                            # CRITICAL FIX: Dim_Sizes=[] means RECORD-VARYING (time-dependent) - MUST FILTER!
+                            # Dim_Sizes=[n] means NON-RECORD-VARYING (static metadata) - DON'T filter
+                            # Logic was backwards before, causing shape mismatch crashes!
+                            is_metadata = len(var_shape) > 0 and var_shape[0] <= 1000
+                            
+                            if is_metadata:
+                                # Static metadata (like frequency arrays) - load full array
                                 print_manager.debug(f"Loading {var_name} as metadata variable (no time filtering)")
                                 var_data = cdf_file.varget(var_name)
                             else:
-                                # FIXED: Use time range filtering for time-dependent variables
+                                # Time-dependent data (Dim_Sizes=[]) - MUST apply time filtering!
                                 if start_idx < end_idx and end_idx <= len(times):
                                     var_data = cdf_file.varget(var_name, startrec=start_idx, endrec=end_idx-1)
                                     print_manager.debug(f"Loaded {var_name} with time filtering: shape {var_data.shape}")
