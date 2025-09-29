@@ -238,3 +238,4 @@ plt.tight_layout()
 5. **Create example gallery of grid compositions**
 
 This approach maintains Plotbot's elegance while enabling the modular composition we need for complex space physics analysis workflows.
+

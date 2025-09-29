@@ -12,8 +12,8 @@ class PlotbotOptions:
     
     def reset(self):
         """Reset all options to defaults."""
-        self.return_figure = False    # Whether plotting functions return the figure object
-        self.display_figure = True    # Whether to display the figure (plt.show())
+        self.return_figure = True     # Whether plotting functions return the figure object
+        self.display_figure = False   # Whether to display the figure (plt.show())
         
     def __repr__(self):
         return (f"PlotbotOptions(return_figure={self.return_figure}, "

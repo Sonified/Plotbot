@@ -63,3 +63,4 @@ def test_mag_sc_4sa_file_detection():
 
 if __name__ == "__main__":
     test_mag_sc_4sa_file_detection()
+

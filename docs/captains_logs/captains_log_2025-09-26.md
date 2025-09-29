@@ -107,3 +107,24 @@ Cleaner, more reliable installer that works with any Homebrew configuration.
 - Cleaner code that trusts Homebrew while providing safety nets
 
 **Version**: v3.48
+
+---
+
+## Plot Control Options Update
+
+### Change Summary
+Updated default plot behavior in `ploptions.py`:
+- **`return_figure = True`** - plotting functions now return the figure object
+- **`display_figure = False`** - plots no longer automatically display (no `plt.show()`)
+
+### Keyword to Not Plot
+**`display_figure = False`** - this is the keyword/setting to prevent automatic plot display
+
+### Use Case
+This allows users to:
+- Capture figure objects for further manipulation
+- Save plots to files without displaying them on screen
+- Control when and how plots are shown
+
+### Status: Updated
+Default plot behavior now favors programmatic control over automatic display.
