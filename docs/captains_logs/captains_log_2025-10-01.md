@@ -56,6 +56,8 @@ Working session focused on fixing a critical case sensitivity bug affecting data
 ### Version: v3.52
 **Commit Message:** v3.52 Fix: Case sensitivity bug in data_types dictionary lookups - added get_data_type_config() for case-insensitive matching
 
+**Update:** Added mag_diagnostic_FIXED.ipynb with output cells showing successful data loading
+
 **Files Changed:**
 - plotbot/__init__.py
 - plotbot/data_classes/data_types.py
