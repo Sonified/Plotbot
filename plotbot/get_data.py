@@ -30,7 +30,7 @@ from .data_download_berkeley import download_berkeley_data
 from .data_download_pyspedas import download_spdf_data
 import plotbot
 from .data_import import import_data_function, DataObject
-from .data_classes.data_types import data_types
+from .data_classes.data_types import data_types, get_data_type_config
 from .config import config
 from .time_utils import TimeRangeTracker
 
@@ -244,7 +244,8 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
         elif hasattr(var, 'data_type'):
             dt = var.data_type
             # Ensure it's not proton_fits (handled above) and not a local CSV source
-            if dt != 'proton_fits' and 'local_csv' not in data_types.get(dt, {}).get('data_sources', []):
+            dt_config = get_data_type_config(dt) or {}
+            if dt != 'proton_fits' and 'local_csv' not in dt_config.get('data_sources', []):
                  data_type = dt
                  subclass_name = getattr(var, 'subclass_name', '?')
         
@@ -340,7 +341,7 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
         else:
             # Standard path for other data types (mostly CDFs)
             print_manager.dependency_management(f"[GET_DATA_CONFIG_CHECK] Available keys in psp_data_types: {list(data_types.keys())}")
-            config_from_psp_data_types = data_types.get(data_type) # Renamed to avoid conflict with plotbot.config
+            config_from_psp_data_types = get_data_type_config(data_type)  # Case-insensitive lookup
             if not config_from_psp_data_types:
                 print_manager.warning(f"Config not found in psp_data_types for {data_type} during processing loop.")
                 end_step(step_key, step_start, {"error": "config not found"})
@@ -388,7 +389,7 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
 
         if calculation_needed:
             # Check if this is local support data (like NPZ files)
-            config_from_psp_data_types = data_types.get(data_type)
+            config_from_psp_data_types = get_data_type_config(data_type)  # Case-insensitive lookup
             if config_from_psp_data_types and 'local_support_data' in config_from_psp_data_types.get('data_sources', []):
                 print_manager.dependency_management(f"Tracker indicates calculation needed for {data_type} (local support data). Skipping download, proceeding to import_data_function.")
             # For HAM, download_successful and server_mode are irrelevant as it's local.

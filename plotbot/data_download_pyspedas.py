@@ -431,7 +431,8 @@ def download_spdf_data(trange, plotbot_key):
         # avoid unnecessary network index checks.
         print_manager.debug(f"Checking for Berkeley/SPDF case conflicts before SPDF download for {plotbot_key}...")
         try:
-            config = data_types.get(plotbot_key)
+            from .data_classes.data_types import get_data_type_config
+            config = get_data_type_config(plotbot_key)
             # Proceed only if we have the necessary config keys and it's a daily file format
             if config and config.get('file_time_format') == 'daily' and \
                 'local_path' in config and 'file_pattern_import' in config:

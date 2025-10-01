@@ -29,7 +29,8 @@ class ZarrStorage:
             return False
             
         # Get configuration for this data type
-        config = data_types.get(data_type, {})
+        from .data_classes.data_types import get_data_type_config
+        config = get_data_type_config(data_type) or {}
         file_time_format = config.get('file_time_format', 'daily')
             
         # Create dataset from class instance
@@ -82,7 +83,8 @@ class ZarrStorage:
         end_time = parse(trange[1]).replace(tzinfo=timezone.utc)
         
         # Get configuration for this data type
-        config = data_types.get(data_type, {})
+        from .data_classes.data_types import get_data_type_config
+        config = get_data_type_config(data_type) or {}
         file_time_format = config.get('file_time_format', 'daily')
         
         # Find all zarr stores in the time range

@@ -424,10 +424,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_09_29_v3.51"
+__version__ = "2025_10_01_v3.52"
 
 # Commit message for this version
-__commit_message__ = "v3.51 Fix: Styling preservation in merge path - save/restore pattern + improved CDF generator template"
+__commit_message__ = "v3.52 Fix: Case sensitivity bug in data_types dictionary lookups - added get_data_type_config() for case-insensitive matching"
 
 # Print the version and commit message
 print(f"""

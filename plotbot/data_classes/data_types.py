@@ -352,13 +352,52 @@ data_types = {
 }
 
 
+# === CASE-INSENSITIVE DATA TYPE LOOKUP ===
+def get_data_type_config(data_type_key):
+    """
+    Get configuration for a data type with case-insensitive lookup.
+    
+    This function handles the case sensitivity mismatch between:
+    - data_types dictionary keys (mixed case: 'mag_RTN_4sa', 'mag_SC', etc.)
+    - data_cubby keys (lowercase: 'mag_rtn_4sa', 'mag_sc', etc.)
+    - user-facing class names (lowercase: mag_rtn_4sa, mag_sc, etc.)
+    
+    Args:
+        data_type_key (str): The data type key in any case
+        
+    Returns:
+        dict or None: Configuration dictionary if found, None otherwise
+        
+    Examples:
+        >>> get_data_type_config('mag_rtn_4sa')  # lowercase
+        {'mission': 'psp', 'data_sources': [...], ...}
+        >>> get_data_type_config('mag_RTN_4sa')  # mixed case
+        {'mission': 'psp', 'data_sources': [...], ...}
+    """
+    if not data_type_key:
+        return None
+    
+    # Try exact match first (fastest)
+    if data_type_key in data_types:
+        return data_types[data_type_key]
+    
+    # Try case-insensitive match
+    data_type_lower = data_type_key.lower()
+    for key, config in data_types.items():
+        if key.lower() == data_type_lower:
+            return config
+    
+    return None
+
+
 # === DYNAMIC PATH CONSTRUCTION ===
 def get_local_path(data_type_key):
     """
     Get the local path for a data type, using the configurable data directory.
+    Uses case-insensitive lookup.
     
     Args:
-        data_type_key (str): The data type key (e.g., 'mag_RTN_4sa')
+        data_type_key (str): The data type key (e.g., 'mag_RTN_4sa' or 'mag_rtn_4sa')
         
     Returns:
         str: Full local path with current data_dir configuration
@@ -366,10 +405,11 @@ def get_local_path(data_type_key):
     # Import here to avoid circular imports
     from ..config import config
     
-    if data_type_key not in data_types:
+    # Use case-insensitive lookup
+    data_type_config = get_data_type_config(data_type_key)
+    if not data_type_config:
         return None
         
-    data_type_config = data_types[data_type_key]
     original_local_path = data_type_config.get('local_path', '')
     
     # Replace 'data' at the beginning with the configured data_dir
