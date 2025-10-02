@@ -104,7 +104,8 @@ try:
     # Plot first date
     print("\n📈 Plotting first date...")
     plotbot(trange1, psp_waves_test.wavePower_LH, 1, psp_waves_test.wavePower_RH, 2)
-    print("✅ First plot completed")
+    plt.savefig("/Users/robertalexander/GitHub/Plotbot/test_cdf_first_load.png", dpi=150, bbox_inches='tight')
+    print("✅ First plot completed and saved as test_cdf_first_load.png")
     
     # Check class state after first load
     print("\n📊 Class state after first load:")

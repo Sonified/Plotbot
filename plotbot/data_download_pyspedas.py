@@ -233,16 +233,29 @@ def _get_pyspedas_map():
     }
 
 def _get_dates_for_download(start_str, end_str):
-    """Helper to get list of date strings formatted for file downloads (YYYYMMDD)."""
+    """Helper to get list of date strings formatted for file downloads (YYYYMMDD).
+    
+    If end_str is exactly midnight (00:00:00), that day is excluded since
+    the range is [start, end) not [start, end].
+    """
     dates = []
     try:
         # Use the more robust dateutil.parser to handle various formats
-        start_date = parse(start_str).date()
-        end_date = parse(end_str).date()
-
+        start_dt = parse(start_str)
+        end_dt = parse(end_str)
+        
+        start_date = start_dt.date()
+        end_date = end_dt.date()
+        
+        # Check if end time is exactly midnight - if so, exclude that day
+        # because trange is [start, end) not [start, end]
+        is_end_midnight = (end_dt.hour == 0 and end_dt.minute == 0 and end_dt.second == 0)
+        
         delta = timedelta(days=1)
         current_date = start_date
-        while current_date <= end_date:
+        
+        # Use < instead of <= to avoid including end_date when it's midnight
+        while current_date < end_date or (current_date == end_date and not is_end_midnight):
             dates.append(current_date.strftime('%Y%m%d'))
             current_date += delta
     except Exception as e:
@@ -337,29 +350,40 @@ def download_dfb_precise(trange, plotbot_key, config):
     return downloaded_files
 
 def _get_dates_in_range(start_str, end_str):
-    """Helper to get list of YYYYMMDD strings for a date range."""
+    """Helper to get list of YYYYMMDD strings for a date range.
+    
+    If end_str is exactly midnight (00:00:00), that day is excluded since
+    the range is [start, end) not [start, end].
+    """
     dates = []
     try:
-        # Attempt to parse common date formats
-        start_date = None
-        end_date = None
+        # Attempt to parse common date formats - need full datetime now to check for midnight
+        start_dt = None
+        end_dt = None
         for fmt in ("%Y-%m-%d %H:%M:%S", "%Y/%m/%d %H:%M:%S", "%Y-%m-%d", "%Y/%m/%d"):
             try:
-                if start_date is None:
-                    start_date = datetime.strptime(start_str.split(' ')[0], fmt.split(' ')[0])
-                if end_date is None:
-                    end_date = datetime.strptime(end_str.split(' ')[0], fmt.split(' ')[0])
-                if start_date and end_date: # Stop if both parsed
+                if start_dt is None:
+                    start_dt = datetime.strptime(start_str, fmt)
+                if end_dt is None:
+                    end_dt = datetime.strptime(end_str, fmt)
+                if start_dt and end_dt: # Stop if both parsed
                     break 
             except ValueError:
                 continue # Try next format
         
-        if start_date is None or end_date is None:
+        if start_dt is None or end_dt is None:
             raise ValueError("Could not parse start or end date string")
+        
+        start_date = start_dt.date()
+        end_date = end_dt.date()
+        
+        # Check if end time is exactly midnight - if so, exclude that day
+        is_end_midnight = (end_dt.hour == 0 and end_dt.minute == 0 and end_dt.second == 0)
 
         delta = timedelta(days=1)
         current_date = start_date
-        while current_date <= end_date:
+        # Use < instead of <= to avoid including end_date when it's midnight
+        while current_date < end_date or (current_date == end_date and not is_end_midnight):
             dates.append(current_date.strftime('%Y%m%d'))
             current_date += delta
     except Exception as e:

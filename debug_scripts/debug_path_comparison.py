@@ -6,6 +6,9 @@ handle has_existing_data evaluation differently.
 
 from plotbot import *
 
+# Enable plot display!
+ploptions.display_figure = True
+
 # Enable status output only (cleaner than debug)
 print_manager.show_status = True
 print_manager.show_debug = False  

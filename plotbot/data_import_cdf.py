@@ -908,7 +908,7 @@ def _generate_plotbot_class_code(metadata: CDFMetadata, class_name: str) -> str:
                 datetime_array=self.datetime_array,
                 y_label='{var.y_label}',
                 legend_label='{var.description}',
-                color='blue',
+                color=None,
                 y_scale='{var.y_scale}',
                 y_limit=None,
                 line_width=1,

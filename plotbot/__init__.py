@@ -424,10 +424,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_10_02_v3.55"
+__version__ = "2025_10_02_v3.56"
 
 # Commit message for this version
-__commit_message__ = "v3.55 Feature: data_cubby.clear() method to reset all data and re-initialize class instances with empty arrays"
+__commit_message__ = "v3.56 Update: Minor documentation and notebook improvements for data_cubby.clear() feature"
 
 # Print the version and commit message
 print(f"""

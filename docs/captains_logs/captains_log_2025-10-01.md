@@ -79,5 +79,52 @@ Working session focused on fixing a critical case sensitivity bug affecting data
 
 ---
 
+## Major Bug Discovery: Trange Boundary Handling (v3.53 in progress)
+
+### Problem Found
+After fixing the case sensitivity bug, discovered TWO related issues with time range handling:
+
+1. **Sam's Issue**: MAG downloaded extra day of data
+   - trange `['2020-01-28/00:00:00', '2020-01-29/00:00:00']` should download ONLY Jan 28
+   - But MAG downloaded Jan 28 AND Jan 29 (791,013 points spanning 2 days)
+   - EPAD correctly downloaded only Jan 28 (6,179 points for 1 day)
+
+2. **User's Issue**: Data cubby stuck on first day in loops
+   - When looping through multiple days, data cubby returns the SAME data every time
+   - Object IDs remain identical across different trange requests
+   - Loop changes trange but gets same Jan 28 data repeatedly
+
+### Root Cause (Issue #1 - FIXED)
+In `/Users/robertalexander/GitHub/Plotbot/plotbot/data_download_pyspedas.py`:
+
+**Bug in `_get_dates_for_download()` and `_get_dates_in_range()`:**
+```python
+while current_date <= end_date:  # ❌ Includes end_date even when time is 00:00
+    dates.append(current_date.strftime('%Y%m%d'))
+    current_date += delta
+```
+
+When `trange = ['2020-01-28/00:00:00', '2020-01-29/00:00:00']`:
+- Loop sees end_date = 2020-01-29
+- Uses `<=` so it downloads BOTH 01-28 AND 01-29
+- But 00:00:00 on 01-29 means "start of day" not "include this day"
+
+**Fix:**
+Check if end time is midnight (00:00:00) and exclude that day:
+```python
+is_end_midnight = (end_dt.hour == 0 and end_dt.minute == 0 and end_dt.second == 0)
+while current_date < end_date or (current_date == end_date and not is_end_midnight):
+    dates.append(current_date.strftime('%Y%m%d'))
+    current_date += delta
+```
+
+### Root Cause (Issue #2 - IN PROGRESS)
+Investigating why data cubby returns cached data when it should load new data for non-overlapping time ranges.
+
+**Files Modified (v3.53):**
+- `plotbot/data_download_pyspedas.py` - Fixed `_get_dates_for_download()` and `_get_dates_in_range()`
+
+---
+
 ## End of Session
 
