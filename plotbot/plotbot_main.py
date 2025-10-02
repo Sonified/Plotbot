@@ -308,8 +308,34 @@ def plotbot(trange, *args):
                     print_manager.custom_debug(f"Added custom variable: {request['subclass_name']}\n")
 
     # Process custom variables and their source data
-    for var, name in custom_vars:
-        if hasattr(var, 'source_var') and var.source_var is not None:
+    # IMPORTANT: Use index-based loop so we can update the var in place
+    for idx, (var, name) in enumerate(custom_vars):
+        # Check if this is a lambda-based custom variable
+        container = data_cubby.grab('custom_class')
+        if container and hasattr(container, 'callables') and name in container.callables:
+            print_manager.debug(f"Evaluating lambda for custom variable '{name}'")
+            # Evaluate the lambda to get the actual data
+            try:
+                result = container.callables[name]()
+                # Replace the plot_manager with new data
+                if hasattr(result, '__array__'):
+                    var_data = np.asarray(result)
+                    # Create a new plot_manager with the evaluated data
+                    from .plot_manager import plot_manager
+                    new_var = plot_manager(var_data, plot_config=var.plot_config)
+                    # Copy attributes from old var
+                    for attr in plot_manager.PLOT_ATTRIBUTES:
+                        if hasattr(var, attr):
+                            setattr(new_var, attr, getattr(var, attr))
+                    # Update in container AND in our list
+                    container.variables[name] = new_var
+                    custom_vars[idx] = (new_var, name)  # Update the tuple in the list!
+                    print_manager.debug(f"✅ Lambda evaluation successful for '{name}', shape: {var_data.shape}")
+            except Exception as e:
+                print_manager.warning(f"Failed to evaluate lambda for '{name}': {e}")
+                import traceback
+                traceback.print_exc()
+        elif hasattr(var, 'source_var') and var.source_var is not None:
             base_vars = []
             for src_var in var.source_var:
                 if hasattr(src_var, 'class_name') and src_var.class_name != 'custom_class' and src_var.data_type != 'custom_data_type':

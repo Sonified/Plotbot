@@ -128,14 +128,50 @@ git rev-parse --short HEAD | pbcopy
 
 ---
 
-## Next Steps
-1. Test with user's full encounter loop to verify spectral plots still work
-2. Consider documenting this pattern in README for custom variable creation
-3. Update tutorial notebooks to show the simplified workflow
+## Major Bug Fix: Scatter Plot Attributes Not Preserved (v3.54)
+
+### Problem:
+- Custom variables with `plot_type='scatter'` were being plotted as line plots
+- Attributes like `plot_type`, `marker_style`, and `y_label` were not preserved when custom variables updated
+- Root cause: `styling_attributes` list in `custom_variables.py` was missing critical attributes
+
+### Solution:
+Added missing attributes to `styling_attributes` list (line 335-339):
+- Added `'plot_type'` - preserves scatter vs time_series designation
+- Added `'marker_style'` - attribute used by scatter plot rendering
+- Added `'y_label'` - preserves axis labels
+
+**Files modified:**
+- `plotbot/data_classes/custom_variables.py` - Updated styling_attributes list
+- `plotbot/plotbot_main.py` - Removed temporary debug prints
+
+### Testing:
+Verified with `phi_B` custom variable:
+```python
+phi_B = plotbot.custom_variable('phi_B', 
+    np.degrees(np.arctan2(plotbot.mag_rtn_4sa.br, plotbot.mag_rtn_4sa.bn)) + 180
+)
+phi_B.plot_type = 'scatter'
+phi_B.marker_style = 'o'
+phi_B.marker_size = 3
+phi_B.color = 'purple'
+```
+Result: ✅ Correctly renders as purple scatter plot, attributes preserved across updates
+
+---
+
+## Version History
+
+### v3.54 - Scatter Plot Attribute Preservation Fix
+**Commit:** `v3.54 Fix: Preserve plot_type and scatter attributes in custom variable updates`
+
+**Changes:**
+- `plotbot/data_classes/custom_variables.py`: Added `plot_type`, `marker_style`, `y_label` to styling_attributes
+- `plotbot/plotbot_main.py`: Removed debug prints
 
 ---
 
 ## End of Session
 Session closed: 2025-10-02
-Major breakthrough in custom variable usability!
+Major breakthroughs: Empty initialization (v3.53) + Scatter plot fixes (v3.54)
 

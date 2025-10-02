@@ -424,10 +424,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_10_02_v3.53"
+__version__ = "2025_10_02_v3.54"
 
 # Commit message for this version
-__commit_message__ = "v3.53 Feature: Robust empty initialization - plot_manager converts None to empty float64 arrays for numpy compatibility"
+__commit_message__ = "v3.54 Fix: Preserve plot_type and scatter attributes in custom variable updates"
 
 # Print the version and commit message
 print(f"""

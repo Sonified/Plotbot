@@ -333,8 +333,8 @@ class CustomVariablesContainer:
         
         # Copy all styling attributes from the original variable to preserve appearance
         styling_attributes = [
-            'color', 'line_style', 'line_width', 'marker', 'marker_size', 
-            'alpha', 'zorder', 'y_scale', 'y_limit', 'colormap', 
+            'plot_type', 'color', 'line_style', 'line_width', 'marker', 'marker_size', 'marker_style',
+            'alpha', 'zorder', 'y_scale', 'y_limit', 'y_label', 'colormap', 
             'colorbar_scale', 'colorbar_limits', 'legend_label_override'
         ]
         
@@ -415,8 +415,11 @@ def custom_variable(name, expression):
     ----------
     name : str
         Name for the variable
-    expression : plot_manager
-        The expression result (e.g., proton.anisotropy / mag_rtn_4sa.bmag)
+    expression : callable or plot_manager
+        Either a lambda function for lazy evaluation:
+            lambda: np.degrees(np.arctan2(plotbot.mag_rtn_4sa.br, plotbot.mag_rtn_4sa.bn)) + 180
+        Or a direct expression (evaluated immediately):
+            proton.anisotropy / mag_rtn_4sa.bmag
         
     Returns
     -------
@@ -425,39 +428,52 @@ def custom_variable(name, expression):
         
     Examples
     --------
+    >>> custom_variable('phi_B', lambda: np.degrees(np.arctan2(plotbot.mag_rtn_4sa.br, plotbot.mag_rtn_4sa.bn)) + 180)
     >>> custom_variable('TAoverB', proton.anisotropy / mag_rtn_4sa.bmag)
-    >>> custom_variable('SumField', mag_rtn_4sa.br + mag_rtn_4sa.bt)
     """
 
-    # <<< ADDED DEBUG PRINT >>>
-    expr_has_data = hasattr(expression, 'datetime_array') and expression.datetime_array is not None and len(expression.datetime_array) > 0
-    expr_data_points = len(expression.datetime_array) if expr_has_data else 0
-    print_manager.debug(f"DEBUG custom_variable: Incoming expression for '{name}' already has data? {expr_has_data} ({expr_data_points} points)")
-    # <<< END ADDED DEBUG PRINT >>>
-
-    # Clear any existing calculation cache for this variable name
-    global_tracker.clear_calculation_cache('custom_data_type', name)
-    
-    # Analyze the expression to see if it needs special handling
-    # For expressions from plot_manager, we need to extract source_vars
-    if hasattr(expression, 'source_var') or hasattr(expression, 'source_vars'):
-        # Log debug info
-        print_manager.debug(f"Expression type: {type(expression)}")
-        print_manager.debug(f"Expression has source_var: {hasattr(expression, 'source_var')}")
-        
-        if hasattr(expression, 'source_var') and expression.source_var is not None:
-            print_manager.debug(f"Source var is None: {expression.source_var is None}")
-            
-            if isinstance(expression.source_var, list):
-                print_manager.debug(f"Source var type: {type(expression.source_var)}")
-                print_manager.debug(f"Source var length: {len(expression.source_var)}")
-    
     # Get the container (import data_cubby locally to avoid circular imports)
     from ..data_cubby import data_cubby
+    from ..plot_manager import plot_manager
+    from ..plot_config import plot_config
+    
     container = data_cubby.grab('custom_class')
     if container is None:
         container = CustomVariablesContainer()
         data_cubby.stash(container, class_name='custom_class')
+    
+    # Check if expression is a callable (lambda function)
+    if callable(expression):
+        print_manager.debug(f"Custom variable '{name}' uses lambda - will evaluate lazily")
+        
+        # Store the callable for lazy evaluation
+        if not hasattr(container, 'callables'):
+            container.callables = {}
+        container.callables[name] = expression
+        
+        # Create a placeholder plot_manager
+        placeholder_config = plot_config(
+            data_type='custom_data_type',
+            class_name='custom_class',
+            subclass_name=name,
+            plot_type='time_series',
+            datetime_array=None
+        )
+        placeholder = plot_manager(np.array([]), plot_config=placeholder_config)
+        placeholder.y_label = name
+        placeholder.legend_label = name
+        
+        # Register the placeholder
+        variable = container.register(name, placeholder, sources=[], operation='lambda')
+        return variable
+    
+    # Otherwise, handle as before (immediate evaluation)
+    expr_has_data = hasattr(expression, 'datetime_array') and expression.datetime_array is not None and len(expression.datetime_array) > 0
+    expr_data_points = len(expression.datetime_array) if expr_has_data else 0
+    print_manager.debug(f"DEBUG custom_variable: Incoming expression for '{name}' already has data? {expr_has_data} ({expr_data_points} points)")
+
+    # Clear any existing calculation cache for this variable name
+    global_tracker.clear_calculation_cache('custom_data_type', name)
     
     # Get source variables and operation type
     sources = []
