@@ -4,12 +4,12 @@
 echo "🔹 Setting up Plotbot environment with Micromamba..."
 echo ""
 
-# Set up micromamba environment variables
-export MAMBA_EXE="$HOME/homebrew/bin/micromamba"
-export MAMBA_ROOT_PREFIX="$HOME/micromamba"
-
 # Add homebrew to PATH if not already there
 export PATH="$HOME/homebrew/bin:$PATH"
+
+# Set up micromamba environment variables using Homebrew's location
+export MAMBA_EXE="$(brew --prefix micromamba)/bin/micromamba"
+export MAMBA_ROOT_PREFIX="$HOME/micromamba"
 
 # Initialize micromamba shell hook for bash
 __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
@@ -70,7 +70,7 @@ if micromamba env list | grep -q "plotbot_micromamba" && [ -d "$MAMBA_ROOT_PREFI
         1)
             echo "🔹 Updating the existing 'plotbot_micromamba' environment..."
             echo "Running: micromamba env update -n plotbot_micromamba -f environment.cf.yml"
-            micromamba env update -n plotbot_micromamba -f environment.cf.yml --yes
+            micromamba env update -n plotbot_micromamba -f environment.cf.yml --yes --no-rc --override-channels -c conda-forge --channel-priority strict
             update_status=$?
             if [ $update_status -ne 0 ]; then
                 echo "❌ Error: Environment update failed with code $update_status."
@@ -104,9 +104,6 @@ if micromamba env list | grep -q "plotbot_micromamba" && [ -d "$MAMBA_ROOT_PREFI
         3)
             echo "✅ Keeping existing environment unchanged."
             echo "   You can run this script again later if you want to update."
-            echo ""
-            echo "Next step: Run ./install_scripts/4_register_kernel_micromamba.sh"
-            echo ""
             exit 0
             ;;
         *)
@@ -157,6 +154,3 @@ fi
 
 echo ""
 echo "🎉 Environment setup completed successfully!"
-echo ""
-echo "Next step: Run ./install_scripts/4_register_kernel_micromamba.sh"
-echo ""

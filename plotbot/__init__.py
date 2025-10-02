@@ -424,10 +424,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_10_02_v3.56"
+__version__ = "2025_10_02_v3.57"
 
 # Commit message for this version
-__commit_message__ = "v3.56 Update: Minor documentation and notebook improvements for data_cubby.clear() feature"
+__commit_message__ = "v3.57 Update: Improved micromamba install scripts with better paths and conda-forge enforcement"
 
 # Print the version and commit message
 print(f"""
