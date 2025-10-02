@@ -171,7 +171,103 @@ Result: ✅ Correctly renders as purple scatter plot, attributes preserved acros
 
 ---
 
+## Major Feature: data_cubby.clear() Method (v3.55)
+
+### Problem:
+- No way to clear all stored data and reset the cubby to a fresh state
+- Useful for loops where you want to force fresh downloads each iteration
+- Needed for testing/debugging or freeing memory
+
+### Solution:
+Implemented `data_cubby.clear()` class method that:
+1. **Stores class types** before clearing (to know what to re-initialize)
+2. **Clears all storage dictionaries** (`cubby`, `class_registry`, `subclass_registry`)
+3. **Re-initializes class instances** with empty data using `class_type(None)`
+   - Regular classes: Re-initialized with `None` → automatically converted to `np.array([], dtype=np.float64)` by v3.53 fix
+   - Custom variables: Re-creates `CustomVariablesContainer()` fresh
+4. **Clears global tracker** (`imported_ranges`, `calculated_ranges`)
+
+**Files modified:**
+- `plotbot/data_cubby.py` - Added `clear()` class method with proper re-initialization logic
+
+### Key Implementation Details:
+```python
+@classmethod
+def clear(cls):
+    # Store class types to re-initialize
+    classes_to_reinit = []
+    for key, instance in cls.cubby.items():
+        if hasattr(instance, '__class__'):
+            classes_to_reinit.append((key, instance.__class__))
+    
+    # Clear everything
+    cls.cubby.clear()
+    cls.class_registry.clear()
+    cls.subclass_registry.clear()
+    
+    # Re-initialize with empty data
+    for key, class_type in classes_to_reinit:
+        if key == 'custom_class':
+            new_instance = CustomVariablesContainer()
+        else:
+            new_instance = class_type(None)  # Uses v3.53 empty array fix!
+        cls.stash(new_instance, class_name=key)
+    
+    # Clear tracker
+    global_tracker.imported_ranges.clear()
+    global_tracker.calculated_ranges.clear()
+```
+
+### Usage:
+```python
+# In a loop - force fresh downloads each iteration
+for date in dates:
+    plotbot.data_cubby.clear()
+    
+    # Re-create custom variables after clear
+    phi_B = plotbot.custom_variable('phi_B', 
+        np.degrees(np.arctan2(plotbot.mag_rtn_4sa.br, plotbot.mag_rtn_4sa.bn)) + 180
+    )
+    phi_B.plot_type = 'scatter'
+    
+    plotbot.plotbot(trange, plotbot.mag_rtn_4sa.bmag, 1, phi_B, 2)
+```
+
+### Important Note:
+When `clear()` is called:
+- All data is removed from memory
+- Custom variables must be re-created (old references become invalid)
+- Fresh downloads will occur for all subsequent `plotbot()` calls
+- Use sparingly - defeats the purpose of the data cubby's caching!
+
+### Bug Fixes:
+- Fixed typo: `CustomVariableContainer` → `CustomVariablesContainer`
+- Added better error handling with warnings and stack traces for failed re-initializations
+
+---
+
+## Version History
+
+### v3.55 - data_cubby.clear() Method
+**Commit:** `v3.55 Feature: data_cubby.clear() method to reset all data and re-initialize class instances with empty arrays`
+
+**Changes:**
+- `plotbot/data_cubby.py`: Implemented `clear()` class method with proper re-initialization
+- Leverages v3.53 empty initialization fix for seamless reset
+
+**Git Operations:**
+```bash
+git add plotbot/data_cubby.py
+git add plotbot/__init__.py
+git add docs/captains_logs/captains_log_2025-10-02.md
+git commit -m "v3.55 Feature: data_cubby.clear() method to reset all data and re-initialize class instances with empty arrays"
+git push
+git rev-parse --short HEAD | pbcopy
+```
+
+---
+
 ## End of Session
 Session closed: 2025-10-02
-Major breakthroughs: Empty initialization (v3.53) + Scatter plot fixes (v3.54)
+Major breakthroughs: Empty initialization (v3.53) + Scatter plot fixes (v3.54) + Data cubby clear method (v3.55)
 

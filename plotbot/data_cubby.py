@@ -617,6 +617,65 @@ class data_cubby:
         return ultimate_merger.merge_arrays(existing_times, existing_raw_data, new_times, new_raw_data)
 
     @classmethod
+    def clear(cls):
+        """
+        Clear all data from the data cubby and re-initialize global class instances.
+        
+        This resets:
+        - All stored class instances (and re-initializes them empty)
+        - All class registrations
+        - All subclass registrations
+        - The global data tracker
+        
+        Useful for:
+        - Starting fresh analysis
+        - Freeing memory
+        - Testing/debugging
+        """
+        print_manager.status("🧹 Clearing data cubby...")
+        
+        # Store list of classes that need re-initialization
+        classes_to_reinit = []
+        for key, instance in cls.cubby.items():
+            if hasattr(instance, '__class__'):
+                classes_to_reinit.append((key, instance.__class__))
+        
+        # Clear all storage dictionaries
+        cls.cubby.clear()
+        cls.class_registry.clear()
+        cls.subclass_registry.clear()
+        
+        # Re-initialize the global class instances with empty data
+        for key, class_type in classes_to_reinit:
+            try:
+                # Skip custom_class - it has special handling
+                if key == 'custom_class':
+                    # Re-create custom_class container
+                    from .data_classes.custom_variables import CustomVariablesContainer
+                    new_instance = CustomVariablesContainer()
+                    cls.stash(new_instance, class_name=key)
+                else:
+                    # Create new empty instance for regular classes
+                    new_instance = class_type(None)
+                    # Re-register it
+                    cls.stash(new_instance, class_name=key)
+                print_manager.debug(f"✅ Re-initialized {key}")
+            except Exception as e:
+                print_manager.warning(f"⚠️  Could not re-initialize {key}: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        # Clear the global tracker
+        from .data_tracker import global_tracker
+        global_tracker.imported_ranges.clear()
+        global_tracker.calculated_ranges.clear()
+        
+        print_manager.status("✅ Data cubby cleared successfully!")
+        print_manager.status("   - All class instances cleared and re-initialized")
+        print_manager.status("   - All registrations cleared")
+        print_manager.status("   - Global tracker reset")
+    
+    @classmethod
     def grab(cls, identifier):
         """Retrieve object by its identifier with enhanced type tracking."""
         print_manager.datacubby(f"\n=== Retrieving {identifier} from data_cubby ===")
