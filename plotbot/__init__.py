@@ -424,10 +424,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_10_01_v3.52"
+__version__ = "2025_10_02_v3.53"
 
 # Commit message for this version
-__commit_message__ = "v3.52 Fix: Case sensitivity bug in data_types dictionary lookups - added get_data_type_config() for case-insensitive matching"
+__commit_message__ = "v3.53 Feature: Robust empty initialization - plot_manager converts None to empty float64 arrays for numpy compatibility"
 
 # Print the version and commit message
 print(f"""

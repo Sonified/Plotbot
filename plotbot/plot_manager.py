@@ -27,6 +27,10 @@ class plot_manager(np.ndarray):
     interp_method = 'nearest'  # Default interpolation method ('nearest' or 'linear')
 
     def __new__(cls, input_array, plot_config=None):
+        # Handle None input by converting to empty float64 array
+        # This allows numpy operations (arctan2, degrees, etc.) to work on uninitialized plot_managers
+        if input_array is None:
+            input_array = np.array([], dtype=np.float64)
         obj = np.asarray(input_array).view(cls)
         # Add this new section for plot state
         if hasattr(input_array, '_plot_state'):
@@ -68,6 +72,7 @@ class plot_manager(np.ndarray):
         arr = np.asarray(self.view(np.ndarray), dtype=dtype)
         return plot_manager(arr, self.plot_config)
 
+    # __array_ufunc__ removed - using lambda for custom variables instead
     def __array_wrap__(self, out_arr, context=None):
         if context is not None:
             # For ufuncs (like addition, subtraction, etc.), return a new plot_manager with the same options
