@@ -126,7 +126,7 @@ def _get_pyspedas_map():
     to ensure it reads the environment variables after config is set.
     """
     import pyspedas
-    print(f"DEBUG: pyspedas module attributes: {[attr for attr in dir(pyspedas) if not attr.startswith('_')]}")
+    print_manager.debug(f"DEBUG: pyspedas module attributes: {[attr for attr in dir(pyspedas) if not attr.startswith('_')]}")
 
     
     return {
