@@ -519,6 +519,7 @@ class mag_rtn_4sa_class:
                 class_name='mag_rtn_4sa',   # Class handling this data type
                 subclass_name='br',         # Specific component
                 plot_type='time_series',    # Type of plot
+                time=self.time,            # Raw TT2000 epoch time
                 datetime_array=self.datetime_array,# Time data
                 y_label='B (nT)',          # Y-axis label
                 legend_label='$B_R$',      # Legend text
@@ -538,6 +539,7 @@ class mag_rtn_4sa_class:
                 class_name='mag_rtn_4sa',   # Class handling this data type
                 subclass_name='bt',         # Specific component
                 plot_type='time_series',    # Type of plot
+                time=self.time,            # Raw TT2000 epoch time
                 datetime_array=self.datetime_array,# Time data
                 y_label='B (nT)',          # Y-axis label
                 legend_label='$B_T$',      # Legend text
@@ -557,6 +559,7 @@ class mag_rtn_4sa_class:
                 class_name='mag_rtn_4sa',   # Class handling this data type
                 subclass_name='bn',         # Specific component
                 plot_type='time_series',    # Type of plot
+                time=self.time,            # Raw TT2000 epoch time
                 datetime_array=self.datetime_array,# Time data
                 y_label='B (nT)',          # Y-axis label
                 legend_label='$B_N$',      # Legend text
@@ -576,6 +579,7 @@ class mag_rtn_4sa_class:
                 class_name='mag_rtn_4sa',   # Class handling this data type
                 subclass_name='bmag',       # Specific component
                 plot_type='time_series',    # Type of plot
+                time=self.time,            # Raw TT2000 epoch time
                 datetime_array=self.datetime_array,# Time data
                 y_label='|B| (nT)',        # Y-axis label
                 legend_label='$|B|$',      # Legend text
@@ -595,6 +599,7 @@ class mag_rtn_4sa_class:
                 class_name='mag_rtn_4sa',   # Class handling this data type
                 subclass_name='pmag',       # Specific component
                 plot_type='time_series',    # Type of plot
+                time=self.time,            # Raw TT2000 epoch time
                 datetime_array=self.datetime_array,# Time data
                 y_label='Pmag (nPa)',      # Y-axis label
                 legend_label='$P_{mag}$',  # Legend text

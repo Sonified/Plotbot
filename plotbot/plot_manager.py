@@ -312,6 +312,34 @@ class plot_manager(np.ndarray):
         except Exception as e:
             from .print_manager import print_manager
             print_manager.warning(f"Error setting datetime_array: {str(e)}")
+    
+    @property
+    def time(self):
+        """Return the time clipped raw epoch time array to match .data property"""
+        # Return pre-clipped time array if available (ZERO CLIPPING OVERHEAD!)
+        if hasattr(self, '_clipped_time') and self._clipped_time is not None:
+            return self._clipped_time
+            
+        # Otherwise return full time array
+        return self.plot_config.time
+    
+    @time.setter
+    def time(self, value):
+        # FIX: For safety, directly use __setattr__ rather than going through _plot_state
+        # which can trigger truth value evaluation of arrays
+        try:
+            # First update the plot_config directly
+            if hasattr(self.plot_config, '_time'):
+                self.plot_config._time = value
+            else:
+                object.__setattr__(self.plot_config, 'time', value)
+                
+            # Then update the _plot_state dictionary if needed
+            if hasattr(self, '_plot_state'):
+                self._plot_state['time'] = value
+        except Exception as e:
+            from .print_manager import print_manager
+            print_manager.warning(f"Error setting time: {str(e)}")
         
     @property
     def y_label(self):

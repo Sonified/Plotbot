@@ -448,10 +448,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_10_07_v3.58"
+__version__ = "2025_10_07_v3.59"
 
 # Commit message for this version
-__commit_message__ = "v3.58 Critical Fix: PySpedas data directory bug - force SPEDAS_DATA_DIR at import + auto-correct PSP config"
+__commit_message__ = "v3.59 Feature: Add .time property to plot_manager - raw TT2000 epoch accessible at variable level for HCS calculations"
 
 # Print the version and commit message
 print(f"""

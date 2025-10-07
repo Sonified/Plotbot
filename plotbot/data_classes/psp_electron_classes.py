@@ -263,6 +263,7 @@ class epad_strahl_class:
                 class_name='epad',
                 subclass_name='strahl',
                 plot_type='spectral',
+                time=self.time,  # Raw TT2000 epoch time
                 datetime_array=self.times_mesh,  # Use the mesh for time array
                 y_label='Pitch Angle\n(degrees)',
                 legend_label='Electron PAD',
@@ -292,6 +293,7 @@ class epad_strahl_class:
                 class_name='epad',
                 subclass_name='centroids',
                 plot_type='time_series',
+                time=self.time,  # Raw TT2000 epoch time
                 datetime_array=self.datetime_array,
                 y_label='Pitch Angle \n (degrees)',
                 legend_label='Strahl Centroids',
@@ -553,6 +555,7 @@ class epad_strahl_high_res_class:
                 class_name='epad_hr',
                 subclass_name='strahl',
                 plot_type='spectral',
+                time=self.time,  # Raw TT2000 epoch time
                 datetime_array=self.times_mesh,  # Use the mesh for time array
                 y_label='Pitch Angle\n(degrees)',
                 legend_label='Electron PAD (High Res)',
@@ -577,6 +580,7 @@ class epad_strahl_high_res_class:
                 class_name='epad_hr',
                 subclass_name='centroids',
                 plot_type='time_series',
+                time=self.time,  # Raw TT2000 epoch time
                 datetime_array=self.datetime_array,
                 y_label='Pitch Angle \n (degrees)',
                 legend_label='Strahl Centroids',

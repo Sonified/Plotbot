@@ -17,6 +17,7 @@ class plot_config:
                  subclass_name=None, 
                  plot_type='time_series',
                  var_name=None,
+                 time=None,
                  datetime_array=None,
                  y_label=None, 
                  legend_label=None, 
@@ -44,7 +45,8 @@ class plot_config:
         self.subclass_name = subclass_name
         self.plot_type = plot_type
         self.var_name = var_name
-        # Store datetime_array as a private variable to avoid truth value comparisons
+        # Store time and datetime_array as private variables to avoid truth value comparisons
+        self._time = time
         self._datetime_array = datetime_array
         self.y_label = y_label
         self.legend_label = legend_label
@@ -72,7 +74,16 @@ class plot_config:
             if not hasattr(self, key):
                 setattr(self, key, value)
             
-    # Add a property for datetime_array to safely handle it
+    # Add properties for time and datetime_array to safely handle them
+    @property
+    def time(self):
+        return self._time
+        
+    @time.setter
+    def time(self, value):
+        # Safer setter implementation that avoids truth value comparisons
+        self._time = value
+    
     @property
     def datetime_array(self):
         return self._datetime_array

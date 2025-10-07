@@ -136,3 +136,48 @@ import plotbot   # Auto-detects and fixes it!
 - Monitor colleague's testing to confirm fix works in their environment
 - Consider adding diagnostic warning if `psp_data/` directory detected in unexpected locations
 
+---
+
+## v3.59 - Feature: .time Property for HCS Calculations
+
+**Issue:** User (Sam) reported that `.time` (raw TT2000 epoch time) was not accessible at the variable level (e.g., `plotbot.epad.strahl.time` or `plotbot.mag_rtn_4sa.br.time`). The `.time` attribute only existed at the class level, while `.datetime_array` (converted Python datetime objects) existed at both class and variable levels. This was problematic because users need raw epoch times for HCS calculations and other numerical operations.
+
+**Root Cause:**
+- `plot_config` only stored `datetime_array`, not `time`
+- When creating `plot_manager` variables, classes weren't passing `self.time` to the plot_config
+- The `plot_manager` class had no `.time` property to expose this data
+
+**Solution:**
+1. Added `time` parameter to `plot_config.__init__()` with private `_time` storage and property getter/setter
+2. Added `.time` property to `plot_manager` class (mirroring the `.datetime_array` property pattern)
+   - Returns `_clipped_time` if available (for future clipping support)
+   - Falls back to `plot_config.time`
+3. Updated data classes to pass `time=self.time` when creating `plot_manager` variables:
+   - `psp_electron_classes.py`: Updated `epad_strahl_class` and `epad_strahl_high_res_class` (strahl and centroids variables)
+   - `psp_mag_rtn_4sa.py`: Updated all mag variables (br, bt, bn, bmag, pmag)
+
+**Files Modified:**
+- `plotbot/plot_config.py` - Added time parameter and property
+- `plotbot/plot_manager.py` - Added .time property with getter/setter
+- `plotbot/data_classes/psp_electron_classes.py` - Pass time to plot_manager for epad/epad_hr
+- `plotbot/data_classes/psp_mag_rtn_4sa.py` - Pass time to plot_manager for all mag components
+
+**Testing:**
+Created comprehensive debug scripts:
+- `debug_scripts/debug_time_vs_datetime.py` - Diagnostic script showing the issue
+- `debug_scripts/test_user_use_case.py` - Verification of the fix
+
+**Result:** 
+✅ `.time` and `.datetime_array` are now at the same level in plotbot's architecture
+✅ Users can access raw TT2000 epoch times at variable level: `plotbot.epad.strahl.time`, `plotbot.mag_rtn_4sa.br.time`, etc.
+✅ Maintains backward compatibility - class-level `.time` still works
+
+**Next Steps:**
+- After testing in production, update remaining data classes (proton, qtn, other mag variants, etc.) to pass time to plot_manager
+- Implement time clipping alongside datetime_array clipping for consistency
+
+**Commit:** v3.59 Feature: Add .time property to plot_manager - raw TT2000 epoch accessible at variable level for HCS calculations
+
+---
+
+## End of Session
