@@ -1,11 +1,35 @@
 # plotbot package
 # This file exports all components to make them available when importing the package
 
+# ============================================================================
+# CRITICAL: Set SPEDAS_DATA_DIR BEFORE ANY OTHER IMPORTS
+# This must happen before pyspedas.projects.psp.config is imported anywhere
+# ============================================================================
+import os
+
+# Determine project root and data directory IMMEDIATELY
+def _get_plotbot_data_dir():
+    """Get the plotbot data directory as an absolute path."""
+    try:
+        # Get the directory containing this file (plotbot/__init__.py)
+        current_file_dir = os.path.dirname(os.path.abspath(__file__))
+        # Go up one level to get the project root (from plotbot/ to Plotbot/)
+        project_root = os.path.dirname(current_file_dir)
+        # Return absolute path to data directory
+        return os.path.join(project_root, 'data')
+    except Exception:
+        # Fallback: use 'data' relative to current working directory
+        return os.path.abspath('data')
+
+# Set SPEDAS_DATA_DIR environment variable IMMEDIATELY
+_plotbot_data_dir = _get_plotbot_data_dir()
+os.environ['SPEDAS_DATA_DIR'] = _plotbot_data_dir
+os.makedirs(_plotbot_data_dir, exist_ok=True)
+
+# Now proceed with normal imports
 # START IMPORT TIMING
 from .import_timer import start_timing, time_import, time_block, end_timing
 start_timing("plotbot_full_initialization")
-
-import os
 
 # Import and configure matplotlib first to ensure consistent styling
 mpl_plt = time_import('matplotlib.pyplot')
@@ -424,10 +448,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_10_02_v3.57"
+__version__ = "2025_10_07_v3.58"
 
 # Commit message for this version
-__commit_message__ = "v3.57 Update: Improved micromamba install scripts with better paths and conda-forge enforcement"
+__commit_message__ = "v3.58 Critical Fix: PySpedas data directory bug - force SPEDAS_DATA_DIR at import + auto-correct PSP config"
 
 # Print the version and commit message
 print(f"""

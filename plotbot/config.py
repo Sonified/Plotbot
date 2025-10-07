@@ -102,6 +102,32 @@ Options:
         # Create the directory if it doesn't exist
         os.makedirs(abs_data_dir, exist_ok=True)
         
+        # DEFENSIVE FIX: Force-correct PSP config if it was already imported with wrong path
+        self._fix_psp_config_if_needed()
+    
+    def _fix_psp_config_if_needed(self):
+        """
+        Force-correct the PSP config if it was already imported with the wrong path.
+        
+        This handles the edge case where pyspedas.projects.psp.config was imported
+        before SPEDAS_DATA_DIR was set, causing it to default to 'psp_data/'.
+        """
+        import sys
+        
+        # Check if PSP config is already imported
+        if 'pyspedas.projects.psp.config' in sys.modules:
+            try:
+                from pyspedas.projects.psp import config as psp_config
+                expected_path = os.sep.join([os.path.abspath(self._data_dir), 'psp'])
+                
+                # If PSP config has wrong path, force-correct it
+                if psp_config.CONFIG['local_data_dir'] != expected_path:
+                    psp_config.CONFIG['local_data_dir'] = expected_path
+                    print(f"🔧 Fixed PSP config: {psp_config.CONFIG['local_data_dir']}")
+            except Exception as e:
+                # Silent fail - don't break plotbot if this defensive fix fails
+                pass
+        
     def _get_default_data_dir(self):
         """
         Get the default data directory as an absolute path relative to the project root.

@@ -267,6 +267,39 @@ git rev-parse --short HEAD | pbcopy
 
 ---
 
+---
+
+## Known Issues / Future Work
+
+**Note:** Will migrate Jaye's to-do list to a dedicated document in `docs/` for better tracking of feature requests and improvements.
+
+### Bug: config.data_dir Not Respected on First Use
+**Reported by:** Sam (collaborator)
+
+**Issue:**
+Data was downloaded to a different directory than the one set in `config.data_dir`. Had to explicitly re-set the path to fix:
+```python
+plotbot.config.data_dir = '/Users/sfordin/Documents/Science-Projects/01-psp-wind-conjunction/data'
+```
+
+**Potential causes to investigate:**
+1. Initial `config.data_dir` setting may not be propagating to download functions
+2. PySpedas might be using its own default path instead of respecting plotbot's config
+3. Timing issue - config set after download logic initializes
+4. Path validation/normalization issue
+
+**Files to check:**
+- `plotbot/config.py` - How data_dir is initialized and accessed
+- `plotbot/data_download_pyspedas.py` - How download path is determined
+- `plotbot/get_data.py` - How config.data_dir is passed to download functions
+
+**Workaround for users:**
+Explicitly set `plotbot.config.data_dir = 'desired/path'` at the start of notebooks/scripts.
+
+**Priority:** Medium - has workaround but should be fixed for better UX
+
+---
+
 ## End of Session
 Session closed: 2025-10-02
 Major breakthroughs: Empty initialization (v3.53) + Scatter plot fixes (v3.54) + Data cubby clear method (v3.55)
