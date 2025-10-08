@@ -275,9 +275,28 @@ Created comprehensive debug scripts:
 **Status:** ✅ COMPLETE - All files updated, tested, and ready for commit
 
 **Total Changes:**
-- 34 files modified (33 data classes + plot_manager.py + data_import_cdf.py)
-- 920+ lines added
-- 3 debug/automation scripts created
+- 35 files modified (33 data classes + plot_manager.py + data_import_cdf.py + __init__.py)
+- 1,206 insertions, 74 deletions
+- 5 debug/automation scripts created
+
+---
+
+## Git Push - v3.60
+
+**Version:** 2025_10_08_v3.60  
+**Commit Hash:** 45f3373 (copied to clipboard)  
+**Commit Message:** v3.60 Complete: Automated .time property across all 35 data classes - TT2000 epoch now accessible at variable level
+
+**Files Changed:** 39 files  
+**Insertions:** +1,206  
+**Deletions:** -74
+
+**Summary:**
+- ✅ Pushed to main branch successfully
+- ✅ Sam can now access `.time` (raw TT2000 epoch) at variable level for HCS calculations
+- ✅ All PSP and WIND data classes updated
+- ✅ CDF generator template updated for future auto-generated classes
+- ✅ Full backward compatibility maintained
 
 ---
 

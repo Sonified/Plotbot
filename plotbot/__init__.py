@@ -88,21 +88,13 @@ with time_block("wind_data_classes"):
 # Custom Class Imports (auto-generated)
 # To add new classes: run cdf_to_plotbot('path/to/file.cdf') and this will be updated
 # ------------------------------------------------------------------------------
-from .data_classes.custom_classes.demo_spectral_waves import demo_spectral_waves, demo_spectral_waves_class
-from .data_classes.custom_classes.demo_wave_power import demo_wave_power, demo_wave_power_class
-from .data_classes.custom_classes.psp_simple_test import psp_simple_test, psp_simple_test_class
-from .data_classes.custom_classes.psp_spectral_waves import psp_spectral_waves, psp_spectral_waves_class
-from .data_classes.custom_classes.psp_waves_auto import psp_waves_auto, psp_waves_auto_class
-from .data_classes.custom_classes.psp_waves_real_test import psp_waves_real_test, psp_waves_real_test_class
-from .data_classes.custom_classes.psp_waves_spectral import psp_waves_spectral, psp_waves_spectral_class
-from .data_classes.custom_classes.psp_waves_test import psp_waves_test, psp_waves_test_class
-from .data_classes.custom_classes.psp_waves_timeseries import psp_waves_timeseries, psp_waves_timeseries_class
+# ✨ Custom classes now load DYNAMICALLY via _auto_register_custom_classes()
+# ✨ No manual imports needed! Just run cdf_to_plotbot() and classes appear automatically.
 # ------------------------------------------------------------------------------
 # ==============================================================================
 
 # Import custom generated classes explicitly for type hinting and IDE support
-from .data_classes.custom_classes.psp_waves_timeseries import psp_waves_timeseries, psp_waves_timeseries_class
-from .data_classes.custom_classes.psp_waves_spectral import psp_waves_spectral, psp_waves_spectral_class
+# (psp_waves_timeseries and psp_waves_spectral removed - will regenerate with auto-naming)
 
 
 # --- Explicitly Register Global Instances with DataCubby --- #
@@ -135,6 +127,9 @@ with time_block("data_cubby_registration"):
     data_cubby.stash(psp_dfb, class_name='dfb_dc_spec_dv12hg')
 
 # --- Auto-register Custom CDF Classes --- #
+# Initialize __all__ early so custom classes can be added
+__all__ = []
+
 def _auto_register_custom_classes():
     """Automatically scan and register all classes in data_classes/custom_classes/"""
     import os
@@ -173,7 +168,7 @@ def _auto_register_custom_classes():
         except Exception as e:
             print_manager.warning(f"Failed to auto-register {module_name}: {e}")
 
-# Auto-register any custom CDF classes
+# Auto-register any custom CDF classes BEFORE the rest of __all__ is populated
 with time_block("auto_register_custom_classes"):
     _auto_register_custom_classes()
 
@@ -363,8 +358,8 @@ CLASS_NAME_MAPPING = {
     },
 }
 
-# Specify what gets imported with `from plotbot import *`
-__all__ = [
+# Add the rest of the exports to __all__ (custom classes already added above)
+__all__.extend([
     'plt',           # Now provides our enhanced plt with options support
     'np',            # Make numpy directly available
     'plotbot',
@@ -418,28 +413,9 @@ __all__ = [
     'showda_holes',      # Add showda_holes to __all__
     
     # --- AUTO-GENERATED CUSTOM CLASS __all__ ENTRIES ---
-    'demo_spectral_waves',  # Custom generated class
-    'demo_wave_power',  # Custom generated class
-    'psp_simple_test',  # Custom generated class
-    'psp_spectral_waves',  # Custom generated class
-    'psp_waves_auto',  # Custom generated class
-    'psp_waves_real_test',  # Custom generated class
-    'psp_waves_spectral',  # Custom generated class
-    'psp_waves_timeseries',  # Custom generated class
+    # ✨ Custom classes dynamically added to __all__ by _auto_register_custom_classes()
     # --- END AUTO-GENERATED __all__ ENTRIES ---
-
-    # --- AUTO-GENERATED CUSTOM CLASS __ALL__ ENTRIES ---
-    'demo_spectral_waves',  # Custom generated class
-    'demo_wave_power',  # Custom generated class
-    'psp_simple_test',  # Custom generated class
-    'psp_spectral_waves',  # Custom generated class
-    'psp_waves_auto',  # Custom generated class
-    'psp_waves_real_test',  # Custom generated class
-    'psp_waves_spectral',  # Custom generated class
-    'psp_waves_test',  # Custom generated class
-    'psp_waves_timeseries',  # Custom generated class
-# --- END AUTO-GENERATED __ALL__ ENTRIES ---
-]
+])
 
 # Colors for printing
 BLUE = '\033[94m'
@@ -448,10 +424,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_10_08_v3.60"
+__version__ = "2025_10_08_v3.61"
 
 # Commit message for this version
-__commit_message__ = "v3.60 Complete: Automated .time property across all 35 data classes - TT2000 epoch now accessible at variable level"
+__commit_message__ = "v3.61 Feature: Auto-generate class names from CDF filenames - intelligent date/version stripping"
 
 # Print the version and commit message
 print(f"""

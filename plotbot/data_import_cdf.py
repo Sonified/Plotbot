@@ -686,7 +686,7 @@ class {class_name}:
     return class_code 
 
 
-def cdf_to_plotbot(file_path: str, class_name: str, output_dir: Optional[str] = None) -> bool:
+def cdf_to_plotbot(file_path: str, class_name: Optional[str] = None, output_dir: Optional[str] = None) -> bool:
     """
     Generate a complete plotbot class from a CDF file.
     
@@ -699,11 +699,17 @@ def cdf_to_plotbot(file_path: str, class_name: str, output_dir: Optional[str] = 
     Args:
         file_path: Path to the CDF file
         class_name: Name for the generated plotbot class (e.g., 'psp_waves')
-        output_dir: Directory to write files (default: plotbot/data_classes/)
+                   If None, auto-generates from CDF filename by stripping dates/versions
+        output_dir: Directory to write files (default: plotbot/data_classes/custom_classes/)
         
     Returns:
         True if successful, False otherwise
     """
+    # Auto-generate class name if not provided
+    if class_name is None:
+        class_name = _auto_generate_class_name(file_path)
+        print_manager.status(f"🤖 Auto-generated class name: '{class_name}'")
+    
     print_manager.status(f"🔧 Generating plotbot class '{class_name}' from {os.path.basename(file_path)}")
     
     # Set default output directory to custom_classes folder
@@ -790,15 +796,8 @@ def cdf_to_plotbot(file_path: str, class_name: str, output_dir: Optional[str] = 
             print_manager.warning(f"⚠️  Failed to auto-register '{class_name}': {e}")
             print_manager.debug(f"   Manual registration may be needed on next plotbot restart")
         
-        # AUTO-UPDATE MAIN __INIT__.PY for proper type hinting
-        print_manager.status(f"🔄 Auto-updating main __init__.py for IDE type hinting...")
-        try:
-            if update_plotbot_init():
-                print_manager.status(f"✅ Updated main __init__.py - IDE type hints now available!")
-            else:
-                print_manager.warning(f"⚠️  Failed to update __init__.py - type hints may not work in IDE")
-        except Exception as e:
-            print_manager.warning(f"⚠️  Error updating __init__.py: {e}")
+        # ✨ No need to update __init__.py - dynamic loading handles everything!
+        print_manager.status(f"✅ Class will auto-load on next plotbot import - no __init__.py edits needed!")
         
         return True
         
@@ -1367,6 +1366,78 @@ class {class_name}_class:
     return pyi_code 
 
 
+def _auto_generate_class_name(cdf_file_path: str) -> str:
+    """
+    Auto-generate a Python class name from a CDF filename by intelligently
+    stripping dates, times, versions, and other variable elements.
+    
+    Args:
+        cdf_file_path: Path to the CDF file
+        
+    Returns:
+        Clean class name suitable for Python (lowercase, underscores)
+        
+    Examples:
+        psp_fld_l2_mag_RTN_4_Sa_per_Cyc_20210807_v02.cdf → psp_fld_l2_mag_rtn_4_sa_per_cyc
+        wi_elpd_3dp_20220602_v02.cdf → wi_elpd_3dp
+        mms1_fpi_brst_l2_des-moms_20170802120000_v3.3.0.cdf → mms1_fpi_brst_l2_des_moms
+    """
+    import re
+    
+    # Get filename without extension
+    filename = os.path.basename(cdf_file_path)
+    name = filename.replace('.cdf', '').replace('.CDF', '')
+    
+    # Define aggressive patterns to strip dates/times/versions (order matters!)
+    patterns = [
+        # ISO timestamps: YYYYMMDDHHMMSS (14 digits)
+        (r'_\d{14}(?=_|$)', ''),
+        # ISO timestamps: YYYYMMDDHHMM (12 digits)
+        (r'_\d{12}(?=_|$)', ''),
+        # Date+Time: YYYYMMDD_HHMMSS
+        (r'_\d{8}_\d{6}(?=_|$)', ''),
+        # Date+Time: YYYYMMDD_HHMM
+        (r'_\d{8}_\d{4}(?=_|$)', ''),
+        # ISO date with dashes: YYYY-MM-DD
+        (r'_\d{4}-\d{2}-\d{2}', ''),
+        # Compact date: YYYYMMDD (8 digits, not part of longer number)
+        (r'(?<![\d])_\d{8}(?=_|$)', ''),
+        # Day-of-year: YYYY_DDD or YYYYDDD
+        (r'_?\d{4}_\d{3}(?=_|$)', ''),
+        (r'(?<![\d])\d{7}(?=_|$)', ''),  # YYYYDDD as 7 digits
+        # Year only at end: _YYYY
+        (r'_\d{4}(?=_v|\.cdf|$)', ''),
+        # Time patterns: HHMMSS, HHMM before version
+        (r'_\d{6}(?=_v)', ''),  # HHMMSS before version
+        (r'_\d{4}(?=_v)', ''),  # HHMM before version
+        # Version patterns (very specific to avoid false matches)
+        (r'_v\d+\.\d+\.\d+$', ''),  # v1.2.3 at end
+        (r'_v\d+\.\d+$', ''),       # v1.2 at end
+        (r'_v\d{2,3}$', ''),        # v01, v001 at end
+        (r'_version\d+$', ''),      # version1
+        # Sequential numbering at very end
+        (r'_\d{3}$', ''),  # _001
+        (r'_\d{2}$', ''),  # _01
+    ]
+    
+    # Apply patterns
+    for pattern, replacement in patterns:
+        name = re.sub(pattern, replacement, name)
+    
+    # Clean up artifacts
+    name = re.sub(r'_+', '_', name)  # Multiple underscores
+    name = re.sub(r'-+', '-', name)  # Multiple dashes
+    name = name.strip('_-')           # Leading/trailing
+    
+    # Convert to valid Python identifier
+    name = name.lower()
+    name = re.sub(r'[^a-z0-9_]', '_', name)  # Replace invalid chars with underscore
+    name = re.sub(r'_+', '_', name)          # Clean up double underscores again
+    name = name.strip('_')                   # Remove leading/trailing underscores
+    
+    return name
+
+
 def generate_file_pattern_from_cdf(cdf_file_path: str, search_directory: str = None) -> str:
     """
     Smart pattern generator that analyzes a CDF filename and creates a wildcard pattern
@@ -1475,28 +1546,16 @@ def _find_files_matching_pattern(pattern: str, directory: str) -> List[str]:
     return matching_files
 
 
-# ============================================================================== 
-# Auto-Init Updater for Plotbot Custom Classes
-# 
-# This script automatically scans the custom_classes directory and updates
-# the main __init__.py file with the necessary imports and __all__ entries
-# to ensure type hinting works properly.
+# ==============================================================================
+# ✨ DEPRECATED: Auto-Init Updater (No longer needed!)
+# Custom classes now load dynamically via _auto_register_custom_classes()
+# in __init__.py - no manual editing required!
 # ==============================================================================
 
-#!/usr/bin/env python3
-"""
-Auto-Init Updater for Plotbot Custom Classes
+# This entire section can be removed in future cleanup
+# Keeping as comment for historical reference
 
-This script automatically scans the custom_classes directory and updates
-the main __init__.py file with the necessary imports and __all__ entries
-to ensure type hinting works properly.
-
-Run this after generating new CDF classes.
-"""
-
-from pathlib import Path
-
-def update_plotbot_init():
+def update_plotbot_init_DEPRECATED():
     """Update the main plotbot __init__.py with custom class imports."""
     
     # Find the plotbot root directory

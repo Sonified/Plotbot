@@ -1,6 +1,6 @@
 """
-Type hints for auto-generated plotbot class psp_waves_timeseries
-Generated on: 2025-09-18T17:04:47.417253
+Type hints for auto-generated plotbot class psp_wavepower
+Generated on: 2025-10-08T16:48:39.346396
 Source: PSP_wavePower_2021-04-29_v1.3.cdf
 """
 
@@ -10,7 +10,7 @@ from datetime import datetime
 from plotbot.plot_manager import plot_manager
 from plotbot.plot_config import plot_config
 
-class psp_waves_timeseries_class:
+class psp_wavepower_class:
     """CDF data class for PSP_wavePower_2021-04-29_v1.3.cdf"""
     
     # Class attributes
@@ -38,4 +38,4 @@ class psp_waves_timeseries_class:
     def __setattr__(self, name: str, value: Any) -> None: ...
 
 # Instance
-psp_waves_timeseries: psp_waves_timeseries_class
+psp_wavepower: psp_wavepower_class
