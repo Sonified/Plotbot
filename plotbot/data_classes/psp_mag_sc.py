@@ -29,6 +29,7 @@ class mag_sc_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
 
         if imported_data is None:
             # Set empty plotting options if imported_data is None (this is how we initialize the class)
@@ -210,6 +211,8 @@ class mag_sc_class:
                 class_name='mag_sc',        # Class handling this data
                 subclass_name='all',        # Specific component
                 plot_type='time_series',    # Type of plot
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,# Time data
                 y_label='B (nT)',          # Y-axis label
                 legend_label=['$B_X$', '$B_Y$', '$B_Z$'],  # Legend text
@@ -229,6 +232,8 @@ class mag_sc_class:
                 class_name='mag_sc',        # Class handling this data
                 subclass_name='bx',         # Specific component
                 plot_type='time_series',    # Type of plot
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,# Time data
                 y_label='B (nT)',          # Y-axis label
                 legend_label='$B_X$',      # Legend text
@@ -248,6 +253,8 @@ class mag_sc_class:
                 class_name='mag_sc',        # Class handling this data
                 subclass_name='by',         # Specific component
                 plot_type='time_series',    # Type of plot
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,# Time data
                 y_label='B (nT)',          # Y-axis label
                 legend_label='$B_Y$',      # Legend text
@@ -267,6 +274,8 @@ class mag_sc_class:
                 class_name='mag_sc',        # Class handling this data
                 subclass_name='bz',         # Specific component
                 plot_type='time_series',    # Type of plot
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,# Time data
                 y_label='B (nT)',          # Y-axis label
                 legend_label='$B_Z$',      # Legend text
@@ -286,6 +295,8 @@ class mag_sc_class:
                 class_name='mag_sc',        # Class handling this data
                 subclass_name='bmag',       # Specific component
                 plot_type='time_series',    # Type of plot
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,# Time data
                 y_label='|B| (nT)',        # Y-axis label
                 legend_label='$|B|$',      # Legend text
@@ -305,6 +316,8 @@ class mag_sc_class:
                 class_name='mag_sc',        # Class handling this data
                 subclass_name='pmag',       # Specific component
                 plot_type='time_series',    # Type of plot
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,# Time data
                 y_label='Pmag (nPa)',      # Y-axis label
                 legend_label='$P_{mag}$',  # Legend text

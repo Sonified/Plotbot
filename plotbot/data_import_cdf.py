@@ -852,6 +852,7 @@ def _generate_plotbot_class_code(metadata: CDFMetadata, class_name: str) -> str:
                 class_name='{class_name}',
                 subclass_name='{var.name}',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
                 datetime_array={var.name}_mesh,
                 y_label='{var.y_label}',
                 legend_label='{var.description}',
@@ -905,6 +906,7 @@ def _generate_plotbot_class_code(metadata: CDFMetadata, class_name: str) -> str:
                 class_name='{class_name}',
                 subclass_name='{var.name}',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
                 datetime_array=self.datetime_array,
                 y_label='{var.y_label}',
                 legend_label='{var.description}',
@@ -956,6 +958,7 @@ class {class_name}_class:
         object.__setattr__(self, 'raw_data', {raw_data_dict})
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, '_current_operation_trange', None)
         {"object.__setattr__(self, 'variable_meshes', {})" if has_spectral else ""}
         

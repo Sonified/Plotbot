@@ -457,6 +457,8 @@ def custom_variable(name, expression):
             class_name='custom_class',
             subclass_name=name,
             plot_type='time_series',
+            time=self.time if hasattr(self, 'time') else None,
+
             datetime_array=None
         )
         placeholder = plot_manager(np.array([]), plot_config=placeholder_config)

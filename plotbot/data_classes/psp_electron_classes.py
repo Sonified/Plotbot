@@ -25,6 +25,7 @@ class epad_strahl_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, 'times_mesh', [])
         object.__setattr__(self, 'data_type', 'spe_sf0_pad') # Explicitly set data_type
         object.__setattr__(self, '_current_operation_trange', None) # Initialize new attribute
@@ -334,6 +335,7 @@ class epad_strahl_high_res_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, 'times_mesh', [])
         object.__setattr__(self, 'data_type', 'spe_hires_pad') # Explicitly set data_type for high-res
         object.__setattr__(self, '_current_operation_trange', None) # Initialize new attribute

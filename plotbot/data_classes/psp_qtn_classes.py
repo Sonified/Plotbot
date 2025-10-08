@@ -26,6 +26,7 @@ class psp_qtn_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, '_current_operation_trange', None) # For dependency tracking
 
         if imported_data is None:
@@ -223,6 +224,8 @@ class psp_qtn_class:
                 class_name='psp_qtn',           # Class handling this data
                 subclass_name='density',        # Specific component
                 plot_type='time_series',        # Type of plot
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,# Time data
                 y_label='n$_e$ (cm$^{-3}$)',   # Y-axis label
                 legend_label='n$_e$ (QTN)',     # Legend text
@@ -243,6 +246,8 @@ class psp_qtn_class:
                 class_name='psp_qtn',           # Class handling this data
                 subclass_name='temperature',    # Specific component
                 plot_type='time_series',        # Type of plot
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,# Time data
                 y_label='T$_e$ (eV)',          # Y-axis label
                 legend_label='T$_e$ (QTN)',     # Legend text

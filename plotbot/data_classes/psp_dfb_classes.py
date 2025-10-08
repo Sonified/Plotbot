@@ -30,6 +30,7 @@ class psp_dfb_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, 'times_mesh_ac_dv12', None)  # For spectral plotting
         object.__setattr__(self, 'times_mesh_ac_dv34', None)
         object.__setattr__(self, 'times_mesh_dc_dv12', None)
@@ -223,6 +224,8 @@ class psp_dfb_class:
                 class_name='psp_dfb',
                 subclass_name='ac_spec_dv12',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=datetime_array,  # Get from raw_data
                 y_label='AC dV12\\n(Hz)',
                 legend_label='AC Spectrum dV12',
@@ -246,6 +249,8 @@ class psp_dfb_class:
                 class_name='psp_dfb',
                 subclass_name='ac_spec_dv34',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=datetime_array,  # Get from raw_data
                 y_label='AC dV34\\n(Hz)',
                 legend_label='AC Spectrum dV34',
@@ -269,6 +274,8 @@ class psp_dfb_class:
                 class_name='psp_dfb',
                 subclass_name='dc_spec_dv12',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=datetime_array,  # Get from raw_data
                 y_label='DC dV12\\n(Hz)',
                 legend_label='DC Spectrum dV12',

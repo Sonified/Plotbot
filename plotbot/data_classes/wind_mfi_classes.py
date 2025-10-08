@@ -32,6 +32,7 @@ class wind_mfi_h2_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, '_current_operation_trange', None)
 
         print_manager.dependency_management(f"*** WIND_MFI_CLASS_INIT (wind_mfi_h2_class) ID:{id(self)}: imported_data ID: {id(imported_data) if imported_data is not None else 'None'}. ***")
@@ -249,6 +250,8 @@ class wind_mfi_h2_class:
                 class_name='wind_mfi_h2',
                 subclass_name='all',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='B (nT)',
                 legend_label=['$B_X$ (GSE)', '$B_Y$ (GSE)', '$B_Z$ (GSE)'],
@@ -268,6 +271,8 @@ class wind_mfi_h2_class:
                 class_name='wind_mfi_h2',
                 subclass_name='bx',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='B (nT)',
                 legend_label='$B_X$ (GSE)',
@@ -287,6 +292,8 @@ class wind_mfi_h2_class:
                 class_name='wind_mfi_h2',
                 subclass_name='by',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='B (nT)',
                 legend_label='$B_Y$ (GSE)',
@@ -306,6 +313,8 @@ class wind_mfi_h2_class:
                 class_name='wind_mfi_h2',
                 subclass_name='bz',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='B (nT)',
                 legend_label='$B_Z$ (GSE)',
@@ -325,6 +334,8 @@ class wind_mfi_h2_class:
                 class_name='wind_mfi_h2',
                 subclass_name='bmag',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='B (nT)',
                 legend_label='$|B|$',
@@ -344,6 +355,8 @@ class wind_mfi_h2_class:
                 class_name='wind_mfi_h2',
                 subclass_name='bgse',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='B (nT)',
                 legend_label='B GSE Vector',

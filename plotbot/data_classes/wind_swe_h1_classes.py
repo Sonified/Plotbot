@@ -30,6 +30,7 @@ class wind_swe_h1_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, '_current_operation_trange', None)
 
         print_manager.dependency_management(f"*** WIND_SWE_H1_CLASS_INIT (wind_swe_h1_class) ID:{id(self)}: imported_data ID: {id(imported_data) if imported_data is not None else 'None'}. ***")
@@ -421,6 +422,8 @@ class wind_swe_h1_class:
                 class_name='wind_swe_h1',
                 subclass_name='proton_wpar',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Thermal Speed\n(km/s)',
                 legend_label=r'$W_{\parallel,p}$',
@@ -441,6 +444,8 @@ class wind_swe_h1_class:
                 class_name='wind_swe_h1',
                 subclass_name='proton_wperp',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Thermal Speed\n(km/s)',
                 legend_label=r'$W_{\perp,p}$',
@@ -461,6 +466,8 @@ class wind_swe_h1_class:
                 class_name='wind_swe_h1',
                 subclass_name='proton_anisotropy',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label=r'$W_{\perp}/W_{\parallel}$',
                 legend_label=r'$W_{\perp}/W_{\parallel}$',
@@ -481,6 +488,8 @@ class wind_swe_h1_class:
                 class_name='wind_swe_h1',
                 subclass_name='alpha_w',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Alpha Thermal Speed\n(km/s)',
                 legend_label=r'$W_{\alpha}$',
@@ -501,6 +510,8 @@ class wind_swe_h1_class:
                 class_name='wind_swe_h1',
                 subclass_name='fit_flag',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Fit Flag',
                 legend_label='Data Quality',

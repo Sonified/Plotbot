@@ -90,6 +90,7 @@ class proton_fits_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, 'data_type', 'psp_fld_l3_sf0_fit') # Explicitly set data_type
 
         if imported_data is None:
@@ -673,6 +674,8 @@ class proton_fits_class:
             class_name='proton_fits',
             subclass_name=subclass_name,
             plot_type='scatter',         # Default
+            time=self.time if hasattr(self, 'time') else None,
+
             datetime_array=self.datetime_array, # Default
             y_label=y_label,
             legend_label=legend_label,
@@ -698,6 +701,8 @@ class proton_fits_class:
                 class_name='proton_fits',
                 subclass_name='qz_p', # User list #1
                 plot_type='scatter',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label=r'$q_{z,p}$ (W/m$^2$)',
                 legend_label=r'$q_{z,p}$',
@@ -719,6 +724,8 @@ class proton_fits_class:
                 class_name='proton_fits',
                 subclass_name='vsw_mach', # User list #2
                 plot_type='scatter',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label=r'$V_{sw}/V_A$', 
                 legend_label=r'$V_{sw}/V_A$', 
@@ -740,6 +747,8 @@ class proton_fits_class:
                 class_name='proton_fits',
                 subclass_name='beta_ppar_pfits', # User list #3 (RESTORED ORIGINAL)
                 plot_type='scatter', 
+                time=self.time if hasattr(self, 'time') else None,
+ 
                 datetime_array=self.datetime_array,
                 y_label=r'$\beta_{\parallel,p}$', 
                 legend_label=r'$\beta_{\parallel,p}$', 
@@ -761,6 +770,8 @@ class proton_fits_class:
                 class_name='proton_fits',
                 subclass_name='beta_pperp_pfits', # User list #4 (RESTORED ORIGINAL)
                 plot_type='scatter',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label=r'$\beta_{\perp,p}$',
                 legend_label=r'$\beta_{\perp,p}$',
@@ -782,6 +793,8 @@ class proton_fits_class:
                 class_name='proton_fits',
                 subclass_name='beta_p_tot', # User list #5 (Updated)
                 plot_type='scatter',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label=r'$\beta_p$',
                 legend_label=r'$\beta_p$',
@@ -803,6 +816,8 @@ class proton_fits_class:
                 class_name='proton_fits',
                 subclass_name='ham_param', # User list #5
                 plot_type='scatter',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Hamplitude', 
                 legend_label='Hamplitude', 
@@ -1160,6 +1175,8 @@ class proton_fits_class:
                 class_name='proton_fits',
                 subclass_name='valfven_pfits', # User list #34 (Updated name)
                 plot_type='time_series', 
+                time=self.time if hasattr(self, 'time') else None,
+ 
                 datetime_array=self.datetime_array,
                 y_label=r'V$_{A}$ (km/s)', 
                 legend_label=r'V$_{A}$'   

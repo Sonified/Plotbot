@@ -36,6 +36,7 @@ class wind_3dp_pm_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, '_current_operation_trange', None)
 
         print_manager.dependency_management(f"*** WIND_3DP_PM_CLASS_INIT (wind_3dp_pm_class) ID:{id(self)}: imported_data ID: {id(imported_data) if imported_data is not None else 'None'}. ***")
@@ -485,6 +486,8 @@ class wind_3dp_pm_class:
                 class_name='wind_3dp_pm',
                 subclass_name='all_v',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Velocity (km/s)',
                 legend_label=['$V_X$ (GSE)', '$V_Y$ (GSE)', '$V_Z$ (GSE)'],
@@ -505,6 +508,8 @@ class wind_3dp_pm_class:
                 class_name='wind_3dp_pm',
                 subclass_name='vx',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='$V_X$ (km/s)',
                 legend_label='$V_X$ (GSE)',
@@ -524,6 +529,8 @@ class wind_3dp_pm_class:
                 class_name='wind_3dp_pm',
                 subclass_name='vy',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='$V_Y$ (km/s)',
                 legend_label='$V_Y$ (GSE)',
@@ -543,6 +550,8 @@ class wind_3dp_pm_class:
                 class_name='wind_3dp_pm',
                 subclass_name='vz',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='$V_Z$ (km/s)',
                 legend_label='$V_Z$ (GSE)',
@@ -563,6 +572,8 @@ class wind_3dp_pm_class:
                 class_name='wind_3dp_pm',
                 subclass_name='v_mag',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='$|V|$ (km/s)',
                 legend_label='$|V|$',
@@ -583,6 +594,8 @@ class wind_3dp_pm_class:
                 class_name='wind_3dp_pm',
                 subclass_name='p_vels',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Velocity Vector',
                 legend_label='P_VELS [Vx,Vy,Vz]',
@@ -605,6 +618,8 @@ class wind_3dp_pm_class:
                 class_name='wind_3dp_pm',
                 subclass_name='p_dens',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Density\n(cm$^{-3}$)',
                 legend_label='$n_p$ (3DP)',
@@ -625,6 +640,8 @@ class wind_3dp_pm_class:
                 class_name='wind_3dp_pm',
                 subclass_name='p_temp',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Temperature (eV)',
                 legend_label='$T_p$ (3DP)',
@@ -647,6 +664,8 @@ class wind_3dp_pm_class:
                 class_name='wind_3dp_pm',
                 subclass_name='a_dens',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Alpha Density\n(cm$^{-3}$)',
                 legend_label='$n_{\\alpha}$ (3DP)',
@@ -667,6 +686,8 @@ class wind_3dp_pm_class:
                 class_name='wind_3dp_pm',
                 subclass_name='a_temp',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Alpha Temperature (eV)',
                 legend_label='$T_{\\alpha}$ (3DP)',
@@ -689,6 +710,8 @@ class wind_3dp_pm_class:
                 class_name='wind_3dp_pm',
                 subclass_name='valid',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Quality Flag',
                 legend_label='Data Valid',

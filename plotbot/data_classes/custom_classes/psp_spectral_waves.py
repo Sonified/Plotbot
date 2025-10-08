@@ -226,6 +226,7 @@ class psp_spectral_waves_class:
     })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, '_current_operation_trange', None)
         object.__setattr__(self, 'variable_meshes', {})
         
@@ -1317,6 +1318,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_1',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_1 (ns)',
                 legend_label='FFT_time_1',
@@ -1336,6 +1339,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies',
@@ -1373,6 +1378,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='ellipticity_b',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=ellipticity_b_mesh,
                 y_label='ellipticity_b',
                 legend_label='Ellipticity (Bfield)',
@@ -1399,6 +1406,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_2',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_2 (ns)',
                 legend_label='FFT_time_2',
@@ -1418,6 +1427,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_1',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_1',
@@ -1455,6 +1466,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='wave_normal_b',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=wave_normal_b_mesh,
                 y_label='wave_normal_b (degrees)',
                 legend_label='Wave Normal Angle (Bfield)',
@@ -1481,6 +1494,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_3',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_3 (ns)',
                 legend_label='FFT_time_3',
@@ -1500,6 +1515,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_2',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_2',
@@ -1537,6 +1554,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='coherency_b',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=coherency_b_mesh,
                 y_label='coherency_b',
                 legend_label='Coherency (Bfield)',
@@ -1563,6 +1582,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_4',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_4 (ns)',
                 legend_label='FFT_time_4',
@@ -1582,6 +1603,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_3',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_3',
@@ -1619,6 +1642,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='B_power_para',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=B_power_para_mesh,
                 y_label='B_power_para (nT$^2$/Hz)',
                 legend_label='Bfield Power Compressional',
@@ -1645,6 +1670,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_5',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_5 (ns)',
                 legend_label='FFT_time_5',
@@ -1664,6 +1691,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_4',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_4',
@@ -1701,6 +1730,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='B_power_perp',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=B_power_perp_mesh,
                 y_label='B_power_perp (nT$^2$/Hz)',
                 legend_label='Bfield Power Transverse',
@@ -1727,6 +1758,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_6',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_6 (ns)',
                 legend_label='FFT_time_6',
@@ -1746,6 +1779,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_5',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_5',
@@ -1783,6 +1818,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Wave_Power_b',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=Wave_Power_b_mesh,
                 y_label='Wave_Power_b (nT$^2$/Hz)',
                 legend_label='Bfield Power perpendicular to wave normal direction k',
@@ -1809,6 +1846,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_7',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_7 (ns)',
                 legend_label='FFT_time_7',
@@ -1828,6 +1867,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_6',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_6',
@@ -1865,6 +1906,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='S_mag',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=S_mag_mesh,
                 y_label='S_mag (W/m$^{-2}$)',
                 legend_label='Poynting Flux Magnitude',
@@ -1891,6 +1934,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_8',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_8 (ns)',
                 legend_label='FFT_time_8',
@@ -1910,6 +1955,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_7',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_7',
@@ -1947,6 +1994,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='S_Theta',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=S_Theta_mesh,
                 y_label='S_Theta',
                 legend_label='Poynting Theta (S dot B)',
@@ -1973,6 +2022,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_9',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_9 (ns)',
                 legend_label='FFT_time_9',
@@ -1992,6 +2043,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_8',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_8',
@@ -2029,6 +2082,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='S_Phi',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=S_Phi_mesh,
                 y_label='S_Phi',
                 legend_label='Poynting Phi (clock angle where 0=RTN_T and 90=RTN_N)',
@@ -2055,6 +2110,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_10',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_10 (ns)',
                 legend_label='FFT_time_10',
@@ -2074,6 +2131,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_9',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_9',
@@ -2111,6 +2170,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Sn',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=Sn_mesh,
                 y_label='Sn',
                 legend_label='Poynting Flux Parallel (Field-oriented)',
@@ -2137,6 +2198,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_11',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_11 (ns)',
                 legend_label='FFT_time_11',
@@ -2156,6 +2219,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_10',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_10',
@@ -2193,6 +2258,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Sp',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=Sp_mesh,
                 y_label='Sp',
                 legend_label='Poynting Flux Perpendicular (approximately in RTN_T direction)',
@@ -2219,6 +2286,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_12',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_12 (ns)',
                 legend_label='FFT_time_12',
@@ -2238,6 +2307,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_11',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_11',
@@ -2275,6 +2346,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Sq',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=Sq_mesh,
                 y_label='Sq',
                 legend_label='Poynting Flux Perpendicular (approximately in RTN_N direction)',
@@ -2301,6 +2374,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Bfield_time',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Bfield_time (ns)',
                 legend_label='Bfield_time',
@@ -2320,6 +2395,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Bn',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Bn',
                 legend_label='Parallel Magnetic Field Component (B!B||!N)',
@@ -2339,6 +2416,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Bfield_time_1',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Bfield_time_1 (ns)',
                 legend_label='Bfield_time_1',
@@ -2358,6 +2437,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Bp',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Bp',
                 legend_label='Perpendicular Magnetic Field Component in Quasi-Tangential RTN Direction (B!B&perp;T!N)',
@@ -2377,6 +2458,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Bfield_time_2',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Bfield_time_2 (ns)',
                 legend_label='Bfield_time_2',
@@ -2396,6 +2479,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Bq',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Bq (nT)',
                 legend_label='Perpendicular Magnetic Field Component in Quasi-Normal RTN Direction (B!B&perp;N!N)',
@@ -2415,6 +2500,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_13',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_13 (ns)',
                 legend_label='FFT_time_13',
@@ -2434,6 +2521,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_12',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_12',
@@ -2471,6 +2560,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Bn_fft',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=Bn_fft_mesh,
                 y_label='Bn_fft',
                 legend_label='FFT of Compressional magnetic field',
@@ -2497,6 +2588,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_14',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_14 (ns)',
                 legend_label='FFT_time_14',
@@ -2516,6 +2609,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_13',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_13',
@@ -2553,6 +2648,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Bp_fft',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=Bp_fft_mesh,
                 y_label='Bp_fft',
                 legend_label='FFT of Transverse magnetic field in RTN_T direction',
@@ -2579,6 +2676,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_15',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_15 (ns)',
                 legend_label='FFT_time_15',
@@ -2598,6 +2697,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_14',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_14',
@@ -2635,6 +2736,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Bq_fft',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=Bq_fft_mesh,
                 y_label='Bq_fft',
                 legend_label='FFT of Transverse magnetic field in RTN_N direction',
@@ -2661,6 +2764,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_16',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_16 (ns)',
                 legend_label='FFT_time_16',
@@ -2680,6 +2785,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_15',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_15',
@@ -2717,6 +2824,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='ellipticity_e',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=ellipticity_e_mesh,
                 y_label='ellipticity_e',
                 legend_label='Ellipticity (Efield)',
@@ -2743,6 +2852,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_17',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_17 (ns)',
                 legend_label='FFT_time_17',
@@ -2762,6 +2873,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_16',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_16',
@@ -2799,6 +2912,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='wave_normal_e',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=wave_normal_e_mesh,
                 y_label='wave_normal_e (degrees)',
                 legend_label='Wave Normal Angle (Efield)',
@@ -2825,6 +2940,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_18',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_18 (ns)',
                 legend_label='FFT_time_18',
@@ -2844,6 +2961,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_17',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_17',
@@ -2881,6 +3000,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='coherency_e',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=coherency_e_mesh,
                 y_label='coherency_e',
                 legend_label='Coherency (Efield)',
@@ -2907,6 +3028,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_19',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_19 (ns)',
                 legend_label='FFT_time_19',
@@ -2926,6 +3049,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_18',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_18',
@@ -2963,6 +3088,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='E_power_para',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=E_power_para_mesh,
                 y_label='E_power_para (mV$^2$/m$^2$/Hz)',
                 legend_label='Efield Power Compressional',
@@ -2989,6 +3116,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_20',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_20 (ns)',
                 legend_label='FFT_time_20',
@@ -3008,6 +3137,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_19',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_19',
@@ -3045,6 +3176,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='E_power_perp',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=E_power_perp_mesh,
                 y_label='E_power_perp (mV$^2$/m$^2$/Hz)',
                 legend_label='Efield Power Transverse',
@@ -3071,6 +3204,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_21',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_21 (ns)',
                 legend_label='FFT_time_21',
@@ -3090,6 +3225,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_20',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_20',
@@ -3127,6 +3264,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Wave_Power_e',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=Wave_Power_e_mesh,
                 y_label='Wave_Power_e (mV$^2$/m$^2$/Hz)',
                 legend_label='Efield Power perpendicular to wave normal direction k',
@@ -3153,6 +3292,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_22',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_22 (ns)',
                 legend_label='FFT_time_22',
@@ -3172,6 +3313,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_21',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_21',
@@ -3209,6 +3352,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='En_fft',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=En_fft_mesh,
                 y_label='En_fft',
                 legend_label='FFT of Compressional electric field',
@@ -3235,6 +3380,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_23',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_23 (ns)',
                 legend_label='FFT_time_23',
@@ -3254,6 +3401,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_22',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_22',
@@ -3291,6 +3440,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Ep_fft',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=Ep_fft_mesh,
                 y_label='Ep_fft',
                 legend_label='FFT of Transverse electric field in RTN_T direction',
@@ -3317,6 +3468,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_24',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_24 (ns)',
                 legend_label='FFT_time_24',
@@ -3336,6 +3489,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_23',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_23',
@@ -3373,6 +3528,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Eq_fft',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=Eq_fft_mesh,
                 y_label='Eq_fft',
                 legend_label='FFT of Transverse electric field in RTN_N direction',
@@ -3399,6 +3556,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_25',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_25 (ns)',
                 legend_label='FFT_time_25',
@@ -3418,6 +3577,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_24',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_24',
@@ -3455,6 +3616,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='kx_B',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=kx_B_mesh,
                 y_label='kx_B',
                 legend_label='Wave Vector kx (Bfield)',
@@ -3481,6 +3644,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_26',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_26 (ns)',
                 legend_label='FFT_time_26',
@@ -3500,6 +3665,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_25',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_25',
@@ -3537,6 +3704,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='ky_B',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=ky_B_mesh,
                 y_label='ky_B',
                 legend_label='Wave Vector ky (Bfield)',
@@ -3563,6 +3732,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_27',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_27 (ns)',
                 legend_label='FFT_time_27',
@@ -3582,6 +3753,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_26',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_26',
@@ -3619,6 +3792,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='kz_B',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=kz_B_mesh,
                 y_label='kz_B',
                 legend_label='Wave Vector kz (Bfield)',
@@ -3645,6 +3820,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_28',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_28 (ns)',
                 legend_label='FFT_time_28',
@@ -3664,6 +3841,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_27',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_27',
@@ -3701,6 +3880,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='kx_E',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=kx_E_mesh,
                 y_label='kx_E',
                 legend_label='Wave Vector kx (Efield)',
@@ -3727,6 +3908,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_29',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_29 (ns)',
                 legend_label='FFT_time_29',
@@ -3746,6 +3929,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_28',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_28',
@@ -3783,6 +3968,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='ky_E',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=ky_E_mesh,
                 y_label='ky_E',
                 legend_label='Wave Vector ky (Efield)',
@@ -3809,6 +3996,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='FFT_time_30',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='FFT_time_30 (ns)',
                 legend_label='FFT_time_30',
@@ -3828,6 +4017,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='Frequencies_29',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Frequency (Hz)',
                 legend_label='Frequencies_29',
@@ -3865,6 +4056,8 @@ class psp_spectral_waves_class:
                 class_name='psp_spectral_waves',
                 subclass_name='kz_E',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=kz_E_mesh,
                 y_label='kz_E',
                 legend_label='Wave Vector kz (Efield)',

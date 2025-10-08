@@ -57,7 +57,8 @@ class ham_class:
             'Tperprat_driftva_hc_og': None,
         })
         object.__setattr__(self, 'time', None) # To store raw TT2000 time
-        object.__setattr__(self, 'datetime_array', None) # To store Python datetime objects
+        object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None) # To store Python datetime objects
         object.__setattr__(self, 'data_type', 'ham') # Explicitly set data_type
 
         if imported_data is None:
@@ -277,6 +278,8 @@ class ham_class:
             class_name='ham',
             subclass_name=subclass_name,
             plot_type='scatter',
+            time=self.time if hasattr(self, 'time') else None,
+
             datetime_array=self.datetime_array,
             y_label=y_label,
             legend_label=legend_label,
@@ -297,6 +300,8 @@ class ham_class:
             class_name='ham',
             subclass_name=subclass_name,
             plot_type='time_series',
+            time=self.time if hasattr(self, 'time') else None,
+
             datetime_array=self.datetime_array,
             y_label=y_label,
             legend_label=legend_label,

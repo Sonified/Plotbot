@@ -44,6 +44,7 @@ class proton_hr_class:
         })
         
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, 'times_mesh', [])
         object.__setattr__(self, 'times_mesh_angle', [])
         object.__setattr__(self, 'energy_vals', None)
@@ -399,6 +400,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='t_par',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Temp\n(eV)',
                 legend_label=r'$T_\parallel$',
@@ -418,6 +421,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='t_perp',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Temp\n(eV)',
                 legend_label=r'$T_\perp$',
@@ -437,6 +442,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='anisotropy',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label=r'$T_\perp/T_\parallel$',
                 legend_label=r'$T_\perp/T_\parallel$',
@@ -457,6 +464,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='v_alfven',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='$V_{A}$ (km/s)',
                 legend_label='$V_{A}$',
@@ -476,6 +485,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='v_sw',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='$V_{SW}$ (km/s)',
                 legend_label='$V_{SW}$',
@@ -495,6 +506,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='m_alfven',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='$M_A$',
                 legend_label='$M_A$',
@@ -515,6 +528,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='beta_ppar',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label=r'$\beta$',
                 legend_label=r'$\beta_\parallel$',
@@ -534,6 +549,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='beta_pperp',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label=r'$\beta$',
                 legend_label=r'$\beta_\perp$',
@@ -554,6 +571,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='pressure_ppar',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Pressure (nPa)',
                 legend_label=r'$P_\parallel$',
@@ -573,6 +592,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='pressure_pperp',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Pressure (nPa)',
                 legend_label=r'$P_\perp$',
@@ -592,6 +613,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='pressure',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Pressure (nPa)',
                 legend_label='$P_{SPI}$',
@@ -612,6 +635,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='density',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Dens\n(cm$^{-3}$)',
                 legend_label='n$_{SPI}$',
@@ -631,6 +656,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='temperature',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Temp\n(eV)',
                 legend_label='$T_{SPI}$',
@@ -650,6 +677,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='bmag',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='|B| (nT)',
                 legend_label='$|B|_{SPI}$',
@@ -670,6 +699,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='vr',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='$V_R$ (km/s)',
                 legend_label='$V_R$',
@@ -689,6 +720,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='vt',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='$V_T$ (km/s)',
                 legend_label='$V_T$',
@@ -708,6 +741,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='vn',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='$V_N$ (km/s)',
                 legend_label='$V_N$',
@@ -772,6 +807,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='energy_flux',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.times_mesh,
                 y_label='Proton\\nEnergy\\nFlux (eV)',
                 legend_label='Proton Energy Flux',
@@ -838,6 +875,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='theta_flux',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.times_mesh_angle,
                 y_label='Theta (degrees)',
                 legend_label='Proton Theta Flux',
@@ -860,6 +899,8 @@ class proton_hr_class:
                 class_name='proton_hr',
                 subclass_name='phi_flux',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.times_mesh_angle,
                 y_label='Phi (degrees)',
                 legend_label='Proton Phi Flux',

@@ -57,6 +57,7 @@ class psp_span_vdf_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, '_current_operation_trange', None)
         
         # VDF-specific attributes
@@ -701,6 +702,8 @@ class psp_span_vdf_class:
                     class_name='psp_span_vdf',
                     subclass_name='vdf_collapsed',
                     plot_type='line',
+                    time=self.time if hasattr(self, 'time') else None,
+
                     datetime_array=self.datetime_array,
                     x_label='Velocity (km/s)',
                     y_label='f (s³/km³)',
@@ -722,6 +725,8 @@ class psp_span_vdf_class:
                     class_name='psp_span_vdf',
                     subclass_name='vdf_theta_plane',
                     plot_type='contour',
+                    time=self.time if hasattr(self, 'time') else None,
+
                     datetime_array=self.datetime_array,
                     x_label='Vx (km/s)',
                     y_label='Vz (km/s)',
@@ -742,6 +747,8 @@ class psp_span_vdf_class:
                     class_name='psp_span_vdf',
                     subclass_name='vdf_phi_plane',
                     plot_type='contour',
+                    time=self.time if hasattr(self, 'time') else None,
+
                     datetime_array=self.datetime_array,
                     x_label='Vx (km/s)',
                     y_label='Vy (km/s)',
@@ -763,6 +770,8 @@ class psp_span_vdf_class:
                     class_name='psp_span_vdf',
                     subclass_name=subclass_name,
                     plot_type='contour',
+                    time=self.time if hasattr(self, 'time') else None,
+
                     datetime_array=self.datetime_array,
                     x_label='V|| (km/s)',
                     y_label=f'{perp_label} (km/s)',
@@ -784,6 +793,8 @@ class psp_span_vdf_class:
                 class_name='psp_span_vdf',
                 subclass_name=None,
                 plot_type='contour',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 x_label='Vx (km/s)',
                 y_label='Vz (km/s)',

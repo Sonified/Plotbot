@@ -180,4 +180,105 @@ Created comprehensive debug scripts:
 
 ---
 
+## Automation Script for Remaining Classes (2025-10-08)
+
+**Task:** Update remaining ~30 data classes to pass `time=self.time` to plot_manager constructors.
+
+**Approach:** Created automated Python script `debug_scripts/add_time_to_plot_configs.py` that:
+- Uses regex to find all `plot_config()` constructor calls
+- Identifies those with `datetime_array=` parameter
+- Inserts `time=self.time,` with proper indentation before datetime_array line
+- Skips method calls, function definitions, and already-updated constructors
+
+**Testing:** Validated on 5 diverse files:
+- `psp_mag_rtn.py` - 13 found, 7 modified ✅
+- `psp_proton.py` - 25 found, 21 modified ✅  
+- `wind_mfi_classes.py` - 12 found, 6 modified ✅
+- `psp_qtn_classes.py` - 8 found, 2 modified ✅
+- `psp_alpha_fits_classes.py` - 24 found, 1 modified ✅ (uses helper method pattern - one fix fixes all!)
+
+**Files to Process (35 total):**
+
+*Already Updated Manually (v3.59):*
+- ✅ `psp_electron_classes.py` (epad & epad_hr)
+- ✅ `psp_mag_rtn_4sa.py` (all mag components)
+
+*Automation Queue (33 files):*
+- `_utils.py`
+- `custom_classes/__init__.py`
+- `custom_classes/demo_spectral_waves.py`
+- `custom_classes/demo_wave_power.py`
+- `custom_classes/psp_simple_test.py`
+- `custom_classes/psp_spectral_waves.py`
+- `custom_classes/psp_waves_auto.py`
+- `custom_classes/psp_waves_real_test.py`
+- `custom_classes/psp_waves_spectral.py`
+- `custom_classes/psp_waves_test.py`
+- `custom_classes/psp_waves_timeseries.py`
+- `custom_variables.py`
+- `data_types.py`
+- `psp_alpha_classes.py`
+- `psp_alpha_fits_classes.py`
+- `psp_dfb_classes.py`
+- `psp_ham_classes.py`
+- `psp_mag_rtn.py`
+- `psp_mag_sc_4sa.py`
+- `psp_mag_sc.py`
+- `psp_orbit.py`
+- `psp_proton_fits_classes.py`
+- `psp_proton_hr.py`
+- `psp_proton.py`
+- `psp_qtn_classes.py`
+- `psp_span_vdf.py`
+- `psp_waves_real_test.py`
+- `test_quick.py`
+- `wind_3dp_classes.py`
+- `wind_3dp_pm_classes.py`
+- `wind_mfi_classes.py`
+- `wind_swe_h1_classes.py`
+- `wind_swe_h5_classes.py`
+
+**Automation Results:**
+- ✅ Files processed: 35
+- ✅ Files modified: 31
+- ✅ plot_config() instances found: 673
+- ✅ plot_config() instances modified: 440
+- ✅ Lines added: 880
+- ✅ Python syntax validation: PASSED
+- ⚪ Skipped: psp_electron_classes.py (already updated manually in v3.59)
+
+**Verification Spot Checks:**
+- ✅ PSP orbit classes (time series with datetime_array)
+- ✅ PSP proton classes (spectral with times_mesh)
+- ✅ WIND classes (different spacecraft pattern)
+- ✅ All checked files compile successfully
+
+**Final Implementation (after debugging):**
+1. ✅ Added `'time'` to `PLOT_ATTRIBUTES` list in `plot_manager.py`
+2. ✅ Added `time=self.time if hasattr(self, 'time') else None,` to 440 plot_config() calls
+3. ✅ Added `object.__setattr__(self, 'time', None)` initialization in 31 data class `__init__` methods (fixes hasattr spam)
+
+**Root Cause of Spam:** `hasattr(self, 'time')` was triggering `__getattr__` because `time` wasn't in `self.__dict__`. Solution: Initialize `time=None` in `__init__` like `datetime_array`.
+
+**Final Result:**
+- 33 files modified, 915 lines added
+- ✅ Clean import (no spam)
+- ✅ `.time` accessible at variable level (TT2000 epoch for HCS calculations)
+- ✅ `.datetime_array` works as before
+- ✅ Full backward compatibility
+
+**CDF Generator Updated:**
+- ✅ Updated `data_import_cdf.py` template to include `time` parameter in all generated plot_config() calls
+- ✅ Updated template to initialize `object.__setattr__(self, 'time', None)` in generated `__init__` methods
+- ✅ Future CDF-generated classes will automatically include .time support
+
+**Status:** ✅ COMPLETE - All files updated, tested, and ready for commit
+
+**Total Changes:**
+- 34 files modified (33 data classes + plot_manager.py + data_import_cdf.py)
+- 920+ lines added
+- 3 debug/automation scripts created
+
+---
+
 ## End of Session

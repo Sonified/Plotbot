@@ -29,6 +29,7 @@ class wind_3dp_elpd_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, 'times_mesh', [])
         object.__setattr__(self, 'energy_index', 4)  # Channel 4 corresponds to 255 eV
         object.__setattr__(self, '_current_operation_trange', None)
@@ -303,6 +304,8 @@ class wind_3dp_elpd_class:
                 class_name='wind_3dp_elpd',
                 subclass_name='flux_selected_energy',
                 plot_type='spectral',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.times_mesh,  # Use the mesh for time array
                 y_label='Pitch Angle\n(degrees)',
                 legend_label=f'Electron Flux (E_idx={self.energy_index})',
@@ -327,6 +330,8 @@ class wind_3dp_elpd_class:
                 class_name='wind_3dp_elpd', 
                 subclass_name='centroids',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Pitch Angle\n(degrees)',
                 legend_label='Electron Centroids',
@@ -347,6 +352,8 @@ class wind_3dp_elpd_class:
                 class_name='wind_3dp_elpd',
                 subclass_name='flux',
                 plot_type='data_array',  # Special type for 3D data
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Full Flux Data',
                 legend_label='Full Electron Flux [N x 8 x 15]',

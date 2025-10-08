@@ -448,10 +448,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_10_07_v3.59"
+__version__ = "2025_10_08_v3.60"
 
 # Commit message for this version
-__commit_message__ = "v3.59 Feature: Add .time property to plot_manager - raw TT2000 epoch accessible at variable level for HCS calculations"
+__commit_message__ = "v3.60 Complete: Automated .time property across all 35 data classes - TT2000 epoch now accessible at variable level"
 
 # Print the version and commit message
 print(f"""

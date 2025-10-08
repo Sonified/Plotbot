@@ -111,6 +111,7 @@ class alpha_fits_class: # Renamed class
         # Use 'time' for TT2000 array, 'datetime_array' for datetime objects
         object.__setattr__(self, 'time', None) 
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, 'data_type', 'psp_fld_l3_sf1_fit') # Explicitly set data_type
 
         if imported_data is None:
@@ -569,6 +570,8 @@ class alpha_fits_class: # Renamed class
             class_name='alpha_fits',
             subclass_name=subclass_name,
             plot_type='scatter',
+            time=self.time if hasattr(self, 'time') else None,
+
             datetime_array=dt_array,
             y_label=y_label,
             legend_label=legend_label,

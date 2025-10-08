@@ -13,7 +13,7 @@ from .data_classes.custom_variables import custom_variable  # UPDATED PATH
 class plot_manager(np.ndarray):
     
     PLOT_ATTRIBUTES = [
-        'data', 'data_type', 'var_name', 'class_name', 'subclass_name', 'plot_type', 'datetime_array', 
+        'data', 'data_type', 'var_name', 'class_name', 'subclass_name', 'plot_type', 'time', 'datetime_array', 
         'y_label', 'legend_label', 'color', 'y_scale', 'y_limit', 'line_width',
         'line_style', 'colormap', 'colorbar_scale', 'colorbar_limits',
         'additional_data', 'colorbar_label', 'is_derived', 'source_var', 'operation',

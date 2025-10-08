@@ -34,6 +34,7 @@ class psp_orbit_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, '_current_operation_trange', None)
 
         if imported_data is None:
@@ -378,6 +379,8 @@ class psp_orbit_class:
                 class_name='psp_orbit',
                 subclass_name='r_sun',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label=r'Distance (R$\odot$)',
                 legend_label='Heliocentric Distance',
@@ -397,6 +400,8 @@ class psp_orbit_class:
                 class_name='psp_orbit',
                 subclass_name='carrington_lon',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Carrington Longitude (°)',
                 legend_label='Carrington Longitude',
@@ -416,6 +421,8 @@ class psp_orbit_class:
                 class_name='psp_orbit',
                 subclass_name='carrington_lat',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Carrington Latitude (°)',
                 legend_label='Carrington Latitude',
@@ -435,6 +442,8 @@ class psp_orbit_class:
                 class_name='psp_orbit',
                 subclass_name='heliocentric_distance_au',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Distance (AU)',
                 legend_label='Heliocentric Distance (AU)',
@@ -454,6 +463,8 @@ class psp_orbit_class:
                 class_name='psp_orbit',
                 subclass_name='orbital_speed',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Speed (km/s)',
                 legend_label='Orbital Speed',
@@ -474,6 +485,8 @@ class psp_orbit_class:
                 class_name='psp_orbit',
                 subclass_name='icrf_x',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label=r'ICRF X (R$\odot$)',
                 legend_label='ICRF X Coordinate',
@@ -493,6 +506,8 @@ class psp_orbit_class:
                 class_name='psp_orbit',
                 subclass_name='icrf_y',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label=r'ICRF Y (R$\odot$)',
                 legend_label='ICRF Y Coordinate',
@@ -512,6 +527,8 @@ class psp_orbit_class:
                 class_name='psp_orbit',
                 subclass_name='icrf_z',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label=r'ICRF Z (R$\odot$)',
                 legend_label='ICRF Z Coordinate',
@@ -532,6 +549,8 @@ class psp_orbit_class:
                 class_name='psp_orbit',
                 subclass_name='angular_momentum',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Angular Momentum (km²/s)',
                 legend_label='Angular Momentum |r × v|',
@@ -552,6 +571,8 @@ class psp_orbit_class:
                 class_name='psp_orbit',
                 subclass_name='velocity_x',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Velocity X (km/s)',
                 legend_label='Velocity X Component',
@@ -571,6 +592,8 @@ class psp_orbit_class:
                 class_name='psp_orbit',
                 subclass_name='velocity_y',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Velocity Y (km/s)',
                 legend_label='Velocity Y Component',
@@ -590,6 +613,8 @@ class psp_orbit_class:
                 class_name='psp_orbit',
                 subclass_name='velocity_z',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Velocity Z (km/s)',
                 legend_label='Velocity Z Component',

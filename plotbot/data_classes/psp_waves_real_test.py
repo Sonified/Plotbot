@@ -37,6 +37,7 @@ class psp_waves_real_test_class:
     })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, '_current_operation_trange', None)
         
 
@@ -200,6 +201,8 @@ class psp_waves_real_test_class:
                 class_name='psp_waves_real_test',
                 subclass_name='wavePower_LH',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='wavePower_LH (nt!U2!N)',
                 legend_label='EMIC Wave Power observed by PSP with Ellipticity below -0.8 (Left-handed), coherency above 0.8, and wave normal angle below 25 degrees.',
@@ -219,6 +222,8 @@ class psp_waves_real_test_class:
                 class_name='psp_waves_real_test',
                 subclass_name='wavePower_RH',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='wavePower_RH (nt!U2!N)',
                 legend_label='EMIC Wave Power observed by PSP with Ellipticity above 0.8 (Right-handed), coherency above 0.8, and wave normal angle below 25 degrees.',

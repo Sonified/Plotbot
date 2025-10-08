@@ -26,6 +26,7 @@ class wind_swe_h5_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, '_current_operation_trange', None)
 
         print_manager.dependency_management(f"*** WIND_SWE_H5_CLASS_INIT (wind_swe_h5_class) ID:{id(self)}: imported_data ID: {id(imported_data) if imported_data is not None else 'None'}. ***")
@@ -246,6 +247,8 @@ class wind_swe_h5_class:
                 class_name='wind_swe_h5',
                 subclass_name='t_elec',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Temperature (K)',
                 legend_label='$T_e$ (electron)',

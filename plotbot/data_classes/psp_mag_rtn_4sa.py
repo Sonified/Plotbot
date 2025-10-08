@@ -36,6 +36,8 @@ class mag_rtn_4sa_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, '_current_operation_trange', None) # Initialize new attribute
 
         print_manager.dependency_management(f"*** MAG_CLASS_INIT (mag_rtn_4sa_class) ID:{id(self)}: imported_data ID: {id(imported_data) if imported_data is not None else 'None'}. ***")
@@ -202,6 +204,8 @@ class mag_rtn_4sa_class:
                     class_name='mag_rtn_4sa',
                     subclass_name='br_norm',
                     plot_type='time_series',
+                    time=self.time if hasattr(self, 'time') else None,
+
                     datetime_array=self.datetime_array,
                     y_label='Br·R² [nT·AU²]',
                     legend_label=r'$B_R \cdot R^2$',
@@ -467,6 +471,8 @@ class mag_rtn_4sa_class:
                     class_name='mag_rtn_4sa',   # Class handling this data
                     subclass_name='br_norm',    # Specific component
                     plot_type='time_series',    # Type of plot
+                    time=self.time if hasattr(self, 'time') else None,
+
                     datetime_array=self.datetime_array,  # Time data
                     y_label='Br·R² [nT·AU²]',   # Y-axis label
                     legend_label=r'$B_R \cdot R^2$',  # Legend text - Changed to raw string
@@ -499,6 +505,8 @@ class mag_rtn_4sa_class:
                 class_name='mag_rtn_4sa',   # Class handling this data
                 subclass_name='all',        # Specific component
                 plot_type='time_series',    # Type of plot
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,# Time data
                 y_label='B (nT)',          # Y-axis label
                 legend_label=['$B_R$', '$B_T$', '$B_N$'],  # Legend text

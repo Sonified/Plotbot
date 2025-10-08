@@ -51,6 +51,7 @@ class psp_alpha_class:
             'ap_drift_va': None,    # Drift speed normalized by Alfvén speed
         })
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, 'times_mesh', [])
         object.__setattr__(self, 'times_mesh_angle', [])
         object.__setattr__(self, 'energy_vals', None)
@@ -387,6 +388,8 @@ class psp_alpha_class:
                 class_name='psp_alpha',
                 subclass_name='density',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Alpha Dens\n(cm$^{-3}$)',
                 legend_label='n$_{\\alpha}$',
@@ -406,6 +409,8 @@ class psp_alpha_class:
                 class_name='psp_alpha',
                 subclass_name='temperature',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Alpha Temp\n(eV)',
                 legend_label='$T_{\\alpha}$',
@@ -426,6 +431,8 @@ class psp_alpha_class:
                 class_name='psp_alpha',
                 subclass_name='vr',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='$V_{R,\\alpha}$ (km/s)',
                 legend_label='$V_{R,\\alpha}$',
@@ -445,6 +452,8 @@ class psp_alpha_class:
                 class_name='psp_alpha',
                 subclass_name='vt',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='$V_{T,\\alpha}$ (km/s)',
                 legend_label='$V_{T,\\alpha}$',
@@ -464,6 +473,8 @@ class psp_alpha_class:
                 class_name='psp_alpha',
                 subclass_name='vn',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='$V_{N,\\alpha}$ (km/s)',
                 legend_label='$V_{N,\\alpha}$',
@@ -484,6 +495,8 @@ class psp_alpha_class:
                 class_name='psp_alpha',
                 subclass_name='t_par',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Alpha Temp\n(eV)',
                 legend_label=r'$T_{\parallel,\alpha}$',
@@ -503,6 +516,8 @@ class psp_alpha_class:
                 class_name='psp_alpha',
                 subclass_name='t_perp',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Alpha Temp\n(eV)',
                 legend_label=r'$T_{\perp,\alpha}$',
@@ -522,6 +537,8 @@ class psp_alpha_class:
                 class_name='psp_alpha',
                 subclass_name='anisotropy',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label=r'$T_{\perp}/T_{\parallel}$ Alpha',     
                 legend_label=r'$T_{\perp}/T_{\parallel,\alpha}$',
@@ -542,6 +559,8 @@ class psp_alpha_class:
                 class_name='psp_alpha',
                 subclass_name='v_sw',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='$V_{SW,\\alpha}$ (km/s)',
                 legend_label='$V_{SW,\\alpha}$',
@@ -562,6 +581,8 @@ class psp_alpha_class:
                 class_name='psp_alpha',
                 subclass_name='sun_dist_rsun',
                 plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,
                 y_label='Sun Distance \n ($R_s$)',
                 legend_label='$R_s$',
@@ -597,6 +618,8 @@ class psp_alpha_class:
                     class_name='psp_alpha',
                     subclass_name='na_div_np',
                     plot_type='time_series',
+                    time=self.time if hasattr(self, 'time') else None,
+
                     datetime_array=self.datetime_array,
                     y_label=r'$n_\alpha / n_p$',
                     legend_label=r'$n_\alpha / n_p$',
@@ -654,6 +677,8 @@ class psp_alpha_class:
                     class_name='psp_alpha',
                     subclass_name='ap_drift',
                     plot_type='time_series',
+                    time=self.time if hasattr(self, 'time') else None,
+
                     datetime_array=self.datetime_array,
                     y_label=r'$|V_\alpha - V_p|$ (km/s)',
                     legend_label=r'$|V_\alpha - V_p|$',
@@ -711,6 +736,8 @@ class psp_alpha_class:
                     class_name='psp_alpha',
                     subclass_name='ap_drift_va',
                     plot_type='time_series',
+                    time=self.time if hasattr(self, 'time') else None,
+
                     datetime_array=self.datetime_array,
                     y_label=r'$|V_\alpha - V_p| / V_A$',
                     legend_label=r'$|V_\alpha - V_p| / V_A$',

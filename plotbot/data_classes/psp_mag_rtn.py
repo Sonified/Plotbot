@@ -31,6 +31,7 @@ class mag_rtn_class:
         })
         object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
+        object.__setattr__(self, 'time', None)
         object.__setattr__(self, '_current_operation_trange', None) # For br_norm dependency time range
 
         if imported_data is None:
@@ -231,6 +232,8 @@ class mag_rtn_class:
                 class_name='mag_rtn',      # Class handling this data
                 subclass_name='all',       # Specific component
                 plot_type='time_series',   # Type of plot
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,# Time data
                 y_label='B (nT)',          # Y-axis label
                 legend_label=['$B_R$', '$B_T$', '$B_N$'],  # Legend text
@@ -250,6 +253,8 @@ class mag_rtn_class:
                 class_name='mag_rtn',      # Class handling this data
                 subclass_name='br',        # Specific component
                 plot_type='time_series',   # Type of plot
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,# Time data
                 y_label='B (nT)',          # Y-axis label
                 legend_label='$B_R$',      # Legend text
@@ -269,6 +274,8 @@ class mag_rtn_class:
                 class_name='mag_rtn',      # Class handling this data
                 subclass_name='bt',        # Specific component
                 plot_type='time_series',   # Type of plot
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,# Time data
                 y_label='B (nT)',          # Y-axis label
                 legend_label='$B_T$',      # Legend text
@@ -288,6 +295,8 @@ class mag_rtn_class:
                 class_name='mag_rtn',      # Class handling this data
                 subclass_name='bn',        # Specific component
                 plot_type='time_series',   # Type of plot
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,# Time data
                 y_label='B (nT)',          # Y-axis label
                 legend_label='$B_N$',      # Legend text
@@ -307,6 +316,8 @@ class mag_rtn_class:
                 class_name='mag_rtn',      # Class handling this data
                 subclass_name='bmag',      # Specific component
                 plot_type='time_series',   # Type of plot
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,# Time data
                 y_label='|B| (nT)',        # Y-axis label
                 legend_label='$|B|$',      # Legend text
@@ -326,6 +337,8 @@ class mag_rtn_class:
                 class_name='mag_rtn',      # Class handling this data
                 subclass_name='pmag',      # Specific component
                 plot_type='time_series',   # Type of plot
+                time=self.time if hasattr(self, 'time') else None,
+
                 datetime_array=self.datetime_array,# Time data
                 y_label='Pmag (nPa)',      # Y-axis label
                 legend_label='$P_{mag}$',  # Legend text
@@ -433,6 +446,8 @@ class mag_rtn_class:
                     class_name='mag_rtn',     # Adjusted for mag_rtn
                     subclass_name='br_norm',
                     plot_type='time_series',
+                    time=self.time if hasattr(self, 'time') else None,
+
                     datetime_array=self.datetime_array if hasattr(self, 'datetime_array') else np.array([]),
                     y_label='Br·R² [nT·AU²]',
                     legend_label=r'$B_R \cdot R^2$', # Escaped backslash
