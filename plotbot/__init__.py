@@ -461,10 +461,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_10_09_v3.62"
+__version__ = "2025_10_09_v3.63"
 
 # Commit message for this version
-__commit_message__ = "v3.62 Performance: Defer heavy imports (cdflib, requests, bs4) - 53% faster main_plotting_functions import"
+__commit_message__ = "v3.63 Critical Fix: EPAD data repetition bug - 2D datetime meshgrid handling in time clipping"
 
 # Print the version and commit message
 print(f"""

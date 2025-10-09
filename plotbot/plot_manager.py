@@ -185,14 +185,28 @@ class plot_manager(np.ndarray):
         start_time = parse(original_trange[0]).replace(tzinfo=timezone.utc)
         end_time = parse(original_trange[1]).replace(tzinfo=timezone.utc)
 
-        datetime_array_pd = pd.to_datetime(datetime_array, utc=True)
+        # 🐛 BUG FIX: Handle 2D datetime arrays (meshgrids) correctly
+        # For 2D datetime arrays (e.g., epad times_mesh), extract just the time axis
+        if datetime_array.ndim == 2:
+            # For meshgrids, times are along axis 0, repeated across axis 1
+            # Extract first column to get unique time values
+            datetime_array_1d = datetime_array[:, 0]
+        else:
+            datetime_array_1d = datetime_array
+
+        datetime_array_pd = pd.to_datetime(datetime_array_1d, utc=True)
 
         # Create boolean mask for the time range
         time_mask = (datetime_array_pd >= start_time) & (datetime_array_pd <= end_time)
 
         if not np.any(time_mask):
-            # Return empty datetime array
-            return np.array([], dtype=datetime_array.dtype)
+            # Return empty datetime array with proper shape
+            if datetime_array.ndim == 1:
+                return np.array([], dtype=datetime_array.dtype)
+            else:
+                # For 2D arrays, return (0, n_cols) shape
+                empty_shape = (0,) + datetime_array.shape[1:]
+                return np.empty(empty_shape, dtype=datetime_array.dtype)
         
         # Apply mask to datetime array while preserving dimensions
         if datetime_array.ndim == 1:
@@ -225,7 +239,17 @@ class plot_manager(np.ndarray):
         start_time = parse(original_trange[0]).replace(tzinfo=timezone.utc)
         end_time = parse(original_trange[1]).replace(tzinfo=timezone.utc)
 
-        datetime_array_pd = pd.to_datetime(datetime_array, utc=True)
+        # 🐛 BUG FIX: Handle 2D datetime arrays (meshgrids) correctly
+        # For 2D datetime arrays (e.g., epad times_mesh), extract just the time axis
+        if datetime_array.ndim == 2:
+            # For meshgrids, times are along axis 0, repeated across axis 1
+            # Extract first column to get unique time values
+            datetime_array_1d = datetime_array[:, 0]
+            print_manager.debug(f"🔍 [DEBUG] Detected 2D datetime_array {datetime_array.shape}, extracting time axis: {datetime_array_1d.shape}")
+        else:
+            datetime_array_1d = datetime_array
+
+        datetime_array_pd = pd.to_datetime(datetime_array_1d, utc=True)
 
         # Create boolean mask for the time range
         time_mask = (datetime_array_pd >= start_time) & (datetime_array_pd <= end_time)
