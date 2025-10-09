@@ -5,7 +5,15 @@
 import numpy as np
 import pandas as pd
 import logging
-import matplotlib.pyplot as plt
+# ✨ Matplotlib lazy-loaded on first use (saves ~0.4s at import)
+_plt = None
+def _get_plt():
+    global _plt
+    if _plt is None:
+        import matplotlib.pyplot
+        _plt = matplotlib.pyplot
+    return _plt
+
 from .plot_config import plot_config
 from .print_manager import print_manager
 from .data_classes.custom_variables import custom_variable  # UPDATED PATH
@@ -509,7 +517,8 @@ class plot_manager(np.ndarray):
                         pass
                     else:
                         try:
-                            plt.matplotlib.colors.to_rgb(value)
+                            import matplotlib.colors
+                            matplotlib.colors.to_rgb(value)
                         except ValueError:
                             print_manager.warning(f"'{value}' is not a recognized color, friend!")
                             print("Try one of these:")

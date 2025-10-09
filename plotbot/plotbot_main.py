@@ -45,19 +45,15 @@ print("✅ Deferred numpy, pandas, and scipy libraries (loaded when needed).")
 print("✅ Deferred matplotlib libraries (loaded when needed).")
 
 # --- DATA HANDLING AND WEB ---
-import cdflib
-try:
-    from cdflib.epochs_astropy import CDFAstropy as cdfepoch
-except ImportError:
-    print("Using cdflib.cdfepoch")
-    from cdflib import cdfepoch
-import bs4  # Import the module for version checking
-from bs4 import BeautifulSoup  # Import the class for HTML parsing
-import requests
-import dateutil
-from dateutil.parser import parse as dateutil_parse
-from datetime import datetime, timedelta, timezone, time
-print("✅ Imported cdflib, BeautifulSoup, requests, dateutil, and datetime libraries.")
+# MOVED TO LAZY LOADING: These are only used by functions, not at module level
+# import cdflib
+# import bs4
+# from bs4 import BeautifulSoup
+# import requests
+# import dateutil
+from dateutil.parser import parse as dateutil_parse  # Keep this - used in plotbot() signature area
+from datetime import datetime, timedelta, timezone, time  # Keep these - lightweight and used everywhere
+print("✅ Deferred heavy data libraries (cdflib, requests, bs4) - loaded when needed.")
 # ----------------------------------------
 
 

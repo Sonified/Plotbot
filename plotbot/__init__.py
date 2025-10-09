@@ -26,24 +26,44 @@ _plotbot_data_dir = _get_plotbot_data_dir()
 os.environ['SPEDAS_DATA_DIR'] = _plotbot_data_dir
 os.makedirs(_plotbot_data_dir, exist_ok=True)
 
-# Now proceed with normal imports
-# START IMPORT TIMING
+# Now proceed with normal imports  
+# START IMPORT TIMING (always on for debugging)
 from .import_timer import start_timing, time_import, time_block, end_timing
 start_timing("plotbot_full_initialization")
 
-# Import and configure matplotlib first to ensure consistent styling
-mpl_plt = time_import('matplotlib.pyplot')
+# Import numpy immediately (fast)
 np = time_import('numpy')
 
-# Set global font settings for consistent plotting appearance
-mpl_plt.rcParams.update({
-    'font.family': 'sans-serif',
-    'font.sans-serif': ['Arial', 'Helvetica', 'sans-serif'],
-    'axes.labelweight': 'normal',
-    'font.weight': 'normal',
-    'mathtext.fontset': 'stix',
-    'mathtext.default': 'regular'
-})
+# Lazy load matplotlib - don't import until first plot (saves 0.4s at startup)
+_mpl_plt = None
+def _get_plt():
+    """Lazy-load matplotlib.pyplot on first use."""
+    global _mpl_plt
+    if _mpl_plt is None:
+        _mpl_plt = time_import('matplotlib.pyplot')
+        
+        # Set global font settings for consistent plotting appearance
+        _mpl_plt.rcParams.update({
+            'font.family': 'sans-serif',
+            'font.sans-serif': ['Arial', 'Helvetica', 'sans-serif'],
+            'axes.labelweight': 'normal',
+            'font.weight': 'normal',
+            'mathtext.fontset': 'stix',
+            'mathtext.default': 'regular'
+        })
+    return _mpl_plt
+
+# Create a lazy proxy for mpl_plt that imports on first access
+class _LazyPlt:
+    def __getattr__(self, name):
+        return getattr(_get_plt(), name)
+    def __dir__(self):
+        return dir(_get_plt())
+    def __call__(self, *args, **kwargs):
+        return _get_plt()(*args, **kwargs)
+
+mpl_plt = _LazyPlt()
+plt = mpl_plt  # Alias for convenience
 
 # Import core components
 with time_block("core_components"):
@@ -230,9 +250,26 @@ custom_vars = CustomVariablesContainer()
 print_manager.variable_testing("Initial custom variables state:")
 debug_custom_variables()
 
-# Import audification module and audifier instance
-audifier_module = time_import('audifier', from_module='plotbot')
-from .audifier import audifier
+# Lazy-load audifier (saves 0.3s - only needed for audio generation)
+_audifier = None
+def _get_audifier():
+    """Lazy-load audifier on first use."""
+    global _audifier
+    if _audifier is None:
+        from .audifier import audifier as aud
+        _audifier = aud
+    return _audifier
+
+class _LazyAudifier:
+    """Proxy that loads audifier on first access."""
+    def __getattr__(self, name):
+        return getattr(_get_audifier(), name)
+    def __call__(self, *args, **kwargs):
+        return _get_audifier()(*args, **kwargs)
+    def __dir__(self):
+        return dir(_get_audifier())
+
+audifier = _LazyAudifier()
 
 # Import ploptions for figure control
 from .ploptions import ploptions
@@ -424,10 +461,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_10_08_v3.61"
+__version__ = "2025_10_09_v3.62"
 
 # Commit message for this version
-__commit_message__ = "v3.61 Feature: Auto-generate class names from CDF filenames - intelligent date/version stripping"
+__commit_message__ = "v3.62 Performance: Defer heavy imports (cdflib, requests, bs4) - 53% faster main_plotting_functions import"
 
 # Print the version and commit message
 print(f"""

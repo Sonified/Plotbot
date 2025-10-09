@@ -27,30 +27,8 @@ def timer_decorator(timer_name):
         return wrapper
     return decorator
 
-# --- Import Data Class Types for Mapping ---
-# Assuming these classes are defined elsewhere and accessible
-# We need the actual class types, not just the instances
-from .data_classes.psp_mag_rtn_4sa import mag_rtn_4sa_class
-from .data_classes.psp_mag_rtn import mag_rtn_class
-from .data_classes.psp_mag_sc_4sa import mag_sc_4sa_class
-from .data_classes.psp_mag_sc import mag_sc_class
-from .data_classes.psp_electron_classes import epad_strahl_class, epad_strahl_high_res_class
-from .data_classes.psp_proton import proton_class
-from .data_classes.psp_proton_hr import proton_hr_class
-# Note: proton_fits and ham are handled differently in get_data, so maybe not needed here?
-# from .data_classes.psp_proton_fits_classes import proton_fits_class
-from .data_classes.psp_ham_classes import ham_class, ham
-# WIND satellite data classes
-from .data_classes.wind_mfi_classes import wind_mfi_h2_class
-from .data_classes.wind_3dp_classes import wind_3dp_elpd_class
-from .data_classes.wind_3dp_pm_classes import wind_3dp_pm_class
-from .data_classes.psp_alpha_classes import psp_alpha_class
-from .data_classes.psp_qtn_classes import psp_qtn_class
-from .data_classes.psp_dfb_classes import psp_dfb_class
-from .data_classes.psp_orbit import psp_orbit_class
-from .data_classes.psp_span_vdf import psp_span_vdf_class
-from .data_classes.wind_swe_h5_classes import wind_swe_h5_class
-from .data_classes.wind_swe_h1_classes import wind_swe_h1_class
+# ✨ Class imports removed - types now auto-register via stash() in __init__.py
+# This eliminates ~0.9s of import time by deferring class initialization
 
 from .data_import import DataObject # Import the type hint for raw data object
 
@@ -367,35 +345,21 @@ class data_cubby:
     subclass_registry = {}
 
     # --- Map data_type strings to their corresponding class types ---
-    _CLASS_TYPE_MAP = {
-        'mag_rtn_4sa': mag_rtn_4sa_class,
-        'mag_rtn': mag_rtn_class,
-        'mag_sc_4sa': mag_sc_4sa_class,
-        'mag_sc': mag_sc_class,
-        'spi_sf00_l3_mom': proton_class,
-        'spi_af00_l3_mom': proton_hr_class,
-        'spe_sf0_pad': epad_strahl_class,
-        'spe_af0_pad': epad_strahl_high_res_class,
-        'proton_hr': proton_hr_class,
-        'epad': epad_strahl_class,
-        'epad_hr': epad_strahl_high_res_class,
-        'ham': ham_class,
-        'sqtn_rfs_v1v2': psp_qtn_class,  # QTN (Quasi-Thermal Noise) electron density and temperature
-        'psp_orbit_data': psp_orbit_class,   # PSP orbital/positional data
-        'psp_orbit': psp_orbit_class,        # PSP orbital/positional data (cubby_key mapping)
-        # PSP FIELDS DFB electric field spectra data types
-        'dfb_ac_spec_dv12hg': psp_dfb_class,  # AC spectrum dv12 
-        'dfb_ac_spec_dv34hg': psp_dfb_class,  # AC spectrum dv34
-        'dfb_dc_spec_dv12hg': psp_dfb_class,  # DC spectrum dv12
-        # WIND satellite data types
-        'wind_mfi_h2': wind_mfi_h2_class,
-        'wind_3dp_elpd': wind_3dp_elpd_class,
-        'wind_3dp_pm': wind_3dp_pm_class,
-    'spi_sf0a_l3_mom': psp_alpha_class,
-        'wind_swe_h5': wind_swe_h5_class,
-        'wind_swe_h1': wind_swe_h1_class,
-        'psp_span_vdf': psp_span_vdf_class,  # PSP SPAN-I VDF data
-        # Add other standard CDF types here as needed
+    # ✨ Now auto-populated via stash() - no hardcoded imports needed!
+    _CLASS_TYPE_MAP = {}
+    
+    # Legacy/alternative names that map to the same class (populated by stash)
+    _LEGACY_TYPE_ALIASES = {
+        'spi_sf00_l3_mom': 'proton',
+        'spi_af00_l3_mom': 'proton_hr',
+        'spe_sf0_pad': 'epad',
+        'spe_af0_pad': 'epad_hr',
+        'sqtn_rfs_v1v2': 'psp_qtn',
+        'psp_orbit_data': 'psp_orbit',
+        'dfb_ac_spec_dv12hg': 'psp_dfb',
+        'dfb_ac_spec_dv34hg': 'psp_dfb',
+        'dfb_dc_spec_dv12hg': 'psp_dfb',
+        'spi_sf0a_l3_mom': 'psp_alpha',
     }
 
     @classmethod
@@ -467,9 +431,16 @@ class data_cubby:
 
     @classmethod
     def _get_class_type_from_string(cls, data_type_str):
-        """Helper to get class type from string using the map."""
-        result = cls._CLASS_TYPE_MAP.get(data_type_str.lower())
-        print_manager.datacubby(f"[CLASS_TYPE_DEBUG] Looking up '{data_type_str}' -> '{data_type_str.lower()}' -> {result}")
+        """Helper to get class type from string using the map, with legacy alias support."""
+        normalized = data_type_str.lower()
+        
+        # Check for legacy alias first
+        if normalized in cls._LEGACY_TYPE_ALIASES:
+            normalized = cls._LEGACY_TYPE_ALIASES[normalized]
+            print_manager.datacubby(f"[CLASS_TYPE_DEBUG] Resolved legacy alias '{data_type_str}' -> '{normalized}'")
+        
+        result = cls._CLASS_TYPE_MAP.get(normalized)
+        print_manager.datacubby(f"[CLASS_TYPE_DEBUG] Looking up '{data_type_str}' -> '{normalized}' -> {result}")
         if not result:
             print_manager.datacubby(f"[CLASS_TYPE_DEBUG] Available keys in _CLASS_TYPE_MAP: {list(cls._CLASS_TYPE_MAP.keys())}")
         return result
@@ -488,6 +459,11 @@ class data_cubby:
             
         identifier = f"{class_name}.{subclass_name}" if class_name and subclass_name else class_name
         print_manager.datacubby(f"Stashing with identifier: {identifier}")
+        
+        # Auto-register class type in _CLASS_TYPE_MAP for snapshot loading
+        if class_name and class_name not in cls._CLASS_TYPE_MAP:
+            cls._CLASS_TYPE_MAP[class_name] = type(obj)
+            print_manager.datacubby(f"[AUTO_REGISTER] Added {class_name} -> {type(obj).__name__} to type map")
         
         # Type check for incoming object
         print_manager.datacubby(f"STASH TYPE CHECK - Object type: {type(obj)}")

@@ -773,9 +773,9 @@ def cdf_to_plotbot(file_path: str, class_name: Optional[str] = None, output_dir:
             class_instance = getattr(module, class_name, None)
             
             if class_instance:
-                # Add to the class type map for future lookups
+                # Stash will auto-register the class type
                 from .data_cubby import data_cubby
-                data_cubby._CLASS_TYPE_MAP[class_name] = type(class_instance)
+                data_cubby.stash(class_instance, class_name=class_name)
                 
                 # Inject the class instance into the caller's global namespace
                 # This makes it immediately available, e.g., psp_waves_spectral.variable
