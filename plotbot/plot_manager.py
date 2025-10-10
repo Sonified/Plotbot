@@ -80,7 +80,78 @@ class plot_manager(np.ndarray):
         arr = np.asarray(self.view(np.ndarray), dtype=dtype)
         return plot_manager(arr, self.plot_config)
 
-    # __array_ufunc__ removed - using lambda for custom variables instead
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        """
+        Capture numpy ufuncs (np.abs, np.sqrt, etc.) for custom variable replay!
+        This allows us to store WHICH operation was performed, so we can replay it
+        with fresh data for different time ranges.
+        """
+        from .print_manager import print_manager
+        
+        # Convert plot_manager inputs to regular numpy arrays for the operation
+        args = []
+        for i in inputs:
+            if isinstance(i, plot_manager):
+                # Use .data property to get time-clipped view, not raw accumulated array!
+                args.append(i.data)
+            else:
+                args.append(i)
+        
+        # Perform the actual ufunc operation
+        outputs = kwargs.pop('out', None)
+        if outputs:
+            out_args = []
+            for j, output in enumerate(outputs):
+                if isinstance(output, plot_manager):
+                    # Use .data property to get time-clipped view
+                    out_args.append(output.data)
+                else:
+                    out_args.append(output)
+            kwargs['out'] = tuple(out_args) if len(out_args) > 1 else out_args[0]
+        else:
+            outputs = (None,) * ufunc.nout
+        
+        # Call the ufunc
+        results = getattr(ufunc, method)(*args, **kwargs)
+        
+        if results is NotImplemented:
+            return NotImplemented
+        
+        if method == '__call__':
+            if ufunc.nout == 1:
+                results = (results,)
+            
+            # Find the first plot_manager input to copy metadata from
+            source_pm = None
+            for i in inputs:
+                if isinstance(i, plot_manager):
+                    source_pm = i
+                    break
+            
+            if source_pm is not None:
+                # Create new plot_manager with result, copying plot_config
+                from .plot_config import plot_config
+                new_plot_config = plot_config(**source_pm.plot_config.__dict__)
+                result_pm = plot_manager(results[0], plot_config=new_plot_config)
+                
+                # 🎯 KEY: Store which ufunc was used AND the source variable(s)
+                object.__setattr__(result_pm, 'operation', ufunc.__name__)  # e.g., 'absolute', 'sqrt'
+                object.__setattr__(result_pm, 'source_var', [source_pm])
+                
+                print_manager.custom_debug(f"🎯 [UFUNC_CAPTURE] Captured ufunc: {ufunc.__name__}")
+                print_manager.custom_debug(f"🎯 [UFUNC_CAPTURE] Source: {source_pm.plot_config.class_name}.{source_pm.plot_config.subclass_name}")
+                
+                # Copy datetime_array from source
+                if hasattr(source_pm, 'datetime_array'):
+                    src_datetime = getattr(source_pm, 'datetime_array', None)
+                    if src_datetime is not None:
+                        result_pm.plot_config.datetime_array = src_datetime.copy() if hasattr(src_datetime, 'copy') else src_datetime
+                
+                return result_pm if ufunc.nout == 1 else tuple([result_pm])
+        
+        # Fallback to numpy behavior
+        return results
+
     def __array_wrap__(self, out_arr, context=None):
         if context is not None:
             # For ufuncs (like addition, subtraction, etc.), return a new plot_manager with the same options
@@ -123,6 +194,16 @@ class plot_manager(np.ndarray):
                 src_datetime = getattr(obj, 'datetime_array', None)
                 if src_datetime is not None:
                     self.plot_config.datetime_array = src_datetime.copy() if hasattr(src_datetime, 'copy') else src_datetime
+        
+        # 🐛 BUG FIX: Copy source_var for dependency tracking!
+        # Numpy ufuncs bypass _perform_operation(), so we need to copy source_var here
+        if hasattr(obj, 'source_var'):
+            # Create list with just the source object for unary operations
+            object.__setattr__(self, 'source_var', [obj])
+            # Also set a generic operation name for numpy ufuncs
+            # This allows update() to know an operation was performed
+            object.__setattr__(self, 'operation', 'ufunc')
+        
         if not hasattr(self, '_original_options'):
             self._original_options = getattr(obj, '_original_options', None)
 

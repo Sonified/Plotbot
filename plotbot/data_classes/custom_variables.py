@@ -189,7 +189,10 @@ class CustomVariablesContainer:
         plot_manager
             Updated variable
         """
-        print_manager.custom_debug(f"Updating custom variable: {name}")
+        from ..plot_manager import plot_manager
+        from ..plot_config import plot_config as plot_config_class
+        
+        print_manager.custom_debug(f"🔍 [UPDATE] Updating custom variable '{name}' for trange {trange}")
         
         # Get the variable and its sources
         variable = self.variables.get(name)
@@ -240,19 +243,21 @@ class CustomVariablesContainer:
         if not operation:
             print_manager.custom_debug(f"No operation defined for {name}")
             return variable
-            
-        # Check if update is needed using data_tracker with variable-specific caching
-        if not global_tracker.is_calculation_needed(trange, 'custom_data_type', name):
-            print_manager.custom_debug(f"Calculation not needed for {name} - using cached data")
-            return variable
         
-        # Get fresh data for all source variables
+        # STEP 6: Cadence Check - Get fresh data for all source variables
+        print_manager.custom_debug(f"🔍 [STEP 6] Checking source variable cadences...")
         fresh_sources = []
-        for src in sources:
+        source_lengths = []
+        for idx, src in enumerate(sources, 1):
             if hasattr(src, 'class_name') and hasattr(src, 'subclass_name'):
                 # Get fresh reference from data_cubby
                 from ..data_cubby import data_cubby
                 fresh_src = data_cubby.grab_component(src.class_name, src.subclass_name)
+                
+                if fresh_src and hasattr(fresh_src, 'datetime_array') and fresh_src.datetime_array is not None:
+                    src_len = len(fresh_src.datetime_array)
+                    source_lengths.append(src_len)
+                    print_manager.custom_debug(f"🔍 [STEP 6.{idx}] Source {src.class_name}.{src.subclass_name}: {src_len} points")
                 if fresh_src is not None:
                     # Ensure the source variable has data for this timerange
                     # This should already be done by plotbot, but we double check
@@ -264,9 +269,9 @@ class CustomVariablesContainer:
                         
                         try:
                             # Parse the requested time range
-                            from datetime import datetime
-                            req_start = np.datetime64(datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f'))
-                            req_end = np.datetime64(datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f'))
+                            from dateutil.parser import parse
+                            req_start = np.datetime64(parse(trange[0]))
+                            req_end = np.datetime64(parse(trange[1]))
                             
                             # Check if source covers the time range with a small buffer
                             buffer = np.timedelta64(10, 's')
@@ -296,13 +301,40 @@ class CustomVariablesContainer:
                     print_manager.custom_debug(f"Could not get fresh data for {src.class_name}.{src.subclass_name}")
                     return variable
         
+        # STEP 6 Summary: Check if sources have different cadences
+        if len(source_lengths) > 1 and len(set(source_lengths)) > 1:
+            print_manager.custom_debug(f"🔍 [STEP 6] ⚠️ Different cadences detected: {source_lengths}")
+            print_manager.custom_debug(f"🔍 [STEP 6] Resampling will be needed")
+        elif len(source_lengths) > 0:
+            print_manager.custom_debug(f"🔍 [STEP 6] All sources have same cadence: {source_lengths[0]} points")
+        
         # Check if we have the right number of sources for the operation
         # Scalar operations (like variable + 10) need 1 source, binary operations need 2
-        expected_sources = 1 if operation in ['add', 'sub', 'mul', 'div'] and hasattr(variable, 'scalar_value') else 2
+        # Numpy ufuncs (like np.abs) also need 1 source (MOST of them - arctan2 needs 2)
+        
+        # List of unary ufuncs that only need 1 source
+        unary_ufuncs = ['absolute', 'abs', 'sqrt', 'square', 'log', 'log10', 'exp', 
+                        'sin', 'cos', 'tan', 'arcsin', 'arccos', 'arctan',
+                        'degrees', 'radians', 'negative', 'reciprocal', 'sign',
+                        'ceil', 'floor', 'round']
+        
+        # Determine expected sources based on operation type
+        if operation in unary_ufuncs:
+            expected_sources = 1
+        elif operation in ['add', 'sub', 'mul', 'div'] and hasattr(variable, 'scalar_value'):
+            expected_sources = 1  # Scalar arithmetic
+        elif operation in ['arctan2']:
+            expected_sources = 2  # Binary ufunc
+        elif operation in ['add', 'sub', 'mul', 'div']:
+            expected_sources = 2  # Binary arithmetic
+        else:
+            # Unknown operation - check based on actual sources available
+            expected_sources = len(fresh_sources)
+            print_manager.custom_debug(f"🔍 [STEP 6] Unknown operation '{operation}', using {expected_sources} sources")
         
         if len(fresh_sources) < expected_sources:
-            print_manager.custom_debug(f"Not enough fresh sources for {name}: got {len(fresh_sources)}, expected {expected_sources}")
-            print_manager.custom_debug(f"Operation: {operation}, has scalar_value: {hasattr(variable, 'scalar_value')}")
+            print_manager.custom_debug(f"🔍 [STEP 6] ❌ Not enough fresh sources: got {len(fresh_sources)}, expected {expected_sources}")
+            print_manager.custom_debug(f"🔍 [STEP 6] Operation: {operation}, has scalar_value: {hasattr(variable, 'scalar_value')}")
             return variable
             
         # Import time_clip for time range handling
@@ -311,8 +343,9 @@ class CustomVariablesContainer:
         # Determine the common time range - important for operations
         try:
             # Get start/end times for target range
-            req_start = datetime.strptime(trange[0], '%Y-%m-%d/%H:%M:%S.%f')
-            req_end = datetime.strptime(trange[1], '%Y-%m-%d/%H:%M:%S.%f')
+            from dateutil.parser import parse
+            req_start = parse(trange[0])
+            req_end = parse(trange[1])
             
             # Check if sources have data specifically in this time range
             source1_indices = None
@@ -342,51 +375,236 @@ class CustomVariablesContainer:
         except Exception as e:
             print_manager.custom_debug(f"Error checking for data in time range: {str(e)}")
         
-        # Apply the operation with fresh data
+        # STEP 7: Resampling (TODO - will implement if cadences differ)
+        print_manager.custom_debug(f"🔍 [STEP 7] Resampling check: TODO (will implement if needed)")
+        
+        # STEP 8: Apply the operation with fresh data
+        print_manager.custom_debug(f"🔍 [STEP 8] Applying operation: {operation}")
         result = None
         try:
-            # Handle scalar operations (1 source + scalar value) vs binary operations (2 sources)
-            if hasattr(variable, 'scalar_value') and len(fresh_sources) == 1:
+            # Handle scalar operations (1 source + scalar value) vs binary operations (2 sources) vs ufunc operations
+            if hasattr(variable, 'scalar_value') and variable.scalar_value is not None and len(fresh_sources) == 1:
                 # Scalar operation: apply scalar to the source variable
                 scalar_val = variable.scalar_value
-                print_manager.custom_debug(f"Applying scalar operation: {operation} with scalar value {scalar_val}")
+                print_manager.custom_debug(f"🔍 [STEP 8] Scalar operation: {operation} with value {scalar_val} (.data)")
                 
                 if operation == 'add':
-                    result = fresh_sources[0] + scalar_val
+                    result_array = fresh_sources[0].data + scalar_val
                 elif operation == 'sub':
-                    result = fresh_sources[0] - scalar_val
+                    result_array = fresh_sources[0].data - scalar_val
                 elif operation == 'mul':
-                    result = fresh_sources[0] * scalar_val
+                    result_array = fresh_sources[0].data * scalar_val
                 elif operation == 'div':
-                    result = fresh_sources[0] / scalar_val
-            else:
+                    result_array = fresh_sources[0].data / scalar_val
+                
+                # Wrap in plot_manager
+                source_config = fresh_sources[0].plot_config
+                new_config = plot_config_class(**source_config.__dict__)
+                if not hasattr(new_config, 'datetime_array') or new_config.datetime_array is None:
+                    new_config.datetime_array = fresh_sources[0].datetime_array
+                if not hasattr(new_config, 'time') or new_config.time is None:
+                    new_config.time = fresh_sources[0].time if hasattr(fresh_sources[0], 'time') else None
+                result = plot_manager(result_array, plot_config=new_config)
+                print_manager.custom_debug(f"🔍 [STEP 8] ✓ Wrapped scalar arithmetic result")
+                
+            elif operation in ['arctan2', 'degrees', 'radians', 'sin', 'cos', 'tan', 'arcsin', 'arccos', 'sqrt', 'abs', 'log', 'log10', 'exp']:
+                # Ufunc operation: apply numpy ufunc to source(s)
+                print_manager.custom_debug(f"🔍 [STEP 8] Ufunc operation: {operation} on {len(fresh_sources)} source(s) (.data)")
+                
+                if operation == 'arctan2' and len(fresh_sources) == 2:
+                    result_array = np.arctan2(fresh_sources[0].data, fresh_sources[1].data)
+                elif operation == 'degrees' and len(fresh_sources) == 1:
+                    result_array = np.degrees(fresh_sources[0].data)
+                elif operation == 'radians' and len(fresh_sources) == 1:
+                    result_array = np.radians(fresh_sources[0].data)
+                elif operation == 'sin' and len(fresh_sources) == 1:
+                    result_array = np.sin(fresh_sources[0].data)
+                elif operation == 'cos' and len(fresh_sources) == 1:
+                    result_array = np.cos(fresh_sources[0].data)
+                elif operation == 'tan' and len(fresh_sources) == 1:
+                    result_array = np.tan(fresh_sources[0].data)
+                elif operation == 'arcsin' and len(fresh_sources) == 1:
+                    result_array = np.arcsin(fresh_sources[0].data)
+                elif operation == 'arccos' and len(fresh_sources) == 1:
+                    result_array = np.arccos(fresh_sources[0].data)
+                elif operation == 'sqrt' and len(fresh_sources) == 1:
+                    result_array = np.sqrt(fresh_sources[0].data)
+                elif operation == 'abs' and len(fresh_sources) == 1:
+                    result_array = np.abs(fresh_sources[0].data)
+                elif operation == 'log' and len(fresh_sources) == 1:
+                    result_array = np.log(fresh_sources[0].data)
+                elif operation == 'log10' and len(fresh_sources) == 1:
+                    result_array = np.log10(fresh_sources[0].data)
+                elif operation == 'exp' and len(fresh_sources) == 1:
+                    result_array = np.exp(fresh_sources[0].data)
+                else:
+                    print_manager.error(f"Unsupported ufunc operation '{operation}' with {len(fresh_sources)} sources")
+                    return variable
+                
+                # Wrap in plot_manager
+                source_config = fresh_sources[0].plot_config
+                new_config = plot_config_class(**source_config.__dict__)
+                if not hasattr(new_config, 'datetime_array') or new_config.datetime_array is None:
+                    new_config.datetime_array = fresh_sources[0].datetime_array
+                if not hasattr(new_config, 'time') or new_config.time is None:
+                    new_config.time = fresh_sources[0].time if hasattr(fresh_sources[0], 'time') else None
+                result = plot_manager(result_array, plot_config=new_config)
+                print_manager.custom_debug(f"🔍 [STEP 8] ✓ Wrapped ufunc result")
+                
+            elif len(fresh_sources) == 2:
                 # Binary operation: apply between two source variables
-                print_manager.custom_debug(f"Applying binary operation: {operation} between two variables")
+                print_manager.custom_debug(f"🔍 [STEP 8] Binary operation: {operation} between two variables (.data)")
                 
                 if operation == 'add':
-                    result = fresh_sources[0] + fresh_sources[1]
+                    result_array = fresh_sources[0].data + fresh_sources[1].data
                 elif operation == 'sub':
-                    result = fresh_sources[0] - fresh_sources[1]
+                    result_array = fresh_sources[0].data - fresh_sources[1].data
                 elif operation == 'mul':
-                    result = fresh_sources[0] * fresh_sources[1]
+                    result_array = fresh_sources[0].data * fresh_sources[1].data
                 elif operation == 'div':
-                    result = fresh_sources[0] / fresh_sources[1]
+                    result_array = fresh_sources[0].data / fresh_sources[1].data
+                
+                # Wrap in plot_manager
+                source_config = fresh_sources[0].plot_config
+                new_config = plot_config_class(**source_config.__dict__)
+                if not hasattr(new_config, 'datetime_array') or new_config.datetime_array is None:
+                    new_config.datetime_array = fresh_sources[0].datetime_array
+                if not hasattr(new_config, 'time') or new_config.time is None:
+                    new_config.time = fresh_sources[0].time if hasattr(fresh_sources[0], 'time') else None
+                result = plot_manager(result_array, plot_config=new_config)
+                print_manager.custom_debug(f"🔍 [STEP 8] ✓ Wrapped binary arithmetic result")
+            
+            # Handle numpy ufuncs (captured from __array_ufunc__)
+            if result is None and len(fresh_sources) >= 1:
+                print_manager.custom_debug(f"🔍 [STEP 8] Checking for numpy ufunc: '{operation}'")
+                # Map operation names to numpy functions
+                ufunc_map = {
+                    'absolute': np.abs,
+                    'abs': np.abs,
+                    'sqrt': np.sqrt,
+                    'square': np.square,
+                    'log': np.log,
+                    'log10': np.log10,
+                    'exp': np.exp,
+                    'sin': np.sin,
+                    'cos': np.cos,
+                    'tan': np.tan,
+                    'arcsin': np.arcsin,
+                    'arccos': np.arccos,
+                    'arctan': np.arctan,
+                    'arctan2': np.arctan2,
+                    'degrees': np.degrees,
+                    'radians': np.radians,
+                    'negative': np.negative,
+                    'reciprocal': np.reciprocal,
+                    'sign': np.sign,
+                    'ceil': np.ceil,
+                    'floor': np.floor,
+                    'round': np.round,
+                }
+                
+                if operation in ufunc_map:
+                    ufunc = ufunc_map[operation]
+                    print_manager.custom_debug(f"🔍 [STEP 8] ✓ Found ufunc: np.{operation}")
+                    
+                    # Apply unary ufunc
+                    if len(fresh_sources) == 1:
+                        # STEP 8.1: Verify source data integrity BEFORE applying ufunc
+                        src_raw_len = len(fresh_sources[0].view(np.ndarray))
+                        src_data_len = len(fresh_sources[0].data) if hasattr(fresh_sources[0], 'data') else src_raw_len
+                        src_dt_len = len(fresh_sources[0].datetime_array) if hasattr(fresh_sources[0], 'datetime_array') and fresh_sources[0].datetime_array is not None else 0
+                        print_manager.custom_debug(f"🔍 [STEP 8.1] Source data integrity check:")
+                        print_manager.custom_debug(f"🔍 [STEP 8.1]   Raw array length: {src_raw_len} (accumulated history)")
+                        print_manager.custom_debug(f"🔍 [STEP 8.1]   .data length: {src_data_len} (clipped view)")
+                        print_manager.custom_debug(f"🔍 [STEP 8.1]   datetime_array length: {src_dt_len}")
+                        
+                        # STEP 8.2: Compare requested trange vs actual data trange
+                        print_manager.custom_debug(f"🔍 [STEP 8.2] Time range comparison:")
+                        print_manager.custom_debug(f"🔍 [STEP 8.2]   REQUESTED: {trange[0]} to {trange[1]}")
+                        if src_dt_len > 0:
+                            src_first = fresh_sources[0].datetime_array[0]
+                            src_last = fresh_sources[0].datetime_array[-1]
+                            print_manager.custom_debug(f"🔍 [STEP 8.2]   ACTUAL: {src_first} to {src_last}")
+                            print_manager.custom_debug(f"🔍 [STEP 8.2]   datetime points in range: {src_dt_len}")
+                        
+                        # STEP 8.3: Use .data property to get clipped view (not raw accumulated array!)
+                        print_manager.custom_debug(f"🔍 [STEP 8.3] Using .data property for time-clipped view")
+                        if src_data_len == src_dt_len:
+                            print_manager.custom_debug(f"🔍 [STEP 8.3] ✓ .data is properly clipped ({src_data_len} points)")
+                        else:
+                            print_manager.custom_debug(f"🔍 [STEP 8.3] ⚠️ .data vs datetime mismatch: {src_data_len} vs {src_dt_len}")
+                        
+                        # STEP 8.4: Apply ufunc to CLIPPED data
+                        print_manager.custom_debug(f"🔍 [STEP 8.4] Applying unary ufunc: {ufunc.__name__} to .data (clipped)")
+                        result_array = ufunc(fresh_sources[0].data)  # ✅ Use .data for clipped view!
+                        
+                        # STEP 8.5: Wrap result in plot_manager with correct datetime_array
+                        res_data_len = len(result_array) if hasattr(result_array, '__len__') else 0
+                        print_manager.custom_debug(f"🔍 [STEP 8.5] Result integrity check:")
+                        print_manager.custom_debug(f"🔍 [STEP 8.5]   Result array length: {res_data_len}")
+                        print_manager.custom_debug(f"🔍 [STEP 8.5]   Expected (datetime): {src_dt_len}")
+                        if res_data_len == src_dt_len:
+                            print_manager.custom_debug(f"🔍 [STEP 8.5] ✓ Result matches expected size")
+                        else:
+                            print_manager.custom_debug(f"🔍 [STEP 8.5] ❌ Result size mismatch!")
+                        
+                        # STEP 8.6: Wrap in plot_manager, COPYING source's plot_config
+                        print_manager.custom_debug(f"🔍 [STEP 8.6] Wrapping result in plot_manager (copying source config)")
+                        
+                        # Copy the source's plot_config to preserve metadata
+                        source_config = fresh_sources[0].plot_config
+                        new_config = plot_config_class(**source_config.__dict__)
+                        
+                        # Ensure time attribute exists (copy from source or set to None)
+                        if not hasattr(new_config, 'time') or new_config.time is None:
+                            new_config.time = fresh_sources[0].time if hasattr(fresh_sources[0], 'time') else None
+                        
+                        # Ensure datetime_array is copied
+                        if not hasattr(new_config, 'datetime_array') or new_config.datetime_array is None:
+                            new_config.datetime_array = fresh_sources[0].datetime_array if hasattr(fresh_sources[0], 'datetime_array') else None
+                        
+                        # Create plot_manager with result data but source's datetime/time
+                        result = plot_manager(result_array, plot_config=new_config)
+                        dt_len = len(result.datetime_array) if hasattr(result, 'datetime_array') and result.datetime_array is not None else 0
+                        print_manager.custom_debug(f"🔍 [STEP 8.6] ✓ Wrapped result (datetime: {dt_len} points)")
+                    # Apply binary ufunc (e.g., arctan2)
+                    elif len(fresh_sources) == 2:
+                        print_manager.custom_debug(f"🔍 [STEP 8] Applying binary ufunc to two sources (.data)")
+                        result_array = ufunc(fresh_sources[0].data, fresh_sources[1].data)  # ✅ Use .data for both sources!
+                        
+                        # Wrap in plot_manager with first source's config
+                        source_config = fresh_sources[0].plot_config
+                        new_config = plot_config_class(**source_config.__dict__)
+                        result = plot_manager(result_array, plot_config=new_config)
+                        print_manager.custom_debug(f"🔍 [STEP 8] ✓ Wrapped binary result (datetime: {len(result.datetime_array)} points)")
+                    
+                    if result is not None:
+                        print_manager.custom_debug(f"🔍 [STEP 8] ✅ Ufunc replay successful!")
+                else:
+                    print_manager.custom_debug(f"🔍 [STEP 8] ⚠️ Unknown operation '{operation}' - cannot replay")
                 
             if result is None:
-                print_manager.custom_debug(f"Operation failed for {name}")
+                print_manager.custom_debug(f"🔍 [STEP 8] ❌ Operation failed for {name}")
                 return variable
-                
-            # Additional check - verify the result has data in our target time range
-            if hasattr(result, 'datetime_array') and result.datetime_array is not None:
-                result_indices = time_clip(result.datetime_array, trange[0], trange[1])
-                if len(result_indices) == 0:
-                    print_manager.custom_debug(f"⚠️ Result has no data points in requested time range")
-                    print_manager.custom_debug(f"Using original variable - cannot update for new time range")
-                    return variable
-                else:
-                    print_manager.custom_debug(f"Result has {len(result_indices)} data points in requested time range")
+            
+            # STEP 8 continued: Verify result (defensive checks)
+            print_manager.custom_debug(f"🔍 [STEP 8] ✓ Operation complete")
+            try:
+                if hasattr(result, 'datetime_array') and result.datetime_array is not None:
+                    print_manager.custom_debug(f"🔍 [STEP 8] Result has {len(result.datetime_array)} points")
+                    if len(result.datetime_array) > 0 and hasattr(result, '__len__'):
+                        try:
+                            data_preview = result[:min(3, len(result))] if len(result) > 0 else []
+                            print_manager.custom_debug(f"🔍 [STEP 8] First 3 values: {data_preview}")
+                        except:
+                            pass  # Skip preview if slicing fails
+            except Exception as e:
+                print_manager.custom_debug(f"🔍 [STEP 8] Could not verify result: {e}")
+                # Don't fail - just continue
         except Exception as e:
             print_manager.custom_debug(f"Error during variable operation: {str(e)}")
+            import traceback
+            print_manager.custom_debug(f"Full traceback:\n{traceback.format_exc()}")
             return variable
         
         # Debug the datetime arrays
@@ -413,8 +631,10 @@ class CustomVariablesContainer:
         else:
             print_manager.custom_debug(f"Result has no datetime_array or it's empty")
         
-        # Store the old variable in the same dictionary slot
+        # STEP 9: Store the old variable in the same dictionary slot
+        print_manager.custom_debug(f"🔍 [STEP 9] Storing result in container.variables...")
         self.variables[name] = result
+        print_manager.custom_debug(f"🔍 [STEP 9] Stored '{name}' with ID: {id(result)}")
         
         # Update metadata on the new variable
         object.__setattr__(result, 'class_name', 'custom_variables')
@@ -427,9 +647,20 @@ class CustomVariablesContainer:
         
         # 🎯 CRITICAL: Set requested_trange for proper time clipping (non-lambda path)
         # This ensures .data property clips to the requested time range
+        # BUT: Skip this for ufunc results - they're already properly sized!
         if hasattr(result, 'requested_trange'):
-            object.__setattr__(result, 'requested_trange', trange)
-            print_manager.custom_debug(f"Set requested_trange on '{name}' (non-lambda): {trange}")
+            # Verify result's internal data size matches datetime_array
+            result_data_len = len(result.view(np.ndarray))
+            result_datetime_len = len(result.datetime_array) if hasattr(result, 'datetime_array') and result.datetime_array is not None else 0
+            
+            print_manager.custom_debug(f"🔍 [requested_trange] Result data: {result_data_len}, datetime: {result_datetime_len}")
+            
+            if result_data_len == result_datetime_len:
+                print_manager.custom_debug(f"🔍 [requested_trange] Sizes match - result is already properly sized, skipping trange clip")
+            else:
+                print_manager.custom_debug(f"🔍 [requested_trange] Size mismatch - setting requested_trange to clip")
+                object.__setattr__(result, 'requested_trange', trange)
+                print_manager.custom_debug(f"Set requested_trange on '{name}' (non-lambda): {trange}")
         
         # Add an update method that routes to this container
         def update_method(self, trange):
@@ -447,8 +678,10 @@ class CustomVariablesContainer:
         # Make sure the result is globally accessible (replaces the old reference)
         self._make_globally_accessible(name, result)
         
-        # Update data_tracker to record this calculation with variable-specific tracking
+        # STEP 10: Update data_tracker to record this calculation with variable-specific tracking
+        print_manager.custom_debug(f"🔍 [STEP 10] Updating tracker for trange: {trange}")
         global_tracker.update_calculated_range(trange, 'custom_data_type', name)
+        print_manager.custom_debug(f"🔍 [STEP 10] ✓ Tracker updated")
         
         # Copy all styling attributes from the original variable to preserve appearance
         styling_attributes = [
@@ -488,7 +721,21 @@ class CustomVariablesContainer:
             except Exception as e:
                 print_manager.custom_debug(f"Could not preserve style {attr}: {str(e)}")
         
-        print_manager.custom_debug(f"Successfully updated {name}")
+        # STEP 11: Variable Verification
+        print_manager.custom_debug(f"🔍 [STEP 11] Verifying final variable state...")
+        if hasattr(result, 'data'):
+            print_manager.custom_debug(f"🔍 [STEP 11] ✓ Has .data property")
+        if hasattr(result, 'datetime_array'):
+            dt_len = len(result.datetime_array) if result.datetime_array is not None else 0
+            print_manager.custom_debug(f"🔍 [STEP 11] ✓ Has .datetime_array ({dt_len} points)")
+        if hasattr(result, 'time'):
+            time_len = len(result.time) if result.time is not None else 0
+            print_manager.custom_debug(f"🔍 [STEP 11] ✓ Has .time ({time_len} points)")
+        
+        # STEP 12: Set requested_trange (done in plotbot_main.py)
+        print_manager.custom_debug(f"🔍 [STEP 12] requested_trange will be set by plotbot_main.py")
+        
+        print_manager.custom_debug(f"✅ Successfully updated {name}")
         return result
     
     def get_source_variables(self, name):
@@ -511,29 +758,39 @@ class CustomVariablesContainer:
         
         # LAMBDA VARIABLES: Parse to find variable references
         if operation == 'lambda' and hasattr(self, 'callables') and name in self.callables:
-            lambda_func = self.callables[name]
-            source_code = inspect.getsource(lambda_func).strip()
-            print_manager.custom_debug(f"🔧 [GET_SOURCE] Lambda source: {source_code}")
-            
-            # Match patterns like: pb.mag_rtn_4sa.bn or plotbot.mag_rtn_4sa.bn
-            # We need to match THREE parts and take the last two (class.variable)
-            pattern = r'(?:pb|plotbot)\.(\w+)\.(\w+)'
-            matches = re.findall(pattern, source_code)
-            print_manager.custom_debug(f"🔧 [GET_SOURCE] Found variable references: {matches}")
+            try:
+                lambda_func = self.callables[name]
+                source_code = inspect.getsource(lambda_func).strip()
+                print_manager.custom_debug(f"🔧 [GET_SOURCE] Lambda source: {source_code}")
+                
+                # Match patterns like: pb.mag_rtn_4sa.bn or plotbot.mag_rtn_4sa.bn
+                # We need to match THREE parts and take the last two (class.variable)
+                pattern = r'(?:pb|plotbot)\.(\w+)\.(\w+)'
+                matches = re.findall(pattern, source_code)
+                print_manager.custom_debug(f"🔧 [GET_SOURCE] Found variable references: {matches}")
+            except (OSError, TypeError) as e:
+                # inspect.getsource() fails in interactive contexts (notebooks, -c flag)
+                # This is OK - lambda will evaluate without pre-loading deps
+                print_manager.custom_debug(f"🔧 [GET_SOURCE] Cannot parse lambda in interactive context")
+                print_manager.custom_debug(f"🔧 [GET_SOURCE] Lambda will evaluate and load dependencies on-the-fly")
+                return []  # Let evaluate() continue - dependencies will load when lambda executes
             
             # Get the variable objects
+            # STEP 2: Dependency Identification
+            print_manager.custom_debug(f"🔍 [STEP 2] Identified {len(matches)} source variables from lambda")
+            
             vars_to_load = []
             from ..data_cubby import data_cubby
             for class_name, var_name in matches:
                 # class_name is now mag_rtn_4sa, var_name is bn ✅
-                print_manager.custom_debug(f"🔧 [GET_SOURCE] Getting {class_name}.{var_name}...")
+                print_manager.custom_debug(f"🔍 [STEP 2] Source: {class_name}.{var_name}")
                 class_instance = data_cubby.grab(class_name)
                 if class_instance:
                     var = getattr(class_instance, var_name, None)
                     if var is not None:
-                        print_manager.custom_debug(f"🔧 [GET_SOURCE] Found {class_name}.{var_name} (ID:{id(var)})")
                         vars_to_load.append(var)
             
+            print_manager.custom_debug(f"🔍 [STEP 2] Total sources to load: {len(vars_to_load)}")
             return vars_to_load
         
         # OLD-STYLE VARIABLES: Use source_var attribute
@@ -553,13 +810,15 @@ class CustomVariablesContainer:
         import inspect
         import re
         
-        print_manager.custom_debug(f"🔧 [EVALUATE] Evaluating '{name}' for trange {trange}")
+        # STEP 3: Time Range Request
+        print_manager.custom_debug(f"🔍 [STEP 3] Evaluating '{name}' for trange {trange}")
         
         if name not in self.variables:
             print_manager.error(f"Custom variable '{name}' not found")
             return None
         
         operation = self.operations.get(name)
+        print_manager.custom_debug(f"🔍 [STEP 3] Operation type: {operation}")
         print_manager.custom_debug(f"🔧 [EVALUATE] operation='{operation}'")
         print_manager.custom_debug(f"🔧 [EVALUATE] Checking lambda condition...")
         print_manager.custom_debug(f"🔧 [EVALUATE] operation=='lambda': {operation == 'lambda'}")
@@ -570,50 +829,90 @@ class CustomVariablesContainer:
         if operation == 'lambda' and hasattr(self, 'callables') and name in self.callables:
             print_manager.custom_debug(f"🔧 [EVALUATE] ✅ ENTERED LAMBDA PATH!")
             try:
+                # STEP 4: Check if we need to load data
+                print_manager.custom_debug(f"🔍 [STEP 4] Checking if data load needed for trange {trange}")
+                
                 # LOAD DEPENDENCIES! (Like br_norm does)
                 source_vars = self.get_source_variables(name)
                 if source_vars:
                     from ..get_data import get_data
-                    print_manager.custom_debug(f"🔧 [EVALUATE] Loading {len(source_vars)} dependencies...")
+                    print_manager.custom_debug(f"🔍 [STEP 4] Loading {len(source_vars)} dependencies...")
                     get_data(trange, *source_vars)  # Recursive call!
-                    print_manager.custom_debug(f"🔧 [EVALUATE] Dependencies loaded")
+                    print_manager.custom_debug(f"🔍 [STEP 4] Dependencies loaded")
                     
-                    # Set requested_trange on source variables so they clip correctly!
+                    # STEP 5: Verify data retrieval
+                    print_manager.custom_debug(f"🔍 [STEP 5] Verifying source data retrieval...")
                     for src_var in source_vars:
+                        if hasattr(src_var, 'datetime_array') and src_var.datetime_array is not None:
+                            print_manager.custom_debug(f"🔍 [STEP 5] {src_var.class_name}.{src_var.subclass_name}: {len(src_var.datetime_array)} points")
+                            if len(src_var.datetime_array) > 0:
+                                print_manager.custom_debug(f"🔍 [STEP 5]   First: {src_var.datetime_array[0]}, Last: {src_var.datetime_array[-1]}")
+                            if hasattr(src_var, 'time'):
+                                print_manager.custom_debug(f"🔍 [STEP 5]   .time exists: {src_var.time is not None}")
+                        
+                        # Set requested_trange on source variables so they clip correctly!
                         if hasattr(src_var, 'requested_trange'):
                             src_var.requested_trange = trange
-                            print_manager.custom_debug(f"🔧 [EVALUATE] Set requested_trange on {src_var.class_name}.{src_var.subclass_name}")
                 
-                print_manager.custom_debug(f"🔧 [EVALUATE] Evaluating lambda for '{name}'...")
+                # STEP 6-7: Cadence check and resampling (TODO - will implement after testing)
+                print_manager.custom_debug(f"🔍 [STEP 6] Cadence check: TODO")
+                
+                # DEBUG: Check source variable data sizes before lambda evaluation
+                for src_var in source_vars:
+                    if hasattr(src_var, 'data') and hasattr(src_var, 'datetime_array'):
+                        dt_len = len(src_var.datetime_array) if src_var.datetime_array is not None else 0
+                        data_len = len(src_var.data) if src_var.data is not None else 0
+                        print_manager.custom_debug(f"🔧 [PRE-LAMBDA] {src_var.subclass_name}: datetime={dt_len}, .data={data_len}")
+                
+                # STEP 8: Equation Evaluation
+                print_manager.custom_debug(f"🔍 [STEP 8] Evaluating lambda for '{name}'...")
                 result = self.callables[name]()
-                print_manager.custom_debug(f"🔧 [EVALUATE] Lambda evaluation result (ID:{id(result)}, type:{type(result).__name__})")
+                print_manager.custom_debug(f"🔍 [STEP 8] Result type: {type(result).__name__}, ID: {id(result)}")
                 
-                # DEBUG: Check result's datetime_array
+                # STEP 8 continued: Verify result
                 if hasattr(result, 'datetime_array') and result.datetime_array is not None:
-                    print_manager.custom_debug(f"🔧 [EVALUATE] Result datetime_array length (BEFORE clip): {len(result.datetime_array)}")
+                    print_manager.custom_debug(f"🔍 [STEP 8] Result has {len(result.datetime_array)} points")
+                    if len(result.datetime_array) > 0:
+                        # Spot check first 3 values if possible
+                        data_preview = result[:min(3, len(result))] if len(result) > 0 else []
+                        print_manager.custom_debug(f"🔍 [STEP 8] First 3 values: {data_preview}")
                     
                     # 🎯 CRITICAL: Clip result to requested trange!
                     # The lambda operates on full merged arrays, but we only want data for THIS trange
+                    # FIX: Create NEW plot_manager with clipped data (don't modify in place!)
                     from ..plotbot_helpers import time_clip
-                    indices = time_clip(result.datetime_array, trange[0], trange[1])
+                    from ..plot_manager import plot_manager
+                    from ..plot_config import plot_config as plot_config_class
+                    
+                    original_datetime = result.datetime_array.copy() if hasattr(result.datetime_array, 'copy') else result.datetime_array
+                    indices = time_clip(original_datetime, trange[0], trange[1])
                     print_manager.custom_debug(f"🔧 [EVALUATE] Clipping to trange, found {len(indices)} points")
+                    print_manager.custom_debug(f"🔧 [EVALUATE] Original result size: {len(result.view(np.ndarray))}, datetime size: {len(original_datetime)}")
                     
                     if len(indices) > 0:
-                        # Clip datetime_array
-                        result.datetime_array = result.datetime_array[indices]
+                        # Get the raw NumPy array from the result
+                        result_raw_array = result.view(np.ndarray)
                         
-                        # Clip the actual data
-                        if hasattr(result, 'plot_config') and hasattr(result.plot_config, 'data'):
-                            if result.plot_config.data.ndim == 1:
-                                result.plot_config.data = result.plot_config.data[indices]
-                            else:
-                                result.plot_config.data = result.plot_config.data[indices, ...]
+                        # Clip the raw array
+                        if result_raw_array.ndim == 1:
+                            clipped_array = result_raw_array[indices]
+                        else:
+                            clipped_array = result_raw_array[indices, ...]
+                        
+                        print_manager.custom_debug(f"🔧 [EVALUATE] Clipped array shape: {clipped_array.shape}")
+                        
+                        # Create new plot_config with clipped data
+                        new_config = plot_config_class(**result.plot_config.__dict__)
+                        new_config.datetime_array = original_datetime[indices]
                         
                         # Clip time if present
                         if hasattr(result, 'time') and result.time is not None:
-                            result.time = result.time[indices]
+                            new_config.time = result.time[indices]
                         
-                        print_manager.custom_debug(f"🔧 [EVALUATE] Result clipped to {len(result.datetime_array)} points")
+                        # Create NEW plot_manager with clipped data
+                        result = plot_manager(clipped_array, plot_config=new_config)
+                        
+                        print_manager.custom_debug(f"🔧 [EVALUATE] Created new plot_manager with {len(result.datetime_array)} points")
                 
                 # Preserve user-defined attributes from old variable
                 old_var = self.variables[name]
@@ -624,9 +923,10 @@ class CustomVariablesContainer:
                         old_value = getattr(old_var, attr)
                         object.__setattr__(result, attr, old_value)
                 
-                # Update stored variable with result
-                print_manager.custom_debug(f"🔧 [EVALUATE] Updating self.variables['{name}'] from ID:{id(self.variables[name])} to ID:{id(result)}")
+                # STEP 9: Data Cubby Storage
+                print_manager.custom_debug(f"🔍 [STEP 9] Storing result in container.variables...")
                 self.variables[name] = result
+                print_manager.custom_debug(f"🔍 [STEP 9] Stored '{name}' with ID: {id(result)}")
                 
                 # Set metadata
                 object.__setattr__(result, 'class_name', 'custom_variables')
@@ -636,11 +936,25 @@ class CustomVariablesContainer:
                 # 🎯 CRITICAL: Set requested_trange for proper time clipping
                 if hasattr(result, 'requested_trange'):
                     object.__setattr__(result, 'requested_trange', trange)
-                    print_manager.custom_debug(f"🔧 [EVALUATE] Set requested_trange on '{name}': {trange}")
+                    print_manager.custom_debug(f"🔍 [STEP 12] Set requested_trange: {trange}")
                 
                 # Update global reference
-                print_manager.custom_debug(f"🔧 [EVALUATE] Making '{name}' globally accessible...")
+                print_manager.custom_debug(f"🔍 [STEP 9] Making '{name}' globally accessible...")
                 self._make_globally_accessible(name, result)
+                
+                # STEP 10: Tracker update is done in get_data.py
+                print_manager.custom_debug(f"🔍 [STEP 10] Tracker will be updated by get_data()")
+                
+                # STEP 11: Variable Verification
+                print_manager.custom_debug(f"🔍 [STEP 11] Verifying final variable state...")
+                if hasattr(result, 'data'):
+                    print_manager.custom_debug(f"🔍 [STEP 11] ✓ Has .data property")
+                if hasattr(result, 'datetime_array'):
+                    dt_len = len(result.datetime_array) if result.datetime_array is not None else 0
+                    print_manager.custom_debug(f"🔍 [STEP 11] ✓ Has .datetime_array ({dt_len} points)")
+                if hasattr(result, 'time'):
+                    time_len = len(result.time) if result.time is not None else 0
+                    print_manager.custom_debug(f"🔍 [STEP 11] ✓ Has .time ({time_len} points)")
                 
                 print_manager.custom_debug(f"🔧 [EVALUATE] ✅ Lambda '{name}' ready, returning (ID:{id(result)})")
                 return result
@@ -649,17 +963,22 @@ class CustomVariablesContainer:
                 print_manager.error(f"Failed to evaluate lambda '{name}': {e}")
                 return None
         
-        # OLD-STYLE VARIABLES: Just update (data already loaded!)
+        # DIRECT EXPRESSION VARIABLES: Call update() for re-evaluation
         elif self.sources.get(name):
-            print_manager.custom_debug(f"🔧 [EVALUATE] Old-style variable '{name}', calling update...")
+            print_manager.custom_debug(f"🔍 [STEP 3] Direct expression variable '{name}', calling update...")
             
-            # Load sources first
+            # STEP 4-5: Load sources first
             source_vars = self.get_source_variables(name)
             if source_vars:
                 from ..get_data import get_data
-                print_manager.custom_debug(f"🔧 [EVALUATE] Loading {len(source_vars)} dependencies for old-style var...")
+                print_manager.custom_debug(f"🔍 [STEP 4] Loading {len(source_vars)} dependencies...")
                 get_data(trange, *source_vars)
-                print_manager.custom_debug(f"🔧 [EVALUATE] Dependencies loaded")
+                print_manager.custom_debug(f"🔍 [STEP 5] Dependencies loaded")
+                
+                # Verify retrieval
+                for src_var in source_vars:
+                    if hasattr(src_var, 'datetime_array') and src_var.datetime_array is not None:
+                        print_manager.custom_debug(f"🔍 [STEP 5] {src_var.class_name}.{src_var.subclass_name}: {len(src_var.datetime_array)} points")
             
             return self.update(name, trange)
         
@@ -777,7 +1096,14 @@ def custom_variable(name, expression):
     
     # Check if expression is a callable (lambda function)
     if callable(expression):
+        # STEP 1: Variable Definition
+        print_manager.custom_debug(f"🔍 [STEP 1] Creating custom variable '{name}'")
+        print_manager.custom_debug(f"🔍 [STEP 1] Type: LAMBDA expression")
         print_manager.debug(f"Custom variable '{name}' uses lambda - will evaluate lazily")
+        
+        # Clear any existing calculation cache - CRITICAL when redefining!
+        global_tracker.clear_calculation_cache('custom_data_type', name)
+        print_manager.custom_debug(f"🔍 [STEP 1] Cleared tracker cache")
         
         # Store the callable for lazy evaluation
         if not hasattr(container, 'callables'):
@@ -802,14 +1128,28 @@ def custom_variable(name, expression):
         return variable  # Return so users can set attributes like phi_B.color = 'red'
     
     # Otherwise, handle as before (immediate evaluation)
+    # STEP 1: Variable Definition
+    print_manager.custom_debug(f"🔍 [STEP 1] Creating custom variable '{name}'")
+    print_manager.custom_debug(f"🔍 [STEP 1] Type: DIRECT expression")
+    
     expr_has_data = hasattr(expression, 'datetime_array') and expression.datetime_array is not None and len(expression.datetime_array) > 0
     expr_data_points = len(expression.datetime_array) if expr_has_data else 0
     print_manager.debug(f"DEBUG custom_variable: Incoming expression for '{name}' already has data? {expr_has_data} ({expr_data_points} points)")
 
     # Clear any existing calculation cache for this variable name
+    print_manager.custom_debug(f"🔍 [STEP 1] Clearing tracker cache for '{name}'")
     global_tracker.clear_calculation_cache('custom_data_type', name)
     
     # Get source variables and operation type
+    # STEP 2: Dependency Identification (for direct expressions)
+    print_manager.custom_debug(f"🔍 [STEP 2.1] Checking for source_var attribute...")
+    print_manager.custom_debug(f"🔍 [STEP 2.1] has source_var: {hasattr(expression, 'source_var')}")
+    if hasattr(expression, 'source_var'):
+        print_manager.custom_debug(f"🔍 [STEP 2.1] source_var is None: {expression.source_var is None}")
+        if expression.source_var is not None:
+            print_manager.custom_debug(f"🔍 [STEP 2.1] source_var length: {len(expression.source_var)}")
+            print_manager.custom_debug(f"🔍 [STEP 2.1] source_var content: {expression.source_var}")
+    
     sources = []
     operation = 'div'  # Default to division as most custom vars are ratios
     
@@ -819,12 +1159,14 @@ def custom_variable(name, expression):
         for src in expression.source_var:
             if hasattr(src, 'class_name') and hasattr(src, 'subclass_name'):
                 sources.append(src)
-                print_manager.custom_debug(f"Added source variable: {src.class_name}.{src.subclass_name}")
+                print_manager.custom_debug(f"🔍 [STEP 2] Source: {src.class_name}.{src.subclass_name}")
         
         # Get operation type if available
         if hasattr(expression, 'operation'):
             operation = expression.operation
-            print_manager.custom_debug(f"Using operation: {operation}")
+            print_manager.custom_debug(f"🔍 [STEP 2] Operation: {operation}")
+    
+    print_manager.custom_debug(f"🔍 [STEP 2] Found {len(sources)} source variables for direct expression")
     
     # If no sources found but it's likely a division, try to infer from class name
     if not sources and hasattr(expression, 'operation') and expression.operation == 'div':

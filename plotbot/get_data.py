@@ -219,7 +219,7 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
     
     required_data_types = set()     # Tracks unique data types needed
     subclasses_by_type = {}         # Store subclass names requested for status prints
-    custom_var_names = {}           # Track custom variable names by data_type (for get_data)
+    custom_var_names = []           # Track ALL custom variable names (can be multiple!)
 
     for var in variables:
         print_manager.variable_testing(f"Initial check for variable: {type(var)}")
@@ -260,7 +260,8 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
              
              # For custom variables, store the name (we need it later!)
              if data_type == 'custom_data_type' and subclass_name:
-                 custom_var_names['custom_data_type'] = subclass_name
+                 if subclass_name not in custom_var_names:
+                     custom_var_names.append(subclass_name)
         else:
             print_manager.variable_testing(f"  Warning: Could not determine processable data type for variable: {var}")
 
@@ -335,54 +336,48 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
         
         # --- Handle CUSTOM VARIABLES Type (NEW!) --- 
         if data_type == 'custom_data_type':
-            print_manager.status(f"🎨 Processing custom variable...")
+            print_manager.status(f"🎨 Processing custom variables...")
             
-            # Get the variable name - it's stored in subclass_name during the loop above
-            # We stored it in custom_var_names dictionary
-            custom_var_name = custom_var_names.get('custom_data_type')
-            print_manager.status(f"🎨 Custom variable name: {custom_var_name}")
-            
-            if not custom_var_name:
-                print_manager.warning(f"Could not determine custom variable name")
-                end_step(step_key, step_start, {"error": "no variable name"})
+            # Get the variable names - we stored ALL of them in custom_var_names list
+            if not custom_var_names:
+                print_manager.warning(f"Could not determine custom variable names")
+                end_step(step_key, step_start, {"error": "no variable names"})
                 continue
             
-            # Check if calculation is needed (variable-specific tracking)
-            calculation_needed = global_tracker.is_calculation_needed(trange, 'custom_data_type', custom_var_name)
-            print_manager.status(f"🎨 Calculation needed: {calculation_needed}")
+            print_manager.status(f"🎨 Custom variables to process: {custom_var_names}")
             
-            if calculation_needed:
+            # Get the container
+            from .data_classes.custom_variables import CustomVariablesContainer
+            container = data_cubby.grab('custom_variables')
+            
+            if not container:
+                print_manager.error(f"Could not find custom_variables container!")
+                end_step(step_key, step_start, {"error": "no container"})
+                continue
+            
+            # Process EACH custom variable
+            for custom_var_name in custom_var_names:
                 # Step: Process custom variable
                 custom_step_key, custom_step_start = next_step("Process custom variable", custom_var_name)
                 
-                # Get the container
-                from .data_classes.custom_variables import CustomVariablesContainer
-                container = data_cubby.grab('custom_variables')
-                
-                if not container:
-                    print_manager.error(f"Could not find custom_variables container!")
-                    end_step(custom_step_key, custom_step_start, {"error": "no container"})
-                    end_step(step_key, step_start, {"error": "no container"})
-                    continue
-                
-                # Delegate to container.evaluate() - it handles dependencies itself!
+                # Always evaluate - it will handle dependencies and caching internally!
                 # (Like br_norm._calculate_br_norm() calls get_data internally)
                 print_manager.status(f"🎨 Evaluating custom variable '{custom_var_name}'...")
                 result = container.evaluate(custom_var_name, trange)
                 
                 if result:
                     print_manager.status(f"✅ Custom variable '{custom_var_name}' ready")
-                    # Mark as calculated (variable-specific)
+                    # STEP 10: Mark as calculated (variable-specific)
+                    print_manager.custom_debug(f"🔍 [STEP 10] Updating tracker for trange: {trange}")
                     global_tracker.update_calculated_range(trange, 'custom_data_type', custom_var_name)
+                    print_manager.custom_debug(f"🔍 [STEP 10] ✓ Tracker updated")
                 else:
                     print_manager.warning(f"Failed to evaluate custom variable '{custom_var_name}'")
                 
                 end_step(custom_step_key, custom_step_start, {"success": result is not None})
-            else:
-                print_manager.status(f"📤 Using existing custom variable '{custom_var_name}', calculation not needed.")
             
-            end_step(step_key, step_start, {"calculation_needed": calculation_needed})
-            # Continue to next data_type - processing for custom variable is done
+            end_step(step_key, step_start, {})
+            # Continue to next data_type - processing for custom variables is done
             continue 
 
         # --- Handle Standard CDF Types (and now HAM) --- 

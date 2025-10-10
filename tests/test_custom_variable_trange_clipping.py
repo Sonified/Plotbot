@@ -4,12 +4,23 @@ Test to verify custom variables properly clip to requested time range.
 STRESS TEST: Multiple time ranges, variable combinations, and edge cases.
 This isolates the issue where custom variables weren't respecting requested_trange,
 causing shape mismatches when accessing .data property.
+
+Tests include:
+- 3 main tests with different time ranges
+- 4 edge case tests:
+  1. Rapid time range switching
+  2. Return to previous trange (cache invalidation)
+  3. Chained custom variables (one depends on another)
+  4. Redefine custom variable with different formula
 """
 
 import numpy as np
 import plotbot
-from plotbot import custom_variable, mag_rtn_4sa
+from plotbot import custom_variable, mag_rtn_4sa, print_manager
 import sys
+
+# Enable custom debug to see all 12 steps
+print_manager.show_custom_debug = True
 
 def check_shapes_match(test_name, *data_arrays):
     """Helper to verify all arrays have matching shapes"""
@@ -147,9 +158,9 @@ def test_custom_variable_trange_clipping():
         else:
             print(f"\n❌ TEST {test_idx} FAILED: {test_case['name']}")
     
-    # EDGE CASE: Test switching between ranges rapidly
+    # EDGE CASE 1: Test switching between ranges rapidly
     print("\n" + "="*70)
-    print("EDGE CASE TEST: Rapid time range switching")
+    print("EDGE CASE 1: Rapid time range switching")
     print("="*70)
     
     rapid_ranges = [
@@ -170,6 +181,120 @@ def test_custom_variable_trange_clipping():
         else:
             print(f"  ❌ Shape mismatch: br={br_data.shape}, phi_B={phi_B_data.shape}")
             all_passed = False
+    
+    # EDGE CASE 2: Return to previous trange (cache invalidation test)
+    print("\n" + "="*70)
+    print("EDGE CASE 2: Return to previous trange")
+    print("="*70)
+    print("Testing if returning to TEST 1's trange works correctly...")
+    
+    first_trange = test_ranges[0]['trange']
+    print(f"\n[RETURN] Going back to first trange: {first_trange}")
+    plotbot.plotbot(first_trange, mag_rtn_4sa.br, 1, phi_B, 2, abs_bn, 3)
+    
+    br_data = np.array(mag_rtn_4sa.br.data)
+    phi_B_data = np.array(plotbot.phi_B_stress.data)
+    abs_bn_data = np.array(plotbot.abs_bn_stress.data)
+    
+    print(f"  br shape: {br_data.shape}")
+    print(f"  phi_B shape: {phi_B_data.shape}")
+    print(f"  abs_bn shape: {abs_bn_data.shape}")
+    
+    if br_data.shape == phi_B_data.shape == abs_bn_data.shape:
+        print(f"  ✅ All shapes match: {br_data.shape}")
+        # Verify calculations still correct
+        expected_phi_B = np.degrees(np.arctan2(br_data, mag_rtn_4sa.bn.data)) + 180
+        expected_abs_bn = np.abs(mag_rtn_4sa.bn.data)
+        if np.allclose(phi_B_data, expected_phi_B, rtol=1e-5) and np.allclose(abs_bn_data, expected_abs_bn, rtol=1e-5):
+            print(f"  ✅ Calculations still correct after returning to old trange")
+        else:
+            print(f"  ❌ Calculations WRONG after returning to old trange")
+            all_passed = False
+    else:
+        print(f"  ❌ Shape mismatch after returning to old trange")
+        all_passed = False
+    
+    # EDGE CASE 3: Chained custom variables (one depends on another)
+    print("\n" + "="*70)
+    print("EDGE CASE 3: Chained custom variables")
+    print("="*70)
+    print("Creating custom variable that depends on another custom variable...")
+    
+    # Create a variable that uses abs_bn_stress
+    doubled_abs_bn = custom_variable('doubled_abs_bn',
+        lambda: plotbot.abs_bn_stress * 2.0
+    )
+    
+    test_trange = ['2020-01-29/18:00:00', '2020-01-29/18:15:00']
+    print(f"\n[CHAINED] Testing chained variables with trange: {test_trange}")
+    plotbot.plotbot(test_trange, mag_rtn_4sa.bn, 1, abs_bn, 2, doubled_abs_bn, 3)
+    
+    bn_data = np.array(mag_rtn_4sa.bn.data)
+    abs_bn_data = np.array(plotbot.abs_bn_stress.data)
+    doubled_data = np.array(plotbot.doubled_abs_bn.data)
+    
+    print(f"  bn shape: {bn_data.shape}")
+    print(f"  abs_bn shape: {abs_bn_data.shape}")
+    print(f"  doubled_abs_bn shape: {doubled_data.shape}")
+    
+    if bn_data.shape == abs_bn_data.shape == doubled_data.shape:
+        print(f"  ✅ All shapes match: {bn_data.shape}")
+        # Verify chained calculation
+        expected_abs_bn = np.abs(bn_data)
+        expected_doubled = expected_abs_bn * 2.0
+        if np.allclose(abs_bn_data, expected_abs_bn, rtol=1e-5) and np.allclose(doubled_data, expected_doubled, rtol=1e-5):
+            print(f"  ✅ Chained calculation correct (doubled = abs_bn * 2)")
+        else:
+            print(f"  ❌ Chained calculation WRONG")
+            print(f"     Expected doubled[0] = {expected_doubled[0]}, got {doubled_data[0]}")
+            all_passed = False
+    else:
+        print(f"  ❌ Shape mismatch in chained variables")
+        all_passed = False
+    
+    # EDGE CASE 4: Redefine custom variable with different formula
+    print("\n" + "="*70)
+    print("EDGE CASE 4: Redefine custom variable")
+    print("="*70)
+    print("Redefining phi_B_stress with a different formula...")
+    
+    # Redefine phi_B without the +180
+    phi_B_redefined = custom_variable('phi_B_stress',
+        lambda: np.degrees(np.arctan2(plotbot.mag_rtn_4sa.br, plotbot.mag_rtn_4sa.bn))
+    )
+    
+    test_trange = ['2020-01-29/19:00:00', '2020-01-29/19:10:00']
+    print(f"\n[REDEFINE] Testing redefined variable with trange: {test_trange}")
+    plotbot.plotbot(test_trange, mag_rtn_4sa.br, 1, mag_rtn_4sa.bn, 2, phi_B_redefined, 3)
+    
+    br_data = np.array(mag_rtn_4sa.br.data)
+    bn_data = np.array(mag_rtn_4sa.bn.data)
+    phi_B_data = np.array(plotbot.phi_B_stress.data)
+    
+    print(f"  br shape: {br_data.shape}")
+    print(f"  bn shape: {bn_data.shape}")
+    print(f"  phi_B shape: {phi_B_data.shape}")
+    
+    if br_data.shape == bn_data.shape == phi_B_data.shape:
+        print(f"  ✅ All shapes match: {br_data.shape}")
+        # Verify NEW formula (WITHOUT +180)
+        expected_phi_B = np.degrees(np.arctan2(br_data, bn_data))
+        if np.allclose(phi_B_data, expected_phi_B, rtol=1e-5):
+            print(f"  ✅ Redefined calculation correct (no +180)")
+            # Double-check it's NOT the old formula
+            old_formula = expected_phi_B + 180
+            if not np.allclose(phi_B_data, old_formula, rtol=1e-5):
+                print(f"  ✅ Confirmed using NEW formula (not old +180 formula)")
+            else:
+                print(f"  ❌ Still using OLD formula!")
+                all_passed = False
+        else:
+            print(f"  ❌ Redefined calculation WRONG")
+            print(f"     Expected phi_B[0] = {expected_phi_B[0]}, got {phi_B_data[0]}")
+            all_passed = False
+    else:
+        print(f"  ❌ Shape mismatch in redefined variable")
+        all_passed = False
     
     # FINAL SUMMARY
     print("\n" + "="*70)

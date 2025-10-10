@@ -232,7 +232,7 @@ class ImportTimer:
         print(f"Report saved to: {filename}")
 
 # Global timer instance
-timer = ImportTimer()
+timer = ImportTimer(enabled=False)
 
 # Convenience functions for easy use
 def start_timing(session_name: str = "plotbot_startup"):

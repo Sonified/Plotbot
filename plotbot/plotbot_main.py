@@ -333,17 +333,17 @@ def plotbot(trange, *args):
         
         for var in vars_to_load:
             data_type = var.data_type
-            # For custom variables, check with variable name for granular tracking
+            # For custom variables, ALWAYS re-evaluate (they're cheap and depend on current data)
             if data_type == 'custom_data_type':
-                var_name = var.subclass_name if hasattr(var, 'subclass_name') else None
-                calculation_needed = global_tracker.is_calculation_needed(trange, data_type, var_name)
-            else:
-                calculation_needed = global_tracker.is_calculation_needed(trange, data_type)
-            
-            if calculation_needed:
-                print_manager.variable_testing(f"Data for {var.class_name}.{var.subclass_name} needs loading")
+                print_manager.variable_testing(f"Custom variable {var.class_name}.{var.subclass_name} needs evaluation")
                 need_data_loading = True
                 break
+            else:
+                calculation_needed = global_tracker.is_calculation_needed(trange, data_type)
+                if calculation_needed:
+                    print_manager.variable_testing(f"Data for {var.class_name}.{var.subclass_name} needs loading")
+                    need_data_loading = True
+                    break
         
         timer_end = timer.perf_counter()
         duration_ms = (timer_end - timer_start) * 1000
@@ -391,7 +391,7 @@ def plotbot(trange, *args):
         # This handles cases where variables were loaded by custom variables with different tranges
         if hasattr(var, 'requested_trange'):
             var.requested_trange = trange
-            print(f"🎯 Set requested_trange on {request['class_name']}.{request['subclass_name']}: {trange}")
+            print_manager.custom_debug(f"🎯 Set requested_trange on {request['class_name']}.{request['subclass_name']}: {trange}")
         
         plot_vars.append((var, request['axis_spec']))               # Store variable and its axis specification
         

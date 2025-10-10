@@ -470,10 +470,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_10_10_v3.64"
+__version__ = "2025_10_10_v3.65"
 
 # Commit message for this version
-__commit_message__ = "v3.64 Refactor: Custom variables architecture simplification - follow br_norm pattern for dependency loading (PARTIAL - multiple calls still broken)"
+__commit_message__ = "v3.65 Fix: Custom variables ufunc operations and comprehensive stress testing - ALL TESTS PASSING"
 
 # Print the version and commit message
 print(f"""
