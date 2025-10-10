@@ -85,6 +85,17 @@ from .plotbot_helpers import time_clip, parse_axis_spec, resample, debug_plot_va
 def plotbot(trange, *args):
     """Plot multiple time series with shared x-axis and optional right y-axes."""
     
+    # DEBUG: Show what args were passed
+    print_manager.custom_debug(f"\n🔍 [PLOTBOT_ENTRY] plotbot() called with {len(args)} arguments:")
+    for i in range(0, min(len(args), 20), 2):  # Show first 10 var/axis pairs
+        if i < len(args):
+            var = args[i]
+            axis = args[i+1] if i+1 < len(args) else '?'
+            if hasattr(var, 'class_name') and hasattr(var, 'subclass_name'):
+                print_manager.custom_debug(f"  [PLOTBOT_ENTRY] arg{i}: {var.class_name}.{var.subclass_name} (ID:{id(var)}) → axis {axis}")
+            else:
+                print_manager.custom_debug(f"  [PLOTBOT_ENTRY] arg{i}: {type(var)} → axis {axis}")
+    
     # LAZY IMPORTS: Load heavy scientific libraries only when plotting
     print_manager.status("🤖 Plotbot starting (loading scientific libraries)...")
     
@@ -265,11 +276,13 @@ def plotbot(trange, *args):
         print_manager.variable_testing(f"Processing variable: {var.class_name}.{var.subclass_name}, data_type: {var.data_type}")
         
         # Store the request
+        print_manager.custom_debug(f"🔍 [PLOTBOT_BUILD_REQUESTS] Adding to plot_requests: {var.class_name}.{var.subclass_name} (ID:{id(var)})")
         plot_requests.append({
             'data_type requested for plotbot': var.data_type,
             'class_name': var.class_name,
             'subclass_name': var.subclass_name,
-            'axis_spec': axis_spec
+            'axis_spec': axis_spec,
+            'original_var_id': id(var)  # Track original ID
         })
         
         # Also capture unique identity for later use
@@ -290,136 +303,45 @@ def plotbot(trange, *args):
     # print_manager.status(" ")    # Add spacing between sections
 
     #====================================================================
-    # PHASE 1: HANDLE CUSTOM VARIABLES AND THEIR SOURCE DATA
+    # COLLECT ALL VARIABLES (Custom and Regular - No Difference!)
     #====================================================================
-    custom_vars = []
+    vars_to_load = []
+    
     for request in plot_requests:
-        if request['data_type requested for plotbot'] == 'custom_data_type':
-            print_manager.variable_testing(f"Found custom variable request: {request['class_name']}.{request['subclass_name']}")
-            class_instance = data_cubby.grab(request['class_name'])
-            if class_instance:
-                var = class_instance.get_subclass(request['subclass_name'])
-                if var is not None:
-                    custom_vars.append((var, request['subclass_name']))
-                    print_manager.custom_debug(f"Added custom variable: {request['subclass_name']}\n")
-
-    # Process custom variables and their source data
-    # IMPORTANT: Use index-based loop so we can update the var in place
-    for idx, (var, name) in enumerate(custom_vars):
-        # Check if this is a lambda-based custom variable
-        container = data_cubby.grab('custom_class')
-        if container and hasattr(container, 'callables') and name in container.callables:
-            print_manager.debug(f"Evaluating lambda for custom variable '{name}'")
-            # Evaluate the lambda to get the actual data
-            try:
-                result = container.callables[name]()
-                # Replace the plot_manager with new data
-                if hasattr(result, '__array__'):
-                    var_data = np.asarray(result)
-                    # Create a new plot_manager with the evaluated data
-                    from .plot_manager import plot_manager
-                    new_var = plot_manager(var_data, plot_config=var.plot_config)
-                    # Copy attributes from old var
-                    for attr in plot_manager.PLOT_ATTRIBUTES:
-                        if hasattr(var, attr):
-                            setattr(new_var, attr, getattr(var, attr))
-                    # Update in container AND in our list
-                    container.variables[name] = new_var
-                    custom_vars[idx] = (new_var, name)  # Update the tuple in the list!
-                    print_manager.debug(f"✅ Lambda evaluation successful for '{name}', shape: {var_data.shape}")
-            except Exception as e:
-                print_manager.warning(f"Failed to evaluate lambda for '{name}': {e}")
-                import traceback
-                traceback.print_exc()
-        elif hasattr(var, 'source_var') and var.source_var is not None:
-            base_vars = []
-            for src_var in var.source_var:
-                if hasattr(src_var, 'class_name') and src_var.class_name != 'custom_class' and src_var.data_type != 'custom_data_type':
-                    base_vars.append(src_var)
-                    print_manager.test(f"Adding source variable for data download: {src_var.class_name}.{src_var.subclass_name}")
-            
-            # Download fresh data for base variables
-            if base_vars:
-                print_manager.status(f"📤 Custom variable '{name}' requires data for calculation")
-                get_data(trange, *base_vars)
-                
-                # Update the custom variable
-                if hasattr(var, 'update'):
-                    updated_var = var.update(trange)
-                    if updated_var is not None:
-                        print_manager.custom_debug(f"✅ Successfully updated variable '{name}'")
-                    else:
-                        print_manager.warning(f"Warning: Failed to update '{name}'")
-
+        class_instance = data_cubby.grab(request['class_name'])
+        if not class_instance:
+            print_manager.warning(f"Could not find class instance for {request['class_name']}")
+            continue
+        
+        var = class_instance.get_subclass(request['subclass_name'])
+        if var is not None:
+            vars_to_load.append(var)
+            print_manager.custom_debug(f"Added variable: {request['class_name']}.{request['subclass_name']} (ID:{id(var)})")
+    
+    print_manager.custom_debug(f"Total variables to load: {len(vars_to_load)}")
     print_manager.status(" ")    # Add spacing between sections
 
     #====================================================================
-    # PHASE 2: LOAD STANDARD (NON-CUSTOM) DATA USING get_data
+    # LOAD ALL DATA (get_data handles dependencies automatically!)
     #====================================================================
-    # loaded_data_objects = {}
-    # print_manager.debug("--- [plotbot] STARTING PHASE 2: Load Standard Data ---")
-    # for data_type in required_data_types:
-    #     # Skip if it's a custom type already handled
-    #     if data_type == 'custom_data_type':
-    #         continue
-        
-    #     print_manager.debug(f"--- [plotbot] Calling get_data for data_type: '{data_type}' ---")
-    #     loaded_data = get_data(trange, data_type)  # Call get_data for each required type
-    #     print_manager.debug(f"--- [plotbot] Returned from get_data for data_type: '{data_type}'. Result type: {type(loaded_data)} ---")
-    #     loaded_data_objects[data_type] = loaded_data
-    #     # Debug: Print if data was loaded successfully or not
-    #     if loaded_data is not None and hasattr(loaded_data, 'data') and loaded_data.data:
-    #         print_manager.variable_testing(f"✅ Successfully loaded data for {data_type}")
-    #     else:
-    #         print_manager.warning(f"⚠️ Failed to load data for {data_type}")
-            
-    # print_manager.debug("--- [plotbot] FINISHED PHASE 2: Load Standard Data ---")
-
-    # print_manager.status(" ")    # Add spacing between sections
-
-    #====================================================================
-    # PHASE 3: HANDLE REGULAR VARIABLES
-    #====================================================================
-    regular_vars = []
-    for request in plot_requests:
-        if request['data_type requested for plotbot'] != 'custom_data_type':
-            # print_manager.variable_testing(f"Found regular variable request: {request['class_name']}.{request['subclass_name']}") # User requested this to be less verbose
-            class_instance = data_cubby.grab(request['class_name'])
-            if class_instance:
-                var = class_instance.get_subclass(request['subclass_name'])
-                if var is not None:
-                    regular_vars.append(var)
-                    # print_manager.custom_debug(f"Added regular variable: {request['class_name']}.{request['subclass_name']}\n") # User requested this to be less verbose
-
     # NEW: Smart caching check
-    if regular_vars:
+    if vars_to_load:
         # Data Cache Check - see if we already have data for this time range
         timer_entry = timer.perf_counter()
-        timer_start = timer.perf_counter()  # <-- Ensure timer_start is always initialized
-        if regular_vars and hasattr(regular_vars[0], 'data_type'):
-            if regular_vars[0].data_type == 'mag_RTN_4sa':
-                print_manager.speed_test(f'[TIMER_MAG_2] Data Cache Check: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
-            elif regular_vars[0].data_type == 'psp_orbit_data':
-                print_manager.speed_test(f'[TIMER_ORBIT_2] Data Cache Check: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
+        timer_start = timer.perf_counter()
         need_data_loading = False
         
-        for var in regular_vars:
+        for var in vars_to_load:
             data_type = var.data_type
-            # DEBUGGING: Check tracker state for each variable
-            print_manager.speed_test(f"DATA CACHE CHECK: var={var.class_name}.{var.subclass_name}, data_type={data_type}")
-            print_manager.speed_test(f"TRACKER STATE: {global_tracker.calculated_ranges}")
-            
-            # Construct a unique identifier for the variable instance for tracker
-            # This should align with how it's stored/checked elsewhere if instance-specific tracking is used
-            # For now, assuming data_type and trange is enough for global_tracker.is_calculation_needed
-            calculation_needed = global_tracker.is_calculation_needed(trange, data_type)
-            print_manager.speed_test(f"DATA CACHE CHECK RESULT: data_type={data_type}, calculation_needed={calculation_needed}")
-            
-            if not calculation_needed:
-                print_manager.variable_testing(f"Data for {data_type} in trange {trange} already exists according to global_tracker.")
-                continue  # Data exists, skip this variable
+            # For custom variables, check with variable name for granular tracking
+            if data_type == 'custom_data_type':
+                var_name = var.subclass_name if hasattr(var, 'subclass_name') else None
+                calculation_needed = global_tracker.is_calculation_needed(trange, data_type, var_name)
             else:
-                print_manager.variable_testing(f"Data for {data_type} in trange {trange} needs loading according to global_tracker.")
+                calculation_needed = global_tracker.is_calculation_needed(trange, data_type)
+            
+            if calculation_needed:
+                print_manager.variable_testing(f"Data for {var.class_name}.{var.subclass_name} needs loading")
                 need_data_loading = True
                 break
         
@@ -428,22 +350,17 @@ def plotbot(trange, *args):
         print_manager.speed_test(f"[TIMER_EARLY_OPTIMIZATION] Data Cache Check: {duration_ms:.2f}ms")
         
         if need_data_loading:
-            if regular_vars and hasattr(regular_vars[0], 'data_type'):
-                if regular_vars[0].data_type == 'mag_RTN_4sa':
-                    print_manager.speed_test(f'[TIMER_MAG_3] get_data() call: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
-                elif regular_vars[0].data_type == 'psp_orbit_data':
-                    print_manager.speed_test(f'[TIMER_ORBIT_3] get_data() call: {(timer.perf_counter() - timer_entry)*1000:.2f}ms')
-            print_manager.status(f"📥 Acquiring data for {len(regular_vars)} regular variables...")
+            print_manager.status(f"📥 Acquiring data for {len(vars_to_load)} variables...")
             # Set TimeRangeTracker for user's original request before get_data call
             from .time_utils import TimeRangeTracker
             TimeRangeTracker.set_current_trange(trange)
             timer_start = timer.perf_counter()
-            get_data(trange, *regular_vars)
+            get_data(trange, *vars_to_load)  # ✨ ONE CALL - get_data handles everything!
             timer_end = timer.perf_counter()
             duration_ms = (timer_end - timer_start) * 1000
             print_manager.speed_test(f"[TIMER_GET_DATA_CALL] get_data() call: {duration_ms:.2f}ms")
         else:
-            print_manager.status(f"✅ All data already cached for {len(regular_vars)} regular variables in the specified trange.")
+            print_manager.status(f"✅ All data already cached for {len(vars_to_load)} variables")
             # Even for cached data, update TimeRangeTracker so requested_trange gets set correctly
             from .time_utils import TimeRangeTracker
             TimeRangeTracker.set_current_trange(trange)
@@ -451,19 +368,30 @@ def plotbot(trange, *args):
     #------------------ Prepare Plot Variables ------------------#
     plot_vars = []
     
+    # DEBUG: Show what's in plot_requests
+    print_manager.custom_debug(f"🔍 [PLOTBOT_PLOT_PREP] plot_requests has {len(plot_requests)} items:")
+    for i, req in enumerate(plot_requests):
+        print_manager.custom_debug(f"  {i+1}. {req['class_name']}.{req['subclass_name']} → axis {req['axis_spec']} (original ID:{req['original_var_id']})")
+    
     # Process plot requests and collect variables
-    print_manager.dependency_management("\n=== Preparing variables for plotting ===")
+    print_manager.custom_debug("\n🔍 [PLOTBOT_PLOT_PREP] Preparing variables for plotting...")
     for request in plot_requests:
-        print_manager.dependency_management(f"Processing request: {request['class_name']}.{request['subclass_name']}")
+        print_manager.custom_debug(f"🔍 [PLOTBOT_PLOT_PREP] Processing request: {request['class_name']}.{request['subclass_name']}")
         class_instance = data_cubby.grab(request['class_name'])     # Retrieve class instance for this plot request
-        print_manager.dependency_management(f"Retrieved class instance: {class_instance.__class__.__name__}")
+        print_manager.custom_debug(f"🔍 [PLOTBOT_PLOT_PREP] Retrieved class instance: {class_instance.__class__.__name__} (ID:{id(class_instance)})")
         
         var = class_instance.get_subclass(request['subclass_name']) # Get specific component to plot
-        print_manager.dependency_management(f"Retrieved variable: {request['class_name']}.{request['subclass_name']}, data_type: {getattr(var, 'data_type', 'unknown')}")
+        print_manager.custom_debug(f"🔍 [PLOTBOT_PLOT_PREP] Retrieved variable: {request['class_name']}.{request['subclass_name']} (ID:{id(var)}), data_type: {getattr(var, 'data_type', 'unknown')}")
         
         # This is where we'd need to handle custom variables (ensure they have the right attributes)
         if hasattr(var, 'data_type'):
             print_manager.dependency_management(f"Variable data_type: {var.data_type}")
+        
+        # 🎯 CRITICAL FIX: Ensure ALL variables being plotted have the correct requested_trange
+        # This handles cases where variables were loaded by custom variables with different tranges
+        if hasattr(var, 'requested_trange'):
+            var.requested_trange = trange
+            print(f"🎯 Set requested_trange on {request['class_name']}.{request['subclass_name']}: {trange}")
         
         plot_vars.append((var, request['axis_spec']))               # Store variable and its axis specification
         

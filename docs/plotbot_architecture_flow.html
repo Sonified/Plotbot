@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plotbot Architecture Flow</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+            background: #3498db;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        h3 {
+            color: #16a085;
+            margin-top: 20px;
+        }
+        .flow-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .step {
+            background: #ecf0f1;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+        }
+        .step-number {
+            background: #3498db;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 50%;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .code {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .good {
+            border-left-color: #27ae60;
+            background: #d5f4e6;
+        }
+        .bad {
+            border-left-color: #e74c3c;
+            background: #fadbd8;
+        }
+        .insight {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .comparison-box {
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .comparison-box h4 {
+            margin-top: 0;
+        }
+        .regular-var {
+            background: #d4edda;
+            border: 2px solid #28a745;
+        }
+        .custom-var {
+            background: #cfe2ff;
+            border: 2px solid #0d6efd;
+        }
+        .arrow {
+            text-align: center;
+            font-size: 24px;
+            color: #3498db;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Plotbot Architecture Flow Analysis</h1>
+    <p><em>Understanding how variables work and fixing custom variables</em></p>
+
+    <div class="flow-container">
+        <h2>1. How Plotbot Main Works (Current)</h2>
+        
+        <div class="step">
+            <span class="step-number">1</span>
+            <strong>User calls plotbot:</strong>
+            <div class="code">plotbot(trange, mag_rtn_4sa.br, 1, proton.density, 2)</div>
+        </div>
+
+        <div class="step">
+            <span class="step-number">2</span>
+            <strong>Parse arguments:</strong> Extract variables and axis numbers
+        </div>
+
+        <div class="step">
+            <span class="step-number">3</span>
+            <strong>Collect variables:</strong> Build list of plot_managers to load
+            <div class="code">vars_to_load = [mag_rtn_4sa.br, proton.density]</div>
+        </div>
+
+        <div class="step">
+            <span class="step-number">4</span>
+            <strong>Call get_data:</strong>
+            <div class="code">get_data(trange, *vars_to_load)</div>
+        </div>
+
+        <div class="step">
+            <span class="step-number">5</span>
+            <strong>Plot the variables</strong> (now they have data)
+        </div>
+    </div>
+
+    <div class="flow-container">
+        <h2>2. How Regular Variables Work (mag_rtn_4sa.br)</h2>
+        
+        <div class="step good">
+            <span class="step-number">✓</span>
+            <strong>User requests:</strong>
+            <div class="code">plotbot(trange, mag_rtn_4sa.br, 1)</div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="step good">
+            <span class="step-number">✓</span>
+            <strong>get_data receives:</strong> mag_rtn_4sa.br plot_manager
+            <ul>
+                <li>Has <code>data_type = 'mag_RTN_4sa'</code></li>
+                <li>Has <code>class_name = 'mag_rtn_4sa'</code></li>
+                <li>Has <code>subclass_name = 'br'</code></li>
+            </ul>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="step good">
+            <span class="step-number">✓</span>
+            <strong>get_data processes:</strong>
+            <ul>
+                <li>Identifies data_type: 'mag_RTN_4sa'</li>
+                <li>Downloads CDF file (if needed)</li>
+                <li>Calls <code>import_data_function()</code></li>
+                <li>Updates mag_rtn_4sa class via DataCubby</li>
+            </ul>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="step good">
+            <span class="step-number">✓</span>
+            <strong>Result:</strong> mag_rtn_4sa.br now has data!
+        </div>
+    </div>
+
+    <div class="flow-container">
+        <h2>3. How br_norm Works (Calculated Variable - THE PATTERN WE SHOULD FOLLOW!)</h2>
+        
+        <div class="insight">
+            <strong>💡 KEY INSIGHT:</strong> br_norm is a calculated variable that depends on OTHER data (proton.sun_dist_rsun).
+            It handles its own dependencies!
+        </div>
+
+        <div class="step good">
+            <span class="step-number">1</span>
+            <strong>User requests:</strong>
+            <div class="code">plotbot(trange, mag_rtn_4sa.br_norm, 1)</div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="step good">
+            <span class="step-number">2</span>
+            <strong>get_data loads mag_rtn_4sa:</strong> (standard CDF data)
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="step good">
+            <span class="step-number">3</span>
+            <strong>User accesses br_norm property:</strong>
+            <div class="code">
+# In psp_mag_rtn_4sa.py
+@property
+def br_norm(self):
+    # Check if needs calculation
+    if self.raw_data.get('br_norm') is None:
+        self._calculate_br_norm()  # ← HANDLES ITS OWN DEPENDENCIES!
+    return self._br_norm_manager
+            </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="step good">
+            <span class="step-number">4</span>
+            <strong>_calculate_br_norm() fetches dependencies:</strong>
+            <div class="code">
+def _calculate_br_norm(self):
+    # Get the trange from _current_operation_trange
+    trange = self._current_operation_trange
+    
+    # FETCH THE DEPENDENCY MYSELF!
+    get_data(trange, proton.sun_dist_rsun)  # ← RECURSIVELY CALLS get_data!
+    
+    # Now calculate br_norm using loaded data
+    br_norm = self.raw_data['br'] * (sun_dist_rsun ** 2)
+    self.raw_data['br_norm'] = br_norm
+            </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="step good">
+            <span class="step-number">✓</span>
+            <strong>Result:</strong> br_norm calculates itself by fetching its dependencies!
+        </div>
+    </div>
+
+    <div class="flow-container">
+        <h2>4. How Custom Variables CURRENTLY Work (BROKEN)</h2>
+        
+        <div class="step bad">
+            <span class="step-number">1</span>
+            <strong>User creates custom variable:</strong>
+            <div class="code">custom_variable('abs_bn', lambda: np.abs(mag_rtn_4sa.bn))</div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="step bad">
+            <span class="step-number">2</span>
+            <strong>User plots it:</strong>
+            <div class="code">plotbot(trange, mag_rtn_4sa.bn, 1, plotbot.abs_bn, 2)</div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="step bad">
+            <span class="step-number">3</span>
+            <strong>plotbot_main collects variables:</strong>
+            <div class="code">vars_to_load = [mag_rtn_4sa.bn, plotbot.abs_bn]</div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="step bad">
+            <span class="step-number">4</span>
+            <strong>get_data processes both... but NOTHING HAPPENS for abs_bn!</strong>
+            <ul>
+                <li>✓ mag_rtn_4sa.bn loads correctly</li>
+                <li>❌ abs_bn has data_type='custom_data_type' but no handler in get_data!</li>
+                <li>❌ Lambda never evaluates!</li>
+            </ul>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="step bad">
+            <span class="step-number">❌</span>
+            <strong>Result:</strong> abs_bn has NO DATA!
+        </div>
+    </div>
+
+    <div class="flow-container">
+        <h2>5. How Custom Variables SHOULD Work (Like br_norm!)</h2>
+        
+        <div class="insight">
+            <strong>💡 THE SOLUTION:</strong> Custom variables should work EXACTLY like br_norm!<br>
+            They should handle their own dependencies in their evaluation method.
+        </div>
+
+        <div class="comparison">
+            <div class="comparison-box regular-var">
+                <h4>br_norm Pattern</h4>
+                <div class="code" style="font-size: 12px;">
+@property
+def br_norm(self):
+    if needs_calculation:
+        self._calculate_br_norm()
+    return self._br_norm_manager
+
+def _calculate_br_norm(self):
+    trange = self._current_operation_trange
+    
+    # FETCH DEPENDENCIES!
+    get_data(trange, proton.sun_dist_rsun)
+    
+    # CALCULATE!
+    br_norm = self.raw_data['br'] * ...
+    self.raw_data['br_norm'] = br_norm
+                </div>
+            </div>
+
+            <div class="comparison-box custom-var">
+                <h4>Custom Variable Pattern (SHOULD BE)</h4>
+                <div class="code" style="font-size: 12px;">
+def evaluate(self, name, trange):
+    """Evaluate custom variable"""
+    
+    # Step 1: GET SOURCE VARIABLES!
+    sources = self.get_source_variables(name)
+    get_data(trange, *sources)  # ← RECURSIVE!
+    
+    # Step 2: EVALUATE LAMBDA!
+    result = self.callables[name]()
+    
+    # Step 3: STORE RESULT!
+    self.variables[name] = result
+    return result
+                </div>
+            </div>
+        </div>
+
+        <h3>The Flow:</h3>
+
+        <div class="step good">
+            <span class="step-number">1</span>
+            <strong>User creates custom variable:</strong>
+            <div class="code">custom_variable('abs_bn', lambda: np.abs(mag_rtn_4sa.bn))</div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="step good">
+            <span class="step-number">2</span>
+            <strong>User plots it:</strong>
+            <div class="code">plotbot(trange, plotbot.abs_bn, 1)</div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="step good">
+            <span class="step-number">3</span>
+            <strong>plotbot_main calls get_data:</strong>
+            <div class="code">get_data(trange, plotbot.abs_bn)</div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="step good">
+            <span class="step-number">4</span>
+            <strong>get_data sees custom_data_type:</strong>
+            <div class="code">
+# In get_data.py
+if data_type == 'custom_data_type':
+    # Get the container
+    container = data_cubby.grab('custom_variables')
+    
+    # Ask container to evaluate (CONTAINER HANDLES EVERYTHING!)
+    container.evaluate(var_name, trange)
+    
+    # Done!
+    continue
+            </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="step good">
+            <span class="step-number">5</span>
+            <strong>container.evaluate() handles dependencies:</strong>
+            <div class="code">
+# In custom_variables.py
+def evaluate(self, name, trange):
+    # Parse lambda to find source variables
+    source_vars = self.get_source_variables(name)  # Returns [mag_rtn_4sa.bn]
+    
+    # LOAD DEPENDENCIES! (Recursive get_data call!)
+    if source_vars:
+        get_data(trange, *source_vars)  # ← EXACTLY LIKE br_norm!
+    
+    # Evaluate lambda (data is now loaded!)
+    result = self.callables[name]()
+    
+    # Store and return
+    self.variables[name] = result
+    return result
+            </div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="step good">
+            <span class="step-number">✓</span>
+            <strong>Result:</strong> abs_bn has data! It worked exactly like br_norm!
+        </div>
+    </div>
+
+    <div class="flow-container">
+        <h2>6. What Changes Are Needed?</h2>
+        
+        <h3>✅ get_data.py - Add minimal handler</h3>
+        <div class="code">
+# Around line 330 in get_data.py
+if data_type == 'custom_data_type':
+    # Get variable name
+    var_name = custom_var_names.get('custom_data_type')
+    
+    # Get container
+    container = data_cubby.grab('custom_variables')
+    
+    # Ask container to evaluate (IT HANDLES EVERYTHING!)
+    container.evaluate(var_name, trange)
+    
+    # Mark as calculated
+    global_tracker.update_calculated_range(trange, 'custom_data_type', var_name)
+    
+    continue  # Done!
+        </div>
+
+        <h3>✅ custom_variables.py - evaluate() should load dependencies</h3>
+        <div class="code">
+def evaluate(self, name, trange):
+    """Evaluate custom variable - HANDLES OWN DEPENDENCIES"""
+    from ..get_data import get_data
+    
+    # Get source variables
+    source_vars = self.get_source_variables(name)
+    
+    # LOAD THEM! (Recursive get_data)
+    if source_vars:
+        get_data(trange, *source_vars)
+    
+    # Evaluate lambda
+    result = self.callables[name]()
+    
+    # Set metadata
+    object.__setattr__(result, 'class_name', 'custom_variables')
+    object.__setattr__(result, 'subclass_name', name)
+    object.__setattr__(result, 'requested_trange', trange)
+    
+    # Store and make global
+    self.variables[name] = result
+    self._make_globally_accessible(name, result)
+    
+    return result
+        </div>
+
+        <h3>✅ plotbot_main.py - STAYS SIMPLE!</h3>
+        <div class="code">
+# Collect ALL variables (custom and regular, no difference!)
+vars_to_load = []
+for request in plot_requests:
+    var = class_instance.get_subclass(request['subclass_name'])
+    vars_to_load.append(var)
+
+# Load EVERYTHING with ONE call
+get_data(trange, *vars_to_load)
+
+# Plot everything
+# ... plotting code ...
+        </div>
+    </div>
+
+    <div class="flow-container">
+        <h2>7. Why This Works</h2>
+        
+        <div class="insight">
+            <h3>The Recursive Pattern:</h3>
+            <ol>
+                <li><strong>plotbot_main</strong> calls <code>get_data(trange, abs_bn)</code></li>
+                <li><strong>get_data</strong> sees custom_data_type, asks container to evaluate</li>
+                <li><strong>container.evaluate()</strong> calls <code>get_data(trange, mag_rtn_4sa.bn)</code></li>
+                <li><strong>get_data</strong> loads mag_rtn_4sa (normal CDF download)</li>
+                <li><strong>container.evaluate()</strong> continues, evaluates lambda</li>
+                <li><strong>get_data</strong> marks custom variable as complete</li>
+                <li><strong>plotbot_main</strong> plots everything</li>
+            </ol>
+        </div>
+
+        <div class="step good">
+            <strong>✅ NO PHASES</strong> - Just recursive dependency resolution!
+        </div>
+
+        <div class="step good">
+            <strong>✅ NO COMPLEXITY</strong> - Each variable knows how to load itself!
+        </div>
+
+        <div class="step good">
+            <strong>✅ SAME PATTERN</strong> - br_norm and custom variables work identically!
+        </div>
+    </div>
+
+    <div class="flow-container" style="background: #d4edda; border: 3px solid #28a745;">
+        <h2>🎯 The Solution</h2>
+        <h3>Move dependency loading INTO custom_variables.evaluate()</h3>
+        <p><strong>Just like br_norm handles its dependencies!</strong></p>
+        
+        <ul style="font-size: 18px;">
+            <li>✅ Simple handler in get_data.py (10 lines)</li>
+            <li>✅ evaluate() loads sources (using get_data recursively)</li>
+            <li>✅ plotbot_main stays simple (no phases!)</li>
+            <li>✅ Works exactly like br_norm pattern</li>
+        </ul>
+    </div>
+
+</body>
+</html>
+

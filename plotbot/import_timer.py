@@ -167,8 +167,9 @@ class ImportTimer:
         
         print(f"\n🐌 SLOWEST IMPORTS (Top {min(top_n, len(sorted_imports))}):")
         print("-" * 50)
+        total_time = sum(self.import_times.values())
         for i, (name, elapsed) in enumerate(sorted_imports[:top_n], 1):
-            percentage = (elapsed / sum(self.import_times.values())) * 100 if self.import_times else 0
+            percentage = (elapsed / total_time) * 100 if total_time > 0 else 0
             print(f"{i:2d}. {name:30s} {elapsed:6.3f}s ({percentage:4.1f}%)")
         
         # Block timing summary

@@ -198,6 +198,14 @@ print_manager.datacubby("Registered global data instances with DataCubby.")
 # Import custom variables system
 with time_block("custom_variables"):
     from .data_classes.custom_variables import custom_variable, CustomVariablesContainer
+    
+    # Get or create the custom variables container and make it globally accessible
+    custom_variables_container = data_cubby.grab('custom_variables')
+    if custom_variables_container is None:
+        custom_variables_container = CustomVariablesContainer()
+    
+    # Make it accessible as plotbot.custom_variables
+    custom_variables = custom_variables_container
 
 # Import test_pilot for testing - safely importing the test functions
 # (test_pilot handles the fallback if pytest is not available)
@@ -438,6 +446,7 @@ __all__.extend([
     'psp_span_vdf',  # PSP SPAN-I velocity distribution functions
     'audifier',
     'custom_variable',  # Using custom_variable instead of new_variable
+    'custom_variables',  # Container for accessing custom variables
     'debug_custom_variables',  # Add debug function for custom variables
     'time_clip',      # ADDED time_clip helper function
     'config',         # ADDED config to __all__
@@ -461,10 +470,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_10_09_v3.63"
+__version__ = "2025_10_10_v3.64"
 
 # Commit message for this version
-__commit_message__ = "v3.63 Critical Fix: EPAD data repetition bug - 2D datetime meshgrid handling in time clipping"
+__commit_message__ = "v3.64 Refactor: Custom variables architecture simplification - follow br_norm pattern for dependency loading (PARTIAL - multiple calls still broken)"
 
 # Print the version and commit message
 print(f"""

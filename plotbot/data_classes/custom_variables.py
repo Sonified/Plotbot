@@ -1,3 +1,4 @@
+# custom_variables.py
 import numpy as np
 import types
 from ..print_manager import print_manager
@@ -26,12 +27,27 @@ class CustomVariablesContainer:
         self.operations = {}
         
         # Class name for data_cubby registration
-        self.class_name = 'custom_class'
+        self.class_name = 'custom_variables'
         
         # Register this instance in data_cubby
         from ..data_cubby import data_cubby
-        data_cubby.stash(self, class_name='custom_class')
+        data_cubby.stash(self, class_name='custom_variables')
         print_manager.custom_debug("✨ Custom variables system initialized")
+    
+    def __getattr__(self, name):
+        """
+        Enable dot notation access to variables (like mag_rtn_4sa.br).
+        Always returns the CURRENT value from self.variables, so updates are automatically visible.
+        """
+        # Avoid recursion for internal attributes - but these should be accessed normally
+        if name.startswith('_'):
+            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+        
+        # Return variable from dictionary (this automatically gets updated values!)
+        if 'variables' in self.__dict__ and name in self.variables:
+            return self.variables[name]
+        
+        raise AttributeError(f"Custom variable '{name}' not found. Use custom_variable() to create it.")
     
     def get_subclass(self, subclass_name):
         """
@@ -67,7 +83,7 @@ class CustomVariablesContainer:
         self.operations[name] = operation
         
         # Set variable metadata with more explicit naming
-        object.__setattr__(variable, 'class_name', 'custom_class')
+        object.__setattr__(variable, 'class_name', 'custom_variables')
         object.__setattr__(variable, 'subclass_name', name)
         object.__setattr__(variable, 'data_type', 'custom_data_type')
         
@@ -78,7 +94,7 @@ class CustomVariablesContainer:
         def update_method(self, trange):
             """Update method that routes to container"""
             from ..data_cubby import data_cubby
-            custom_container = data_cubby.grab('custom_class')
+            custom_container = data_cubby.grab('custom_variables')
             if custom_container:
                 result = custom_container.update(name, trange)
                 if result is not None:
@@ -92,6 +108,70 @@ class CustomVariablesContainer:
             
         print_manager.custom_debug(f"Registered custom variable: {name}")
         return variable
+    
+    def evaluate_lambdas(self):
+        """
+        Evaluate all lambda-based custom variables after their source data has loaded.
+        This should be called AFTER regular data is loaded in plotbot().
+        """
+        from ..plot_manager import plot_manager
+        import numpy as np
+        
+        if not hasattr(self, 'callables'):
+            return  # No lambda variables to evaluate
+        
+        for name in list(self.callables.keys()):
+            if name not in self.variables:
+                continue
+            
+            var = self.variables[name]
+            print_manager.debug(f"Evaluating lambda for '{name}' after source data loaded")
+            
+            try:
+                # Execute the lambda
+                result = self.callables[name]()
+                print_manager.debug(f"[Lambda Eval] Result type: {type(result)}, has __array__: {hasattr(result, '__array__')}")
+                
+                if hasattr(result, '__array__'):
+                    var_data = np.asarray(result)
+                    print_manager.debug(f"[Lambda Eval] var_data shape: {var_data.shape}")
+                    
+                    # Create new plot_manager with data
+                    new_var = plot_manager(var_data, plot_config=var.plot_config)
+                    print_manager.debug(f"[Lambda Eval] new_var created, shape: {new_var.shape}")
+                    
+                    # Copy plot attributes from old var
+                    for attr in plot_manager.PLOT_ATTRIBUTES:
+                        if hasattr(var, attr):
+                            setattr(new_var, attr, getattr(var, attr))
+                    
+                    # CRITICAL: Copy time/datetime_array from result 
+                    # (Lambda operations on plot_managers preserve datetime_array)
+                    if hasattr(result, 'datetime_array'):
+                        object.__setattr__(new_var, 'datetime_array', result.datetime_array)
+                        print_manager.debug(f"[Lambda Eval] Copied datetime_array with {len(result.datetime_array)} points")
+                    
+                    # Copy .time from source (arithmetic operations don't preserve it)
+                    if hasattr(result, 'source_var') and result.source_var:
+                        first_source = result.source_var[0]
+                        if hasattr(first_source, 'time') and first_source.time is not None:
+                            object.__setattr__(new_var, 'time', first_source.time)
+                            print_manager.debug(f"[Lambda Eval] Copied .time from source")
+                    
+                    # Update container (this updates plotbot.custom_variables.phi_B via __getattr__)
+                    self.variables[name] = new_var
+                    print_manager.debug(f"[Lambda Eval] Updated self.variables[{name}]")
+                    
+                    # Update global alias (plotbot.phi_B)
+                    self._make_globally_accessible(name, new_var)
+                    print_manager.debug(f"[Lambda Eval] Updated global plotbot.{name}")
+                    
+                    print_manager.debug(f"✅ Lambda '{name}' evaluated, shape: {var_data.shape}")
+                    
+            except Exception as e:
+                print_manager.warning(f"Failed to evaluate lambda '{name}': {e}")
+                import traceback
+                traceback.print_exc()
     
     def update(self, name, trange):
         """
@@ -120,6 +200,39 @@ class CustomVariablesContainer:
             print_manager.custom_debug(f"Custom variable '{name}' not found")
             return None
         
+        # LAMBDA VARIABLES: Evaluate lambda to get fresh result
+        if operation == 'lambda' and hasattr(self, 'callables') and name in self.callables:
+            print_manager.custom_debug(f"Evaluating lambda for '{name}'")
+            try:
+                # Execute lambda with fresh data
+                result = self.callables[name]()
+                
+                # Update stored variable
+                self.variables[name] = result
+                
+                # Set metadata
+                object.__setattr__(result, 'class_name', 'custom_variables')
+                object.__setattr__(result, 'subclass_name', name)
+                object.__setattr__(result, 'data_type', 'custom_data_type')
+                object.__setattr__(result, 'y_label', name)
+                object.__setattr__(result, 'legend_label', name)
+                
+                # Make globally accessible
+                self._make_globally_accessible(name, result)
+                
+                # Update tracker
+                global_tracker.update_calculated_range(trange, 'custom_data_type', name)
+                
+                print_manager.custom_debug(f"✅ Lambda evaluation complete for '{name}'")
+                return result
+                
+            except Exception as e:
+                print_manager.error(f"❌ Error evaluating lambda for '{name}': {e}")
+                import traceback
+                traceback.print_exc()
+                return variable
+        
+        # NON-LAMBDA VARIABLES
         if not sources:
             print_manager.custom_debug(f"No source variables for {name}")
             return variable
@@ -304,7 +417,7 @@ class CustomVariablesContainer:
         self.variables[name] = result
         
         # Update metadata on the new variable
-        object.__setattr__(result, 'class_name', 'custom_class')
+        object.__setattr__(result, 'class_name', 'custom_variables')
         object.__setattr__(result, 'subclass_name', name)
         object.__setattr__(result, 'data_type', 'custom_data_type')
         
@@ -312,11 +425,17 @@ class CustomVariablesContainer:
         object.__setattr__(result, 'y_label', name)
         object.__setattr__(result, 'legend_label', name)
         
+        # 🎯 CRITICAL: Set requested_trange for proper time clipping (non-lambda path)
+        # This ensures .data property clips to the requested time range
+        if hasattr(result, 'requested_trange'):
+            object.__setattr__(result, 'requested_trange', trange)
+            print_manager.custom_debug(f"Set requested_trange on '{name}' (non-lambda): {trange}")
+        
         # Add an update method that routes to this container
         def update_method(self, trange):
             """Update method that routes to container"""
             from ..data_cubby import data_cubby
-            custom_container = data_cubby.grab('custom_class')
+            custom_container = data_cubby.grab('custom_variables')
             if custom_container:
                 result = custom_container.update(name, trange)
                 if result is not None:
@@ -372,6 +491,204 @@ class CustomVariablesContainer:
         print_manager.custom_debug(f"Successfully updated {name}")
         return result
     
+    def get_source_variables(self, name):
+        """
+        Parse a custom variable's expression and return the source variables needed.
+        Does NOT load any data - just identifies what's needed.
+        
+        Returns: list of plot_manager objects that need data loaded
+        """
+        import inspect
+        import re
+        
+        print_manager.custom_debug(f"🔧 [GET_SOURCE] Getting source variables for '{name}'")
+        
+        if name not in self.variables:
+            print_manager.error(f"Custom variable '{name}' not found")
+            return []
+        
+        operation = self.operations.get(name)
+        
+        # LAMBDA VARIABLES: Parse to find variable references
+        if operation == 'lambda' and hasattr(self, 'callables') and name in self.callables:
+            lambda_func = self.callables[name]
+            source_code = inspect.getsource(lambda_func).strip()
+            print_manager.custom_debug(f"🔧 [GET_SOURCE] Lambda source: {source_code}")
+            
+            # Match patterns like: pb.mag_rtn_4sa.bn or plotbot.mag_rtn_4sa.bn
+            # We need to match THREE parts and take the last two (class.variable)
+            pattern = r'(?:pb|plotbot)\.(\w+)\.(\w+)'
+            matches = re.findall(pattern, source_code)
+            print_manager.custom_debug(f"🔧 [GET_SOURCE] Found variable references: {matches}")
+            
+            # Get the variable objects
+            vars_to_load = []
+            from ..data_cubby import data_cubby
+            for class_name, var_name in matches:
+                # class_name is now mag_rtn_4sa, var_name is bn ✅
+                print_manager.custom_debug(f"🔧 [GET_SOURCE] Getting {class_name}.{var_name}...")
+                class_instance = data_cubby.grab(class_name)
+                if class_instance:
+                    var = getattr(class_instance, var_name, None)
+                    if var is not None:
+                        print_manager.custom_debug(f"🔧 [GET_SOURCE] Found {class_name}.{var_name} (ID:{id(var)})")
+                        vars_to_load.append(var)
+            
+            return vars_to_load
+        
+        # OLD-STYLE VARIABLES: Use source_var attribute
+        elif hasattr(self.variables[name], 'source_var') and self.variables[name].source_var is not None:
+            return [v for v in self.variables[name].source_var 
+                    if hasattr(v, 'class_name') and v.class_name != 'custom_variables']
+        
+        return []
+    
+    def evaluate(self, name, trange):
+        """
+        Evaluate a custom variable's lambda/expression.
+        Loads dependencies automatically (like br_norm pattern).
+        
+        Returns the ready-to-plot plot_manager or None if it fails.
+        """
+        import inspect
+        import re
+        
+        print_manager.custom_debug(f"🔧 [EVALUATE] Evaluating '{name}' for trange {trange}")
+        
+        if name not in self.variables:
+            print_manager.error(f"Custom variable '{name}' not found")
+            return None
+        
+        operation = self.operations.get(name)
+        print_manager.custom_debug(f"🔧 [EVALUATE] operation='{operation}'")
+        print_manager.custom_debug(f"🔧 [EVALUATE] Checking lambda condition...")
+        print_manager.custom_debug(f"🔧 [EVALUATE] operation=='lambda': {operation == 'lambda'}")
+        print_manager.custom_debug(f"🔧 [EVALUATE] hasattr(self, 'callables'): {hasattr(self, 'callables')}")
+        print_manager.custom_debug(f"🔧 [EVALUATE] name in self.callables: {name in self.callables if hasattr(self, 'callables') else False}")
+        
+        # LAMBDA VARIABLES: Evaluate the lambda (data already loaded!)
+        if operation == 'lambda' and hasattr(self, 'callables') and name in self.callables:
+            print_manager.custom_debug(f"🔧 [EVALUATE] ✅ ENTERED LAMBDA PATH!")
+            try:
+                # LOAD DEPENDENCIES! (Like br_norm does)
+                source_vars = self.get_source_variables(name)
+                if source_vars:
+                    from ..get_data import get_data
+                    print_manager.custom_debug(f"🔧 [EVALUATE] Loading {len(source_vars)} dependencies...")
+                    get_data(trange, *source_vars)  # Recursive call!
+                    print_manager.custom_debug(f"🔧 [EVALUATE] Dependencies loaded")
+                    
+                    # Set requested_trange on source variables so they clip correctly!
+                    for src_var in source_vars:
+                        if hasattr(src_var, 'requested_trange'):
+                            src_var.requested_trange = trange
+                            print_manager.custom_debug(f"🔧 [EVALUATE] Set requested_trange on {src_var.class_name}.{src_var.subclass_name}")
+                
+                print_manager.custom_debug(f"🔧 [EVALUATE] Evaluating lambda for '{name}'...")
+                result = self.callables[name]()
+                print_manager.custom_debug(f"🔧 [EVALUATE] Lambda evaluation result (ID:{id(result)}, type:{type(result).__name__})")
+                
+                # DEBUG: Check result's datetime_array
+                if hasattr(result, 'datetime_array') and result.datetime_array is not None:
+                    print_manager.custom_debug(f"🔧 [EVALUATE] Result datetime_array length (BEFORE clip): {len(result.datetime_array)}")
+                    
+                    # 🎯 CRITICAL: Clip result to requested trange!
+                    # The lambda operates on full merged arrays, but we only want data for THIS trange
+                    from ..plotbot_helpers import time_clip
+                    indices = time_clip(result.datetime_array, trange[0], trange[1])
+                    print_manager.custom_debug(f"🔧 [EVALUATE] Clipping to trange, found {len(indices)} points")
+                    
+                    if len(indices) > 0:
+                        # Clip datetime_array
+                        result.datetime_array = result.datetime_array[indices]
+                        
+                        # Clip the actual data
+                        if hasattr(result, 'plot_config') and hasattr(result.plot_config, 'data'):
+                            if result.plot_config.data.ndim == 1:
+                                result.plot_config.data = result.plot_config.data[indices]
+                            else:
+                                result.plot_config.data = result.plot_config.data[indices, ...]
+                        
+                        # Clip time if present
+                        if hasattr(result, 'time') and result.time is not None:
+                            result.time = result.time[indices]
+                        
+                        print_manager.custom_debug(f"🔧 [EVALUATE] Result clipped to {len(result.datetime_array)} points")
+                
+                # Preserve user-defined attributes from old variable
+                old_var = self.variables[name]
+                style_attrs = ['color', 'y_label', 'legend_label', 'plot_type', 'y_scale', 
+                              'line_style', 'marker_size', 'marker_style', 'line_width']
+                for attr in style_attrs:
+                    if hasattr(old_var, attr):
+                        old_value = getattr(old_var, attr)
+                        object.__setattr__(result, attr, old_value)
+                
+                # Update stored variable with result
+                print_manager.custom_debug(f"🔧 [EVALUATE] Updating self.variables['{name}'] from ID:{id(self.variables[name])} to ID:{id(result)}")
+                self.variables[name] = result
+                
+                # Set metadata
+                object.__setattr__(result, 'class_name', 'custom_variables')
+                object.__setattr__(result, 'subclass_name', name)
+                object.__setattr__(result, 'data_type', 'custom_data_type')
+                
+                # 🎯 CRITICAL: Set requested_trange for proper time clipping
+                if hasattr(result, 'requested_trange'):
+                    object.__setattr__(result, 'requested_trange', trange)
+                    print_manager.custom_debug(f"🔧 [EVALUATE] Set requested_trange on '{name}': {trange}")
+                
+                # Update global reference
+                print_manager.custom_debug(f"🔧 [EVALUATE] Making '{name}' globally accessible...")
+                self._make_globally_accessible(name, result)
+                
+                print_manager.custom_debug(f"🔧 [EVALUATE] ✅ Lambda '{name}' ready, returning (ID:{id(result)})")
+                return result
+                
+            except Exception as e:
+                print_manager.error(f"Failed to evaluate lambda '{name}': {e}")
+                return None
+        
+        # OLD-STYLE VARIABLES: Just update (data already loaded!)
+        elif self.sources.get(name):
+            print_manager.custom_debug(f"🔧 [EVALUATE] Old-style variable '{name}', calling update...")
+            
+            # Load sources first
+            source_vars = self.get_source_variables(name)
+            if source_vars:
+                from ..get_data import get_data
+                print_manager.custom_debug(f"🔧 [EVALUATE] Loading {len(source_vars)} dependencies for old-style var...")
+                get_data(trange, *source_vars)
+                print_manager.custom_debug(f"🔧 [EVALUATE] Dependencies loaded")
+            
+            return self.update(name, trange)
+        
+        # Already ready - just return it
+        print_manager.custom_debug(f"🔧 [EVALUATE] Variable '{name}' already ready")
+        return self.variables[name]
+
+    def ensure_ready(self, name, trange):
+        """
+        BACKWARD COMPATIBILITY: Old method that does both steps.
+        New code should use get_source_variables() + evaluate() separately.
+        
+        This loads data AND evaluates - kept for compatibility but discouraged.
+        """
+        from ..get_data import get_data
+        
+        print_manager.custom_debug(f"🔧 [ENSURE_READY] (deprecated) Called for '{name}'")
+        
+        # Step 1: Get source variables
+        source_vars = self.get_source_variables(name)
+        
+        # Step 2: Load data if needed
+        if source_vars:
+            print_manager.custom_debug(f"🔧 [ENSURE_READY] Loading {len(source_vars)} source variables...")
+            get_data(trange, *source_vars)
+        
+        # Step 3: Evaluate
+        return self.evaluate(name, trange)
+    
     def _make_globally_accessible(self, name, variable):
         """
         Make the variable globally accessible under the plotbot namespace.
@@ -380,6 +697,8 @@ class CustomVariablesContainer:
         import importlib
         import re
 
+        print_manager.custom_debug(f"🔧 [MAKE_GLOBAL] Making '{name}' globally accessible (ID:{id(variable)})")
+        
         # Sanitize the name: replace spaces and other invalid chars with underscores
         # Remove leading/trailing underscores and collapse multiple underscores
         sanitized_name = re.sub(r'[^0-9a-zA-Z_]', '_', name)
@@ -400,9 +719,18 @@ class CustomVariablesContainer:
             # Dynamically import the plotbot module
             plotbot_module = importlib.import_module('plotbot')
             
+            # Check if we're overwriting something
+            if hasattr(plotbot_module, sanitized_name):
+                old_obj = getattr(plotbot_module, sanitized_name)
+                print_manager.custom_debug(f"🔧 [MAKE_GLOBAL] ⚠️ OVERWRITING plotbot.{sanitized_name} (old ID:{id(old_obj)}) with new (ID:{id(variable)})")
+                if hasattr(old_obj, 'class_name') and hasattr(old_obj, 'subclass_name'):
+                    print_manager.custom_debug(f"🔧 [MAKE_GLOBAL] ⚠️ OLD was: {old_obj.class_name}.{old_obj.subclass_name}")
+                if hasattr(variable, 'class_name') and hasattr(variable, 'subclass_name'):
+                    print_manager.custom_debug(f"🔧 [MAKE_GLOBAL] ⚠️ NEW is: {variable.class_name}.{variable.subclass_name}")
+            
             # Add the variable to the module's namespace using the sanitized name
             setattr(plotbot_module, sanitized_name, variable)
-            print_manager.custom_debug(f"Made '{name}' globally accessible as plotbot.{sanitized_name}")
+            print_manager.custom_debug(f"🔧 [MAKE_GLOBAL] ✅ Made '{name}' globally accessible as plotbot.{sanitized_name} (ID:{id(variable)})")
             
         except Exception as e:
             print_manager.error(f"Failed to make custom variable '{name}' globally accessible as '{sanitized_name}': {e}")
@@ -410,6 +738,10 @@ class CustomVariablesContainer:
 def custom_variable(name, expression):
     """
     Create a custom variable with the given name and expression
+    
+    The variable is accessible via:
+    - plotbot.{name}  (always current - updated on each calculation)
+    - plotbot.custom_variables.{name}  (always current - goes through container)
     
     Parameters
     ----------
@@ -424,12 +756,13 @@ def custom_variable(name, expression):
     Returns
     -------
     plot_manager
-        The registered custom variable
+        The registered variable. Set attributes immediately if needed, but 
+        always access via plotbot.{name} for plotting to avoid stale references.
         
     Examples
     --------
-    >>> custom_variable('phi_B', lambda: np.degrees(np.arctan2(plotbot.mag_rtn_4sa.br, plotbot.mag_rtn_4sa.bn)) + 180)
-    >>> custom_variable('TAoverB', proton.anisotropy / mag_rtn_4sa.bmag)
+    >>> custom_variable('phi_B', lambda: ...).color = 'purple'  # ✅ Immediate styling
+    >>> plotbot(trange, plotbot.phi_B, 1)  # ✅ Always use plotbot.{name} for plotting
     """
 
     # Get the container (import data_cubby locally to avoid circular imports)
@@ -437,10 +770,10 @@ def custom_variable(name, expression):
     from ..plot_manager import plot_manager
     from ..plot_config import plot_config
     
-    container = data_cubby.grab('custom_class')
+    container = data_cubby.grab('custom_variables')
     if container is None:
         container = CustomVariablesContainer()
-        data_cubby.stash(container, class_name='custom_class')
+        data_cubby.stash(container, class_name='custom_variables')
     
     # Check if expression is a callable (lambda function)
     if callable(expression):
@@ -454,20 +787,19 @@ def custom_variable(name, expression):
         # Create a placeholder plot_manager
         placeholder_config = plot_config(
             data_type='custom_data_type',
-            class_name='custom_class',
+            class_name='custom_variables',
             subclass_name=name,
             plot_type='time_series',
-            time=self.time if hasattr(self, 'time') else None,
-
+            time=None,  # Lambda will provide fresh time when evaluated
             datetime_array=None
         )
         placeholder = plot_manager(np.array([]), plot_config=placeholder_config)
         placeholder.y_label = name
         placeholder.legend_label = name
         
-        # Register the placeholder
+        # Register the placeholder and return it
         variable = container.register(name, placeholder, sources=[], operation='lambda')
-        return variable
+        return variable  # Return so users can set attributes like phi_B.color = 'red'
     
     # Otherwise, handle as before (immediate evaluation)
     expr_has_data = hasattr(expression, 'datetime_array') and expression.datetime_array is not None and len(expression.datetime_array) > 0
@@ -514,7 +846,7 @@ def custom_variable(name, expression):
     # Register the variable with the container
     variable = container.register(name, expression, sources, operation)
     
-    return variable
+    return variable  # Return so users can set attributes like my_var.color = 'red'
 
 def test_custom_variables():
     """

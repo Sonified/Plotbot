@@ -105,10 +105,24 @@ class plot_manager(np.ndarray):
         else:
             self._plot_state = dict(self._plot_state)
         # Always ensure plot_config exists
-        self.plot_config = getattr(obj, 'plot_config', None)
-        if self.plot_config is None:
+        # 🐛 BUG FIX: COPY plot_config instead of sharing reference!
+        # When np.abs() or other operations create new arrays, they were sharing
+        # the same plot_config object, causing metadata changes to affect both!
+        obj_plot_config = getattr(obj, 'plot_config', None)
+        if obj_plot_config is None:
             from .plot_config import plot_config
             self.plot_config = plot_config()
+        else:
+            # Create a COPY of the plot_config
+            from .plot_config import plot_config
+            self.plot_config = plot_config(**obj_plot_config.__dict__)
+            
+            # 🐛 BUG FIX: Also copy datetime_array from source object's DIRECT attribute!
+            # numpy ufuncs create new arrays where plot_config might not have datetime_array yet
+            if hasattr(obj, 'datetime_array'):
+                src_datetime = getattr(obj, 'datetime_array', None)
+                if src_datetime is not None:
+                    self.plot_config.datetime_array = src_datetime.copy() if hasattr(src_datetime, 'copy') else src_datetime
         if not hasattr(self, '_original_options'):
             self._original_options = getattr(obj, '_original_options', None)
 
@@ -949,12 +963,14 @@ class plot_manager(np.ndarray):
                 var_name = f"{operation_name}_{getattr(self, 'subclass_name', 'var1')}"
                 
                 # Create result plot_manager
+                # 🐛 BUG FIX: COPY datetime_array instead of sharing reference!
+                datetime_arr_copy = self.datetime_array.copy() if hasattr(self, 'datetime_array') and self.datetime_array is not None else None
                 result_plot_config = plot_config(
                     data_type="custom_data_type",
-                    class_name="custom_class", 
+                    class_name="custom_variables", 
                     subclass_name=var_name,
                     plot_type="time_series",
-                    datetime_array=self.datetime_array if hasattr(self, 'datetime_array') else None
+                    datetime_array=datetime_arr_copy
                 )
                 
                 # Create the result
@@ -964,8 +980,8 @@ class plot_manager(np.ndarray):
                 object.__setattr__(result_var, 'operation', operation_name)
                 object.__setattr__(result_var, 'source_var', source_vars)
                 
-                # Return wrapped in custom_variable
-                return custom_variable(var_name, result_var)
+                # Return the result directly (don't auto-wrap)
+                return result_var
             
             except Exception as e:
                 print_manager.custom_debug(f"[MATH] Error during unary {operation_name}: {str(e)}")
@@ -1067,12 +1083,19 @@ class plot_manager(np.ndarray):
 
         # --- Create result plot_manager ---
         # Use placeholder options initially, custom_variable will refine
+        # 🐛 BUG FIX: COPY datetime_array instead of sharing reference!
+        result_datetime_array = None
+        if dt_array is not None:
+            result_datetime_array = dt_array.copy()
+        elif hasattr(self, 'datetime_array') and self.datetime_array is not None:
+            result_datetime_array = self.datetime_array.copy()
+        
         result_plot_config = plot_config(
             data_type="custom_data_type", # Let custom_variable set to custom_data_type
-            class_name="custom_class", # Let custom_variable set to custom_class
+            class_name="custom_variables", # Let custom_variable set to custom_variables
             subclass_name=var_name, # Temporary, custom_variable uses this
             plot_type="time_series",
-            datetime_array=(dt_array if dt_array is not None else (self.datetime_array if hasattr(self, 'datetime_array') else None))
+            datetime_array=result_datetime_array
         )
         
         # Create the result using plot_manager constructor
@@ -1085,9 +1108,10 @@ class plot_manager(np.ndarray):
         if scalar_value is not None:
             object.__setattr__(result_var, 'scalar_value', scalar_value)
 
-        # --- Wrap in custom_variable for registration ---
-        # custom_variable will set final names, labels, and register it
-        return custom_variable(var_name, result_var)
+        # --- Return the result directly ---
+        # Don't auto-wrap in custom_variable - let the user explicitly create custom variables
+        # This avoids stale reference issues and gives users full control
+        return result_var
 
     def __add__(self, other):
         """Add two variables or a variable and a scalar."""
@@ -1112,7 +1136,6 @@ class plot_manager(np.ndarray):
     def __mul__(self, other):
         """Multiply two variables or a variable and a scalar."""
         import numpy as np
-        # This would now consistently call custom_variable via the helper
         return self._perform_operation(other, 'mul', np.multiply)
 
     def __rmul__(self, other):
@@ -1164,36 +1187,6 @@ class plot_manager(np.ndarray):
         # For unary operations, we can pass None as 'other', only perform op on self
         # The operation func needs to handle just the data, not two arguments
         return self._perform_operation(None, 'abs', lambda x, _: np.abs(x))
-
-    def __radd__(self, other):
-        """Handle right-sided addition (other + self)."""
-        import numpy as np
-        return self._perform_operation(other, 'add', np.add, reverse_op=True)
-
-    def __rsub__(self, other):
-        """Handle right-sided subtraction (other - self)."""
-        import numpy as np
-        return self._perform_operation(other, 'sub', np.subtract, reverse_op=True)
-
-    def __rmul__(self, other):
-        """Support right multiplication (e.g., 5 * variable)."""
-        import numpy as np
-        return self._perform_operation(other, 'mul', np.multiply, reverse_op=True)
-
-    def __rtruediv__(self, other):
-        """Handle right-sided division (other / self)."""
-        import numpy as np
-        return self._perform_operation(other, 'div', np.true_divide, reverse_op=True)
-
-    def __rpow__(self, other):
-        """Handle right-sided power (other ** self)."""
-        import numpy as np
-        return self._perform_operation(other, 'pow', np.power, reverse_op=True)
-
-    def __rfloordiv__(self, other):
-        """Handle right-sided floor division (other // self)."""
-        import numpy as np
-        return self._perform_operation(other, 'floordiv', np.floor_divide, reverse_op=True)
     
     def _check_default_value(self, name):
         """Check if a default value exists for a given attribute."""

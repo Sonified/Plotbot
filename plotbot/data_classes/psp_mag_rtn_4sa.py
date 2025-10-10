@@ -76,6 +76,7 @@ class mag_rtn_4sa_class:
             if hasattr(self, comp_name):
                 manager = getattr(self, comp_name)
                 if isinstance(manager, plot_manager) and hasattr(manager, '_plot_state'):
+                    print_manager.custom_debug(f"🔧 [UPDATE_SAVE_STATE] Saving state for {comp_name} (ID:{id(manager)}, class:{manager.class_name if hasattr(manager, 'class_name') else 'N/A'}.{manager.subclass_name if hasattr(manager, 'subclass_name') else 'N/A'})")
                     current_plot_states[comp_name] = dict(manager._plot_state)
                     print_manager.datacubby(f"Stored {comp_name} state: {retrieve_plot_config_snapshot(current_plot_states[comp_name])}")
 
@@ -112,17 +113,20 @@ class mag_rtn_4sa_class:
             print_manager.processing(f"[MAG_UPDATE_DEBUG] For comp_name '{comp_name}', target_manager is: {type(target_manager)}, Value: {target_manager}")
             print_manager.processing(f"[MAG_UPDATE_DEBUG] ---> IMMEDIATELY BEFORE 'if target_manager:' for comp_name '{comp_name}'")
             if target_manager:
+                print_manager.custom_debug(f"🔧 [UPDATE_RESTORE_STATE] Restoring state to {comp_name} (current ID:{id(target_manager)}, class:{target_manager.class_name if hasattr(target_manager, 'class_name') else 'N/A'}.{target_manager.subclass_name if hasattr(target_manager, 'subclass_name') else 'N/A'})")
+                print_manager.custom_debug(f"🔧 [UPDATE_RESTORE_STATE] State being restored: class_name={state.get('class_name', 'N/A')}, subclass_name={state.get('subclass_name', 'N/A')}")
                 target_manager._plot_state.update(state)
                 for attr, value in state.items():
                     if hasattr(target_manager.plot_config, attr):
                         setattr(target_manager.plot_config, attr, value)
                 print_manager.datacubby(f"Restored {comp_name} state to {'_br_norm_manager' if comp_name == 'br_norm' else comp_name}: {retrieve_plot_config_snapshot(state)}")
+                print_manager.custom_debug(f"🔧 [UPDATE_RESTORE_STATE] After restore: {comp_name} is now (ID:{id(target_manager)}, class:{target_manager.class_name if hasattr(target_manager, 'class_name') else 'N/A'}.{target_manager.subclass_name if hasattr(target_manager, 'subclass_name') else 'N/A'})")
         
         print_manager.datacubby("=== End Update Debug ===\\n")
         
     def get_subclass(self, subclass_name):  # Dynamic component retrieval method
         """Retrieve a specific component (subclass or property)."""
-        print_manager.dependency_management(f"[MAG_CLASS_GET_SUBCLASS] Attempting to get subclass/property: {subclass_name} for instance ID: {id(self)}")
+        print_manager.custom_debug(f"🔧 [GET_SUBCLASS] Attempting to get {self.class_name}.{subclass_name} for instance ID:{id(self)}")
 
         # First, check if it's a direct attribute/property of the instance
         if hasattr(self, subclass_name):
@@ -138,7 +142,9 @@ class mag_rtn_4sa_class:
             # Verify it's not a private or dunder attribute unless explicitly intended (though typically not requested via get_subclass)
             if not subclass_name.startswith('_'): 
                 retrieved_attr = getattr(self, subclass_name)
-                print_manager.dependency_management(f"[MAG_CLASS_GET_SUBCLASS] Found '{subclass_name}' as a direct attribute/property. Type: {type(retrieved_attr)}")
+                print_manager.custom_debug(f"🔧 [GET_SUBCLASS] Found '{subclass_name}' as attribute. Type:{type(retrieved_attr).__name__}, ID:{id(retrieved_attr)}")
+                if hasattr(retrieved_attr, 'class_name') and hasattr(retrieved_attr, 'subclass_name'):
+                    print_manager.custom_debug(f"🔧 [GET_SUBCLASS] Returning: {retrieved_attr.class_name}.{retrieved_attr.subclass_name}")
                 return retrieved_attr
             else:
                 print_manager.dependency_management(f"[MAG_CLASS_GET_SUBCLASS] '{subclass_name}' is an internal attribute, not returning via get_subclass.")
@@ -559,6 +565,7 @@ class mag_rtn_4sa_class:
             )
         )
 
+        print_manager.custom_debug(f"🔧 [SET_PLOT_CONFIG] Creating self.bn with raw_data['bn'] shape: {self.raw_data['bn'].shape if self.raw_data['bn'] is not None else 'None'}")
         self.bn = plot_manager(
             self.raw_data['bn'],
             plot_config=plot_config(
@@ -578,6 +585,7 @@ class mag_rtn_4sa_class:
                 line_style='-'             # Line style
             )
         )
+        print_manager.custom_debug(f"🔧 [SET_PLOT_CONFIG] Created self.bn (ID:{id(self.bn)}, class:{self.bn.class_name}.{self.bn.subclass_name})")
         
         self.bmag = plot_manager(
             self.raw_data['bmag'],

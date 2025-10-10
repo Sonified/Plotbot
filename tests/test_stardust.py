@@ -674,16 +674,18 @@ def test_stardust_sonify_valid_data(test_audifier): # Use the fixture from origi
 
 # --- Test Functions copied from test_custom_variables.py ---
 
-@pytest.mark.skip(reason="Skipping by user request: custom variable test (stardust)")
 @pytest.mark.mission("Stardust Test: Custom Variable Arithmetic")
 def test_stardust_custom_arithmetic(test_environment):
-    """Test creating and plotting a simple arithmetic custom variable."""
+    """Test creating and plotting a simple arithmetic custom variable with attributes."""
     env = test_environment
     trange = env['trange_initial'] # Using the initial range from that test setup
     
-    phase(1, "Creating arithmetic custom variable (stardust)")
+    phase(1, "Creating arithmetic custom variable with attributes (stardust)")
     # Simple addition
     var = custom_variable('Mag_Sum_RT', mag_rtn_4sa.br + mag_rtn_4sa.bt)
+    var.color = 'green'
+    var.y_label = 'Br + Bt (nT)'
+    var.line_width = 2
     var_name = var.subclass_name
     
     phase(2, "Calling plotbot to trigger data load (stardust)")
@@ -692,7 +694,7 @@ def test_stardust_custom_arithmetic(test_environment):
     plt.options.single_title_text = "Test: Stardust Custom Arithmetic"
     plotbot_function(trange, var, 1)
 
-    phase(3, "Verifying variable properties post-plotbot (stardust)")
+    phase(3, "Verifying variable properties and attributes post-plotbot (stardust)")
     try:
         import importlib
         plotbot_module = importlib.import_module('plotbot')
@@ -709,28 +711,35 @@ def test_stardust_custom_arithmetic(test_environment):
         system_check("Arithmetic Data Presence", False, "Arithmetic variable should have datetime data after plotbot call")
     else:
         system_check("Arithmetic Data Presence", True, f"Arithmetic variable has {len(check_var.datetime_array)} data points")
+    
+    # Check Attributes Preserved
+    attrs_ok = (check_var.color == 'green' and check_var.y_label == 'Br + Bt (nT)' and check_var.line_width == 2)
+    system_check("Arithmetic Attributes Preserved", attrs_ok, f"Attributes should be preserved (color={check_var.color}, y_label={check_var.y_label}, line_width={check_var.line_width})")
 
     # plt.pause(0.5) # Display plot briefly - REMOVED FOR DEBUGGING
 
-@pytest.mark.skip(reason="Skipping by user request: custom variable test (stardust)")
-@pytest.mark.mission("Stardust Test: Custom Variable with Numpy")
+@pytest.mark.mission("Stardust Test: Custom Variable with Numpy Lambda")
 def test_stardust_custom_numpy(test_environment):
-    """Test creating and plotting a custom variable using a numpy function."""
+    """Test creating and plotting a custom variable using a numpy function with lambda."""
     env = test_environment
     trange = env['trange_initial'] 
     
-    phase(1, "Creating numpy custom variable (stardust)")
-    # Using np.abs
-    var = custom_variable('Abs_Bn', np.abs(mag_rtn_4sa.bn))
+    phase(1, "Creating numpy lambda custom variable with attributes (stardust)")
+    # Using np.abs with lambda (required for numpy ufuncs)
+    var = custom_variable('Abs_Bn', lambda: np.abs(mag_rtn_4sa.bn))
+    var.color = 'red'
+    var.y_label = '|Bn| (nT)'
+    var.plot_type = 'scatter'
+    var.marker_size = 3
     var_name = var.subclass_name
     
     phase(2, "Calling plotbot to trigger data load (stardust)")
     plt.options.reset()
     plt.options.use_single_title = True
-    plt.options.single_title_text = "Test: Stardust Custom Numpy"
+    plt.options.single_title_text = "Test: Stardust Custom Numpy Lambda"
     plotbot_function(trange, var, 1)
 
-    phase(3, "Verifying variable properties post-plotbot (stardust)")
+    phase(3, "Verifying variable properties and attributes post-plotbot (stardust)")
     try:
         import importlib
         plotbot_module = importlib.import_module('plotbot')
@@ -747,6 +756,76 @@ def test_stardust_custom_numpy(test_environment):
         system_check("Numpy Data Presence", False, "Numpy variable should have datetime data after plotbot call")
     else:
         system_check("Numpy Data Presence", True, f"Numpy variable has {len(check_var.datetime_array)} data points")
+    
+    # Check Attributes Preserved
+    attrs_ok = (check_var.color == 'red' and check_var.y_label == '|Bn| (nT)' and 
+                check_var.plot_type == 'scatter' and check_var.marker_size == 3)
+    system_check("Numpy Lambda Attributes Preserved", attrs_ok, 
+                f"Attributes should be preserved (color={check_var.color}, y_label={check_var.y_label}, plot_type={check_var.plot_type}, marker_size={check_var.marker_size})")
+
+    # plt.pause(0.5) # Display plot briefly - REMOVED FOR DEBUGGING
+
+@pytest.mark.mission("Stardust Test: Custom Variable Complex Lambda (phi_B)")
+def test_stardust_custom_phi_b(test_environment):
+    """Test creating and plotting phi_B - magnetic field angle using complex lambda expression."""
+    env = test_environment
+    trange = env['trange_initial']
+    
+    phase(1, "Creating phi_B lambda custom variable with attributes (stardust)")
+    # Complex expression with multiple numpy functions - requires lambda
+    var = custom_variable('phi_B', 
+        lambda: np.degrees(np.arctan2(mag_rtn_4sa.br, mag_rtn_4sa.bn)) + 180
+    )
+    var.y_label = r'$\phi_B \ (\circ)$'
+    var.color = 'purple'
+    var.plot_type = 'scatter'
+    var.marker_style = 'o'
+    var.marker_size = 3
+    var_name = var.subclass_name
+    
+    phase(2, "Calling plotbot to trigger data load (stardust)")
+    plt.options.reset()
+    plt.options.use_single_title = True
+    plt.options.single_title_text = "Test: Stardust phi_B Complex Lambda"
+    plotbot_function(trange, mag_rtn_4sa.br, 1, mag_rtn_4sa.bn, 2, var, 3)
+
+    phase(3, "Verifying phi_B properties and calculation (stardust)")
+    try:
+        import importlib
+        plotbot_module = importlib.import_module('plotbot')
+        check_var = getattr(plotbot_module, var_name)
+    except (ImportError, AttributeError):
+        system_check("Global Access (phi_B)", False, f"Variable '{var_name}' not found in plotbot module after plotting")
+        pytest.fail("Failed to find globally accessible phi_B variable")
+        return
+
+    system_check("phi_B Var Creation", check_var is not None, "phi_B custom variable should exist after plotbot call")
+    
+    # Check Data Presence
+    if not hasattr(check_var, 'datetime_array') or check_var.datetime_array is None or len(check_var.datetime_array) == 0:
+        system_check("phi_B Data Presence", False, "phi_B variable should have datetime data after plotbot call")
+    else:
+        system_check("phi_B Data Presence", True, f"phi_B variable has {len(check_var.datetime_array)} data points")
+    
+    # Verify calculation is correct
+    # Use .data to get the clipped data for the current trange
+    br_data = mag_rtn_4sa.br.data
+    bn_data = mag_rtn_4sa.bn.data
+    phi_B_data = check_var.data
+    expected_phi_B = np.degrees(np.arctan2(br_data, bn_data)) + 180
+    
+    # Verify shapes match
+    assert br_data.shape == phi_B_data.shape, f"Shapes should match: br={br_data.shape}, phi_B={phi_B_data.shape}"
+    
+    calculation_correct = np.allclose(phi_B_data, expected_phi_B, rtol=1e-5)
+    system_check("phi_B Calculation Correct", calculation_correct, 
+                f"phi_B calculation should match np.degrees(np.arctan2(br, bn)) + 180")
+    
+    # Check Attributes Preserved
+    attrs_ok = (check_var.color == 'purple' and check_var.y_label == r'$\phi_B \ (\circ)$' and 
+                check_var.plot_type == 'scatter' and check_var.marker_style == 'o' and check_var.marker_size == 3)
+    system_check("phi_B Attributes Preserved", attrs_ok, 
+                f"Attributes should be preserved (color={check_var.color}, plot_type={check_var.plot_type}, marker_size={check_var.marker_size})")
 
     # plt.pause(0.5) # Display plot briefly - REMOVED FOR DEBUGGING
 
