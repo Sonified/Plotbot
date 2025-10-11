@@ -470,10 +470,10 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_10_10_v3.65"
+__version__ = "2025_10_11_v3.66"
 
 # Commit message for this version
-__commit_message__ = "v3.65 Fix: Custom variables ufunc operations and comprehensive stress testing - ALL TESTS PASSING"
+__commit_message__ = "v3.66 Fix: Stale clipped data in direct expression custom variables - clear clipped views before arithmetic operations"
 
 # Print the version and commit message
 print(f"""

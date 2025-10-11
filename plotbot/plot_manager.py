@@ -243,22 +243,35 @@ class plot_manager(np.ndarray):
         from .print_manager import print_manager
         print_manager.debug(f"⚡ [CLIP_ONCE] Clipping data ONCE for trange: {value}")
         
+        # Debug: Check sizes before clipping
+        raw_data = self.view(np.ndarray)
+        print_manager.custom_debug(f"[CLIP] Setting requested_trange: {value}")
+        print_manager.custom_debug(f"[CLIP]   Raw data size: {len(raw_data)}")
+        print_manager.custom_debug(f"[CLIP]   datetime_array size: {len(self.plot_config.datetime_array) if self.plot_config.datetime_array is not None else 0}")
+        
         # Perform clipping once and store results
-        self._clipped_data = self.clip_to_original_trange(self.view(np.ndarray), value)
+        self._clipped_data = self.clip_to_original_trange(raw_data, value)
+        print_manager.custom_debug(f"[CLIP]   Clipped data size: {len(self._clipped_data) if self._clipped_data is not None else 0}")
+        
         if self.plot_config.datetime_array is not None:
             self._clipped_datetime_array = self._clip_datetime_array(self.plot_config.datetime_array, value)
+            print_manager.custom_debug(f"[CLIP]   Clipped datetime_array size: {len(self._clipped_datetime_array) if self._clipped_datetime_array is not None else 0}")
         else:
             self._clipped_datetime_array = None
     
     @property
     def data(self):
         """Return the time clipped numpy array data"""
+        from .print_manager import print_manager
         # Return pre-clipped data if available (ZERO CLIPPING OVERHEAD!)
         if hasattr(self, '_clipped_data') and self._clipped_data is not None:
+            print_manager.custom_debug(f"[DATA] Returning clipped data: {len(self._clipped_data)} points")
             return self._clipped_data
         
         # Otherwise return full array
-        return self.view(np.ndarray)
+        full_array = self.view(np.ndarray)
+        print_manager.custom_debug(f"[DATA] No clipped data, returning full array: {len(full_array)} points")
+        return full_array
     
     @property
     def all_data(self):
@@ -954,13 +967,23 @@ class plot_manager(np.ndarray):
                 dt_array = None
                 
             # Safely convert to array views
+            # 🐛 CRITICAL FIX: Use .data property to get clipped view when available
+            # Otherwise fall back to raw array (for variables without requested_trange set)
             try:
-                self_view = self.view(np.ndarray)
+                # Prefer clipped data if available, otherwise use raw
+                if hasattr(self, '_clipped_data') and self._clipped_data is not None:
+                    self_view = self.data
+                else:
+                    self_view = self.view(np.ndarray)
             except Exception as e:
                 self_view = np.zeros(1)
                 
             try:
-                other_view = other.view(np.ndarray)
+                # Prefer clipped data if available, otherwise use raw
+                if hasattr(other, '_clipped_data') and other._clipped_data is not None:
+                    other_view = other.data
+                else:
+                    other_view = other.view(np.ndarray)
             except Exception as e:
                 other_view = np.zeros(1)
                 
@@ -980,28 +1003,38 @@ class plot_manager(np.ndarray):
                 print_manager.custom_debug(f"[MATH] First variable has no datetime array - using second variable's times")
                 target_times = other.datetime_array
                 self_aligned = np.zeros(len(target_times))  # Return zeros instead of None
-                other_aligned = other.view(np.ndarray)
+                other_aligned = other.data  # Use .data for time-clipped view
             elif not hasattr(other, 'datetime_array') or other.datetime_array is None or len(other.datetime_array) == 0:
                 print_manager.custom_debug(f"[MATH] Second variable has no datetime array - using first variable's times")
                 target_times = self.datetime_array
-                self_aligned = self.view(np.ndarray)
+                self_aligned = self.data  # Use .data for time-clipped view
                 other_aligned = np.zeros(len(target_times))  # Return zeros instead of None
             elif len(self.datetime_array) <= len(other.datetime_array):
                 print_manager.custom_debug(f"[MATH] Interpolating {getattr(other, 'subclass_name', 'var2')} to match {getattr(self, 'subclass_name', 'var1')}")
+                print_manager.custom_debug(f"[MATH DEBUG] self datetime_array: {len(self.datetime_array)} points")
+                print_manager.custom_debug(f"[MATH DEBUG] self.data: {len(self.data)} points")
+                print_manager.custom_debug(f"[MATH DEBUG] other datetime_array: {len(other.datetime_array)} points")
+                print_manager.custom_debug(f"[MATH DEBUG] other.data: {len(other.data)} points")
                 target_times = self.datetime_array
+                # Use .data property to get time-clipped view (not raw accumulated array)
                 other_aligned = self.interpolate_to_times(
-                    other.datetime_array, other.view(np.ndarray), 
+                    other.datetime_array, other.data, 
                     target_times, method=plot_manager.interp_method
                 )
-                self_aligned = self.view(np.ndarray)
+                self_aligned = self.data
             else:
                 print_manager.custom_debug(f"[MATH] Interpolating {getattr(self, 'subclass_name', 'var1')} to match {getattr(other, 'subclass_name', 'var2')}")
+                print_manager.custom_debug(f"[MATH DEBUG] self datetime_array: {len(self.datetime_array)} points")
+                print_manager.custom_debug(f"[MATH DEBUG] self.data: {len(self.data)} points")
+                print_manager.custom_debug(f"[MATH DEBUG] other datetime_array: {len(other.datetime_array)} points")
+                print_manager.custom_debug(f"[MATH DEBUG] other.data: {len(other.data)} points")
                 target_times = other.datetime_array
+                # Use .data property to get time-clipped view (not raw accumulated array)
                 self_aligned = self.interpolate_to_times(
-                    self.datetime_array, self.view(np.ndarray), 
+                    self.datetime_array, self.data, 
                     target_times, method=plot_manager.interp_method
                 )
-                other_aligned = other.view(np.ndarray)
+                other_aligned = other.data
             
             # One final safety check - ensure we're not returning None values
             if self_aligned is None:
@@ -1089,6 +1122,22 @@ class plot_manager(np.ndarray):
                 source_vars.extend(other.source_var)
             elif hasattr(other, 'class_name') and hasattr(other, 'subclass_name'):
                 source_vars.append(other)
+            
+            # 🐛 CRITICAL FIX: Clear stale clipped data before performing operations
+            # When operations happen at definition time (direct expressions), source variables
+            # may have stale _clipped_data from previous test cases with different tranges.
+            # Clearing requested_trange ensures .data returns the full accumulated array consistently.
+            print_manager.custom_debug(f"[MATH] Clearing stale clipped data before operation")
+            if hasattr(self, '_requested_trange') and self._requested_trange is not None:
+                print_manager.custom_debug(f"[MATH]   Clearing self.requested_trange (was: {self._requested_trange})")
+                self._requested_trange = None
+                self._clipped_data = None
+                self._clipped_datetime_array = None
+            if hasattr(other, '_requested_trange') and other._requested_trange is not None:
+                print_manager.custom_debug(f"[MATH]   Clearing other.requested_trange (was: {other._requested_trange})")
+                other._requested_trange = None
+                other._clipped_data = None
+                other._clipped_datetime_array = None
                 
             self_aligned, other_aligned, dt_array = self.align_variables(other)
 
@@ -1180,7 +1229,14 @@ class plot_manager(np.ndarray):
         )
         
         # Create the result using plot_manager constructor
-        result_var = plot_manager(result, plot_config=result_plot_config)
+        # 🐛 CRITICAL: Force a COPY to avoid view/reference issues with parent arrays
+        result_copy = np.array(result, copy=True)
+        print_manager.custom_debug(f"[MATH] Creating result plot_manager:")
+        print_manager.custom_debug(f"[MATH]   result shape: {result.shape if hasattr(result, 'shape') else len(result)}")
+        print_manager.custom_debug(f"[MATH]   result_copy shape: {result_copy.shape}")
+        print_manager.custom_debug(f"[MATH]   result_datetime_array: {len(result_datetime_array) if result_datetime_array is not None else 0}")
+        result_var = plot_manager(result_copy, plot_config=result_plot_config)
+        print_manager.custom_debug(f"[MATH]   result_var raw data: {len(result_var.view(np.ndarray))}")
 
         # --- Set metadata on the result object ---
         # Explicitly using object.__setattr__ might be safer here
@@ -1188,6 +1244,19 @@ class plot_manager(np.ndarray):
         object.__setattr__(result_var, 'source_var', source_vars) # Set the tracked sources
         if scalar_value is not None:
             object.__setattr__(result_var, 'scalar_value', scalar_value)
+        
+        # 🐛 CRITICAL FIX: Copy requested_trange from source to result
+        # This ensures .data property returns correctly clipped view!
+        if hasattr(self, '_requested_trange') and self._requested_trange is not None:
+            print_manager.custom_debug(f"[MATH] Copying requested_trange from self to result: {self._requested_trange}")
+            print_manager.custom_debug(f"[MATH]   self raw data: {len(self.view(np.ndarray))} points")
+            print_manager.custom_debug(f"[MATH]   self datetime_array: {len(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else 0} points")
+            result_var.requested_trange = self._requested_trange
+        elif isinstance(other, plot_manager) and hasattr(other, '_requested_trange') and other._requested_trange is not None:
+            print_manager.custom_debug(f"[MATH] Copying requested_trange from other to result: {other._requested_trange}")
+            print_manager.custom_debug(f"[MATH]   other raw data: {len(other.view(np.ndarray))} points")
+            print_manager.custom_debug(f"[MATH]   other datetime_array: {len(other.datetime_array) if hasattr(other, 'datetime_array') and other.datetime_array is not None else 0} points")
+            result_var.requested_trange = other._requested_trange
 
         # --- Return the result directly ---
         # Don't auto-wrap in custom_variable - let the user explicitly create custom variables

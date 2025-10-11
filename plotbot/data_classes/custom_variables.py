@@ -375,8 +375,73 @@ class CustomVariablesContainer:
         except Exception as e:
             print_manager.custom_debug(f"Error checking for data in time range: {str(e)}")
         
-        # STEP 7: Resampling (TODO - will implement if cadences differ)
-        print_manager.custom_debug(f"🔍 [STEP 7] Resampling check: TODO (will implement if needed)")
+        # STEP 7: Resampling (if cadences differ)
+        print_manager.custom_debug(f"🔍 [STEP 7] Checking if resampling needed...")
+        
+        # Check if all sources have the same cadence
+        if len(fresh_sources) > 1:
+            cadences = [len(src.data) for src in fresh_sources]
+            print_manager.custom_debug(f"🔍 [STEP 7] Source cadences: {cadences}")
+            
+            if len(set(cadences)) > 1:
+                # Different cadences detected - need to resample
+                print_manager.custom_debug(f"🔍 [STEP 7] ⚠️  Different cadences detected: {cadences}")
+                print_manager.custom_debug(f"🔍 [STEP 7] Resampling to lowest cadence...")
+                
+                # Find the source with the lowest cadence (fewest points)
+                min_cadence_idx = cadences.index(min(cadences))
+                target_times = fresh_sources[min_cadence_idx].datetime_array
+                
+                print_manager.custom_debug(f"🔍 [STEP 7] Target cadence: {len(target_times)} points from source {min_cadence_idx}")
+                
+                # Resample all other sources to match target_times
+                resampled_sources = []
+                for i, src in enumerate(fresh_sources):
+                    if i == min_cadence_idx:
+                        # This is already at target cadence
+                        resampled_sources.append(src)
+                    else:
+                        # Need to resample this source
+                        print_manager.custom_debug(f"🔍 [STEP 7] Resampling source {i} from {len(src.data)} to {len(target_times)} points")
+                        
+                        # Use scipy interpolation (inspired by showdahodo.py)
+                        import matplotlib.dates as mdates
+                        from scipy import interpolate
+                        
+                        # Convert datetime arrays to numeric for interpolation
+                        src_time_numeric = mdates.date2num(src.datetime_array)
+                        target_time_numeric = mdates.date2num(target_times)
+                        
+                        # Linear interpolation
+                        f = interpolate.interp1d(
+                            src_time_numeric, src.data,
+                            kind='linear',
+                            bounds_error=False,
+                            fill_value='extrapolate'
+                        )
+                        
+                        resampled_data = f(target_time_numeric)
+                        
+                        # Create new plot_manager with resampled data
+                        from ..plot_config import plot_config as plot_config_class
+                        from ..plot_manager import plot_manager
+                        
+                        new_config = plot_config_class(**src.plot_config.__dict__)
+                        new_config.datetime_array = target_times
+                        new_config.time = target_times  # Update time array too
+                        
+                        resampled_pm = plot_manager(resampled_data, plot_config=new_config)
+                        resampled_sources.append(resampled_pm)
+                        
+                        print_manager.custom_debug(f"🔍 [STEP 7] ✓ Resampled source {i}")
+                
+                # Replace fresh_sources with resampled versions
+                fresh_sources = resampled_sources
+                print_manager.custom_debug(f"🔍 [STEP 7] ✓ All sources now have matching cadence: {len(target_times)} points")
+            else:
+                print_manager.custom_debug(f"🔍 [STEP 7] All sources have same cadence ({cadences[0]} points), no resampling needed")
+        else:
+            print_manager.custom_debug(f"🔍 [STEP 7] Single source, no resampling needed")
         
         # STEP 8: Apply the operation with fresh data
         print_manager.custom_debug(f"🔍 [STEP 8] Applying operation: {operation}")
@@ -388,14 +453,22 @@ class CustomVariablesContainer:
                 scalar_val = variable.scalar_value
                 print_manager.custom_debug(f"🔍 [STEP 8] Scalar operation: {operation} with value {scalar_val} (.data)")
                 
-                if operation == 'add':
-                    result_array = fresh_sources[0].data + scalar_val
-                elif operation == 'sub':
-                    result_array = fresh_sources[0].data - scalar_val
-                elif operation == 'mul':
-                    result_array = fresh_sources[0].data * scalar_val
-                elif operation == 'div':
-                    result_array = fresh_sources[0].data / scalar_val
+                # Map operation to numpy function
+                operation_map = {
+                    'add': np.add,
+                    'sub': np.subtract,
+                    'mul': np.multiply,
+                    'div': np.true_divide,
+                    'pow': np.power,
+                    'floordiv': np.floor_divide,
+                    'mod': np.mod,
+                }
+                
+                if operation in operation_map:
+                    result_array = operation_map[operation](fresh_sources[0].data, scalar_val)
+                else:
+                    print_manager.error(f"Unsupported scalar operation: {operation}")
+                    return variable
                 
                 # Wrap in plot_manager
                 source_config = fresh_sources[0].plot_config
@@ -451,28 +524,39 @@ class CustomVariablesContainer:
                 result = plot_manager(result_array, plot_config=new_config)
                 print_manager.custom_debug(f"🔍 [STEP 8] ✓ Wrapped ufunc result")
                 
-            elif len(fresh_sources) == 2:
-                # Binary operation: apply between two source variables
-                print_manager.custom_debug(f"🔍 [STEP 8] Binary operation: {operation} between two variables (.data)")
+            elif len(fresh_sources) >= 2:
+                # Multi-source operation: map operation name to numpy function
+                operation_map = {
+                    'add': np.add,
+                    'sub': np.subtract,
+                    'mul': np.multiply,
+                    'div': np.true_divide,
+                    'pow': np.power,
+                    'floordiv': np.floor_divide,
+                    'mod': np.mod,
+                }
                 
-                if operation == 'add':
-                    result_array = fresh_sources[0].data + fresh_sources[1].data
-                elif operation == 'sub':
-                    result_array = fresh_sources[0].data - fresh_sources[1].data
-                elif operation == 'mul':
-                    result_array = fresh_sources[0].data * fresh_sources[1].data
-                elif operation == 'div':
-                    result_array = fresh_sources[0].data / fresh_sources[1].data
-                
-                # Wrap in plot_manager
-                source_config = fresh_sources[0].plot_config
-                new_config = plot_config_class(**source_config.__dict__)
-                if not hasattr(new_config, 'datetime_array') or new_config.datetime_array is None:
-                    new_config.datetime_array = fresh_sources[0].datetime_array
-                if not hasattr(new_config, 'time') or new_config.time is None:
-                    new_config.time = fresh_sources[0].time if hasattr(fresh_sources[0], 'time') else None
-                result = plot_manager(result_array, plot_config=new_config)
-                print_manager.custom_debug(f"🔍 [STEP 8] ✓ Wrapped binary arithmetic result")
+                if operation in operation_map:
+                    print_manager.custom_debug(f"🔍 [STEP 8] Multi-source {operation}: {len(fresh_sources)} variables (.data)")
+                    
+                    # Start with the first source
+                    result_array = fresh_sources[0].data
+                    
+                    # Chain the operation across all remaining sources
+                    np_func = operation_map[operation]
+                    for i in range(1, len(fresh_sources)):
+                        print_manager.custom_debug(f"🔍 [STEP 8.{i}] Applying {operation} with source {i}")
+                        result_array = np_func(result_array, fresh_sources[i].data)
+                    
+                    # Wrap in plot_manager
+                    source_config = fresh_sources[0].plot_config
+                    new_config = plot_config_class(**source_config.__dict__)
+                    if not hasattr(new_config, 'datetime_array') or new_config.datetime_array is None:
+                        new_config.datetime_array = fresh_sources[0].datetime_array
+                    if not hasattr(new_config, 'time') or new_config.time is None:
+                        new_config.time = fresh_sources[0].time if hasattr(fresh_sources[0], 'time') else None
+                    result = plot_manager(result_array, plot_config=new_config)
+                    print_manager.custom_debug(f"🔍 [STEP 8] ✓ Wrapped multi-source arithmetic result ({len(fresh_sources)} sources)")
             
             # Handle numpy ufuncs (captured from __array_ufunc__)
             if result is None and len(fresh_sources) >= 1:
@@ -763,10 +847,19 @@ class CustomVariablesContainer:
                 source_code = inspect.getsource(lambda_func).strip()
                 print_manager.custom_debug(f"🔧 [GET_SOURCE] Lambda source: {source_code}")
                 
-                # Match patterns like: pb.mag_rtn_4sa.bn or plotbot.mag_rtn_4sa.bn
-                # We need to match THREE parts and take the last two (class.variable)
-                pattern = r'(?:pb|plotbot)\.(\w+)\.(\w+)'
+                # Match patterns like: pb.mag_rtn_4sa.bn or plotbot.mag_rtn_4sa.bn or mag_rtn_4sa.bn (no prefix)
+                # We need to match class.variable with optional plotbot/pb prefix
+                pattern = r'(?:(?:pb|plotbot)\.)?(\w+)\.(\w+)'
                 matches = re.findall(pattern, source_code)
+                
+                # Filter out numpy functions and other non-plotbot variables
+                # Only keep matches that look like plotbot data class patterns
+                filtered_matches = []
+                for class_name, var_name in matches:
+                    # Skip if it's a numpy function or other common patterns
+                    if class_name not in ['np', 'numpy', 'plt', 'matplotlib']:
+                        filtered_matches.append((class_name, var_name))
+                matches = filtered_matches
                 print_manager.custom_debug(f"🔧 [GET_SOURCE] Found variable references: {matches}")
             except (OSError, TypeError) as e:
                 # inspect.getsource() fails in interactive contexts (notebooks, -c flag)

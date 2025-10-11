@@ -520,3 +520,21 @@ The custom variables system is now production-ready and handles all edge cases c
 
 ---
 
+## Pushed to GitHub ✅
+
+**Version:** v3.65  
+**Commit Hash:** eb9d5c3  
+**Commit Message:** v3.65 Fix: Custom variables ufunc operations and comprehensive stress testing - ALL TESTS PASSING
+
+**Changes:**
+- Added ufunc operation path in `custom_variables.py` to handle numpy functions like `np.degrees()`, `np.arctan2()`, etc.
+- Fixed scalar operation check to properly distinguish scalar operations from ufunc operations
+- Updated `plot_manager.py` `__array_ufunc__()` to use `.data` property for time-clipped views
+- Re-enabled plot display by default in `ploptions.py`
+- Created comprehensive stress test with 7 tests (3 main + 4 edge cases)
+- Added test files for notebook behavior verification
+
+**Status:** ✅ FULLY WORKING - All tests passing, custom variables production-ready!
+
+---
+
