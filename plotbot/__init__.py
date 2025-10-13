@@ -470,10 +470,13 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-__version__ = "2025_10_11_v3.66"
+from . import time_ver
+time_ver = time_ver.time_ver
+
+__version__ = "2025_10_13_v3.67"
 
 # Commit message for this version
-__commit_message__ = "v3.66 Fix: Stale clipped data in direct expression custom variables - clear clipped views before arithmetic operations"
+__commit_message__ = "v3.67 feat: updated plotbot_custom_variable_examples.ipynb"
 
 # Print the version and commit message
 print(f"""

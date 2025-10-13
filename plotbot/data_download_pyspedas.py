@@ -55,14 +55,19 @@ def smart_check_local_pyspedas_files(plotbot_key, trange):
         end_dt = parse(trange[1].replace('/', ' '))
         
         # Build expected file paths based on data type configuration
-        local_path_template = data_config['local_path']
         file_pattern = data_config.get('spdf_file_pattern', data_config['file_pattern'])  # Use SPDF pattern if available
         data_level = data_config['data_level']
         file_time_format = data_config['file_time_format']
         
+        # Use get_local_path() to properly handle config.data_dir (it strips 'data' prefix automatically)
+        local_path_template = get_local_path(plotbot_key)
+        if not local_path_template:
+            print_manager.debug(f"Could not get local path for {plotbot_key}")
+            return None
+        
         # Construct local path by replacing placeholders
         local_path = local_path_template.format(data_level=data_level)
-        base_path = Path(config.data_dir) / local_path
+        base_path = Path(local_path)
         
         expected_files = []
         
@@ -75,14 +80,18 @@ def smart_check_local_pyspedas_files(plotbot_key, trange):
                 year_str = str(current_date.year)
                 date_str = current_date.strftime('%Y%m%d')
                 
-                # Remove regex patterns and construct actual filename
+                # Construct filename pattern (may contain wildcards like v*.cdf)
                 filename_pattern = file_pattern.format(data_level=data_level, date_str=date_str)
-                # Convert regex pattern to actual filename (assume v04 version)
-                filename = filename_pattern.replace(r'(\d{{2}})', '04').replace(r'v(\d{{2}})', 'v04').replace(r'(\d+)', '04')
                 
-                # Full file path
-                file_path = base_path / year_str / filename
-                expected_files.append(str(file_path))
+                # Full glob pattern
+                glob_pattern = str(base_path / year_str / filename_pattern)
+                
+                # Use glob to find matching files (handles wildcards like v*)
+                import glob as glob_module
+                matching_files = glob_module.glob(glob_pattern)
+                
+                # Add all matching files to expected_files
+                expected_files.extend(matching_files)
                 
                 current_date += timedelta(days=1)
                 
@@ -91,15 +100,20 @@ def smart_check_local_pyspedas_files(plotbot_key, trange):
             from .time_utils import get_needed_6hour_blocks
             needed_blocks = get_needed_6hour_blocks(trange)
             
+            import glob as glob_module
             for date_str, hour_str in needed_blocks:
                 year_str = date_str[:4]
                 date_hour_str = f"{date_str}{hour_str}"
                 
+                # Construct filename pattern (may contain wildcards)
                 filename_pattern = file_pattern.format(data_level=data_level, date_hour_str=date_hour_str)
-                filename = filename_pattern.replace(r'(\d{{2}})', '04').replace(r'v(\d{{2}})', 'v04').replace(r'(\d+)', '04')
                 
-                file_path = base_path / year_str / filename  
-                expected_files.append(str(file_path))
+                # Full glob pattern
+                glob_pattern = str(base_path / year_str / filename_pattern)
+                
+                # Use glob to find matching files
+                matching_files = glob_module.glob(glob_pattern)
+                expected_files.extend(matching_files)
         
         # Check which files actually exist
         existing_files = [f for f in expected_files if Path(f).exists()]

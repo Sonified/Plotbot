@@ -121,6 +121,7 @@ class print_manager_class:
     DEPENDENCY_MANAGEMENT = False # New style for dependency management prints
     SPEED_TEST = False # New category for performance timing tests
     STYLE_PRESERVATION = False # New category for styling preservation debugging
+    DOWNLOAD_DEBUG = False # New category for download debugging
     
     # Colors for class-level access
     BLACK = '\033[30m'
@@ -162,6 +163,7 @@ class print_manager_class:
         self.dependency_management_enabled = False # Flag for dependency management prints
         self.speed_test_enabled = False # Flag for performance timing tests
         self.style_preservation_enabled = False # Flag for style preservation debugging
+        self.download_debug_enabled = False # Flag for download debugging
         # print(f"[RAW_PM_INIT] Initial self.processing_enabled: {self.processing_enabled}") # ADDED DIAGNOSTIC
         # print(f"[PM_DEBUG] __init__: Default _pyspedas_verbose = {self._pyspedas_verbose}") # Remove print
         
@@ -178,6 +180,7 @@ class print_manager_class:
         self.dependency_management_prefix = "[DEPENDENCY] " # Prefix for dependency management prints
         self.speed_test_prefix = "[SPEED] " # Prefix for performance timing tests
         self.style_preservation_prefix = "[STYLE_PRESERVATION] " # Prefix for style preservation debugging
+        self.download_debug_prefix = "[DOWNLOAD_DEBUG] " # Prefix for download debugging
         
         # Severity levels
         self.level_warning = "[WARNING] "    # Warnings
@@ -707,6 +710,12 @@ class print_manager_class:
             prefix = self.style_preservation_prefix if self.category_prefix_enabled else ""
             print(self._format_message(f"{prefix}{msg}"))
 
+    def download_debug(self, msg):
+        """Print download debugging messages if enabled."""
+        if self.download_debug_enabled:
+            prefix = self.download_debug_prefix if self.category_prefix_enabled else ""
+            print(self._format_message(f"{prefix}{msg}"))
+
     @property
     def show_style_preservation(self):
         """Get the current state of style preservation debug output."""
@@ -719,6 +728,19 @@ class print_manager_class:
             print("[PRINT_MANAGER_WARNING] show_style_preservation must be set to True or False.")
             return
         self.style_preservation_enabled = value
+
+    @property
+    def show_download_debug(self):
+        """Get the current state of download debug output."""
+        return self.download_debug_enabled
+    
+    @show_download_debug.setter
+    def show_download_debug(self, value):
+        """Set whether download debug output is enabled."""
+        if not isinstance(value, bool):
+            print("[PRINT_MANAGER_WARNING] show_download_debug must be set to True or False.")
+            return
+        self.download_debug_enabled = value
 
 # Create a singleton instance
 print_manager = print_manager_class()

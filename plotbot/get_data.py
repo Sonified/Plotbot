@@ -549,7 +549,7 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
     # Step: Finalize get_data
     final_step_key, final_step_start = next_step("Finalize get_data")
     
-    print_manager.status("✅ Complete")
+    # print_manager.status("✅ Complete")
     
     end_step(final_step_key, final_step_start, {"total_data_types": len(required_data_types)})
     

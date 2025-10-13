@@ -340,7 +340,7 @@ class plot_manager(np.ndarray):
             datetime_array = self.plot_config.datetime_array
 
         if datetime_array is None:
-            print_manager.status("⚠️ No datetime array available, returning full data")
+            print_manager.custom_debug("⚠️ No datetime array available, returning full data")
             return data_array
 
         # Parse time range strings to UTC-aware datetimes
@@ -363,7 +363,7 @@ class plot_manager(np.ndarray):
         time_mask = (datetime_array_pd >= start_time) & (datetime_array_pd <= end_time)
 
         if not np.any(time_mask):
-            print_manager.status("⚠️ No data in requested time range")
+            print_manager.custom_debug("⚠️ No data in requested time range")
             # Return empty array with same trailing dimensions
             empty_shape = (0,) + data_array.shape[1:] if data_array.ndim > 1 else (0,)
             return np.empty(empty_shape, dtype=data_array.dtype)
