@@ -472,10 +472,10 @@ RESET = '\033[0m'
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
 
-__version__ = "2025_10_13_v3.68"
+__version__ = "2025_10_20_v3.69"
 
 # Commit message for this version
-__commit_message__ = "v3.68 fix: resolved circular import error caused by missing time_ver module"
+__commit_message__ = "v3.69 Fix: .time property now copies correctly for custom variables (plot_manager arithmetic operations)"
 
 # Print the version and commit message
 print(f"""

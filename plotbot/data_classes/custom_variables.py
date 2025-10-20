@@ -476,7 +476,10 @@ class CustomVariablesContainer:
                 if not hasattr(new_config, 'datetime_array') or new_config.datetime_array is None:
                     new_config.datetime_array = fresh_sources[0].datetime_array
                 if not hasattr(new_config, 'time') or new_config.time is None:
-                    new_config.time = fresh_sources[0].time if hasattr(fresh_sources[0], 'time') else None
+                    # Copy time from source's plot_config (raw TT2000 epoch times)
+                    source_time = fresh_sources[0].plot_config.time if hasattr(fresh_sources[0].plot_config, 'time') else None
+                    new_config.time = source_time
+                    print_manager.custom_debug(f"🔍 [STEP 8] Copied time from source (scalar): {type(source_time)}, is None: {source_time is None}")
                 result = plot_manager(result_array, plot_config=new_config)
                 print_manager.custom_debug(f"🔍 [STEP 8] ✓ Wrapped scalar arithmetic result")
                 
@@ -520,7 +523,9 @@ class CustomVariablesContainer:
                 if not hasattr(new_config, 'datetime_array') or new_config.datetime_array is None:
                     new_config.datetime_array = fresh_sources[0].datetime_array
                 if not hasattr(new_config, 'time') or new_config.time is None:
-                    new_config.time = fresh_sources[0].time if hasattr(fresh_sources[0], 'time') else None
+                    # Copy time from source's plot_config (raw TT2000 epoch times)
+                    source_time = fresh_sources[0].plot_config.time if hasattr(fresh_sources[0].plot_config, 'time') else None
+                    new_config.time = source_time
                 result = plot_manager(result_array, plot_config=new_config)
                 print_manager.custom_debug(f"🔍 [STEP 8] ✓ Wrapped ufunc result")
                 
@@ -554,7 +559,10 @@ class CustomVariablesContainer:
                     if not hasattr(new_config, 'datetime_array') or new_config.datetime_array is None:
                         new_config.datetime_array = fresh_sources[0].datetime_array
                     if not hasattr(new_config, 'time') or new_config.time is None:
-                        new_config.time = fresh_sources[0].time if hasattr(fresh_sources[0], 'time') else None
+                        # Copy time from source's plot_config (raw TT2000 epoch times)
+                        source_time = fresh_sources[0].plot_config.time if hasattr(fresh_sources[0].plot_config, 'time') else None
+                        new_config.time = source_time
+                        print_manager.custom_debug(f"🔍 [STEP 8] Copied time from source: {type(source_time)}, is None: {source_time is None}")
                     result = plot_manager(result_array, plot_config=new_config)
                     print_manager.custom_debug(f"🔍 [STEP 8] ✓ Wrapped multi-source arithmetic result ({len(fresh_sources)} sources)")
             
@@ -641,7 +649,9 @@ class CustomVariablesContainer:
                         
                         # Ensure time attribute exists (copy from source or set to None)
                         if not hasattr(new_config, 'time') or new_config.time is None:
-                            new_config.time = fresh_sources[0].time if hasattr(fresh_sources[0], 'time') else None
+                            # Copy time from source's plot_config (raw TT2000 epoch times)
+                            source_time = fresh_sources[0].plot_config.time if hasattr(fresh_sources[0].plot_config, 'time') else None
+                            new_config.time = source_time
                         
                         # Ensure datetime_array is copied
                         if not hasattr(new_config, 'datetime_array') or new_config.datetime_array is None:
@@ -1147,6 +1157,74 @@ class CustomVariablesContainer:
         except Exception as e:
             print_manager.error(f"Failed to make custom variable '{name}' globally accessible as '{sanitized_name}': {e}")
 
+def _check_for_lambda_warning(expression, name):
+    """
+    Check if a direct expression should have used lambda and warn if so.
+    
+    Complex expressions that need lambda include:
+    - Chained operations (sources that have operations)
+    - NumPy ufunc operations (arctan2, degrees, etc.)
+    
+    Note: Simple binary operations (br * bt) work fine without lambda when accessed
+    via the global namespace (plotbot.variable_name).
+    """
+    from ..plot_manager import plot_manager
+    
+    # Only check if it's a plot_manager
+    if not isinstance(expression, plot_manager):
+        return
+    
+    # Check if it has an operation (meaning it's derived, not raw data)
+    if not hasattr(expression, 'operation') or expression.operation is None:
+        return
+    
+    operation = expression.operation
+    
+    # Get sources if available
+    sources = []
+    if hasattr(expression, 'source_var') and expression.source_var is not None:
+        sources = expression.source_var if isinstance(expression.source_var, list) else [expression.source_var]
+    
+    # Detect complex operations that need lambda:
+    needs_lambda = False
+    reason = ""
+    
+    # Check if any source itself has an operation (chained operations)
+    has_chained_operations = False
+    for src in sources:
+        if hasattr(src, 'operation') and src.operation is not None:
+            has_chained_operations = True
+            break
+    
+    # 1. Chained operations (sources that themselves have operations)
+    # This is the most important case - e.g., (a/b) + c
+    if has_chained_operations:
+        needs_lambda = True
+        reason = f"chained operations (result of one operation used in '{operation}')"
+    
+    # 2. NumPy ufunc operations (like arctan2, degrees, etc.)
+    # These typically have operation names that are numpy function names
+    numpy_funcs = ['arctan2', 'arctan', 'degrees', 'radians', 'sqrt', 'log', 'log10', 'exp',
+                   'sin', 'cos', 'tan', 'sinh', 'cosh', 'tanh', 'power', 'square', 'cbrt']
+    if operation in numpy_funcs:
+        needs_lambda = True
+        reason = f"NumPy function '{operation}'"
+    
+    # 3. Multiple operations in sequence (3+ sources usually means accumulated operations)
+    # e.g., (a / b) + c would have 3 sources after accumulation
+    elif len(sources) >= 3:
+        needs_lambda = True
+        reason = f"multiple accumulated operations with {len(sources)} sources"
+    
+    # If we detected a complex operation, print warning
+    if needs_lambda:
+        print_manager.status(
+            f"⚠️  Complex expression detected for '{name}': {reason}\n"
+            f"    💡 Consider using lambda for reliable results:\n"
+            f"       custom_variable('{name}', lambda: your_expression)\n"
+            f"    📖 See plotbot_custom_variable_examples.ipynb in example_notebooks/ for details."
+        )
+
 def custom_variable(name, expression):
     """
     Create a custom variable with the given name and expression
@@ -1224,6 +1302,9 @@ def custom_variable(name, expression):
     # STEP 1: Variable Definition
     print_manager.custom_debug(f"🔍 [STEP 1] Creating custom variable '{name}'")
     print_manager.custom_debug(f"🔍 [STEP 1] Type: DIRECT expression")
+    
+    # Check if this should have used lambda (for complex expressions)
+    _check_for_lambda_warning(expression, name)
     
     expr_has_data = hasattr(expression, 'datetime_array') and expression.datetime_array is not None and len(expression.datetime_array) > 0
     expr_data_points = len(expression.datetime_array) if expr_has_data else 0

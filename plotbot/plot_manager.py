@@ -1214,19 +1214,27 @@ class plot_manager(np.ndarray):
 
         # --- Create result plot_manager ---
         # Use placeholder options initially, custom_variable will refine
-        # 🐛 BUG FIX: COPY datetime_array instead of sharing reference!
+        # 🐛 BUG FIX: COPY datetime_array AND time instead of sharing reference!
         result_datetime_array = None
         if dt_array is not None:
             result_datetime_array = dt_array.copy()
         elif hasattr(self, 'datetime_array') and self.datetime_array is not None:
             result_datetime_array = self.datetime_array.copy()
         
+        # 🐛 BUG FIX: Also copy .time property (TT2000 epoch times)
+        result_time = None
+        if hasattr(self, 'plot_config') and hasattr(self.plot_config, 'time') and self.plot_config.time is not None:
+            result_time = self.plot_config.time.copy() if hasattr(self.plot_config.time, 'copy') else self.plot_config.time
+        elif isinstance(other, plot_manager) and hasattr(other, 'plot_config') and hasattr(other.plot_config, 'time') and other.plot_config.time is not None:
+            result_time = other.plot_config.time.copy() if hasattr(other.plot_config.time, 'copy') else other.plot_config.time
+        
         result_plot_config = plot_config(
             data_type="custom_data_type", # Let custom_variable set to custom_data_type
             class_name="custom_variables", # Let custom_variable set to custom_variables
             subclass_name=var_name, # Temporary, custom_variable uses this
             plot_type="time_series",
-            datetime_array=result_datetime_array
+            datetime_array=result_datetime_array,
+            time=result_time
         )
         
         # Create the result using plot_manager constructor
