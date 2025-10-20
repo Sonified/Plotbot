@@ -121,29 +121,30 @@ class plot_manager(np.ndarray):
             if ufunc.nout == 1:
                 results = (results,)
             
-            # Find the first plot_manager input to copy metadata from
-            source_pm = None
+            # Find ALL plot_manager inputs for binary ufuncs (e.g., arctan2)
+            source_pms = []
             for i in inputs:
                 if isinstance(i, plot_manager):
-                    source_pm = i
-                    break
+                    source_pms.append(i)
             
-            if source_pm is not None:
-                # Create new plot_manager with result, copying plot_config
+            if len(source_pms) > 0:
+                # Create new plot_manager with result, copying plot_config from first source
                 from .plot_config import plot_config
-                new_plot_config = plot_config(**source_pm.plot_config.__dict__)
+                new_plot_config = plot_config(**source_pms[0].plot_config.__dict__)
                 result_pm = plot_manager(results[0], plot_config=new_plot_config)
                 
-                # 🎯 KEY: Store which ufunc was used AND the source variable(s)
-                object.__setattr__(result_pm, 'operation', ufunc.__name__)  # e.g., 'absolute', 'sqrt'
-                object.__setattr__(result_pm, 'source_var', [source_pm])
+                # 🎯 KEY: Store which ufunc was used AND ALL source variable(s)
+                # This is critical for binary ufuncs like arctan2(br, bn) - we need BOTH sources!
+                object.__setattr__(result_pm, 'operation', ufunc.__name__)  # e.g., 'absolute', 'sqrt', 'arctan2'
+                object.__setattr__(result_pm, 'source_var', source_pms)  # ✅ FIX: Capture ALL sources
                 
                 print_manager.custom_debug(f"🎯 [UFUNC_CAPTURE] Captured ufunc: {ufunc.__name__}")
-                print_manager.custom_debug(f"🎯 [UFUNC_CAPTURE] Source: {source_pm.plot_config.class_name}.{source_pm.plot_config.subclass_name}")
+                for idx, src in enumerate(source_pms):
+                    print_manager.custom_debug(f"🎯 [UFUNC_CAPTURE] Source {idx+1}: {src.plot_config.class_name}.{src.plot_config.subclass_name}")
                 
-                # Copy datetime_array from source
-                if hasattr(source_pm, 'datetime_array'):
-                    src_datetime = getattr(source_pm, 'datetime_array', None)
+                # Copy datetime_array from first source
+                if hasattr(source_pms[0], 'datetime_array'):
+                    src_datetime = getattr(source_pms[0], 'datetime_array', None)
                     if src_datetime is not None:
                         result_pm.plot_config.datetime_array = src_datetime.copy() if hasattr(src_datetime, 'copy') else src_datetime
                 
