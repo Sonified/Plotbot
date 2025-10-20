@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # plotbot package
 # This file exports all components to make them available when importing the package
 
@@ -470,13 +471,11 @@ RESET = '\033[0m'
 #------------------------------------------------------------------------------
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
-from . import time_ver
-time_ver = time_ver.time_ver
 
-__version__ = "2025_10_13_v3.67"
+__version__ = "2025_10_13_v3.68"
 
 # Commit message for this version
-__commit_message__ = "v3.67 feat: updated plotbot_custom_variable_examples.ipynb"
+__commit_message__ = "v3.68 fix: resolved circular import error caused by missing time_ver module"
 
 # Print the version and commit message
 print(f"""
