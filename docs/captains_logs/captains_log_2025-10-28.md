@@ -99,6 +99,151 @@ plotbot(trange,
 
 ---
 
+## v3.72 Feature: Per-Axis Line Drawing API for Plot Annotations
+
+### Summary
+Implemented a clean method-based API for adding vertical and horizontal lines to plotbot figures. Users can now annotate specific axes with time markers or threshold lines using `ploptions.ax1.add_vertical_line()` and `add_horizontal_line()` methods.
+
+### What Was Done
+
+#### 1. Core Implementation (`ploptions.py`)
+
+**Created `AxisOptions` class:**
+- `add_vertical_line(time, color='black', style='--', width=1.0, label=None)` - Add time markers
+- `add_horizontal_line(value, color='black', style='--', width=1.0, label=None)` - Add threshold lines
+- `clear_vertical_lines()` - Remove all vertical lines from axis
+- `clear_horizontal_lines()` - Remove all horizontal lines from axis
+- `clear_all_lines()` - Clear both types of lines from axis
+
+**Extended `PlotbotOptions` class:**
+- Added explicit properties for axes 1-25: `ax1`, `ax2`, ... `ax25`
+- Each axis gets its own `AxisOptions` instance for independent line management
+- Lines persist until explicitly cleared or `ploptions.reset()` is called
+
+#### 2. Integration (`plotbot_main.py`)
+
+**Line rendering logic added before figure display:**
+- Iterates through all axis options with lines defined
+- Converts time strings to datetime objects for vertical lines
+- Uses matplotlib's `axvline()` and `axhline()` for rendering
+- Properly handles matplotlib date number conversion
+- Includes error handling for invalid time formats or values
+
+#### 3. Type Hints (`ploptions.pyi`)
+
+**Created stub file for IDE autocomplete:**
+- Full type signatures for all `AxisOptions` methods
+- Property definitions for ax1-ax25
+- Ensures proper IDE support and type checking
+
+### Files Modified (3 files)
+1. ✅ `plotbot/ploptions.py` - Core implementation (203 lines)
+2. ✅ `plotbot/plotbot_main.py` - Line rendering integration
+3. ✅ `plotbot/ploptions.pyi` - Type hints (NEW FILE)
+
+### Usage Examples
+
+**Basic Usage:**
+```python
+from plotbot import *
+
+trange = ['2020-01-29/18:00:00', '2020-01-29/20:00:00']
+
+# Add vertical time markers
+ploptions.ax1.add_vertical_line('2020-01-29/18:30:00', color='k', style='--')
+ploptions.ax1.add_vertical_line('2020-01-29/19:15:00', color='red', style='-')
+
+# Add horizontal threshold lines
+ploptions.ax2.add_horizontal_line(10.0, color='blue', style=':', width=2.0)
+ploptions.ax2.add_horizontal_line(-5.0, color='green', style='--')
+
+# Plot with annotations
+plotbot(trange, mag_rtn_4sa.br, 1, mag_rtn_4sa.bt, 2)
+```
+
+**Multiple Lines & Styling:**
+```python
+# Add multiple vertical lines (e.g., event markers)
+for event_time in event_times:
+    ploptions.ax1.add_vertical_line(event_time, color='red', style='--', label='Event')
+
+# Add horizontal threshold bands
+ploptions.ax3.add_horizontal_line(100, color='orange', style='-', width=2.0, label='Upper Limit')
+ploptions.ax3.add_horizontal_line(0, color='orange', style='-', width=2.0, label='Lower Limit')
+
+plotbot(trange, mag_rtn_4sa.br, 1, mag_rtn_4sa.bt, 2, proton.vr, 3)
+```
+
+**Clearing Lines:**
+```python
+# Clear specific axis
+ploptions.ax1.clear_vertical_lines()
+ploptions.ax2.clear_all_lines()
+
+# Reset everything
+ploptions.reset()
+```
+
+### Technical Details
+
+**Time Format Support:**
+- Accepts datetime strings (parsed via `dateutil.parser`)
+- Accepts datetime objects directly
+- Automatically converts to matplotlib date numbers for rendering
+
+**Line Style Options:**
+- `'-'` - Solid line
+- `'--'` - Dashed line (default)
+- `':'` - Dotted line
+- `'-.'` - Dash-dot line
+
+**Per-Axis Independence:**
+- Each axis maintains its own line list
+- Lines don't interfere between axes
+- Can have different line sets for different plots
+
+**Label Support:**
+- Optional `label` parameter for legend integration
+- Useful for annotating what lines represent
+- Works with matplotlib's standard legend system
+
+### Design Philosophy
+
+**Why Method-Based API?**
+- Clean, discoverable syntax: `ploptions.ax1.add_vertical_line()`
+- IDE autocomplete works perfectly
+- Matches existing `ploptions` pattern
+- Natural grouping by axis (ax1, ax2, etc.)
+
+**Why Per-Axis Options?**
+- Different axes often need different annotations
+- Prevents clutter and confusion
+- Allows precise control over which axes get which lines
+- Scales to 25 axes without complexity
+
+**Persistent Lines:**
+- Lines stay active until explicitly cleared
+- Enables reusing line definitions across multiple plots
+- User has full control via `clear_*()` methods
+
+### Benefits
+✅ **Intuitive API** - Natural method calls, no magic strings  
+✅ **Full Control** - Color, style, width, label all customizable  
+✅ **Multiple Lines** - Add as many as needed per axis  
+✅ **Flexible Time Format** - Strings or datetime objects  
+✅ **Easy Cleanup** - Clear methods for each line type  
+✅ **Type Safe** - Full type hints for IDE support  
+✅ **Independent Axes** - Lines don't interfere between axes  
+
+### Git Information
+- **Version**: v3.72
+- **Commit Message**: "v3.72 Feature: Added per-axis line drawing API (ploptions.ax1.add_vertical_line / add_horizontal_line) for annotating plots"
+- **Commit Hash**: [pending]
+- **Date**: 2025-10-28
+- **Status**: [preparing to push]
+
+---
+
 ## v3.71 Feature: Added B_phi (Magnetic Field Azimuthal Angle) to PSP and WIND
 
 ### Summary
@@ -188,6 +333,7 @@ plotbot(trange, wind_mfi_h2.b_phi, 1)    # WIND
 ### Git Information
 - **Version**: v3.71
 - **Commit Message**: "v3.71 Feature: Added b_phi (magnetic field azimuthal angle) to PSP and WIND mag classes with scatter plot support"
+- **Commit Hash**: d15911a
 - **Date**: 2025-10-28
-- **Status**: Ready to push
+- **Status**: ✅ Successfully pushed to origin/main
 

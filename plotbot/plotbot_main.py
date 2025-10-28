@@ -810,6 +810,51 @@ def plotbot(trange, *args):
     duration_ms = (timer_end - timer_start) * 1000
     print_manager.speed_test(f"[TIMER_PLOTTING] Plotting section: {duration_ms:.2f}ms")
     
+    # ============================================================================
+    # Draw custom lines from ploptions (vertical and horizontal)
+    # ============================================================================
+    for axis_num, axis_opts in ploptions.axes.items():
+        if axis_num <= len(axs):  # Ensure axis exists
+            ax = axs[axis_num - 1]  # Convert to 0-based index
+            
+            # Draw vertical lines
+            for vline in axis_opts.vertical_lines:
+                try:
+                    # Parse time to datetime if it's a string
+                    if isinstance(vline['time'], str):
+                        time_dt = dateutil_parse(vline['time'])
+                    else:
+                        time_dt = vline['time']
+                    
+                    # Convert to matplotlib date format
+                    time_num = mdates.date2num(time_dt)
+                    
+                    # Draw the vertical line
+                    ax.axvline(
+                        x=time_num,
+                        linestyle=vline['style'],
+                        color=vline['color'],
+                        linewidth=vline['width'],
+                        label=vline['label']
+                    )
+                    print_manager.debug(f"Drew vertical line at {vline['time']} on axis {axis_num}")
+                except Exception as e:
+                    print_manager.warning(f"Could not draw vertical line at {vline['time']} on axis {axis_num}: {e}")
+            
+            # Draw horizontal lines
+            for hline in axis_opts.horizontal_lines:
+                try:
+                    ax.axhline(
+                        y=hline['value'],
+                        linestyle=hline['style'],
+                        color=hline['color'],
+                        linewidth=hline['width'],
+                        label=hline['label']
+                    )
+                    print_manager.debug(f"Drew horizontal line at y={hline['value']} on axis {axis_num}")
+                except Exception as e:
+                    print_manager.warning(f"Could not draw horizontal line at y={hline['value']} on axis {axis_num}: {e}")
+    
     # Handle figure display and return based on ploptions
     if ploptions.display_figure:
         plt.show()                                                # Display the complete figure
