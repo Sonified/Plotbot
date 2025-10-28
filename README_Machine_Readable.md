@@ -42,7 +42,9 @@ plotbot(trange, mag_rtn_4sa.br, 1, proton.anisotropy, 2)
 
 ## WIND Data Classes
 **Magnetic**: `wind_mfi_h2` - `.bx`, `.by`, `.bz`, `.bmag` (GSE coordinates)  
-**Plasma**: `wind_3dp_pm` (ion moments), `wind_swe_h1` (thermal speeds), `wind_swe_h5` (electron temp)  
+**Plasma**: `wind_3dp_pm` (ion moments), `wind_swe_h1` (proton/alpha thermal speeds & temperatures), `wind_swe_h5` (electron temp)  
+- `wind_swe_h1` thermal speeds (km/s): `.proton_wpar`, `.proton_wperp`, `.proton_anisotropy`, `.alpha_w`
+- `wind_swe_h1` temperatures (eV): `.proton_t_par`, `.proton_t_perp`, `.proton_t_anisotropy`, `.alpha_t`, `.fit_flag`
 **Electrons**: `wind_3dp_elpd` (pitch angle distributions)
 
 ## Customization & Variables

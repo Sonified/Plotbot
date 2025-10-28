@@ -22,10 +22,14 @@ class wind_swe_h1_class:
         object.__setattr__(self, 'data_type', 'wind_swe_h1')      # Key for data_types
         object.__setattr__(self, 'subclass_name', None)           # For the main class instance
         object.__setattr__(self, 'raw_data', {
-            'proton_wpar': None,        # Proton parallel thermal speed
-            'proton_wperp': None,       # Proton perpendicular thermal speed
+            'proton_wpar': None,        # Proton parallel thermal speed (km/s)
+            'proton_wperp': None,       # Proton perpendicular thermal speed (km/s)
             'proton_anisotropy': None,  # Calculated: Wperp/Wpar
-            'alpha_w': None,            # Alpha particle thermal speed
+            'proton_t_par': None,       # Proton parallel temperature (eV)
+            'proton_t_perp': None,      # Proton perpendicular temperature (eV)
+            'proton_t_anisotropy': None,  # Calculated: T_perp/T_par
+            'alpha_w': None,            # Alpha particle thermal speed (km/s)
+            'alpha_t': None,            # Alpha particle temperature (eV)
             'fit_flag': None,           # Data quality flag
         })
         object.__setattr__(self, 'datetime', [])
@@ -67,7 +71,7 @@ class wind_swe_h1_class:
         
         # Store current state before update (including any modified plot_config)
         current_plot_states = {}
-        standard_components = ['proton_wpar', 'proton_wperp', 'proton_anisotropy', 'alpha_w', 'fit_flag']
+        standard_components = ['proton_wpar', 'proton_wperp', 'proton_anisotropy', 'proton_t_par', 'proton_t_perp', 'proton_t_anisotropy', 'alpha_w', 'alpha_t', 'fit_flag']
         for comp_name in standard_components:
             if hasattr(self, comp_name):
                 manager = getattr(self, comp_name)
@@ -378,6 +382,57 @@ class wind_swe_h1_class:
         # ═══════════════════════ END DATA QUALITY FILTERING ═══════════════════════════════
         # =====================================================================================
 
+        # =====================================================================================
+        # ═══════════════════ TEMPERATURE CONVERSION SECTION ═══════════════════════════════
+        # =====================================================================================
+        # Convert thermal speeds (km/s) to temperatures (eV)
+        # 
+        # Formula: T(eV) = [10^6 × W² × mass / (2 × k_B)] / 11,606
+        #   where W is thermal speed in km/s
+        #         mass is particle mass (m_p for protons, 4×m_p for alphas)
+        #         k_B = 1.38 × 10^-23 J/K (Boltzmann constant)
+        #         m_p = 1.67 × 10^-27 kg (proton mass)
+        #         11,606 K/eV is the conversion factor from Kelvin to electron volts
+        #
+        # The 10^6 factor converts km²/s² to m²/s² since W is in km/s
+        #
+        print_manager.processing("WIND SWE H1: Converting thermal speeds to temperatures (eV)...")
+        
+        # Physical constants
+        m_p = 1.67e-27  # Proton mass (kg)
+        k_B = 1.38e-23  # Boltzmann constant (J/K)
+        K_to_eV = 11606.0  # Kelvin to eV conversion factor
+        conversion_factor = 1e6 * m_p / (2 * k_B * K_to_eV)  # Convert to eV directly
+        
+        # Calculate proton parallel temperature: T_par = [10^6 × W_par² × m_p / (2 × k_B)] / 11,606
+        proton_t_par_data = None
+        if proton_wpar_data is not None:
+            proton_t_par_data = conversion_factor * proton_wpar_data**2
+            print_manager.processing(f"WIND SWE H1: Proton T_par range: [{np.nanmin(proton_t_par_data):.2f}, {np.nanmax(proton_t_par_data):.2f}] eV")
+        
+        # Calculate proton perpendicular temperature: T_perp = [10^6 × W_perp² × m_p / (2 × k_B)] / 11,606
+        proton_t_perp_data = None
+        if proton_wperp_data is not None:
+            proton_t_perp_data = conversion_factor * proton_wperp_data**2
+            print_manager.processing(f"WIND SWE H1: Proton T_perp range: [{np.nanmin(proton_t_perp_data):.2f}, {np.nanmax(proton_t_perp_data):.2f}] eV")
+        
+        # Calculate alpha particle temperature: T_alpha = [10^6 × W_alpha² × 4×m_p / (2 × k_B)] / 11,606
+        # Note: Factor of 4 because alpha particle mass is approximately 4×m_p
+        alpha_t_data = None
+        if alpha_w_data is not None:
+            alpha_conversion_factor = 4 * conversion_factor  # 4× mass for alpha particles
+            alpha_t_data = alpha_conversion_factor * alpha_w_data**2
+            # Only log if we have non-NaN values
+            if not np.all(np.isnan(alpha_t_data)):
+                print_manager.processing(f"WIND SWE H1: Alpha T range: [{np.nanmin(alpha_t_data):.2f}, {np.nanmax(alpha_t_data):.2f}] eV")
+            else:
+                print_manager.processing("WIND SWE H1: Alpha T is all NaN (no valid thermal speed data)")
+        
+        print_manager.processing("WIND SWE H1: ✅ Temperature conversion complete (eV)")
+        # =====================================================================================
+        # ═══════════════════ END TEMPERATURE CONVERSION ═══════════════════════════════════
+        # =====================================================================================
+
         # Calculate proton anisotropy (Wperp/Wpar) if both components available
         proton_anisotropy_data = None
         if proton_wpar_data is not None and proton_wperp_data is not None:
@@ -389,12 +444,27 @@ class wind_swe_h1_class:
             print_manager.processing(f"WIND SWE H1: Calculated proton anisotropy (Wperp/Wpar)")
             print_manager.processing(f"WIND SWE H1: Anisotropy range: [{np.nanmin(proton_anisotropy_data):.3f}, {np.nanmax(proton_anisotropy_data):.3f}]")
 
+        # Calculate proton temperature anisotropy (T_perp/T_par) if both components available
+        proton_t_anisotropy_data = None
+        if proton_t_par_data is not None and proton_t_perp_data is not None:
+            # Avoid division by zero and use filtered data
+            valid_mask = (~np.isnan(proton_t_par_data)) & (~np.isnan(proton_t_perp_data)) & (proton_t_par_data != 0)
+            proton_t_anisotropy_data = np.full_like(proton_t_par_data, np.nan)
+            proton_t_anisotropy_data[valid_mask] = proton_t_perp_data[valid_mask] / proton_t_par_data[valid_mask]
+            
+            print_manager.processing(f"WIND SWE H1: Calculated proton temperature anisotropy (T_perp/T_par)")
+            print_manager.processing(f"WIND SWE H1: Temperature anisotropy range: [{np.nanmin(proton_t_anisotropy_data):.3f}, {np.nanmax(proton_t_anisotropy_data):.3f}]")
+
         # Store data in raw_data dictionary
         self.raw_data = {
-            'proton_wpar': proton_wpar_data,              # Proton parallel thermal speed
-            'proton_wperp': proton_wperp_data,            # Proton perpendicular thermal speed
-            'proton_anisotropy': proton_anisotropy_data,  # Calculated anisotropy
-            'alpha_w': alpha_w_data,                      # Alpha thermal speed
+            'proton_wpar': proton_wpar_data,              # Proton parallel thermal speed (km/s)
+            'proton_wperp': proton_wperp_data,            # Proton perpendicular thermal speed (km/s)
+            'proton_anisotropy': proton_anisotropy_data,  # Thermal speed anisotropy (Wperp/Wpar)
+            'proton_t_par': proton_t_par_data,            # Proton parallel temperature (eV)
+            'proton_t_perp': proton_t_perp_data,          # Proton perpendicular temperature (eV)
+            'proton_t_anisotropy': proton_t_anisotropy_data,  # Temperature anisotropy (T_perp/T_par)
+            'alpha_w': alpha_w_data,                      # Alpha thermal speed (km/s)
+            'alpha_t': alpha_t_data,                      # Alpha temperature (eV)
             'fit_flag': fit_flag_data,                    # Quality flag
         }
 
@@ -479,6 +549,72 @@ class wind_swe_h1_class:
             )
         )
 
+        # Proton parallel temperature (converted from thermal speed)
+        self.proton_t_par = plot_manager(
+            self.raw_data['proton_t_par'],
+            plot_config=plot_config(
+                data_type='wind_swe_h1',
+                var_name='proton_t_par',
+                class_name='wind_swe_h1',
+                subclass_name='proton_t_par',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
+                datetime_array=self.datetime_array,
+                y_label='Temperature\n(eV)',
+                legend_label=r'$T_{\parallel,p}$',
+                color='deepskyblue',  # Same as W_par for consistency
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+
+        # Proton perpendicular temperature (converted from thermal speed)
+        self.proton_t_perp = plot_manager(
+            self.raw_data['proton_t_perp'],
+            plot_config=plot_config(
+                data_type='wind_swe_h1',
+                var_name='proton_t_perp',
+                class_name='wind_swe_h1',
+                subclass_name='proton_t_perp',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
+                datetime_array=self.datetime_array,
+                y_label='Temperature\n(eV)',
+                legend_label=r'$T_{\perp,p}$',
+                color='hotpink',  # Same as W_perp for consistency
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+
+        # Proton temperature anisotropy (T_perp/T_par)
+        self.proton_t_anisotropy = plot_manager(
+            self.raw_data['proton_t_anisotropy'],
+            plot_config=plot_config(
+                data_type='wind_swe_h1',
+                var_name='proton_t_anisotropy',
+                class_name='wind_swe_h1',
+                subclass_name='proton_t_anisotropy',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
+                datetime_array=self.datetime_array,
+                y_label=r'$T_{\perp}/T_{\parallel}$',
+                legend_label=r'$T_{\perp}/T_{\parallel}$',
+                color='mediumspringgreen',  # Same as thermal speed anisotropy
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+
         # Alpha particle thermal speed (new product type for WIND)
         self.alpha_w = plot_manager(
             self.raw_data['alpha_w'],
@@ -494,6 +630,28 @@ class wind_swe_h1_class:
                 y_label='Alpha Thermal Speed\n(km/s)',
                 legend_label=r'$W_{\alpha}$',
                 color='darkorange',  # Distinct color for alpha particles
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+
+        # Alpha particle temperature (converted from thermal speed)
+        self.alpha_t = plot_manager(
+            self.raw_data['alpha_t'],
+            plot_config=plot_config(
+                data_type='wind_swe_h1',
+                var_name='alpha_t',
+                class_name='wind_swe_h1',
+                subclass_name='alpha_t',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+
+                datetime_array=self.datetime_array,
+                y_label='Alpha Temperature\n(eV)',
+                legend_label=r'$T_{\alpha}$',
+                color='darkorange',  # Same as W_alpha for consistency
                 y_scale='linear',
                 y_limit=None,
                 line_width=1,

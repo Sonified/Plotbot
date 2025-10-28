@@ -14,10 +14,14 @@ class wind_swe_h1_class:
     _current_operation_trange: Optional[List[str]]
     
     # Plot managers for each variable
-    proton_wpar: plot_manager        # Proton parallel thermal speed
-    proton_wperp: plot_manager       # Proton perpendicular thermal speed  
-    proton_anisotropy: plot_manager  # Calculated anisotropy (Wperp/Wpar)
-    alpha_w: plot_manager            # Alpha particle thermal speed
+    proton_wpar: plot_manager        # Proton parallel thermal speed (km/s)
+    proton_wperp: plot_manager       # Proton perpendicular thermal speed (km/s)
+    proton_anisotropy: plot_manager  # Thermal speed anisotropy (Wperp/Wpar)
+    proton_t_par: plot_manager       # Proton parallel temperature (eV)
+    proton_t_perp: plot_manager      # Proton perpendicular temperature (eV)
+    proton_t_anisotropy: plot_manager  # Temperature anisotropy (T_perp/T_par)
+    alpha_w: plot_manager            # Alpha particle thermal speed (km/s)
+    alpha_t: plot_manager            # Alpha particle temperature (eV)
     fit_flag: plot_manager           # Data quality flag
 
     def __init__(self, imported_data: Any) -> None: ...

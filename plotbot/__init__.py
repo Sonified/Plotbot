@@ -472,10 +472,10 @@ RESET = '\033[0m'
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
 
-__version__ = "2025_10_20_v3.69"
+__version__ = "2025_10_28_v3.70"
 
 # Commit message for this version
-__commit_message__ = "v3.69 Fix: .time property now copies correctly for custom variables (plot_manager arithmetic operations)"
+__commit_message__ = "v3.70 Feature: Added temperature calculations (eV) to wind_swe_h1 class for proton and alpha particles"
 
 # Print the version and commit message
 print(f"""

@@ -420,7 +420,7 @@ Here's a list of the currently available data products and their components. Dat
     *   `wind_mfi`: Magnetic field components (Bx, By, Bz, |B|) in GSE coordinates
 
 *   **WIND SWE (Solar Wind Experiment):**
-    *   `wind_swe_h1`: Proton and alpha thermal speeds
+    *   `wind_swe_h1`: Proton and alpha thermal speeds in km/s (`.proton_wpar`, `.proton_wperp`, `.alpha_w`) and temperatures in eV (`.proton_t_par`, `.proton_t_perp`, `.alpha_t`)
     *   `wind_swe_h5`: Electron temperature measurements
 
 *   **WIND 3DP (3D Plasma Analyzer):**
