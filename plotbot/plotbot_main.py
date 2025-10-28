@@ -785,10 +785,15 @@ def plotbot(trange, *args):
             # Calculate the total time range in minutes
             time_range_minutes = (plot_end_time - plot_start_time).total_seconds() / 60
             
-            if dt.hour == 0 and dt.minute == 0:
-                return dt.strftime('%b-%d').upper()                   # Format: MMM-DD
-            elif time_range_minutes <= 5:  # For ranges <= 5 minutes
+            # For short time ranges, always show time (even at midnight)
+            if time_range_minutes <= 5:  # For ranges <= 5 minutes
                 return dt.strftime('%H:%M:%S')                        # Format: HH:MM:SS
+            elif time_range_minutes <= 1440:  # For ranges <= 1 day
+                # Show time unless it's exactly midnight
+                if dt.hour == 0 and dt.minute == 0:
+                    return dt.strftime('%b-%d').upper()               # Format: MMM-DD
+                else:
+                    return dt.strftime('%H:%M')                       # Format: HH:MM
             else:
                 return dt.strftime('%H:%M')                           # Format: HH:MM
     

@@ -238,6 +238,127 @@ ploptions.reset()
 ### Git Information
 - **Version**: v3.72
 - **Commit Message**: "v3.72 Feature: Added per-axis line drawing API (ploptions.ax1.add_vertical_line / add_horizontal_line) for annotating plots"
+- **Commit Hash**: 55f65df
+- **Date**: 2025-10-28
+- **Status**: ✅ Successfully pushed to origin/main
+
+---
+
+## v3.73 Bugfix: Fixed WIND Data Local File Detection and X-Axis Formatting
+
+### Summary
+Fixed two bugs: (1) WIND data files were being re-downloaded even when they existed locally, and (2) x-axis labels showed repeated dates instead of times for short time ranges starting at midnight.
+
+### Issues Fixed
+
+#### Issue 1: WIND Data "Local Files Not Found" False Negative
+**Problem:**
+- User sees: `📡 Local files not found, proceeding with pyspedas download for wind_swe_h1`
+- But files actually exist at `data/wind/swe/swe_h1/2022/wi_h1_swe_20220601_v01.cdf`
+- Data is successfully imported, proving files exist
+- This causes unnecessary confusion and potential re-downloads
+
+**Root Cause:**
+- `smart_check_local_pyspedas_files()` only checked for `'file_pattern'` key
+- WIND data types use `'file_pattern_import'` instead
+- PSP uses `'file_pattern'`, WIND uses `'file_pattern_import'`
+- Smart check returned `None` → triggered "files not found" message
+
+**Fix (`data_download_pyspedas.py`):**
+```python
+# OLD: Only checked for 'file_pattern'
+if 'local_path' not in data_config or 'file_pattern' not in data_config:
+    return None
+
+# NEW: Check for either variant
+if 'local_path' not in data_config:
+    return None
+if 'file_pattern' not in data_config and 'file_pattern_import' not in data_config:
+    return None
+
+# Priority: spdf_file_pattern > file_pattern > file_pattern_import
+file_pattern = data_config.get('spdf_file_pattern', 
+                              data_config.get('file_pattern', 
+                                             data_config.get('file_pattern_import')))
+```
+
+#### Issue 2: X-Axis Shows "APR-26 APR-26 APR-26" Instead of Times
+**Problem:**
+- Time range: `['2021/04/26 00:00:00.000', '2021/04/26 00:01:00.000']` (1 minute)
+- X-axis labels: `APR-26 APR-26 APR-26 APR-26 APR-26` (date repeated)
+- Expected: `00:00:00 00:00:10 00:00:20 00:00:30 ...` (times)
+
+**Root Cause:**
+- Date formatter checked "is it midnight?" **before** checking "is it a short time range?"
+- Logic: `if hour==0 and minute==0: show_date()` came first
+- For ranges starting at `00:00:00`, it always showed the date
+
+**Fix (`plotbot_main.py`):**
+```python
+# OLD: Check midnight first
+if dt.hour == 0 and dt.minute == 0:
+    return dt.strftime('%b-%d').upper()  # Always showed date at midnight
+elif time_range_minutes <= 5:
+    return dt.strftime('%H:%M:%S')
+
+# NEW: Check time range duration first
+if time_range_minutes <= 5:  # For ranges <= 5 minutes
+    return dt.strftime('%H:%M:%S')  # Always show time (even at midnight)
+elif time_range_minutes <= 1440:  # For ranges <= 1 day
+    if dt.hour == 0 and dt.minute == 0:
+        return dt.strftime('%b-%d').upper()
+    else:
+        return dt.strftime('%H:%M')
+```
+
+### Files Modified (3 files)
+1. ✅ `plotbot/data_download_pyspedas.py` - Fixed WIND file pattern detection
+2. ✅ `plotbot/plotbot_main.py` - Fixed x-axis time formatting logic
+3. ✅ `plotbot/__init__.py` - Version bump to v3.73
+
+### Before → After
+
+**WIND Data Detection:**
+```
+BEFORE: 📡 Local files not found, proceeding with pyspedas download for wind_swe_h1
+        ☑️ - CDF Data import complete (files were actually there!)
+
+AFTER:  ✅ Smart check found 2 local wind_swe_h1 file(s):
+           📁 /path/to/wi_h1_swe_20220601_v01.cdf
+           📁 /path/to/wi_h1_swe_20220602_v01.cdf
+        ✅ Using local wind_swe_h1 files (skipping pyspedas)
+```
+
+**X-Axis Formatting:**
+```
+BEFORE: APR-26  APR-26  APR-26  APR-26  APR-26
+
+AFTER:  00:00:00  00:00:10  00:00:20  00:00:30  00:00:40  00:00:50  00:01:00
+```
+
+### Technical Details
+
+**WIND vs PSP File Pattern Keys:**
+- PSP: `'file_pattern'` → Used by Berkeley server
+- WIND: `'file_pattern_import'` → Used for local imports
+- Both valid, just different naming conventions
+- Smart check now accepts both
+
+**Time Formatting Priority:**
+1. ≤5 minutes → Always `HH:MM:SS`
+2. ≤1 day → `HH:MM` (except midnight → date)
+3. >1 day → `HH:MM`
+
+### Benefits
+✅ **No More False "Files Not Found"** - WIND data correctly detected  
+✅ **Faster Imports** - No unnecessary downloads  
+✅ **Proper Time Labels** - Short ranges show actual times  
+✅ **Works at Midnight** - No more date spam on x-axis  
+✅ **Consistent Logic** - Same for PSP and WIND  
+
+### Git Information
+- **Version**: v3.73
+- **Commit Message**: "v3.73 Bugfix: Fixed WIND data local file detection and x-axis time formatting for short time ranges at midnight"
 - **Commit Hash**: [pending]
 - **Date**: 2025-10-28
 - **Status**: [preparing to push]

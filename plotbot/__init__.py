@@ -472,10 +472,10 @@ RESET = '\033[0m'
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
 
-__version__ = "2025_10_28_v3.72"
+__version__ = "2025_10_28_v3.73"
 
 # Commit message for this version
-__commit_message__ = "v3.72 Feature: Added per-axis line drawing API (ploptions.ax1.add_vertical_line / add_horizontal_line) for annotating plots"
+__commit_message__ = "v3.73 Bugfix: Fixed WIND data local file detection and x-axis time formatting for short time ranges at midnight"
 
 # Print the version and commit message
 print(f"""

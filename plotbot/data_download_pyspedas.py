@@ -45,7 +45,12 @@ def smart_check_local_pyspedas_files(plotbot_key, trange):
     data_config = data_types[plotbot_key]
     
     # Only do smart checking for data types with clear file patterns
-    if 'local_path' not in data_config or 'file_pattern' not in data_config:
+    # Check for 'file_pattern' or 'file_pattern_import' (WIND uses the latter)
+    if 'local_path' not in data_config:
+        print_manager.debug(f"Missing local_path configuration for {plotbot_key}, skipping smart check")
+        return None
+    
+    if 'file_pattern' not in data_config and 'file_pattern_import' not in data_config:
         print_manager.debug(f"Missing file pattern configuration for {plotbot_key}, skipping smart check")
         return None
     
@@ -55,7 +60,10 @@ def smart_check_local_pyspedas_files(plotbot_key, trange):
         end_dt = parse(trange[1].replace('/', ' '))
         
         # Build expected file paths based on data type configuration
-        file_pattern = data_config.get('spdf_file_pattern', data_config['file_pattern'])  # Use SPDF pattern if available
+        # Priority: spdf_file_pattern > file_pattern > file_pattern_import
+        file_pattern = data_config.get('spdf_file_pattern', 
+                                      data_config.get('file_pattern', 
+                                                     data_config.get('file_pattern_import')))
         data_level = data_config['data_level']
         file_time_format = data_config['file_time_format']
         
