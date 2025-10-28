@@ -23,7 +23,7 @@ plotbot(trange, mag_rtn_4sa.br, 1, proton.anisotropy, 2)
 
 ## PSP Data Classes  
 **Magnetic Field**: `mag_rtn_4sa` (4 samples/sec), `mag_rtn` (hi-res), `mag_sc_4sa`, `mag_sc`  
-- Components: `.br`, `.bt`, `.bn`, `.bmag`, `.pmag`, `.all`
+- Components: `.br`, `.bt`, `.bn`, `.bmag`, `.pmag`, `.b_phi`, `.all`
 
 **Plasma**: `proton` (std), `proton_hr` (hi-res), `psp_alpha`  
 - Moments: `.density`, `.temperature`, `.anisotropy`, `.v_sw`, `.pressure`
@@ -41,7 +41,7 @@ plotbot(trange, mag_rtn_4sa.br, 1, proton.anisotropy, 2)
 **VDF**: `psp_span_vdf` - Velocity distribution functions
 
 ## WIND Data Classes
-**Magnetic**: `wind_mfi_h2` - `.bx`, `.by`, `.bz`, `.bmag` (GSE coordinates)  
+**Magnetic**: `wind_mfi_h2` - `.bx`, `.by`, `.bz`, `.bmag`, `.b_phi` (GSE coordinates)  
 **Plasma**: `wind_3dp_pm` (ion moments), `wind_swe_h1` (proton/alpha thermal speeds & temperatures), `wind_swe_h5` (electron temp)  
 - `wind_swe_h1` thermal speeds (km/s): `.proton_wpar`, `.proton_wperp`, `.proton_anisotropy`, `.alpha_w`
 - `wind_swe_h1` temperatures (eV): `.proton_t_par`, `.proton_t_perp`, `.proton_t_anisotropy`, `.alpha_t`, `.fit_flag`

@@ -28,6 +28,7 @@ class wind_mfi_h2_class:
             'by': None,      # Y component (GSE)  
             'bz': None,      # Z component (GSE)
             'bmag': None,    # |B| magnitude
+            'b_phi': None,   # Magnetic field azimuthal angle in GSE coordinates
             'bgse': None,    # Full vector [N,3]
         })
         object.__setattr__(self, 'datetime', [])
@@ -69,7 +70,7 @@ class wind_mfi_h2_class:
         
         # Store current state before update (including any modified plot_config)
         current_plot_states = {}
-        standard_components = ['all', 'bx', 'by', 'bz', 'bmag', 'bgse']
+        standard_components = ['all', 'bx', 'by', 'bz', 'bmag', 'b_phi', 'bgse']
         for comp_name in standard_components:
             if hasattr(self, comp_name):
                 manager = getattr(self, comp_name)
@@ -215,6 +216,11 @@ class wind_mfi_h2_class:
             bz = bgse_data[:, 2]  # Z-component in GSE
             bmag = bf1_data       # Magnitude from CDF
 
+            # Calculate magnetic field azimuthal angle (B_phi) in GSE coordinates
+            # B_phi = arctan2(Bx, By) + 180 degrees
+            # This gives the angle in the X-Y plane measured from the Y axis toward the X axis
+            b_phi = np.degrees(np.arctan2(bx, by)) + 180.0
+
             # Store all data in raw_data dictionary
             self.raw_data = {
                 'all': [bx, by, bz],
@@ -222,6 +228,7 @@ class wind_mfi_h2_class:
                 'by': by,
                 'bz': bz,
                 'bmag': bmag,
+                'b_phi': b_phi,  # Magnetic field azimuthal angle (degrees)
                 'bgse': bgse_data,
             }
 
@@ -342,6 +349,28 @@ class wind_mfi_h2_class:
                 color='black',
                 y_scale='linear',
                 y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+
+        self.b_phi = plot_manager(
+            self.raw_data['b_phi'],
+            plot_config=plot_config(
+                data_type='wind_mfi_h2',
+                var_name='b_phi_gse',
+                class_name='wind_mfi_h2',
+                subclass_name='b_phi',
+                plot_type='scatter',
+                time=self.time if hasattr(self, 'time') else None,
+
+                datetime_array=self.datetime_array,
+                y_label=r'$\phi_B$ (deg)',
+                legend_label=r'$\phi_B$',
+                color='purple',
+                y_scale='linear',
+                y_limit=None,
+                marker_size=1,
                 line_width=1,
                 line_style='-'
             )

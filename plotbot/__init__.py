@@ -472,10 +472,10 @@ RESET = '\033[0m'
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
 
-__version__ = "2025_10_28_v3.70"
+__version__ = "2025_10_28_v3.71"
 
 # Commit message for this version
-__commit_message__ = "v3.70 Feature: Added temperature calculations (eV) to wind_swe_h1 class for proton and alpha particles"
+__commit_message__ = "v3.71 Feature: Added b_phi (magnetic field azimuthal angle) to PSP and WIND mag classes with scatter plot support"
 
 # Print the version and commit message
 print(f"""

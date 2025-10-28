@@ -32,6 +32,7 @@ class mag_rtn_4sa_class:
             'bn': None,
             'bmag': None,
             'pmag': None,
+            'b_phi': None,   # Magnetic field azimuthal angle in RTN coordinates
             'br_norm': None  # Add br_norm to raw_data initialization
         })
         object.__setattr__(self, 'datetime', [])
@@ -71,7 +72,7 @@ class mag_rtn_4sa_class:
         
         # Store current state before update (including any modified plot_config)
         current_plot_states = {}
-        standard_components = ['all', 'br', 'bt', 'bn', 'bmag', 'pmag']
+        standard_components = ['all', 'br', 'bt', 'bn', 'bmag', 'pmag', 'b_phi']
         for comp_name in standard_components:
             if hasattr(self, comp_name):
                 manager = getattr(self, comp_name)
@@ -322,6 +323,11 @@ class mag_rtn_4sa_class:
         mu_0 = 4 * np.pi * 1e-7  # Permeability of free space
         pmag = (bmag**2) / (2 * mu_0) * 1e-9  # Convert to nPa
         
+        # Calculate magnetic field azimuthal angle (B_phi) in RTN coordinates
+        # B_phi = arctan2(Br, Bn) + 180 degrees
+        # This gives the angle in the R-N plane measured from the N axis toward the R axis
+        b_phi = np.degrees(np.arctan2(br, bn)) + 180.0
+        
         # Store all data in raw_data dictionary
         self.raw_data = {
             'all': [br, bt, bn],
@@ -330,6 +336,7 @@ class mag_rtn_4sa_class:
             'bn': bn,
             'bmag': bmag,
             'pmag': pmag,
+            'b_phi': b_phi,  # Magnetic field azimuthal angle (degrees)
             'br_norm': None  # br_norm is calculated only when requested (lazy loading)
         }
 
@@ -626,6 +633,27 @@ class mag_rtn_4sa_class:
                 line_style='-'             # Line style
             )
             
+        )
+
+        self.b_phi = plot_manager(
+            self.raw_data['b_phi'],
+            plot_config=plot_config(
+                data_type='mag_RTN_4sa',    # Actual data product name
+                var_name='b_phi_rtn_4sa',    # Variable name
+                class_name='mag_rtn_4sa',   # Class handling this data type
+                subclass_name='b_phi',      # Specific component
+                plot_type='scatter',       # Type of plot
+                time=self.time,            # Raw TT2000 epoch time
+                datetime_array=self.datetime_array,# Time data
+                y_label=r'$\phi_B$ (deg)',  # Y-axis label
+                legend_label=r'$\phi_B$',   # Legend text
+                color='purple',            # Plot color
+                y_scale='linear',          # Scale type
+                y_limit=None,              # Y-axis limits
+                marker_size=1,             # Scatter point size
+                line_width=1,              # Line width
+                line_style='-'             # Line style
+            )
         )
 
         # br_norm plot manager is only created when it's data is available (lazy loading)

@@ -31,6 +31,7 @@ class mag_rtn_class:
     bn: plot_manager
     bmag: plot_manager
     pmag: plot_manager
+    b_phi: plot_manager
     br_norm: plot_manager
     _br_norm_manager: plot_manager
 

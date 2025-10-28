@@ -20,6 +20,7 @@ class wind_mfi_h2_class:
     by: plot_manager
     bz: plot_manager
     bmag: plot_manager
+    b_phi: plot_manager
     bgse: plot_manager
 
     def __init__(self, imported_data: Optional[Any]) -> None: ...
