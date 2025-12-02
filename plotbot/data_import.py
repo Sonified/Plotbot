@@ -1271,6 +1271,32 @@ def import_data_function(trange, data_type):
             return None
 
         found_files = sorted(list(set(found_files))) # Get unique sorted list
+
+        # 🐛 FIX: Keep only the highest version of each file (e.g., v04 instead of v00)
+        # This prevents duplicate data from multiple file versions being loaded
+        def get_file_base_and_version(filepath):
+            """Extract base name (without version) and version number from CDF filename."""
+            filename = os.path.basename(filepath)
+            # Match pattern like: name_v00.cdf, name_v04.cdf, etc.
+            import re
+            match = re.search(r'(.+)_v(\d+)\.cdf$', filename, re.IGNORECASE)
+            if match:
+                return match.group(1), int(match.group(2))
+            return filename, 0  # No version found, treat as version 0
+
+        # Group files by their base name (without version)
+        file_versions = {}
+        for filepath in found_files:
+            base, version = get_file_base_and_version(filepath)
+            if base not in file_versions or version > file_versions[base][1]:
+                file_versions[base] = (filepath, version)
+
+        # Keep only the highest version of each file
+        original_count = len(found_files)
+        found_files = sorted([fv[0] for fv in file_versions.values()])
+        if len(found_files) < original_count:
+            print_manager.status(f"📁 Filtered to highest versions: {original_count} -> {len(found_files)} files (removed {original_count - len(found_files)} older versions)")
+
         print_manager.debug(f"Found {len(found_files)} unique CDF files to process.")
 
         # DATA EXTRACTION AND PROCESSING (CDF specific)

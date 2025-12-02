@@ -248,7 +248,50 @@ class UltimateMergeEngine:
         else:
             # Full merge required
             print_manager.datacubby("🔄 OVERLAP DETECTED - Full merge required")
-            
+
+            # NOTE: Deduplication code commented out - the front-end fix in data_import.py
+            # now filters to only load the highest version of each CDF file, preventing
+            # duplicate timestamps from entering the system. Keeping this code here as a
+            # safety net in case we ever need to re-enable it.
+            #
+            # # 🐛 FIX: Deduplicate BEFORE merging to avoid data loss from duplicate timestamps
+            # # This handles the case where CDF files have duplicate timestamps (e.g., v00 and v04 versions)
+            # existing_unique_times, existing_unique_indices = np.unique(existing_times, return_index=True)
+            # new_unique_times, new_unique_indices = np.unique(new_times, return_index=True)
+            #
+            # existing_had_duplicates = len(existing_unique_times) < len(existing_times)
+            # new_had_duplicates = len(new_unique_times) < len(new_times)
+            #
+            # if existing_had_duplicates or new_had_duplicates:
+            #     print_manager.status(f"⚠️ DUPLICATE TIMESTAMPS DETECTED - Deduplicating before merge:")
+            #     print_manager.status(f"   existing: {len(existing_times)} -> {len(existing_unique_times)} ({len(existing_times) - len(existing_unique_times)} duplicates removed)")
+            #     print_manager.status(f"   new: {len(new_times)} -> {len(new_unique_times)} ({len(new_times) - len(new_unique_times)} duplicates removed)")
+            #
+            #     # Deduplicate the raw_data arrays too
+            #     existing_raw_data_deduped = {}
+            #     for key, arr in existing_raw_data.items():
+            #         if key == 'all':
+            #             continue
+            #         if arr is not None:
+            #             existing_raw_data_deduped[key] = arr[existing_unique_indices] if arr.ndim == 1 else arr[existing_unique_indices, ...]
+            #         else:
+            #             existing_raw_data_deduped[key] = None
+            #
+            #     new_raw_data_deduped = {}
+            #     for key, arr in new_raw_data.items():
+            #         if key == 'all':
+            #             continue
+            #         if arr is not None:
+            #             new_raw_data_deduped[key] = arr[new_unique_indices] if arr.ndim == 1 else arr[new_unique_indices, ...]
+            #         else:
+            #             new_raw_data_deduped[key] = None
+            #
+            #     # Use deduplicated arrays for the merge
+            #     existing_times = existing_unique_times
+            #     existing_raw_data = existing_raw_data_deduped
+            #     new_times = new_unique_times
+            #     new_raw_data = new_raw_data_deduped
+
             # Use ultra-fast compiled merge for times
             print_manager.datacubby("⚡ Computing unique merged times...")
             final_times = self._fast_unique_merge(existing_times, new_times)
@@ -264,10 +307,16 @@ class UltimateMergeEngine:
                 )
             else:
                 print_manager.datacubby("🏎️ SPEED MODE: Using vectorized processing")
-                
+
                 # Fast vectorized approach for smaller datasets
                 existing_indices = self._fast_searchsorted_indices(final_times, existing_times)
                 new_indices = self._fast_searchsorted_indices(final_times, new_times)
+
+                print_manager.datacubby(f"🔍 INDICES DEBUG:")
+                print_manager.datacubby(f"   existing_indices: len={len(existing_indices)}, unique={len(np.unique(existing_indices))}, max={existing_indices.max() if len(existing_indices) > 0 else 'N/A'}")
+                print_manager.datacubby(f"   new_indices: len={len(new_indices)}, unique={len(np.unique(new_indices))}, max={new_indices.max() if len(new_indices) > 0 else 'N/A'}")
+                print_manager.datacubby(f"   final_times: len={len(final_times)}")
+
                 
                 merged_data = {}
                 all_keys = set(existing_raw_data.keys()) | set(new_raw_data.keys())
@@ -278,6 +327,13 @@ class UltimateMergeEngine:
                     
                     existing_arr = existing_raw_data.get(key)
                     new_arr = new_raw_data.get(key)
+                    
+                    # DEBUG for density key specifically
+                    if key == 'density':
+                        print_manager.datacubby(f"🔍 MERGE DEBUG for 'density' key:")
+                        print_manager.datacubby(f"   existing_arr: {existing_arr.shape if existing_arr is not None else 'None'}, new_arr: {new_arr.shape if new_arr is not None else 'None'}")
+                        print_manager.datacubby(f"   unique_count (final array size): {unique_count}")
+                        print_manager.datacubby(f"   existing_indices: len={len(existing_indices)}, new_indices: len={len(new_indices)}")
                     
                     # Determine final array shape and dtype
                     if existing_arr is not None:
@@ -291,6 +347,9 @@ class UltimateMergeEngine:
                         print_manager.datacubby(f"⚠️ Skipping key '{key}' - both arrays are None")
                         continue
                     
+                    if key == 'density':
+                        print_manager.datacubby(f"   final shape: {shape}, dtype: {dtype}")
+                    
                     # Pre-allocate with NaN for numerical types
                     if np.issubdtype(dtype, np.number):
                         final_array = np.full(shape, np.nan, dtype=dtype)
@@ -300,8 +359,12 @@ class UltimateMergeEngine:
                     # Vectorized assignment
                     if existing_arr is not None:
                         final_array[existing_indices] = existing_arr
+                        if key == 'density':
+                            print_manager.datacubby(f"   After existing assignment: final_array has {(~np.isnan(final_array)).sum()} valid values")
                     if new_arr is not None:
                         final_array[new_indices] = new_arr  # Overwrites duplicates
+                        if key == 'density':
+                            print_manager.datacubby(f"   After new assignment: final_array has {(~np.isnan(final_array)).sum()} valid values, range={np.nanmin(final_array)} to {np.nanmax(final_array)}")
                     
                     merged_data[key] = final_array
         
