@@ -753,6 +753,25 @@ def multiplot(plot_list, **kwargs):
                             else:
                                 print_manager.status(f"Panel {i+1} (Right Axis): Positional mapping failed (returned None). Using time.")
                                 # x_data remains time_slice, data_slice remains original data_slice
+                            
+                            # --- Transform to relative time if use_relative_time is True (Right Axis) ---
+                            if options.use_relative_time and not using_positional_axis:
+                                # Convert datetime x_data to relative time (hours/days from center_time)
+                                if hasattr(x_data, '__iter__') and len(x_data) > 0:
+                                    # Convert to pandas Timestamp if needed, then calculate relative time
+                                    time_deltas = pd.to_datetime(x_data) - center_dt
+                                    if options.relative_time_step_units == 'days':
+                                        x_data = time_deltas.total_seconds() / (3600 * 24)
+                                    elif options.relative_time_step_units == 'hours':
+                                        x_data = time_deltas.total_seconds() / 3600
+                                    elif options.relative_time_step_units == 'minutes':
+                                        x_data = time_deltas.total_seconds() / 60
+                                    elif options.relative_time_step_units == 'seconds':
+                                        x_data = time_deltas.total_seconds()
+                                    else:
+                                        # Default to hours if unit not recognized
+                                        x_data = time_deltas.total_seconds() / 3600
+                                    print_manager.debug(f"Panel {i+1} (Right Axis): Transformed x_data to relative time ({options.relative_time_step_units}). Range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
 
                         # --- Use filtered x_data and data_slice --- 
                         print_manager.processing(f"[PLOT_DEBUG Panel {i}] x_data type: {type(x_data).__name__}, first 5: {x_data[:5] if hasattr(x_data, '__getitem__') else x_data}")
@@ -854,6 +873,25 @@ def multiplot(plot_list, **kwargs):
                                     print_manager.status(f"Panel {i+1} (List Var): Positional mapping resulted in no valid points. Using time.")
                             else:
                                 print_manager.status(f"Panel {i+1} (List Var): Positional mapping failed (returned None). Using time.")
+                            
+                            # --- Transform to relative time if use_relative_time is True (List Var) ---
+                            if options.use_relative_time and not using_positional_axis:
+                                # Convert datetime x_data to relative time (hours/days from center_time)
+                                if hasattr(x_data, '__iter__') and len(x_data) > 0:
+                                    # Convert to pandas Timestamp if needed, then calculate relative time
+                                    time_deltas = pd.to_datetime(x_data) - center_dt
+                                    if options.relative_time_step_units == 'days':
+                                        x_data = time_deltas.total_seconds() / (3600 * 24)
+                                    elif options.relative_time_step_units == 'hours':
+                                        x_data = time_deltas.total_seconds() / 3600
+                                    elif options.relative_time_step_units == 'minutes':
+                                        x_data = time_deltas.total_seconds() / 60
+                                    elif options.relative_time_step_units == 'seconds':
+                                        x_data = time_deltas.total_seconds()
+                                    else:
+                                        # Default to hours if unit not recognized
+                                        x_data = time_deltas.total_seconds() / 3600
+                                    print_manager.debug(f"Panel {i+1} (List Var): Transformed x_data to relative time ({options.relative_time_step_units}). Range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
                         
                         # --- Use filtered x_data and data_slice --- 
                         print_manager.processing(f"[PLOT_DEBUG Panel {i}] x_data type: {type(x_data).__name__}, first 5: {x_data[:5] if hasattr(x_data, '__getitem__') else x_data}")
@@ -1102,16 +1140,35 @@ def multiplot(plot_list, **kwargs):
                                     x_data = time_slice # Fallback to time, data_slice remains original
                                     panel_actually_uses_degrees = False # Ensure flag is False
                             # If not using positional axis at all, x_data and data_slice remain the initial time-based slices
+                            
+                            # --- Transform to relative time if use_relative_time is True ---
+                            if options.use_relative_time and not using_positional_axis and not panel_actually_uses_degrees:
+                                # Convert datetime x_data to relative time (hours/days from center_time)
+                                if hasattr(x_data, '__iter__') and len(x_data) > 0:
+                                    # Convert to pandas Timestamp if needed, then calculate relative time
+                                    time_deltas = pd.to_datetime(x_data) - center_dt
+                                    if options.relative_time_step_units == 'days':
+                                        x_data = time_deltas.total_seconds() / (3600 * 24)
+                                    elif options.relative_time_step_units == 'hours':
+                                        x_data = time_deltas.total_seconds() / 3600
+                                    elif options.relative_time_step_units == 'minutes':
+                                        x_data = time_deltas.total_seconds() / 60
+                                    elif options.relative_time_step_units == 'seconds':
+                                        x_data = time_deltas.total_seconds()
+                                    else:
+                                        # Default to hours if unit not recognized
+                                        x_data = time_deltas.total_seconds() / 3600
+                                    print_manager.debug(f"Panel {i+1}: Transformed x_data to relative time ({options.relative_time_step_units}). Range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
 
                             # --- Plot using the determined x_data and potentially filtered data_slice ---
                             # <<< DEBUG PRINT: Verify x_data just before plotting >>>
-                                print_manager.debug(f"[DEBUG] Plotting Axis {i} (Time Series - Degrees Mode)")
-                                print_manager.debug(f"  x_data (first 5): {x_data[:5]}")
-                                print_manager.debug(f"  x_data (last 5): {x_data[-5:]}")
-                                if np.issubdtype(np.array(x_data).dtype, np.number):
-                                    print_manager.debug(f"  x_data range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
-                                else:
-                                    print_manager.debug(f"  x_data range: {np.min(x_data)} to {np.max(x_data)}")
+                            # print_manager.debug(f"[DEBUG] Plotting Axis {i} (Time Series)")
+                            # print_manager.debug(f"  x_data (first 5): {x_data[:5]}")
+                            # print_manager.debug(f"  x_data (last 5): {x_data[-5:]}")
+                            # if np.issubdtype(np.array(x_data).dtype, np.number):
+                            #     print_manager.debug(f"  x_data range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
+                            # else:
+                            #     print_manager.debug(f"  x_data range: {np.min(x_data)} to {np.max(x_data)}")
                             # <<< END DEBUG >>>
 
                             # --- << INSERTED BLOCK >> ---
@@ -1248,6 +1305,25 @@ def multiplot(plot_list, **kwargs):
                                 else:
                                     print_manager.warning(f"Panel {i+1} (Scatter): Standard positional mapping failed (returned None). Using time axis.")
                                     x_data = time_slice
+                            
+                            # --- Transform to relative time if use_relative_time is True (Scatter) ---
+                            if options.use_relative_time and not using_positional_axis and not panel_actually_uses_degrees:
+                                # Convert datetime x_data to relative time (hours/days from center_time)
+                                if hasattr(x_data, '__iter__') and len(x_data) > 0:
+                                    # Convert to pandas Timestamp if needed, then calculate relative time
+                                    time_deltas = pd.to_datetime(x_data) - center_dt
+                                    if options.relative_time_step_units == 'days':
+                                        x_data = time_deltas.total_seconds() / (3600 * 24)
+                                    elif options.relative_time_step_units == 'hours':
+                                        x_data = time_deltas.total_seconds() / 3600
+                                    elif options.relative_time_step_units == 'minutes':
+                                        x_data = time_deltas.total_seconds() / 60
+                                    elif options.relative_time_step_units == 'seconds':
+                                        x_data = time_deltas.total_seconds()
+                                    else:
+                                        # Default to hours if unit not recognized
+                                        x_data = time_deltas.total_seconds() / 3600
+                                    print_manager.debug(f"Panel {i+1} (Scatter): Transformed x_data to relative time ({options.relative_time_step_units}). Range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
 
                             # --- Plot using the determined x_data and potentially filtered data_slice --- 
                             # <<< DEBUG PRINT: Verify x_data just before plotting >>>
@@ -1700,6 +1776,25 @@ def multiplot(plot_list, **kwargs):
                         else:
                             print_manager.debug(f"Panel {i+1}: HAM positional mapping failed (returned None). Using time.")
                     
+                    # --- Transform to relative time if use_relative_time is True (HAM) ---
+                    if options.use_relative_time and not using_positional_axis:
+                        # Convert datetime x_data to relative time (hours/days from center_time)
+                        if hasattr(x_data, '__iter__') and len(x_data) > 0:
+                            # Convert to pandas Timestamp if needed, then calculate relative time
+                            time_deltas = pd.to_datetime(x_data) - center_dt
+                            if options.relative_time_step_units == 'days':
+                                x_data = time_deltas.total_seconds() / (3600 * 24)
+                            elif options.relative_time_step_units == 'hours':
+                                x_data = time_deltas.total_seconds() / 3600
+                            elif options.relative_time_step_units == 'minutes':
+                                x_data = time_deltas.total_seconds() / 60
+                            elif options.relative_time_step_units == 'seconds':
+                                x_data = time_deltas.total_seconds()
+                            else:
+                                # Default to hours if unit not recognized
+                                x_data = time_deltas.total_seconds() / 3600
+                            print_manager.debug(f"Panel {i+1} (HAM): Transformed x_data to relative time ({options.relative_time_step_units}). Range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
+                    
                     # Plot the HAM data using filtered x_data and data_slice
                     print_manager.debug(f"Panel {i+1}: Plotting HAM data on right axis")
                     print_manager.processing(f"[PLOT_DEBUG Panel {i}] x_data type: {type(x_data).__name__}, first 5: {x_data[:5] if hasattr(x_data, '__getitem__') else x_data}")
@@ -1824,7 +1919,26 @@ def multiplot(plot_list, **kwargs):
             current_ylim = axs[i].get_ylim()
             # print_manager.debug(f"Panel {i+1}: ylim after auto-scaling: {current_ylim}") # COMMENTED OUT
     
-        axs[i].set_xlim(start_time, end_time)
+        # Set x-axis limits - transform to relative time if use_relative_time is True
+        if options.use_relative_time and not using_positional_axis:
+            # Convert start_time and end_time to relative time values
+            start_rel = (start_time - center_dt).total_seconds()
+            end_rel = (end_time - center_dt).total_seconds()
+            
+            if options.relative_time_step_units == 'days':
+                start_rel = start_rel / (3600 * 24)
+                end_rel = end_rel / (3600 * 24)
+            elif options.relative_time_step_units == 'hours':
+                start_rel = start_rel / 3600
+                end_rel = end_rel / 3600
+            elif options.relative_time_step_units == 'minutes':
+                start_rel = start_rel / 60
+                end_rel = end_rel / 60
+            # else: seconds - no conversion needed
+            
+            axs[i].set_xlim(start_rel, end_rel)
+        else:
+            axs[i].set_xlim(start_time, end_time)
     
         if isinstance(var, list):
             if all(hasattr(v, 'y_label') for v in var):
@@ -1890,7 +2004,6 @@ def multiplot(plot_list, **kwargs):
             ticks = []
             tick_labels = []
             while current <= end_time:
-                ticks.append(current)
                 time_from_center = (current - center_dt)
                 if options.relative_time_step_units == 'days':
                     value_from_center = time_from_center.total_seconds() / (3600 * 24)
@@ -1903,6 +2016,9 @@ def multiplot(plot_list, **kwargs):
                 else:
                     print(f"Unrecognized time step unit: {options.relative_time_step_units}. Please use 'days', 'hours', 'minutes', or 'seconds'.")
                     return
+                
+                # Append relative time value (not absolute datetime) to ticks
+                ticks.append(value_from_center)
     
                 if value_from_center == 0:
                     label = "0"
