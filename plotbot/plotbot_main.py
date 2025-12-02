@@ -493,11 +493,15 @@ def plotbot(trange, *args):
 
                     # Check if any data points fall within the specified time range
                     # Use raw datetime array for time clipping, not the property (which is now clipped)
-                    raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                    raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_config') else var.datetime_array
+                    print_manager.status(f"🔍 TIME_CLIP_DEBUG for {var.class_name}.{var.subclass_name}:")
+                    print_manager.status(f"   raw_datetime_array: len={len(raw_datetime_array) if raw_datetime_array is not None else 'None'}, range={raw_datetime_array[0] if raw_datetime_array is not None and len(raw_datetime_array) > 0 else 'N/A'} to {raw_datetime_array[-1] if raw_datetime_array is not None and len(raw_datetime_array) > 0 else 'N/A'}")
+                    print_manager.status(f"   requested trange: {trange[0]} to {trange[1]}")
                     time_indices = time_clip(raw_datetime_array, trange[0], trange[1])
+                    print_manager.status(f"   time_clip returned {len(time_indices)} indices")
                     if len(time_indices) == 0:
                         empty_plot = True
-                        print_manager.debug("empty_plot = True - No valid time indices found")
+                        print_manager.status(f"❌ SKIPPING PLOT - No valid time indices found for {var.class_name}.{var.subclass_name}")
                         continue
 
                     # Convert variable data to numpy array for processing
@@ -514,9 +518,12 @@ def plotbot(trange, *args):
                         # Handle scalar quantities (single line)
                         if data.ndim == 1:
                             data_clipped = data[time_indices]  # Slice data for time range
+                            print_manager.status(f"🔍 DATA_CLIP_DEBUG for {var.class_name}.{var.subclass_name}:")
+                            print_manager.status(f"   data.shape={data.shape}, time_indices.shape={time_indices.shape}")
+                            print_manager.status(f"   data_clipped.shape={data_clipped.shape}, has_nans={np.isnan(data_clipped).any()}, all_nans={np.all(np.isnan(data_clipped))}")
                             if np.all(np.isnan(data_clipped)):  # Skip if all data points are NaN
                                 empty_plot = True
-                                print_manager.debug("empty_plot = True - All data points are NaN")
+                                print_manager.status(f"❌ SKIPPING PLOT - All {len(data_clipped)} data points are NaN for {var.class_name}.{var.subclass_name}")
                                 continue
                                 
                             line, = plot_ax.plot(  # Create single line plot
@@ -564,7 +571,7 @@ def plotbot(trange, *args):
                         continue
 
                     # Use raw datetime array for time clipping, not the property (which is now clipped)
-                    raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                    raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_config') else var.datetime_array
                     time_indices = time_clip(raw_datetime_array, trange[0], trange[1])
                     if len(time_indices) == 0:
                         empty_plot = True
@@ -621,7 +628,7 @@ def plotbot(trange, *args):
                         continue
 
                     # Use raw datetime array for time clipping, not the property (which is now clipped)
-                    raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                    raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_config') else var.datetime_array
                     time_indices = time_clip(raw_datetime_array, trange[0], trange[1])  # Get time range indices
                     if len(time_indices) == 0:
                         empty_plot = True
@@ -722,7 +729,7 @@ def plotbot(trange, *args):
                             debug_info += f"{', y_limit=' + str(var.y_limit) if hasattr(var, 'y_limit') else ''}"
                             debug_info += f" | sources=[{', '.join(src_var.class_name + '(has_data=' + str(hasattr(src_var, 'datetime_array') and len(src_var.datetime_array) > 0) + ')' for src_var in var.source_var) if hasattr(var, 'source_var') and var.source_var is not None else 'none'}]" if var.data_type == 'custom_data_type' else ''
                             # Use raw datetime array for time clipping, not the property (which is now clipped)
-                            raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+                            raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_config') else var.datetime_array
                             time_indices = time_clip(raw_datetime_array, trange[0], trange[1]) if hasattr(var, 'datetime_array') and var.datetime_array is not None else []
                             debug_info += f" | data: points={len(time_indices)}" + (f", shape={np.array(var)[time_indices].shape}, has_nans={np.isnan(np.array(var)[time_indices]).any()}" if len(time_indices) > 0 else " (no data in range)")
                             print_manager.debug(debug_info)
@@ -779,37 +786,35 @@ def plotbot(trange, *args):
         # ============================================================================
         axs[-1].set_xlabel('Time')                                    # Add time label to bottom subplot
     
-        def date_format(x, p):
-            dt = mdates.num2date(x)
-            
-            # Calculate the total time range in minutes
-            time_range_minutes = (plot_end_time - plot_start_time).total_seconds() / 60
-            
-            # For short time ranges, always show time (even at midnight)
-            if time_range_minutes <= 5:  # For ranges <= 5 minutes
-                return dt.strftime('%H:%M:%S')                        # Format: HH:MM:SS
-            elif time_range_minutes <= 1440:  # For ranges <= 1 day
-                # Show time unless it's exactly midnight
-                if dt.hour == 0 and dt.minute == 0:
-                    return dt.strftime('%b-%d').upper()               # Format: MMM-DD
-                else:
-                    return dt.strftime('%H:%M')                       # Format: HH:MM
-            else:
-                return dt.strftime('%H:%M')                           # Format: HH:MM
+    def date_format(x, p):
+        dt = mdates.num2date(x)
+        
+        # Calculate the total time range in minutes
+        time_range_minutes = (plot_end_time - plot_start_time).total_seconds() / 60
+        
+        # Always show date at midnight (never just "00:00")
+        if dt.hour == 0 and dt.minute == 0:
+            return dt.strftime('%-m/%-d')                         # Format: M/D (no leading zeros)
+        # For very short time ranges, show seconds
+        elif time_range_minutes <= 5:
+            return dt.strftime('%H:%M:%S')                        # Format: HH:MM:SS
+        # Otherwise just show time
+        else:
+            return dt.strftime('%H:%M')                           # Format: HH:MM
     
-        axs[-1].xaxis.set_major_formatter(mticker.FuncFormatter(date_format))
+    axs[-1].xaxis.set_major_formatter(mticker.FuncFormatter(date_format))
 
-        # ============================================================================
-        # Add Date Label to lower right corner of plot
-        # ============================================================================
-        # Use dateutil_parse to handle different formats robustly, then format just the date part
-        try:
-            parsed_date = dateutil_parse(trange[0])
-            plot_date = parsed_date.strftime('%Y-%m-%d')
-            axs[-1].annotate(plot_date, xy=(1, -0.21), xycoords='axes fraction',  # Add date in lower right
-                             ha='right', va='top', fontsize=12)
-        except Exception as e:
-            print_manager.warning(f"Could not parse date from trange[0] ('{trange[0]}') for annotation: {e}")
+    # ============================================================================
+    # Add Date Label to lower right corner of plot
+    # ============================================================================
+    # Use dateutil_parse to handle different formats robustly, then format just the date part
+    try:
+        parsed_date = dateutil_parse(trange[0])
+        plot_date = parsed_date.strftime('%Y-%m-%d')
+        axs[-1].annotate(plot_date, xy=(1, -0.21), xycoords='axes fraction',  # Add date in lower right
+                         ha='right', va='top', fontsize=12)
+    except Exception as e:
+        print_manager.warning(f"Could not parse date from trange[0] ('{trange[0]}') for annotation: {e}")
 
     timer_end = timer.perf_counter()
     duration_ms = (timer_end - timer_start) * 1000
