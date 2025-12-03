@@ -314,6 +314,7 @@ class MultiplotOptions:
         self.hamify = False
         self.ham_var = None  # Will hold the actual plot_manager object
         self.ham_opacity = 1.0  # New: Opacity for HAM data (default 1.0)
+        self.r_hand_single_color = None  # New: Single color for right axis in rainbow mode (hex color string)
         
         # New color mode options
         self.color_mode = 'default'  # Options: 'default', 'rainbow', 'single'
@@ -565,6 +566,19 @@ class MultiplotOptions:
 
         print_manager.status(f"Storing global y_limit: {limits}. Will be applied when axes are created.")
         self._global_y_limit = limits # Just store the limit
+
+    def set_global_r_y_limit(self, limits: Optional[Tuple[float, float]]):
+        """Set the same right-axis y_limit for all currently defined axes (e.g., for ham overlay).
+
+        Args:
+            limits: A tuple (min, max) for the right y-axis, or None to clear.
+        """
+        if limits is not None and (not isinstance(limits, (tuple, list)) or len(limits) != 2):
+            print_manager.warning(f"Invalid r_y_limit format: {limits}. Expected (min, max) tuple or None.")
+            return
+
+        print_manager.status(f"Storing global right-axis y_limit: {limits}. Will be applied when axes are created.")
+        self._global_r_y_limit = limits # Just store the limit
 
     def _restore_original_values(self):
         """Restore original values after using a preset."""
@@ -855,6 +869,15 @@ class MultiplotOptions:
     @ham_opacity.setter
     def ham_opacity(self, value: float):
         self.__dict__['ham_opacity'] = value
+
+    @property
+    def r_hand_single_color(self) -> Optional[str]:
+        """Single color for right axis elements in rainbow mode (hex color string, e.g., '#FF0000')."""
+        return self.__dict__.get('r_hand_single_color', None)
+
+    @r_hand_single_color.setter
+    def r_hand_single_color(self, value: Optional[str]):
+        self.__dict__['r_hand_single_color'] = value
     # --- END HAM DATA PROPERTIES ---
 
     # Keep these for backward compatibility (but they're deprecated now)

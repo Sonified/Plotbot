@@ -661,6 +661,12 @@ def multiplot(plot_list, **kwargs):
         # Plot Variables (Multi-Variable) with Plot Type Handling
         # ====================================================================
         panel_color = color_scheme['panel_colors'][i] if color_scheme else None
+        # Determine right axis color: use r_hand_single_color if set in rainbow mode, otherwise use panel_color
+        right_axis_color = None
+        if options.color_mode == 'rainbow' and hasattr(options, 'r_hand_single_color') and options.r_hand_single_color is not None:
+            right_axis_color = options.r_hand_single_color
+        elif panel_color is not None:
+            right_axis_color = panel_color
         axis_options = getattr(options, f'ax{i+1}')
         
         if isinstance(var, list):
@@ -811,18 +817,18 @@ def multiplot(plot_list, **kwargs):
                             ax2.set_ylim(single_var.y_limit)
                         
                         # --- NEW: Apply rainbow color to all right axis elements ---
-                        if panel_color is not None:
+                        if right_axis_color is not None:
                             # Set y-axis label color and font weight
-                            ax2.yaxis.label.set_color(panel_color)
+                            ax2.yaxis.label.set_color(right_axis_color)
                             if hasattr(options, 'bold_y_axis_label') and options.bold_y_axis_label:
                                 ax2.yaxis.label.set_weight('bold')
                             else:
                                 ax2.yaxis.label.set_weight('normal')
                             # Set tick color and label size
-                            ax2.tick_params(axis='y', colors=panel_color, which='both', labelsize=options.y_tick_label_font_size)
-                            # Set all spines to panel color
+                            ax2.tick_params(axis='y', colors=right_axis_color, which='both', labelsize=options.y_tick_label_font_size)
+                            # Set all spines to right axis color
                             for spine in ax2.spines.values():
-                                spine.set_color(panel_color)
+                                spine.set_color(right_axis_color)
                         # --- END NEW ---
                         
                         # Set the right y-axis label to match the panel color and style
@@ -833,16 +839,18 @@ def multiplot(plot_list, **kwargs):
                                     fontweight='bold' if options.bold_y_axis_label else 'normal',
                                     ha=options.y_label_alignment)
                         # Force all right axis elements to rainbow color
-                        apply_right_axis_color(ax2, panel_color, options)
                         print(f"DEBUG: Panel {i+1} right axis label is: '{ax2.get_ylabel()}'")
-                        # Set right y-axis tick params and spine colors to match panel color
-                        ax2.tick_params(axis='y', colors=panel_color, which='both')
-                        for spine in ax2.spines.values():
-                            spine.set_color(panel_color)
+                        # Set right y-axis tick params and spine colors to match right axis color
+                        if right_axis_color is not None:
+                            ax2.tick_params(axis='y', colors=right_axis_color, which='both')
+                            for spine in ax2.spines.values():
+                                spine.set_color(right_axis_color)
                         # Now apply the panel color to ax2 (for y-label, etc.)
                     
                     else:
-                        if options.color_mode in ['rainbow', 'single'] and panel_color:
+                        if options.color_mode == 'rainbow' and hasattr(options, 'r_hand_single_color') and options.r_hand_single_color is not None:
+                            plot_color = options.r_hand_single_color
+                        elif options.color_mode in ['rainbow', 'single'] and panel_color:
                             plot_color = panel_color
                         elif hasattr(single_var, 'color') and single_var.color is not None:
                             plot_color = single_var.color
@@ -1734,18 +1742,20 @@ def multiplot(plot_list, **kwargs):
                 print_manager.error(f"Panel {i+1}: Failed to get ham class from data_cubby")
             # Use ham_var for plotting below
             print_manager.debug(f"Panel {i+1}: HAM feature enabled, plotting {ham_var.subclass_name if hasattr(ham_var, 'subclass_name') else 'HAM variable'} on right axis")
-            if ham_var is not None and hasattr(ham_var, 'datetime_array') and ham_var.datetime_array is not None:
+            if ham_var is not None and hasattr(ham_var, 'datetime_array') and ham_var.datetime_array is not None and len(ham_var.datetime_array) > 0:
                 # Create a twin axis for the HAM data
                 ax2 = axs[i].twinx()
-                
-                # Get color - use panel color if available, otherwise right axis color or ham_var's color
-                if panel_color is not None:
+
+                # Get color - use r_hand_single_color if set in rainbow mode, otherwise panel color, right axis color, or ham_var's color
+                if options.color_mode == 'rainbow' and hasattr(options, 'r_hand_single_color') and options.r_hand_single_color is not None:
+                    plot_color = options.r_hand_single_color
+                elif panel_color is not None:
                     plot_color = panel_color
                 elif hasattr(axis_options, 'r') and axis_options.r.color is not None:
                     plot_color = axis_options.r.color
                 else:
                     plot_color = ham_var.color
-                    
+
                 # Get time-clipped indices
                 print_manager.debug(f"Panel {i+1}: Attempting to time_clip HAM data with range: {trange[0]} to {trange[1]}")
                 print_manager.debug(f"Panel {i+1}: HAM data range is {ham_var.datetime_array[0]} to {ham_var.datetime_array[-1]}")
@@ -1795,39 +1805,64 @@ def multiplot(plot_list, **kwargs):
                                 x_data = time_deltas.total_seconds() / 3600
                             print_manager.debug(f"Panel {i+1} (HAM): Transformed x_data to relative time ({options.relative_time_step_units}). Range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
                     
-                    # Plot the HAM data using filtered x_data and data_slice
+                    # Plot the HAM data as bars using filtered x_data and data_slice
                     print_manager.debug(f"Panel {i+1}: Plotting HAM data on right axis")
                     print_manager.processing(f"[PLOT_DEBUG Panel {i}] x_data type: {type(x_data).__name__}, first 5: {x_data[:5] if hasattr(x_data, '__getitem__') else x_data}")
-                    ax2.plot(x_data, 
-                            data_slice, # Use filtered data_slice
-                            linewidth=ham_var.line_width,
-                            linestyle=ham_var.line_style,
+                    # Calculate bar width based on data spacing with robust handling for sparse data
+                    if len(x_data) > 1:
+                        # Calculate median spacing between consecutive points
+                        median_spacing = np.median(np.diff(x_data))
+                        # Calculate average spacing based on time range (more stable for sparse data)
+                        time_range = np.nanmax(x_data) - np.nanmin(x_data)
+                        avg_spacing = time_range / max(len(x_data) - 1, 1) if len(x_data) > 1 else median_spacing
+                        # Use the smaller of median or average spacing (prevents huge bars with sparse data)
+                        # This ensures bars don't get too wide when data is sparse
+                        base_width = min(median_spacing, avg_spacing) * 0.8
+                        # Set reasonable bounds: 
+                        # - Minimum: 0.01 hours (prevents invisible bars)
+                        # - Maximum: 5% of time range or 0.2 hours, whichever is smaller
+                        #   This prevents bars from being too wide even with very sparse data
+                        max_width = min(time_range * 0.05, 0.2)
+                        bar_width = max(0.01, min(base_width, max_width))
+                        print_manager.debug(f"Panel {i+1}: HAM bar width: {bar_width:.4f} hours (median_spacing={median_spacing:.4f}, avg_spacing={avg_spacing:.4f}, time_range={time_range:.4f}, n_points={len(x_data)}, max_width={max_width:.4f})")
+                    else:
+                        bar_width = 0.1
+                    ax2.bar(x_data,
+                            data_slice,
+                            width=bar_width,
                             label=ham_var.legend_label,
                             color=plot_color,
-                            alpha=options.ham_opacity)
+                            alpha=options.ham_opacity,
+                            edgecolor='none')
                     print_manager.debug(f"Panel {i+1}: Successfully plotted HAM data on right axis")
                     
-                    # Apply y-limits if specified
+                    # Apply y-limits if specified, otherwise auto-scale per-panel
                     if hasattr(axis_options, 'r') and axis_options.r.y_limit is not None:
                         ax2.set_ylim(axis_options.r.y_limit)
                         print_manager.debug(f"Panel {i+1}: Applied right axis y-limits from axis_options: {axis_options.r.y_limit}")
                     elif hasattr(ham_var, 'y_limit') and ham_var.y_limit:
                         ax2.set_ylim(ham_var.y_limit)
                         print_manager.debug(f"Panel {i+1}: Applied right axis y-limits from ham_var: {ham_var.y_limit}")
+                    else:
+                        # CRITICAL: Auto-scale per-panel based on THIS panel's data_slice only
+                        # Without this, matplotlib may use global ham data for y-limits
+                        data_max = np.nanmax(data_slice) if len(data_slice) > 0 else 1
+                        ax2.set_ylim(0, data_max * 1.1)  # 10% margin above max
+                        print_manager.debug(f"Panel {i+1}: Auto-scaled right axis y-limits to [0, {data_max * 1.1:.1f}] based on data_slice max={data_max:.1f}")
                     
                     # --- NEW: Apply rainbow color to all right axis elements ---
-                    if panel_color is not None:
+                    if right_axis_color is not None:
                         # Set y-axis label color and font weight
-                        ax2.yaxis.label.set_color(panel_color)
+                        ax2.yaxis.label.set_color(right_axis_color)
                         if hasattr(options, 'bold_y_axis_label') and options.bold_y_axis_label:
                             ax2.yaxis.label.set_weight('bold')
                         else:
                             ax2.yaxis.label.set_weight('normal')
                         # Set tick color and label size
-                        ax2.tick_params(axis='y', colors=panel_color, which='both', labelsize=options.y_tick_label_font_size)
-                        # Set all spines to panel color
+                        ax2.tick_params(axis='y', colors=right_axis_color, which='both', labelsize=options.y_tick_label_font_size)
+                        # Set all spines to right axis color
                         for spine in ax2.spines.values():
-                            spine.set_color(panel_color)
+                            spine.set_color(right_axis_color)
                     # --- END NEW ---
                     
                     # Include HAM in legend
@@ -1847,13 +1882,15 @@ def multiplot(plot_list, **kwargs):
                 else:
                     print_manager.debug(f"Panel {i+1}: No HAM data points found in time range {trange[0]} to {trange[1]}")
             else:
-                print_manager.debug(f"Panel {i+1}: HAM variable {getattr(ham_var, 'subclass_name', 'unknown')} has no datetime_array or is None")
+                print_manager.debug(f"Panel {i+1}: HAM variable {getattr(ham_var, 'subclass_name', 'unknown')} has no datetime_array or is empty")
                 if ham_var is None:
-                    print_manager.debug(f"Panel {i+1}: ham_var is None")
+                    print_manager.warning(f"Panel {i+1}: ham_var is None - no HAM data loaded")
                 elif not hasattr(ham_var, 'datetime_array'):
-                    print_manager.debug(f"Panel {i+1}: ham_var has no datetime_array attribute")
+                    print_manager.warning(f"Panel {i+1}: ham_var has no datetime_array attribute")
                 elif ham_var.datetime_array is None:
-                    print_manager.status(f"Panel {i+1}: ham_var.datetime_array is None")
+                    print_manager.warning(f"Panel {i+1}: ham_var.datetime_array is None - no HAM data loaded for this time range")
+                elif len(ham_var.datetime_array) == 0:
+                    print_manager.warning(f"Panel {i+1}: ham_var.datetime_array is empty (length 0) - no HAM data for this time range")
         else:
             # print_manager.status(f"Panel {i+1}: Not plotting HAM data - conditions not met: hamify={options.hamify}, ham_var={options.ham_var is not None}, second_variable_on_right_axis={options.second_variable_on_right_axis}") # COMMENTED OUT
             pass # Keep pass to avoid syntax error
