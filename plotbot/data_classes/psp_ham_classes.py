@@ -1,132 +1,202 @@
-#plotbot/data_classes/psp_ham_classes.py
+"""
+Auto-generated plotbot class for hamstring_2021-04-29_v02.cdf
+Generated on: 2025-12-02T15:55:23.519138
+Source: data/cdf_files/Hamstrings/hamstring_2021-04-29_v02.cdf
+
+This class contains 25 variables from the CDF file.
+"""
 
 import numpy as np
 import pandas as pd
+import cdflib
+from datetime import datetime, timedelta, timezone
 import logging
-import cdflib # Needed for TT2000 conversion in calculate_variables
 
-# Import our custom managers
 from plotbot.print_manager import print_manager
-# from plotbot.data_cubby import data_cubby # REMOVED
 from plotbot.plot_manager import plot_manager
 from plotbot.plot_config import plot_config, retrieve_plot_config_snapshot
 from plotbot.time_utils import TimeRangeTracker
 from ._utils import _format_setattr_debug
 
 class ham_class:
+    """
+    CDF data class for hamstring_2021-04-29_v02.cdf
+    
+    Variables:
+    - n_core: Density of core proton population
+    - n_neck: Density of neck proton population
+    - n_ham: Density of hammerhead proton population
+    - vx_inst_core: X-component velocity of core proton population in instrument coordinates
+    - vy_inst_core: Y-component velocity of core proton population in instrument coordinates
+    - vz_inst_core: Z-component velocity of core proton population in instrument coordinates
+    - vx_inst_neck: X-component velocity of neck proton population in instrument coordinates
+    - vy_inst_neck: Y-component velocity of neck proton population in instrument coordinates
+    - vz_inst_neck: Z-component velocity of neck proton population in instrument coordinates
+    - vx_inst_ham: X-component velocity of hammerhead proton population in instrument coordinates
+    - vy_inst_ham: Y-component velocity of hammerhead proton population in instrument coordinates
+    - vz_inst_ham: Z-component velocity of hammerhead proton population in instrument coordinates
+    - temp_core: Temperature of core proton population
+    - temp_neck: Temperature of neck proton population
+    - temp_ham: Temperature of hammerhead proton population
+    - Tperp_core: Temperature perpendicular to magnetic field of core proton population
+    - Tpar_core: Temperature parallel to magnetic field of core proton population
+    - Tperp_neck: Temperature perpendicular to magnetic field of neck proton population
+    - Tpar_neck: Temperature parallel to magnetic field of neck proton population
+    - Tperp_ham: Temperature perpendicular to magnetic field of hammerhead proton population
+    - Tpar_ham: Temperature parallel to magnetic field of hammerhead proton population
+    - Bx_inst: X-component of magnetic field in instrument coordinates
+    - By_inst: Y-component of magnetic field in instrument coordinates
+    - Bz_inst: Z-component of magnetic field in instrument coordinates
+    - sun_dist_rsun: Distance from Sun in solar radii
+    """
+    
     def __init__(self, imported_data):
-        # Initialize raw_data with keys for all expected variables from CSV header
-        # plus original placeholders if needed (though they might be redundant now)
+        # Initialize basic attributes without triggering __setattr__ checks
+        object.__setattr__(self, 'class_name', 'ham')
+        object.__setattr__(self, 'data_type', 'ham')
+        object.__setattr__(self, 'subclass_name', None)
         object.__setattr__(self, 'raw_data', {
-            # Original placeholders (can potentially be removed if not used elsewhere)
-            'hamstring': None,
-            'hamstring_og': None,
-            'hamstring_dt': None,
-            'N_core': None,         # Note: N_core, N_neck, N_ham seem specific to SPAN data, not HAM CSV
-            'N_core_og': None,
-            'N_neck': None,
-            'N_neck_og': None,
-            'N_ham': None,
-            'N_ham_og': None,
-            # Variables from HAM CSV Header (excluding time/datetime)
-            'hamogram_30s': None,
-            'hamogram_og_30s': None,
-            'hamogram_1m': None,        # Placeholder - not in provided header/specs, maybe remove?
-            'hamogram_og_1m': None,     # Placeholder - maybe remove?
-            'hamogram_2m': None,
-            'hamogram_og_2m': None,
-            'hamogram_20m': None,
-            'hamogram_og_20m': None,    # Placeholder - maybe remove?
-            'hamogram_90m': None,
-            'hamogram_og_90m': None,    # Placeholder - maybe remove?
-            'hamogram_4h': None,
-            'hamogram_og_4h': None,
-            'hamogram_12h': None,       # Placeholder - maybe remove?
-            'hamogram_og_12h': None,    # Placeholder - maybe remove?
-            'trat_ham': None,
-            'trat_ham_og': None,
-            'ham_core_drift': None,
-            'ham_core_drift_va': None,
-            'Nham_div_Ncore': None,
-            'Nham_div_Ncore_og': None,
-            'Nham_div_Ntot': None,
-            'Nham_div_Ntot_og': None,
-            'Tperp_ham_div_core': None,
-            'Tperp_ham_div_core_og': None,
-            'Tperprat_driftva_hc': None,
-            'Tperprat_driftva_hc_og': None,
-        })
-        object.__setattr__(self, 'time', None) # To store raw TT2000 time
+        'n_core': None,
+        'n_neck': None,
+        'n_ham': None,
+        'vx_inst_core': None,
+        'vy_inst_core': None,
+        'vz_inst_core': None,
+        'vx_inst_neck': None,
+        'vy_inst_neck': None,
+        'vz_inst_neck': None,
+        'vx_inst_ham': None,
+        'vy_inst_ham': None,
+        'vz_inst_ham': None,
+        'temp_core': None,
+        'temp_neck': None,
+        'temp_ham': None,
+        'Tperp_core': None,
+        'Tpar_core': None,
+        'Tperp_neck': None,
+        'Tpar_neck': None,
+        'Tperp_ham': None,
+        'Tpar_ham': None,
+        'Bx_inst': None,
+        'By_inst': None,
+        'Bz_inst': None,
+        'sun_dist_rsun': None
+    })
+        object.__setattr__(self, 'datetime', [])
         object.__setattr__(self, 'datetime_array', None)
-        object.__setattr__(self, 'time', None) # To store Python datetime objects
-        object.__setattr__(self, 'data_type', 'ham') # Explicitly set data_type
+        object.__setattr__(self, 'time', None)
+        object.__setattr__(self, '_current_operation_trange', None)
+        
+        
+        # Store original CDF file path AND smart pattern for multi-file loading
+        object.__setattr__(self, '_original_cdf_file_path', 'data/cdf_files/Hamstrings/hamstring_2021-04-29_v02.cdf')
+        object.__setattr__(self, '_cdf_file_pattern', 'hamstring_*_v*.cdf')
 
         if imported_data is None:
-            self.set_plot_config() # Set empty plot_config on init
-            print_manager.debug("Ham class: No data provided; initialized with empty attributes.")
+            self.set_plot_config()
+            print_manager.dependency_management("No data provided; initialized with empty attributes.")
         else:
-            print_manager.debug("Ham class: Processing imported data...")
+            print_manager.dependency_management(f"Calculating ham variables...")
             self.calculate_variables(imported_data)
             self.set_plot_config()
-            print_manager.status("Ham class: Successfully processed imported data.")
-
-    def update(self, imported_data):
+            print_manager.status(f"Successfully calculated ham variables.")
+        
+        # NOTE: Registration with data_cubby is handled externally to avoid 
+        # instance conflicts during merge operations (like mag_rtn classes)
+    
+    def update(self, imported_data, original_requested_trange=None):
         """Method to update class with new data."""
+        # STYLE_PRESERVATION: Entry point
+        print_manager.style_preservation(f"🔄 UPDATE_ENTRY for {self.__class__.__name__} (ID: {id(self)}) - operation_type: UPDATE")
+        
+        if original_requested_trange is not None:
+            self._current_operation_trange = original_requested_trange
+            print_manager.dependency_management(f"[{self.__class__.__name__}] Updated _current_operation_trange to: {self._current_operation_trange}")
+        
         if imported_data is None:
             print_manager.datacubby(f"No data provided for {self.__class__.__name__} update.")
             return
-
-        print_manager.datacubby(f"\n=== Starting {self.__class__.__name__} update... ===")
-
-        # Store current plot state before update
-        current_state = {}
-        # Use all keys defined in raw_data that might have a plot_manager
-        # A more robust way is to iterate through attributes that ARE plot_managers
-        plottable_attrs = [attr for attr in dir(self) if isinstance(getattr(self, attr, None), plot_manager)]
-        for subclass_name in plottable_attrs:
-             var = getattr(self, subclass_name)
-             if hasattr(var, '_plot_state'):
-                 current_state[subclass_name] = dict(var._plot_state)
-                 print_manager.datacubby(f"Stored {subclass_name} state: {retrieve_plot_config_snapshot(current_state[subclass_name])}")
-             else:
-                 # Handle case where attribute exists but has no _plot_state (e.g., if data was None initially)
-                 print_manager.debug(f"Attribute {subclass_name} has no _plot_state to store.")
-
+        
+        print_manager.datacubby("\n=== Update Debug ===")
+        print_manager.datacubby(f"Starting {self.__class__.__name__} update...")
+        
+        # STYLE_PRESERVATION: Before state preservation
+        if hasattr(self, '__dict__'):
+            from plotbot.plot_manager import plot_manager
+            plot_managers = {k: v for k, v in self.__dict__.items() if isinstance(v, plot_manager)}
+            print_manager.style_preservation(f"   📊 Existing plot_managers before preservation: {list(plot_managers.keys())}")
+            for pm_name, pm_obj in plot_managers.items():
+                if hasattr(pm_obj, '_plot_state'):
+                    color = getattr(pm_obj._plot_state, 'color', 'Not Set')
+                    legend_label = getattr(pm_obj._plot_state, 'legend_label', 'Not Set')
+                    print_manager.style_preservation(f"   🎨 {pm_name}: color='{color}', legend_label='{legend_label}'")
+                else:
+                    print_manager.style_preservation(f"   ❌ {pm_name}: No _plot_state found")
+        
+        # Store current state before update (including any modified plot_config)
+        current_plot_states = {}
+        standard_components = ['n_core', 'n_neck', 'n_ham', 'vx_inst_core', 'vy_inst_core', 'vz_inst_core', 'vx_inst_neck', 'vy_inst_neck', 'vz_inst_neck', 'vx_inst_ham', 'vy_inst_ham', 'vz_inst_ham', 'temp_core', 'temp_neck', 'temp_ham', 'Tperp_core', 'Tpar_core', 'Tperp_neck', 'Tpar_neck', 'Tperp_ham', 'Tpar_ham', 'Bx_inst', 'By_inst', 'Bz_inst', 'sun_dist_rsun']
+        
+        # STYLE_PRESERVATION: During state save
+        print_manager.style_preservation(f"💾 STATE_SAVE for {self.__class__.__name__} - capturing states for subclasses: {standard_components}")
+        
+        for comp_name in standard_components:
+            if hasattr(self, comp_name):
+                manager = getattr(self, comp_name)
+                if isinstance(manager, plot_manager) and hasattr(manager, '_plot_state'):
+                    current_plot_states[comp_name] = dict(manager._plot_state)
+                    print_manager.datacubby(f"Stored {comp_name} state: {retrieve_plot_config_snapshot(current_plot_states[comp_name])}")
+                    print_manager.style_preservation(f"   💾 Saved {comp_name}: color='{current_plot_states[comp_name].get('color', 'Not Set')}', legend_label='{current_plot_states[comp_name].get('legend_label', 'Not Set')}'")
 
         # Perform update
-        self.calculate_variables(imported_data)
-
-        # Recreate plot managers
-        self.set_plot_config()
-
-        # Restore state
-        print_manager.datacubby("Restoring saved state...")
-        for subclass_name, state in current_state.items():
-            if hasattr(self, subclass_name):
-                var = getattr(self, subclass_name)
-                # Ensure the plot_manager instance exists AND is the correct type before restoring
-                if isinstance(var, plot_manager) and hasattr(var, '_plot_state'):
-                    var._plot_state.update(state)
-                    for attr, value in state.items():
-                        if hasattr(var.plot_config, attr):
-                            setattr(var.plot_config, attr, value)
-                    print_manager.datacubby(f"Restored {subclass_name} state: {retrieve_plot_config_snapshot(state)}")
-                else:
-                    print_manager.debug(f"Could not restore state for {subclass_name}, plot_manager instance might be missing or invalid.")
-
-
-        print_manager.datacubby(f"=== Finished {self.__class__.__name__} update ===\n")
-
-    def get_subclass(self, subclass_name):
-        """
-        Retrieves a specific data component (subclass) by its name.
+        # STYLE_PRESERVATION: After calculate_variables(), before set_plot_config()
+        print_manager.style_preservation(f"🔄 PRE_SET_PLOT_CONFIG in {self.__class__.__name__} - about to recreate plot_managers")
         
-        Args:
-            subclass_name (str): The name of the component to retrieve.
-            
-        Returns:
-            The requested component, or None if not found.
-        """
+        self.calculate_variables(imported_data)                                # Update raw data arrays
+        print_manager.style_preservation(f"✅ RAW_DATA_UPDATED for {self.__class__.__name__} - calculate_variables() completed")
+        
+        self.set_plot_config()                                                  # Recreate plot managers for standard components
+        print_manager.style_preservation(f"✅ PLOT_MANAGERS_RECREATED for {self.__class__.__name__} - set_plot_config() completed")
+        
+        # Ensure internal consistency after update (mirror mag_rtn pattern)
+        self.ensure_internal_consistency()
+        
+        # Restore state (including any modified plot_config!)
+        print_manager.datacubby("Restoring saved state...")
+        
+        # STYLE_PRESERVATION: During state restore
+        print_manager.style_preservation(f"🔧 STATE_RESTORE for {self.__class__.__name__} - applying saved states to recreated plot_managers")
+        
+        for comp_name, state in current_plot_states.items():                    # Restore saved states
+            if hasattr(self, comp_name):
+                manager = getattr(self, comp_name)
+                if isinstance(manager, plot_manager):
+                    manager._plot_state.update(state)
+                    for attr, value in state.items():
+                        if hasattr(manager.plot_config, attr):
+                            setattr(manager.plot_config, attr, value)
+                    print_manager.datacubby(f"Restored {comp_name} state: {retrieve_plot_config_snapshot(state)}")
+                    print_manager.style_preservation(f"   🔧 Restored {comp_name}: color='{state.get('color', 'Not Set')}', legend_label='{state.get('legend_label', 'Not Set')}'")
+        
+        # STYLE_PRESERVATION: Exit point - Final custom values confirmation
+        print_manager.style_preservation(f"✅ UPDATE_EXIT for {self.__class__.__name__} - Final state verification:")
+        if hasattr(self, '__dict__'):
+            from plotbot.plot_manager import plot_manager
+            final_plot_managers = {k: v for k, v in self.__dict__.items() if isinstance(v, plot_manager)}
+            for pm_name, pm_obj in final_plot_managers.items():
+                if hasattr(pm_obj, '_plot_state'):
+                    color = getattr(pm_obj._plot_state, 'color', 'Not Set')
+                    legend_label = getattr(pm_obj._plot_state, 'legend_label', 'Not Set')
+                    print_manager.style_preservation(f"   🎨 FINAL {pm_name}: color='{color}', legend_label='{legend_label}'")
+                    if color == 'Not Set' or legend_label == 'Not Set':
+                        print_manager.style_preservation(f"   ⚠️  FINAL_STYLE_LOSS detected in {pm_name}!")
+                else:
+                    print_manager.style_preservation(f"   ❌ FINAL {pm_name}: No _plot_state found")
+        
+        print_manager.datacubby("=== End Update Debug ===\n")
+        
+    def get_subclass(self, subclass_name):
+        """Retrieve a specific component (subclass or property)."""
         print_manager.dependency_management(f"[HAM_CLASS_GET_SUBCLASS] Attempting to get subclass/property: {subclass_name} for instance ID: {id(self)}")
 
         # First, check if it's a direct attribute/property of the instance
@@ -164,381 +234,900 @@ class ham_class:
 
     def __getattr__(self, name):
         # Allow direct access to dunder OR single underscore methods/attributes
-        if name.startswith('_'): # Check for either '__' or '_' start
+        if name.startswith('_'):
             try:
                 return object.__getattribute__(self, name)
             except AttributeError:
                 raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
         if 'raw_data' not in self.__dict__:
             raise AttributeError(f"{self.__class__.__name__} has no attribute '{name}' (raw_data not initialized)")
-        print_manager.debug(f'ham_class __getattr__ triggered for: {name}')
-        available_attrs = [attr for attr in dir(self)
-                           if isinstance(getattr(self, attr, None), plot_manager)
-                           and not attr.startswith('_')]
-        error_message = f"'{name}' is not a recognized ham attribute, friend!"
-        if available_attrs:
-            error_message += f"\nAvailable plot managers: {', '.join(sorted(available_attrs))}"
-        else:
-            error_message += "\nNo plot manager attributes seem to be available yet."
-        raise AttributeError(error_message)
-
+        
+        print_manager.dependency_management(f'ham getattr helper!')
+        available_attrs = list(self.raw_data.keys()) if self.raw_data else []
+        print(f"'{name}' is not a recognized attribute, friend!")                
+        print(f"Try one of these: {', '.join(available_attrs)}")
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+    
     def __setattr__(self, name, value):
         # Allow direct setting of dunder OR single underscore methods/attributes
-        if name.startswith('_'): # Check for either '__' or '_' start
+        if name.startswith('_'):
             object.__setattr__(self, name, value)
             return
-        """Allow setting attributes directly."""
-        super().__setattr__(name, value)
 
+        # Allow setting known attributes
+        print_manager.dependency_management(_format_setattr_debug(name, value))
+        allowed_attrs = ['datetime', 'datetime_array', 'raw_data', 'time', 'field', 'variable_meshes', 'data_type']
+        if name in allowed_attrs or name in self.raw_data:
+            super().__setattr__(name, value)
+        else:
+            print_manager.dependency_management(f'ham setattr helper!')
+            print(f"'{name}' is not a recognized attribute, friend!")
+            available_attrs = list(self.raw_data.keys()) if self.raw_data else []
+            print(f"Try one of these: {', '.join(available_attrs)}")
+            print_manager.dependency_management(f"Attempted to set unknown attribute: {name}")
+    
     def calculate_variables(self, imported_data):
-        """Assigns data from imported object to raw_data and sets time arrays."""
-        try:
-            # imported_data is expected to be a DataObject instance
-            if not hasattr(imported_data, 'data') or not hasattr(imported_data, 'times'):
-                logging.error("Error in ham calculate_variables: imported_data is not a valid DataObject.")
-                # Clear all data if input is invalid
-                for key in self.raw_data:
-                    self.raw_data[key] = None
-                self.time = None
-                self.datetime_array = None
-                return
+        """Calculate and store CDF variables"""
+        # Dynamically find time variable from any CDF data
+        time_var = None
+        for var_name in imported_data.data.keys():
+            if any(keyword in var_name.lower() for keyword in ['epoch', 'time', 'fft_time']):
+                time_var = var_name
+                break
+        
+        # Store time data
+        if time_var and time_var in imported_data.data:
+            self.time = np.asarray(imported_data.data[time_var])
+            self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time))
+            print_manager.dependency_management(f"Using time variable: {time_var}")
+        else:
+            # Fallback to imported_data.times if available
+            self.time = np.asarray(imported_data.times) if hasattr(imported_data, 'times') else np.array([])
+            self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time)) if len(self.time) > 0 else np.array([])
+            print_manager.dependency_management("Using fallback times from imported_data.times")
+        
+        print_manager.dependency_management(f"self.datetime_array type: {type(self.datetime_array)}")
+        print_manager.dependency_management(f"Datetime range: {self.datetime_array[0] if len(self.datetime_array) > 0 else 'Empty'} to {self.datetime_array[-1] if len(self.datetime_array) > 0 else 'Empty'}")
+        
 
-            data_dict = imported_data.data # Access the dictionary within the DataObject
-            self.time = np.asarray(imported_data.times) # Store the raw TT2000 array
+        # Process n_core (Density of core proton population)
+        n_core_data = imported_data.data['n_core']
+        
+        # Handle fill values for n_core
+        fill_val = imported_data.data.get('n_core_FILLVAL', -1e+38)
+        n_core_data = np.where(n_core_data == fill_val, np.nan, n_core_data)
+        
+        self.raw_data['n_core'] = n_core_data
 
-            if self.time is None or self.time.size == 0:
-                logging.error("Imported DataObject for ham has empty or None 'times' attribute.")
-                # Clear all data if time is invalid
-                for key in self.raw_data:
-                    self.raw_data[key] = None
-                self.datetime_array = None
-                return
+        # Process n_neck (Density of neck proton population)
+        n_neck_data = imported_data.data['n_neck']
+        
+        # Handle fill values for n_neck
+        fill_val = imported_data.data.get('n_neck_FILLVAL', -1e+38)
+        n_neck_data = np.where(n_neck_data == fill_val, np.nan, n_neck_data)
+        
+        self.raw_data['n_neck'] = n_neck_data
 
-            # Convert TT2000 to Python datetime objects for plotting
-            try:
-                 self.datetime_array = np.array(cdflib.cdfepoch.to_datetime(self.time))
-                 print_manager.debug(f"Successfully converted {len(self.datetime_array)} TT2000 timestamps to datetime objects.")
-            except Exception as time_conv_e:
-                 logging.error(f"Error converting TT2000 timestamps to datetime: {time_conv_e}")
-                 # Clear all data if time conversion fails
-                 for key in self.raw_data:
-                     self.raw_data[key] = None
-                 self.time = None
-                 self.datetime_array = None
-                 return
+        # Process n_ham (Density of hammerhead proton population)
+        n_ham_data = imported_data.data['n_ham']
+        
+        # Handle fill values for n_ham
+        fill_val = imported_data.data.get('n_ham_FILLVAL', -1e+38)
+        n_ham_data = np.where(n_ham_data == fill_val, np.nan, n_ham_data)
+        
+        self.raw_data['n_ham'] = n_ham_data
 
+        # Process vx_inst_core (X-component velocity of core proton population in instrument coordinates)
+        vx_inst_core_data = imported_data.data['vx_inst_core']
+        
+        # Handle fill values for vx_inst_core
+        fill_val = imported_data.data.get('vx_inst_core_FILLVAL', -1e+38)
+        vx_inst_core_data = np.where(vx_inst_core_data == fill_val, np.nan, vx_inst_core_data)
+        
+        self.raw_data['vx_inst_core'] = vx_inst_core_data
 
-            # Directly assign data from imported object to raw_data dictionary
-            # using the keys defined in __init__ (which should match CSV headers)
-            for key in self.raw_data.keys():
-                if key in data_dict:
-                    # Ensure data is numpy array for consistency
-                    data_val = data_dict[key]
-                    if isinstance(data_val, (list, tuple)):
-                        self.raw_data[key] = np.array(data_val)
-                    elif isinstance(data_val, pd.Series):
-                        self.raw_data[key] = data_val.to_numpy()
-                    elif isinstance(data_val, np.ndarray):
-                        self.raw_data[key] = data_val
-                    else:
-                        # Handle unexpected data types if necessary, maybe convert or log warning
-                        logging.warning(f"Unexpected data type for key '{key}': {type(data_val)}. Assigning as is.")
-                        self.raw_data[key] = data_val
+        # Process vy_inst_core (Y-component velocity of core proton population in instrument coordinates)
+        vy_inst_core_data = imported_data.data['vy_inst_core']
+        
+        # Handle fill values for vy_inst_core
+        fill_val = imported_data.data.get('vy_inst_core_FILLVAL', -1e+38)
+        vy_inst_core_data = np.where(vy_inst_core_data == fill_val, np.nan, vy_inst_core_data)
+        
+        self.raw_data['vy_inst_core'] = vy_inst_core_data
 
-                    print_manager.debug(f"Assigned data for key: {key}, shape: {self.raw_data[key].shape if hasattr(self.raw_data[key], 'shape') else 'N/A'}")
-                    # --- NaN Check ---
-                    if isinstance(self.raw_data[key], np.ndarray) and np.isnan(self.raw_data[key]).all():
-                        logging.warning(f"All values for key '{key}' are NaN.")
-                    # ---------------
+        # Process vz_inst_core (Z-component velocity of core proton population in instrument coordinates)
+        vz_inst_core_data = imported_data.data['vz_inst_core']
+        
+        # Handle fill values for vz_inst_core
+        fill_val = imported_data.data.get('vz_inst_core_FILLVAL', -1e+38)
+        vz_inst_core_data = np.where(vz_inst_core_data == fill_val, np.nan, vz_inst_core_data)
+        
+        self.raw_data['vz_inst_core'] = vz_inst_core_data
 
+        # Process vx_inst_neck (X-component velocity of neck proton population in instrument coordinates)
+        vx_inst_neck_data = imported_data.data['vx_inst_neck']
+        
+        # Handle fill values for vx_inst_neck
+        fill_val = imported_data.data.get('vx_inst_neck_FILLVAL', -1e+38)
+        vx_inst_neck_data = np.where(vx_inst_neck_data == fill_val, np.nan, vx_inst_neck_data)
+        
+        self.raw_data['vx_inst_neck'] = vx_inst_neck_data
+
+        # Process vy_inst_neck (Y-component velocity of neck proton population in instrument coordinates)
+        vy_inst_neck_data = imported_data.data['vy_inst_neck']
+        
+        # Handle fill values for vy_inst_neck
+        fill_val = imported_data.data.get('vy_inst_neck_FILLVAL', -1e+38)
+        vy_inst_neck_data = np.where(vy_inst_neck_data == fill_val, np.nan, vy_inst_neck_data)
+        
+        self.raw_data['vy_inst_neck'] = vy_inst_neck_data
+
+        # Process vz_inst_neck (Z-component velocity of neck proton population in instrument coordinates)
+        vz_inst_neck_data = imported_data.data['vz_inst_neck']
+        
+        # Handle fill values for vz_inst_neck
+        fill_val = imported_data.data.get('vz_inst_neck_FILLVAL', -1e+38)
+        vz_inst_neck_data = np.where(vz_inst_neck_data == fill_val, np.nan, vz_inst_neck_data)
+        
+        self.raw_data['vz_inst_neck'] = vz_inst_neck_data
+
+        # Process vx_inst_ham (X-component velocity of hammerhead proton population in instrument coordinates)
+        vx_inst_ham_data = imported_data.data['vx_inst_ham']
+        
+        # Handle fill values for vx_inst_ham
+        fill_val = imported_data.data.get('vx_inst_ham_FILLVAL', -1e+38)
+        vx_inst_ham_data = np.where(vx_inst_ham_data == fill_val, np.nan, vx_inst_ham_data)
+        
+        self.raw_data['vx_inst_ham'] = vx_inst_ham_data
+
+        # Process vy_inst_ham (Y-component velocity of hammerhead proton population in instrument coordinates)
+        vy_inst_ham_data = imported_data.data['vy_inst_ham']
+        
+        # Handle fill values for vy_inst_ham
+        fill_val = imported_data.data.get('vy_inst_ham_FILLVAL', -1e+38)
+        vy_inst_ham_data = np.where(vy_inst_ham_data == fill_val, np.nan, vy_inst_ham_data)
+        
+        self.raw_data['vy_inst_ham'] = vy_inst_ham_data
+
+        # Process vz_inst_ham (Z-component velocity of hammerhead proton population in instrument coordinates)
+        vz_inst_ham_data = imported_data.data['vz_inst_ham']
+        
+        # Handle fill values for vz_inst_ham
+        fill_val = imported_data.data.get('vz_inst_ham_FILLVAL', -1e+38)
+        vz_inst_ham_data = np.where(vz_inst_ham_data == fill_val, np.nan, vz_inst_ham_data)
+        
+        self.raw_data['vz_inst_ham'] = vz_inst_ham_data
+
+        # Process temp_core (Temperature of core proton population)
+        temp_core_data = imported_data.data['temp_core']
+        
+        # Handle fill values for temp_core
+        fill_val = imported_data.data.get('temp_core_FILLVAL', -1e+38)
+        temp_core_data = np.where(temp_core_data == fill_val, np.nan, temp_core_data)
+        
+        self.raw_data['temp_core'] = temp_core_data
+
+        # Process temp_neck (Temperature of neck proton population)
+        temp_neck_data = imported_data.data['temp_neck']
+        
+        # Handle fill values for temp_neck
+        fill_val = imported_data.data.get('temp_neck_FILLVAL', -1e+38)
+        temp_neck_data = np.where(temp_neck_data == fill_val, np.nan, temp_neck_data)
+        
+        self.raw_data['temp_neck'] = temp_neck_data
+
+        # Process temp_ham (Temperature of hammerhead proton population)
+        temp_ham_data = imported_data.data['temp_ham']
+        
+        # Handle fill values for temp_ham
+        fill_val = imported_data.data.get('temp_ham_FILLVAL', -1e+38)
+        temp_ham_data = np.where(temp_ham_data == fill_val, np.nan, temp_ham_data)
+        
+        self.raw_data['temp_ham'] = temp_ham_data
+
+        # Process Tperp_core (Temperature perpendicular to magnetic field of core proton population)
+        Tperp_core_data = imported_data.data['Tperp_core']
+        
+        # Handle fill values for Tperp_core
+        fill_val = imported_data.data.get('Tperp_core_FILLVAL', -1e+38)
+        Tperp_core_data = np.where(Tperp_core_data == fill_val, np.nan, Tperp_core_data)
+        
+        self.raw_data['Tperp_core'] = Tperp_core_data
+
+        # Process Tpar_core (Temperature parallel to magnetic field of core proton population)
+        Tpar_core_data = imported_data.data['Tpar_core']
+        
+        # Handle fill values for Tpar_core
+        fill_val = imported_data.data.get('Tpar_core_FILLVAL', -1e+38)
+        Tpar_core_data = np.where(Tpar_core_data == fill_val, np.nan, Tpar_core_data)
+        
+        self.raw_data['Tpar_core'] = Tpar_core_data
+
+        # Process Tperp_neck (Temperature perpendicular to magnetic field of neck proton population)
+        Tperp_neck_data = imported_data.data['Tperp_neck']
+        
+        # Handle fill values for Tperp_neck
+        fill_val = imported_data.data.get('Tperp_neck_FILLVAL', -1e+38)
+        Tperp_neck_data = np.where(Tperp_neck_data == fill_val, np.nan, Tperp_neck_data)
+        
+        self.raw_data['Tperp_neck'] = Tperp_neck_data
+
+        # Process Tpar_neck (Temperature parallel to magnetic field of neck proton population)
+        Tpar_neck_data = imported_data.data['Tpar_neck']
+        
+        # Handle fill values for Tpar_neck
+        fill_val = imported_data.data.get('Tpar_neck_FILLVAL', -1e+38)
+        Tpar_neck_data = np.where(Tpar_neck_data == fill_val, np.nan, Tpar_neck_data)
+        
+        self.raw_data['Tpar_neck'] = Tpar_neck_data
+
+        # Process Tperp_ham (Temperature perpendicular to magnetic field of hammerhead proton population)
+        Tperp_ham_data = imported_data.data['Tperp_ham']
+        
+        # Handle fill values for Tperp_ham
+        fill_val = imported_data.data.get('Tperp_ham_FILLVAL', -1e+38)
+        Tperp_ham_data = np.where(Tperp_ham_data == fill_val, np.nan, Tperp_ham_data)
+        
+        self.raw_data['Tperp_ham'] = Tperp_ham_data
+
+        # Process Tpar_ham (Temperature parallel to magnetic field of hammerhead proton population)
+        Tpar_ham_data = imported_data.data['Tpar_ham']
+        
+        # Handle fill values for Tpar_ham
+        fill_val = imported_data.data.get('Tpar_ham_FILLVAL', -1e+38)
+        Tpar_ham_data = np.where(Tpar_ham_data == fill_val, np.nan, Tpar_ham_data)
+        
+        self.raw_data['Tpar_ham'] = Tpar_ham_data
+
+        # Process Bx_inst (X-component of magnetic field in instrument coordinates)
+        Bx_inst_data = imported_data.data['Bx_inst']
+        
+        # Handle fill values for Bx_inst
+        fill_val = imported_data.data.get('Bx_inst_FILLVAL', -1e+38)
+        Bx_inst_data = np.where(Bx_inst_data == fill_val, np.nan, Bx_inst_data)
+        
+        self.raw_data['Bx_inst'] = Bx_inst_data
+
+        # Process By_inst (Y-component of magnetic field in instrument coordinates)
+        By_inst_data = imported_data.data['By_inst']
+        
+        # Handle fill values for By_inst
+        fill_val = imported_data.data.get('By_inst_FILLVAL', -1e+38)
+        By_inst_data = np.where(By_inst_data == fill_val, np.nan, By_inst_data)
+        
+        self.raw_data['By_inst'] = By_inst_data
+
+        # Process Bz_inst (Z-component of magnetic field in instrument coordinates)
+        Bz_inst_data = imported_data.data['Bz_inst']
+        
+        # Handle fill values for Bz_inst
+        fill_val = imported_data.data.get('Bz_inst_FILLVAL', -1e+38)
+        Bz_inst_data = np.where(Bz_inst_data == fill_val, np.nan, Bz_inst_data)
+        
+        self.raw_data['Bz_inst'] = Bz_inst_data
+
+        # Process sun_dist_rsun (Distance from Sun in solar radii)
+        sun_dist_rsun_data = imported_data.data['sun_dist_rsun']
+        
+        # Handle fill values for sun_dist_rsun
+        fill_val = imported_data.data.get('sun_dist_rsun_FILLVAL', -1e+38)
+        sun_dist_rsun_data = np.where(sun_dist_rsun_data == fill_val, np.nan, sun_dist_rsun_data)
+        
+        self.raw_data['sun_dist_rsun'] = sun_dist_rsun_data
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+        # Keep frequency arrays as 1D - individual meshes handle the 2D time dimension
+        # Each spectral variable gets its own mesh in variable_meshes dictionary
+
+        print_manager.dependency_management(f"Processed {len([v for v in self.raw_data.values() if v is not None])} variables successfully")
+    
+    def _find_frequency_data(self):
+        """Dynamically find frequency data that matches spectral variables."""
+        # Look for frequency variables that actually have data
+        for var_name, var_data in self.raw_data.items():
+            if ('freq' in var_name.lower() and 
+                var_data is not None and 
+                hasattr(var_data, '__len__') and 
+                len(var_data) > 1):
+                
+                # Create frequency array that matches time dimension for pcolormesh
+                # plotbot expects additional_data to be indexable by time
+                if hasattr(self, 'datetime_array') and self.datetime_array is not None:
+                    n_times = len(self.datetime_array)
+                    n_freqs = len(var_data)
+                    # Create 2D frequency array: each row is the same frequency values
+                    freq_2d = np.tile(var_data, (n_times, 1))
+                    return freq_2d
                 else:
-                    # Keep as None if key is missing in imported data, log warning
-                    # This is expected for the old placeholder keys if they aren't in the CSV
-                    if key not in ['hamstring', 'hamstring_og', 'hamstring_dt', 'N_core', 'N_core_og', 'N_neck', 'N_neck_og', 'N_ham', 'N_ham_og', 'hamogram_1m', 'hamogram_og_1m', 'hamogram_og_20m', 'hamogram_og_90m', 'hamogram_12h', 'hamogram_og_12h']:
-                         logging.warning(f"Key '{key}' not found in imported ham data dictionary.")
-                    self.raw_data[key] = None # Ensure it's None if missing
-
-        except Exception as e:
-            logging.error(f"Error during ham data assignment in calculate_variables: {e}")
-            import traceback
-            logging.error(traceback.format_exc())
-            # Clear all fields if a generic error occurs
-            for key in self.raw_data:
-                self.raw_data[key] = None
-            self.time = None
-            self.datetime_array = None
-
-    def _create_ham_scatter_plot_config(self, var_name, subclass_name, y_label, legend_label, color, marker_style=(5, 1), marker_size=20, alpha=0.2, y_limit=None):
-        """Helper method for standard ham scatter plot options."""
-        # Default star marker (5, 1), size 20, alpha 0.2 if not overridden
-        # print('Running _create_ham_scatter_plot_config')
-        return plot_config(
-            var_name=var_name,
-            data_type='ham',
-            class_name='ham',
-            subclass_name=subclass_name,
-            plot_type='scatter',
-            time=self.time if hasattr(self, 'time') else None,
-
-            datetime_array=self.datetime_array,
-            y_label=y_label,
-            legend_label=legend_label,
-            color=color,
-            y_scale='linear',
-            marker_style=marker_style,
-            marker_size=marker_size,
-            alpha=alpha,
-            y_limit=y_limit # Default to auto-limits
-        )
-
-    def _create_ham_timeseries_plot_config(self, var_name, subclass_name, y_label, legend_label, color, y_limit=[0, None], line_width=1, line_style='-'):
-        """Helper method for standard ham time series plot options."""
-        # Default y_limit [0, None], lw 1, ls '-' if not overridden
-        return plot_config(
-            var_name=var_name,
-            data_type='ham',
-            class_name='ham',
-            subclass_name=subclass_name,
-            plot_type='time_series',
-            time=self.time if hasattr(self, 'time') else None,
-
-            datetime_array=self.datetime_array,
-            y_label=y_label,
-            legend_label=legend_label,
-            color=color,
-            y_scale='linear',
-            line_width=line_width,
-            line_style=line_style,
-            y_limit=y_limit
-        )
-
+                    return var_data
+        
+        # Fallback - create a simple frequency array if nothing found
+        # Assume 100 frequency bins from 10 Hz to 1 kHz
+        freq_array = np.logspace(1, 3, 100)
+        if hasattr(self, 'datetime_array') and self.datetime_array is not None:
+            n_times = len(self.datetime_array)
+            freq_2d = np.tile(freq_array, (n_times, 1))
+            return freq_2d
+        return freq_array
+    
     def set_plot_config(self):
-        """Initialize or update plot_manager instances based on CSV headers and specs."""
-
-        # --- Original Placeholders (Keep or Remove?) ---
-        # These might be redundant if not actually present in HAM CSVs
-        # If keeping, ensure data is actually loaded for them if expected.
-        self.hamstring = plot_manager(
-             self.raw_data.get('hamstring'),
-             plot_config=self._create_ham_scatter_plot_config(
-                 var_name='hamstring', subclass_name='hamstring',
-                 y_label='Hamstring (Placeholder)', legend_label='Hamstring (Placeholder)', color='grey'
-             )
+        """Set up plotting options for all variables"""
+        dt_len = len(self.datetime_array) if hasattr(self, 'datetime_array') and self.datetime_array is not None else "None_or_NoAttr"
+        print_manager.dependency_management(f"[CDF_CLASS_DEBUG] set_plot_config called for instance ID: {id(self)}. self.datetime_array len: {dt_len}")
+        print_manager.dependency_management("Setting up plot options for ham variables")
+        
+        self.n_core = plot_manager(
+            self.raw_data['n_core'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='n_core',
+                class_name='ham',
+                subclass_name='n_core',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='n_core (cm^-3)',
+                legend_label='Density of core proton population',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
         )
-        # ... (keep other placeholders like N_core, etc. if needed, maybe with grey color) ...
-
-        # --- Variables from HAM CSV Header & Specs ---
-
-        # 1 - hamogram_30s (Time Series)
-        self.hamogram_30s = plot_manager(
-            self.raw_data.get('hamogram_30s'),
-            plot_config=self._create_ham_timeseries_plot_config(
-                var_name='hamogram_30s', subclass_name='hamogram_30s',
-                y_label=r'Hamogram', legend_label=r'Hamogram_30s', color='palevioletred',
-                y_limit=[0, None], line_width=1, line_style='-' # Spec values
+        self.n_neck = plot_manager(
+            self.raw_data['n_neck'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='n_neck',
+                class_name='ham',
+                subclass_name='n_neck',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='n_neck (cm^-3)',
+                legend_label='Density of neck proton population',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.n_ham = plot_manager(
+            self.raw_data['n_ham'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='n_ham',
+                class_name='ham',
+                subclass_name='n_ham',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='n_ham (cm^-3)',
+                legend_label='Density of hammerhead proton population',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.vx_inst_core = plot_manager(
+            self.raw_data['vx_inst_core'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='vx_inst_core',
+                class_name='ham',
+                subclass_name='vx_inst_core',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='vx_inst_core (km/s)',
+                legend_label='X-component velocity of core proton population in instrument coordinates',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.vy_inst_core = plot_manager(
+            self.raw_data['vy_inst_core'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='vy_inst_core',
+                class_name='ham',
+                subclass_name='vy_inst_core',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='vy_inst_core (km/s)',
+                legend_label='Y-component velocity of core proton population in instrument coordinates',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.vz_inst_core = plot_manager(
+            self.raw_data['vz_inst_core'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='vz_inst_core',
+                class_name='ham',
+                subclass_name='vz_inst_core',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='vz_inst_core (km/s)',
+                legend_label='Z-component velocity of core proton population in instrument coordinates',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.vx_inst_neck = plot_manager(
+            self.raw_data['vx_inst_neck'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='vx_inst_neck',
+                class_name='ham',
+                subclass_name='vx_inst_neck',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='vx_inst_neck (km/s)',
+                legend_label='X-component velocity of neck proton population in instrument coordinates',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.vy_inst_neck = plot_manager(
+            self.raw_data['vy_inst_neck'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='vy_inst_neck',
+                class_name='ham',
+                subclass_name='vy_inst_neck',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='vy_inst_neck (km/s)',
+                legend_label='Y-component velocity of neck proton population in instrument coordinates',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.vz_inst_neck = plot_manager(
+            self.raw_data['vz_inst_neck'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='vz_inst_neck',
+                class_name='ham',
+                subclass_name='vz_inst_neck',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='vz_inst_neck (km/s)',
+                legend_label='Z-component velocity of neck proton population in instrument coordinates',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.vx_inst_ham = plot_manager(
+            self.raw_data['vx_inst_ham'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='vx_inst_ham',
+                class_name='ham',
+                subclass_name='vx_inst_ham',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='vx_inst_ham (km/s)',
+                legend_label='X-component velocity of hammerhead proton population in instrument coordinates',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.vy_inst_ham = plot_manager(
+            self.raw_data['vy_inst_ham'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='vy_inst_ham',
+                class_name='ham',
+                subclass_name='vy_inst_ham',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='vy_inst_ham (km/s)',
+                legend_label='Y-component velocity of hammerhead proton population in instrument coordinates',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.vz_inst_ham = plot_manager(
+            self.raw_data['vz_inst_ham'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='vz_inst_ham',
+                class_name='ham',
+                subclass_name='vz_inst_ham',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='vz_inst_ham (km/s)',
+                legend_label='Z-component velocity of hammerhead proton population in instrument coordinates',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.temp_core = plot_manager(
+            self.raw_data['temp_core'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='temp_core',
+                class_name='ham',
+                subclass_name='temp_core',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='temp_core (eV)',
+                legend_label='Temperature of core proton population',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.temp_neck = plot_manager(
+            self.raw_data['temp_neck'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='temp_neck',
+                class_name='ham',
+                subclass_name='temp_neck',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='temp_neck (eV)',
+                legend_label='Temperature of neck proton population',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.temp_ham = plot_manager(
+            self.raw_data['temp_ham'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='temp_ham',
+                class_name='ham',
+                subclass_name='temp_ham',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='temp_ham (eV)',
+                legend_label='Temperature of hammerhead proton population',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.Tperp_core = plot_manager(
+            self.raw_data['Tperp_core'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='Tperp_core',
+                class_name='ham',
+                subclass_name='Tperp_core',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='Tperp_core (eV)',
+                legend_label='Temperature perpendicular to magnetic field of core proton population',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.Tpar_core = plot_manager(
+            self.raw_data['Tpar_core'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='Tpar_core',
+                class_name='ham',
+                subclass_name='Tpar_core',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='Tpar_core (eV)',
+                legend_label='Temperature parallel to magnetic field of core proton population',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.Tperp_neck = plot_manager(
+            self.raw_data['Tperp_neck'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='Tperp_neck',
+                class_name='ham',
+                subclass_name='Tperp_neck',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='Tperp_neck (eV)',
+                legend_label='Temperature perpendicular to magnetic field of neck proton population',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.Tpar_neck = plot_manager(
+            self.raw_data['Tpar_neck'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='Tpar_neck',
+                class_name='ham',
+                subclass_name='Tpar_neck',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='Tpar_neck (eV)',
+                legend_label='Temperature parallel to magnetic field of neck proton population',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.Tperp_ham = plot_manager(
+            self.raw_data['Tperp_ham'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='Tperp_ham',
+                class_name='ham',
+                subclass_name='Tperp_ham',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='Tperp_ham (eV)',
+                legend_label='Temperature perpendicular to magnetic field of hammerhead proton population',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.Tpar_ham = plot_manager(
+            self.raw_data['Tpar_ham'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='Tpar_ham',
+                class_name='ham',
+                subclass_name='Tpar_ham',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='Tpar_ham (eV)',
+                legend_label='Temperature parallel to magnetic field of hammerhead proton population',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.Bx_inst = plot_manager(
+            self.raw_data['Bx_inst'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='Bx_inst',
+                class_name='ham',
+                subclass_name='Bx_inst',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='Bx_inst (nT)',
+                legend_label='X-component of magnetic field in instrument coordinates',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.By_inst = plot_manager(
+            self.raw_data['By_inst'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='By_inst',
+                class_name='ham',
+                subclass_name='By_inst',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='By_inst (nT)',
+                legend_label='Y-component of magnetic field in instrument coordinates',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.Bz_inst = plot_manager(
+            self.raw_data['Bz_inst'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='Bz_inst',
+                class_name='ham',
+                subclass_name='Bz_inst',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='Bz_inst (nT)',
+                legend_label='Z-component of magnetic field in instrument coordinates',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
+            )
+        )
+        self.sun_dist_rsun = plot_manager(
+            self.raw_data['sun_dist_rsun'],
+            plot_config=plot_config(
+                data_type='ham',
+                var_name='sun_dist_rsun',
+                class_name='ham',
+                subclass_name='sun_dist_rsun',
+                plot_type='time_series',
+                time=self.time if hasattr(self, 'time') else None,
+                datetime_array=self.datetime_array,
+                y_label='sun_dist_rsun (R_sun)',
+                legend_label='Distance from Sun in solar radii',
+                color=None,
+                y_scale='linear',
+                y_limit=None,
+                line_width=1,
+                line_style='-'
             )
         )
 
-        # 2 - hamogram_og_30s (Time Series)
-        self.hamogram_og_30s = plot_manager(
-            self.raw_data.get('hamogram_og_30s'),
-            plot_config=self._create_ham_timeseries_plot_config(
-                var_name='hamogram_og_30s', subclass_name='hamogram_og_30s',
-                y_label=r'Hamogram_og_30s', legend_label=r'Hamogram_og_30s ', color='palevioletred',
-                y_limit=None, line_width=1, line_style='-' # Spec values (Note: y_limit=None)
-            )
-        )
-
-        # 3 - hamogram_2m (Time Series)
-        self.hamogram_2m = plot_manager(
-            self.raw_data.get('hamogram_2m'),
-            plot_config=self._create_ham_timeseries_plot_config(
-                var_name='hamogram_2m', subclass_name='hamogram_2m',
-                y_label=r'Hamogram', legend_label=r'Hamogram_2m', color='palevioletred',
-                y_limit=[0, None], line_width=1, line_style='-' # Spec values
-            )
-        )
-
-        # 4 - hamogram_og_2m (Time Series)
-        self.hamogram_og_2m = plot_manager(
-            self.raw_data.get('hamogram_og_2m'),
-            plot_config=self._create_ham_timeseries_plot_config(
-                var_name='hamogram_og_2m', subclass_name='hamogram_og_2m',
-                y_label=r'Hamogram_og_2m', legend_label=r'Hamogram_og_2m ', color='palevioletred',
-                y_limit=None, line_width=1, line_style='-' # Spec values (Note: y_limit=None)
-            )
-        )
-
-        # 5 - hamogram_20m (Time Series)
-        self.hamogram_20m = plot_manager(
-            self.raw_data.get('hamogram_20m'),
-            plot_config=self._create_ham_timeseries_plot_config(
-                var_name='hamogram_20m', subclass_name='hamogram_20m',
-                y_label=r'Hamogram', legend_label=r'Hamogram_20m', color='palevioletred',
-                y_limit=[0, None], line_width=1, line_style='-' # Spec values
-            )
-        )
-
-        # 6 - hamogram_90m (Time Series)
-        self.hamogram_90m = plot_manager(
-            self.raw_data.get('hamogram_90m'),
-            plot_config=self._create_ham_timeseries_plot_config(
-                var_name='hamogram_90m', subclass_name='hamogram_90m',
-                y_label=r'Hamogram', legend_label=r'Hamogram_90m', color='palevioletred',
-                y_limit=[0, None], line_width=1, line_style='-' # Spec values
-            )
-        )
-
-        # 7 - hamogram_4h (Time Series)
-        self.hamogram_4h = plot_manager(
-            self.raw_data.get('hamogram_4h'),
-            plot_config=self._create_ham_timeseries_plot_config(
-                var_name='hamogram_4h', subclass_name='hamogram_4h',
-                y_label=r'Hamogram', legend_label=r'Hamogram_4h', color='palevioletred',
-                y_limit=[0, None], line_width=1, line_style='-' # Spec values
-            )
-        )
-
-        # 8 - hamogram_og_4h (Time Series)
-        self.hamogram_og_4h = plot_manager(
-            self.raw_data.get('hamogram_og_4h'),
-            plot_config=self._create_ham_timeseries_plot_config(
-                var_name='hamogram_og_4h', subclass_name='hamogram_og_4h',
-                y_label=r'Hamogram_og_4h', legend_label=r'Hamogram_og_4h', color='palevioletred',
-                y_limit=None, line_width=1, line_style='-' # Spec values (Note: y_limit=None)
-            )
-        )
-
-        # 9 - trat_ham (Scatter) - CSV name: trat_ham, Spec name: ham_trat
-        self.trat_ham = plot_manager(
-            self.raw_data.get('trat_ham'),
-            plot_config=self._create_ham_scatter_plot_config(
-                var_name='trat_ham', subclass_name='trat_ham',
-                y_label=r'$T_\perp/T_\parallel$', legend_label=r'$(T_\perp/T_\parallel)_{{ham}}$', color='palevioletred',
-                marker_style=(5, 1), marker_size=50, alpha=0.9 # Spec values
-            )
-        )
-
-        # 10 - trat_ham_og (Scatter) - CSV name: trat_ham_og
-        self.trat_ham_og = plot_manager(
-            self.raw_data.get('trat_ham_og'),
-            plot_config=self._create_ham_scatter_plot_config(
-                var_name='trat_ham_og', subclass_name='trat_ham_og',
-                y_label=r'$(T_\perp/T_\parallel)_{{og}}$', legend_label=r'$(T_\perp/T_\parallel)_{{ham,og}}$', color='palevioletred',
-                marker_style=(5, 1), marker_size=50, alpha=0.9 # Spec values
-            )
-        )
-
-        # 11 - ham_core_drift (Scatter) - CSV name: ham_core_drift
-        self.ham_core_drift = plot_manager(
-            self.raw_data.get('ham_core_drift'),
-            plot_config=self._create_ham_scatter_plot_config(
-                var_name='ham_core_drift', subclass_name='ham_core_drift',
-                y_label='$v_{{drift}}$ km/s', legend_label=r'$(vd)_{{h-c}}$ km/s', color='palevioletred',
-                marker_style=(5, 1), marker_size=50, alpha=0.9 # Spec values
-            )
-        )
-
-        # 12 - ham_core_drift_va (Scatter) - CSV name: ham_core_drift_va
-        self.ham_core_drift_va = plot_manager(
-            self.raw_data.get('ham_core_drift_va'),
-            plot_config=self._create_ham_scatter_plot_config(
-                var_name='ham_core_drift_va', subclass_name='ham_core_drift_va',
-                y_label='$v_{{drift}}/v_{{A}}$', legend_label=r'$(v_{{d}}/v_{{A}})_{{h-c}}$', color='palevioletred',
-                marker_style=(5, 1), marker_size=50, alpha=0.9 # Spec values
-            )
-        )
-
-        # 13 - Nham_div_Ncore (Scatter) - CSV name: Nham_div_Ncore, Spec name: N_ham/N_core
-        self.Nham_div_Ncore = plot_manager(
-            self.raw_data.get('Nham_div_Ncore'),
-            plot_config=self._create_ham_scatter_plot_config(
-                var_name='Nham_div_Ncore', subclass_name='Nham_div_Ncore',
-                y_label=r'$N_{{s}}/N_{{core}}$', legend_label=r'$N_{{ham}}/N_{{core}}$', color='palevioletred',
-                marker_style=(5, 1), marker_size=20, alpha=0.2 # Spec values
-            )
-        )
-
-        # 14 - Nham_div_Ncore_og (Scatter) - CSV name: Nham_div_Ncore_og, Spec name: N_ham_og/N_core_og
-        self.Nham_div_Ncore_og = plot_manager(
-            self.raw_data.get('Nham_div_Ncore_og'),
-            plot_config=self._create_ham_scatter_plot_config(
-                var_name='Nham_div_Ncore_og', subclass_name='Nham_div_Ncore_og',
-                y_label=r'$N_{{s,og}}/N_{{core,og}}$', legend_label=r'$N_{{ham}}/N_{{core,og}}$', color='palevioletred',
-                marker_style=(5, 1), marker_size=20, alpha=0.2 # Spec values
-            )
-        )
-
-        # 15 - Nham_div_Ntot (Scatter) - CSV name: Nham_div_Ntot, Spec name: N_ham/N_tot
-        self.Nham_div_Ntot = plot_manager(
-            self.raw_data.get('Nham_div_Ntot'),
-            plot_config=self._create_ham_scatter_plot_config(
-                var_name='Nham_div_Ntot', subclass_name='Nham_div_Ntot',
-                y_label=r'$N_{{s}}/N_{{tot}}$', legend_label=r'$N_{{ham}}/N_{{tot}}$', color='palevioletred',
-                marker_style=(5, 1), marker_size=50, alpha=0.9 # Spec values
-            )
-        )
-
-        # 16 - Nham_div_Ntot_og (Scatter) - CSV name: Nham_div_Ntot_og, Spec name: N_ham_og/N_tot_og
-        self.Nham_div_Ntot_og = plot_manager(
-            self.raw_data.get('Nham_div_Ntot_og'),
-            plot_config=self._create_ham_scatter_plot_config(
-                var_name='Nham_div_Ntot_og', subclass_name='Nham_div_Ntot_og',
-                y_label=r'$N_{{s,og}}/N_{{tot,og}}$', legend_label=r'$N_{{ham,og}}/N_{{tot,og}}$', color='palevioletred',
-                marker_style=(5, 1), marker_size=50, alpha=0.9 # Spec values
-            )
-        )
-
-        # 17 - Tperp_ham_div_core (Scatter) - CSV name: Tperp_ham_div_core
-        self.Tperp_ham_div_core = plot_manager(
-            self.raw_data.get('Tperp_ham_div_core'),
-            plot_config=self._create_ham_scatter_plot_config(
-                var_name='Tperp_ham_div_core', subclass_name='Tperp_ham_div_core',
-                y_label=r'$T_{{\perp,h}}/T_{{\perp,c}}$', legend_label=r'$T_{{\perp,h}}/T_{{\perp,c}}$', color='palevioletred',
-                marker_style=(5, 1), marker_size=20, alpha=0.2 # Spec values
-            )
-        )
-
-        # 18 - Tperp_ham_div_core_og (Scatter) - CSV name: Tperp_ham_div_core_og
-        self.Tperp_ham_div_core_og = plot_manager(
-            self.raw_data.get('Tperp_ham_div_core_og'),
-            plot_config=self._create_ham_scatter_plot_config(
-                var_name='Tperp_ham_div_core_og', subclass_name='Tperp_ham_div_core_og',
-                y_label=r'$T_{{\perp,h}}/T_{{\perp,c}}$', legend_label=r'$T_{{\perp,h}}/T_{{\perp,c}}$', color='palevioletred', # Note: Spec legend label same as #17?
-                marker_style=(5, 1), marker_size=20, alpha=0.2 # Spec values
-            )
-        )
-
-        # 19 - Tperprat_driftva_hc (Scatter) - CSV name: Tperprat_driftva_hc
-        self.Tperprat_driftva_hc = plot_manager(
-            self.raw_data.get('Tperprat_driftva_hc'),
-            plot_config=self._create_ham_scatter_plot_config(
-                var_name='Tperprat_driftva_hc', subclass_name='Tperprat_driftva_hc',
-                y_label='ham param1', legend_label='ham param1', color='palevioletred',
-                marker_style=(5, 1), marker_size=20, alpha=0.2 # Spec values
-            )
-        )
-
-        # 20 - Tperprat_driftva_hc_og (Scatter) - CSV name: Tperprat_driftva_hc_og, Spec name: ham_param1_og
-        self.Tperprat_driftva_hc_og = plot_manager(
-            self.raw_data.get('Tperprat_driftva_hc_og'),
-            plot_config=self._create_ham_scatter_plot_config(
-                var_name='Tperprat_driftva_hc_og', subclass_name='Tperprat_driftva_hc_og',
-                y_label='ham param1 og', legend_label='ham param1 og', color='palevioletred',
-                marker_style=(5, 1), marker_size=20, alpha=0.2 # Spec values
-            )
-        )
+    def ensure_internal_consistency(self):
+        """Ensures .time and core data attributes are consistent with .datetime_array and .raw_data."""
+        print_manager.dependency_management(f"*** ENSURE CONSISTENCY ID:{id(self)} *** Called for {self.class_name}.{self.subclass_name if self.subclass_name else 'MAIN'}.")
+        
+        # Track what changed to avoid unnecessary operations
+        changed_time = False
+        changed_config = False
+        
+        # STEP 1: Reconstruct self.time from datetime_array (critical after merges)
+        if hasattr(self, 'datetime_array') and self.datetime_array is not None:
+            if len(self.datetime_array) > 0:
+                new_time_array = self.datetime_array.astype('datetime64[ns]').astype(np.int64)
+                if not hasattr(self, 'time') or self.time is None or not np.array_equal(self.time, new_time_array):
+                    self.time = new_time_array
+                    print_manager.dependency_management(f"    [ENSURE_CONSISTENCY] Updated self.time via direct int64 cast. New len: {len(self.time)}")
+                    changed_time = True
+            elif not hasattr(self, 'time') or self.time is None or (hasattr(self.time, '__len__') and len(self.time) != 0):
+                self.time = np.array([], dtype=np.int64)
+                print_manager.dependency_management(f"    [ENSURE_CONSISTENCY] Set self.time to empty int64 array (datetime_array was empty).")
+                changed_time = True
+        
+        # STEP 2: Sync plot manager datetime references (existing logic)
+        if hasattr(self, 'datetime_array') and self.datetime_array is not None and \
+           hasattr(self, 'raw_data') and self.raw_data:
+            
+            for var_name in self.raw_data.keys():
+                if hasattr(self, var_name):
+                    var_manager = getattr(self, var_name)
+                    if hasattr(var_manager, 'plot_config') and hasattr(var_manager.plot_config, 'datetime_array'):
+                        if var_manager.plot_config.datetime_array is None or \
+                           (hasattr(var_manager.plot_config.datetime_array, '__len__') and 
+                            len(var_manager.plot_config.datetime_array) != len(self.datetime_array)):
+                            var_manager.plot_config.datetime_array = self.datetime_array
+                            print_manager.dependency_management(f"    [ENSURE_CONSISTENCY] Updated {var_name} plot_config.datetime_array")
+                            changed_config = True
+        
+        # STEP 3: Only call set_plot_config if data structures actually changed
+        if changed_time and hasattr(self, 'set_plot_config'):
+            print_manager.dependency_management(f"    Calling self.set_plot_config() due to time reconstruction.")
+            self.set_plot_config()
+        
+        # Log final state
+        if changed_time or changed_config:
+            print_manager.dependency_management(f"*** ENSURE CONSISTENCY ID:{id(self)} *** CHANGES WERE MADE (time: {changed_time}, config: {changed_config}).")
+        else:
+            print_manager.dependency_management(f"*** ENSURE CONSISTENCY ID:{id(self)} *** NO CHANGES MADE.")
+        
+        print_manager.dependency_management(f"*** ENSURE CONSISTENCY ID:{id(self)} *** Finished.")
 
     def restore_from_snapshot(self, snapshot_data):
-        """
-        Restore all relevant fields from a snapshot dictionary/object.
-        This is used to directly assign all attributes from a pickled object,
-        bypassing calculation.
-        """
+        """Restore all relevant fields from a snapshot dictionary/object."""
         for key, value in snapshot_data.__dict__.items():
             object.__setattr__(self, key, value)
 
-# Initialize with no data - this creates the global singleton instance in data_cubby
+# Initialize the class with no data
 ham = ham_class(None)
-print('initialized ham_class')
-
+print_manager.dependency_management(f'initialized ham class')

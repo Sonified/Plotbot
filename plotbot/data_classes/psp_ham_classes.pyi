@@ -1,67 +1,80 @@
 # plotbot/data_classes/psp_ham_classes.pyi
-# Stub file for type hinting
+# Stub file for type hinting - Ham CDF class (v02 format)
 
 import numpy as np
-import pandas as pd
-import cdflib
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional
 
-# Import dependencies used in type hints (adjust paths if necessary)
-from plotbot.print_manager import print_manager
-from plotbot.data_cubby import data_cubby
 from plotbot.plot_manager import plot_manager
 from plotbot.plot_config import plot_config
 
-# Define a type alias for the imported data structure if possible
-ImportedDataType = Any 
+# Define a type alias for the imported data structure
+ImportedDataType = Any
 
 class ham_class:
     # --- Internal Attributes ---
+    class_name: str
+    data_type: str
+    subclass_name: Optional[str]
     raw_data: Dict[str, Optional[np.ndarray]]
-    time: Optional[np.ndarray] # TT2000 times
-    datetime_array: Optional[np.ndarray] # Python datetimes
+    time: Optional[np.ndarray]  # TT2000 times
+    datetime_array: Optional[np.ndarray]  # Python datetimes
+    _original_cdf_file_path: str
+    _cdf_file_pattern: str
+    _current_operation_trange: Optional[Any]
 
     # --- Public Attributes (plot_manager instances) ---
-    # Add attributes for ALL plot_manager instances created in set_plot_config
-    hamogram_30s: plot_manager
-    hamogram_og_30s: plot_manager
-    # hamogram_1m: plot_manager # Removed - Placeholder
-    # hamogram_og_1m: plot_manager # Removed - Placeholder
-    hamogram_2m: plot_manager
-    hamogram_og_2m: plot_manager
-    hamogram_20m: plot_manager
-    # hamogram_og_20m: plot_manager # Removed - Placeholder
-    hamogram_90m: plot_manager
-    # hamogram_og_90m: plot_manager # Removed - Placeholder
-    hamogram_4h: plot_manager
-    hamogram_og_4h: plot_manager
-    # hamogram_12h: plot_manager # Removed - Placeholder
-    # hamogram_og_12h: plot_manager # Removed - Placeholder
-    trat_ham: plot_manager
-    trat_ham_og: plot_manager
-    ham_core_drift: plot_manager
-    ham_core_drift_va: plot_manager
-    Nham_div_Ncore: plot_manager
-    Nham_div_Ncore_og: plot_manager
-    Nham_div_Ntot: plot_manager
-    Nham_div_Ntot_og: plot_manager
-    Tperp_ham_div_core: plot_manager
-    Tperp_ham_div_core_og: plot_manager
-    Tperprat_driftva_hc: plot_manager
-    Tperprat_driftva_hc_og: plot_manager
-    # Placeholders like 'hamstring', 'N_core' etc. are not typically plot_managers
+    # Densities
+    n_core: plot_manager
+    n_neck: plot_manager
+    n_ham: plot_manager
+
+    # Velocities - Core
+    vx_inst_core: plot_manager
+    vy_inst_core: plot_manager
+    vz_inst_core: plot_manager
+
+    # Velocities - Neck
+    vx_inst_neck: plot_manager
+    vy_inst_neck: plot_manager
+    vz_inst_neck: plot_manager
+
+    # Velocities - Ham
+    vx_inst_ham: plot_manager
+    vy_inst_ham: plot_manager
+    vz_inst_ham: plot_manager
+
+    # Temperatures (scalar)
+    temp_core: plot_manager
+    temp_neck: plot_manager
+    temp_ham: plot_manager
+
+    # Temperatures (perpendicular/parallel)
+    Tperp_core: plot_manager
+    Tpar_core: plot_manager
+    Tperp_neck: plot_manager
+    Tpar_neck: plot_manager
+    Tperp_ham: plot_manager
+    Tpar_ham: plot_manager
+
+    # Magnetic field
+    Bx_inst: plot_manager
+    By_inst: plot_manager
+    Bz_inst: plot_manager
+
+    # Other
+    sun_dist_rsun: plot_manager
 
     # --- Methods ---
     def __init__(self, imported_data: Optional[ImportedDataType]) -> None: ...
-    def update(self, imported_data: Optional[ImportedDataType]) -> None: ...
+    def update(self, imported_data: Optional[ImportedDataType], original_requested_trange: Optional[Any] = None) -> None: ...
     def get_subclass(self, subclass_name: str) -> Optional[plot_manager]: ...
-    def __getattr__(self, name: str) -> Any: ... # Changed return to Any based on implementation
+    def __getattr__(self, name: str) -> Any: ...
     def __setattr__(self, name: str, value: Any) -> None: ...
     def calculate_variables(self, imported_data: ImportedDataType) -> None: ...
-    def _create_ham_scatter_plot_config(self, var_name: str, subclass_name: str, y_label: str, legend_label: str, color: str, marker_style: Tuple[int, int]=(5, 1), marker_size: int=20, alpha: float=0.2, y_limit: Optional[List[Optional[float]]]=None) -> plot_config: ...
-    def _create_ham_timeseries_plot_config(self, var_name: str, subclass_name: str, y_label: str, legend_label: str, color: str, y_limit: List[Optional[float]]=[0, None], line_width: int=1, line_style: str='-') -> plot_config: ...
+    def _find_frequency_data(self) -> np.ndarray: ...
     def set_plot_config(self) -> None: ...
+    def ensure_internal_consistency(self) -> None: ...
+    def restore_from_snapshot(self, snapshot_data: Any) -> None: ...
 
 # --- Module-level Instance ---
 ham: ham_class

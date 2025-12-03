@@ -711,12 +711,14 @@ def import_data_function(trange, data_type):
             end_step(step_key, step_start, {"error": f"{file_extension} loading failed"})
             return None
     
-    # --- Handle Hammerhead (ham) CSV Loading ---
-    elif data_type == 'ham':
-        
+    # --- Handle Hammerhead (ham) Loading ---
+    # NOTE: Ham now uses CDF format (local_cdf), so this section redirects to CDF handler
+    elif data_type == 'ham' and not is_cdf_data_type:
+        # Legacy CSV loading path - only used if data_sources is NOT local_cdf
+
         # Step: Load HAM CSV data
         step_key, step_start = next_step("Load HAM CSV data", data_type)
-        
+
         print_manager.debug(f"\n=== Starting Hammerhead CSV Data Import for {trange} ===")
 
         # Get config for the ham data type
@@ -944,16 +946,16 @@ def import_data_function(trange, data_type):
         # Get the CDF file path from configuration
         cdf_base_path = config.get('local_path')
         file_pattern = config.get('file_pattern_import', '*.cdf')
-        
+
+        # Always try to get the class instance from data_cubby for metadata access
+        from .data_cubby import data_cubby
+        class_name = config.get('cdf_class_name', data_type)
+        class_instance = data_cubby.grab(class_name)
+
         # Check if we should get the path from class metadata
         original_cdf_file = None
         if cdf_base_path == 'FROM_CLASS_METADATA':
             print_manager.debug("Getting CDF file path from class metadata...")
-            
-            # Get the class instance from data_cubby to read metadata
-            from .data_cubby import data_cubby
-            class_name = config.get('cdf_class_name', data_type)
-            class_instance = data_cubby.grab(class_name)
             
             if class_instance and hasattr(class_instance, '_original_cdf_file_path'):
                 original_cdf_file = class_instance._original_cdf_file_path

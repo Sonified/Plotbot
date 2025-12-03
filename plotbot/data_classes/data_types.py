@@ -229,21 +229,23 @@ data_types = {
             'Trata_dpar', 'Ta_perp_dpar', 'chi'
         ]
     },
-    'ham': { # NEW: Hammerhead CSV data
+    'ham': { # Hammerhead CDF data (v02 format)
         'mission': 'psp',
-        'data_sources': ['local_csv'],
-        'local_path': os.path.join('data', 'psp', 'Hamstrings'),
-        'file_pattern_import': ['*_v*.csv'],
+        'data_sources': ['local_cdf'],
+        'local_path': os.path.join('data', 'cdf_files', 'Hamstrings'),
+        'file_pattern_import': 'hamstring_*_v*.cdf',
         'file_time_format': 'daily',
-        'datetime_column': 'datetime',
         'data_vars': [
-            'time', 'datetime', 'hamogram_30s', 'hamogram_og_30s',
-            'hamogram_2m', 'hamogram_og_2m', 'hamogram_20m', 'hamogram_90m',
-            'hamogram_4h', 'hamogram_og_4h', 'trat_ham', 'trat_ham_og',
-            'ham_core_drift', 'ham_core_drift_va', 'Nham_div_Ncore', 'Nham_div_Ncore_og',
-            'Nham_div_Ntot', 'Nham_div_Ntot_og', 'Tperp_ham_div_core', 'Tperp_ham_div_core_og',
-            'Tperprat_driftva_hc', 'Tperprat_driftva_hc_og'
-        ]
+            'epoch', 'n_core', 'n_neck', 'n_ham',
+            'vx_inst_core', 'vy_inst_core', 'vz_inst_core',
+            'vx_inst_neck', 'vy_inst_neck', 'vz_inst_neck',
+            'vx_inst_ham', 'vy_inst_ham', 'vz_inst_ham',
+            'temp_core', 'temp_neck', 'temp_ham',
+            'Tperp_core', 'Tpar_core', 'Tperp_neck', 'Tpar_neck',
+            'Tperp_ham', 'Tpar_ham',
+            'Bx_inst', 'By_inst', 'Bz_inst', 'sun_dist_rsun'
+        ],
+        'cdf_class_name': 'ham'
     },
     'psp_br_norm_calculated': {
         'mission': 'psp',
