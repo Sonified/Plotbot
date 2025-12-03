@@ -19,6 +19,7 @@ data/cdf_files/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf
 # Ignore CDF data files in Hamstrings
 data/psp/Hamstrings/cdf/
 data/psp/Hamstrings/*.zip
+data/cdf_files/Hamstrings/
 
 # Ignore specific HAM files (keeping only the 19th)
 data/psp/Hamstrings/2025/03/2025-03-25_v00.csv
@@ -102,3 +103,4 @@ plotbot_venv/
 # Backup files (development artifacts)
 *.backup
 *~
+data/psp/spice_data/
