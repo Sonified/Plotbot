@@ -1008,10 +1008,20 @@ def import_data_function(trange, data_type):
                         from .data_import_cdf import filter_cdf_files_by_time
                         start_time = parse(trange[0])
                         end_time = parse(trange[1])
+                        # HAM-specific debugging before filter
+                        if data_type == 'ham':
+                            print_manager.ham_debugging(f"TIME FILTER: trange={trange}, found {len(cdf_files)} files before filter")
                         filtered_files = filter_cdf_files_by_time(cdf_files, start_time, end_time)
+                        # HAM-specific debugging after filter
+                        if data_type == 'ham':
+                            print_manager.ham_debugging(f"TIME FILTER RESULT: {len(filtered_files)} files after filter: {[os.path.basename(f) for f in filtered_files]}")
                         if filtered_files:
                             cdf_files = filtered_files
                             print_manager.debug(f"⚡ Time filter reduced to {len(cdf_files)} relevant files")
+                        else:
+                            # HAM-specific debugging when filter returns empty
+                            if data_type == 'ham':
+                                print_manager.ham_debugging(f"TIME FILTER EMPTY! Using unfiltered files: {[os.path.basename(f) for f in cdf_files]}")
                     except Exception as e:
                         print_manager.debug(f"Time filtering failed, using all pattern matches: {e}")
         
@@ -1029,147 +1039,171 @@ def import_data_function(trange, data_type):
         
         if not cdf_files:
             print_manager.error(f"No CDF files found for {data_type}")
+            # HAM-specific debugging
+            if data_type == 'ham':
+                print_manager.ham_debugging(f"NO CDF FILES FOUND! cdf_base_path={cdf_base_path}, pattern={file_pattern}")
             print_manager.time_output("import_data_function", "error: no cdf files")
             end_step(step_key, step_start, {"error": "no cdf files"})
             return None
         
-        # Use the first file found (or merge multiple files later)
-        cdf_file_path = cdf_files[0]
-        print_manager.debug(f"Using CDF file: {os.path.basename(cdf_file_path)}")
-        
+        # CRITICAL FIX: Load ALL matching CDF files and merge them
+        # This is essential for ham data that spans multiple daily files
+        print_manager.debug(f"Processing {len(cdf_files)} CDF files for {data_type}")
+        if data_type == 'ham':
+            print_manager.ham_debugging(f"LOADING {len(cdf_files)} CDF FILES: {[os.path.basename(f) for f in cdf_files]} for trange={trange}")
+
+        # Convert trange to TT2000 once for all files
+        start_tt2000 = cdflib.cdfepoch.compute_tt2000(
+            [start_time.year, start_time.month, start_time.day,
+             start_time.hour, start_time.minute, start_time.second,
+             int(start_time.microsecond/1000)]
+        )
+        end_tt2000 = cdflib.cdfepoch.compute_tt2000(
+            [end_time.year, end_time.month, end_time.day,
+             end_time.hour, end_time.minute, end_time.second,
+             int(end_time.microsecond/1000)]
+        )
+
+        # Accumulators for merged data
+        all_times = []
+        all_data = {}  # var_name -> list of arrays
+        time_var = None
+        all_variables = None
+        metadata_vars = {}  # Store metadata variables (only need to load once)
+
         try:
-            # Load CDF data using cdflib
-            with cdflib.CDF(cdf_file_path) as cdf_file:
-                print_manager.debug(f"Successfully opened CDF file: {os.path.basename(cdf_file_path)}")
-                
-                # Get list of all variables
-                cdf_info = cdf_file.cdf_info()
-                all_variables = cdf_info.zVariables + cdf_info.rVariables
-                
-                # Find time variable
-                time_var = None
-                for var_name in all_variables:
-                    if any(keyword in var_name.lower() for keyword in ['epoch', 'time', 'fft_time']):
-                        time_var = var_name
-                        break
-                
-                if not time_var:
-                    print_manager.error(f"No time variable found in CDF file")
-                    end_step(step_key, step_start, {"error": "no time variable"})
-                    return None
-                
-                print_manager.debug(f"Using time variable: {time_var}")
-                
-                # Load time data
-                times = cdf_file.varget(time_var)
-                print_manager.debug(f"Loaded {len(times)} time points")
-                
-                # CRITICAL FIX: Add time range filtering (like Standard CDF Processing)
-                # Convert requested time range to same format as CDF times
+            for cdf_file_path in cdf_files:
+                print_manager.debug(f"Processing CDF file: {os.path.basename(cdf_file_path)}")
+
                 try:
-                    # Convert trange to TT2000 for comparison
-                    start_tt2000 = cdflib.cdfepoch.compute_tt2000(
-                        [start_time.year, start_time.month, start_time.day,
-                         start_time.hour, start_time.minute, start_time.second,
-                         int(start_time.microsecond/1000)]
-                    )
-                    end_tt2000 = cdflib.cdfepoch.compute_tt2000(
-                        [end_time.year, end_time.month, end_time.day,
-                         end_time.hour, end_time.minute, end_time.second,
-                         int(end_time.microsecond/1000)]
-                    )
-                    
-                    # Check epoch type and convert CDF times if needed
-                    epoch_var_info = cdf_file.varinq(time_var)
-                    epoch_type = epoch_var_info.Data_Type_Description
-                    print_manager.debug(f"CDF time variable type: {epoch_type}")
-                    
-                    # Convert CDF times to TT2000 if needed (for comparison)
-                    if 'TT2000' in epoch_type:
-                        times_tt2000 = times
-                    elif 'CDF_EPOCH' in epoch_type:
-                        print_manager.debug("Converting CDF_EPOCH to TT2000 for filtering")
-                        times_tt2000 = np.array([cdflib.cdfepoch.to_datetime(t) for t in times])
-                        times_tt2000 = np.array([cdflib.cdfepoch.compute_tt2000(
-                            [dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.microsecond//1000]
-                        ) for dt in times_tt2000])
-                    else:
-                        # Assume already compatible format
-                        times_tt2000 = times
-                    
-                    # Find time range indices
-                    start_idx = np.searchsorted(times_tt2000, start_tt2000, side='left')
-                    end_idx = np.searchsorted(times_tt2000, end_tt2000, side='right')
-                    
-                    print_manager.debug(f"Time range filtering: indices {start_idx} to {end_idx} out of {len(times)}")
-                    
-                    if start_idx >= end_idx or start_idx >= len(times):
-                        print_manager.warning(f"No data in requested time range for {data_type}")
-                        end_step(step_key, step_start, {"error": "no data in range"})
-                        return None
-                    
-                    # Filter times to requested range
-                    times_filtered = times[start_idx:end_idx]
-                    print_manager.debug(f"Filtered to {len(times_filtered)} time points in requested range")
-                    
+                    with cdflib.CDF(cdf_file_path) as cdf_file:
+                        # Get list of all variables (only need to do this once)
+                        if all_variables is None:
+                            cdf_info = cdf_file.cdf_info()
+                            all_variables = cdf_info.zVariables + cdf_info.rVariables
+
+                            # Find time variable
+                            for var_name in all_variables:
+                                if any(keyword in var_name.lower() for keyword in ['epoch', 'time', 'fft_time']):
+                                    time_var = var_name
+                                    break
+
+                            if not time_var:
+                                print_manager.error(f"No time variable found in CDF file")
+                                end_step(step_key, step_start, {"error": "no time variable"})
+                                return None
+
+                            print_manager.debug(f"Using time variable: {time_var}")
+
+                        # Load time data
+                        times = cdf_file.varget(time_var)
+
+                        # Check epoch type and convert CDF times if needed
+                        epoch_var_info = cdf_file.varinq(time_var)
+                        epoch_type = epoch_var_info.Data_Type_Description
+
+                        # Convert CDF times to TT2000 if needed (for comparison)
+                        if 'TT2000' in epoch_type:
+                            times_tt2000 = times
+                        elif 'CDF_EPOCH' in epoch_type:
+                            times_tt2000 = np.array([cdflib.cdfepoch.to_datetime(t) for t in times])
+                            times_tt2000 = np.array([cdflib.cdfepoch.compute_tt2000(
+                                [dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.microsecond//1000]
+                            ) for dt in times_tt2000])
+                        else:
+                            times_tt2000 = times
+
+                        # Find time range indices for this file
+                        start_idx = np.searchsorted(times_tt2000, start_tt2000, side='left')
+                        end_idx = np.searchsorted(times_tt2000, end_tt2000, side='right')
+
+                        # Skip if no data in range for this file
+                        if start_idx >= end_idx or start_idx >= len(times):
+                            print_manager.debug(f"No data in range for file {os.path.basename(cdf_file_path)}, skipping")
+                            continue
+
+                        # Filter times to requested range
+                        times_filtered = times[start_idx:end_idx]
+                        all_times.append(times_filtered)
+                        print_manager.debug(f"File {os.path.basename(cdf_file_path)}: {len(times_filtered)} time points in range")
+
+                        # Load all other variables with time filtering
+                        for var_name in all_variables:
+                            if var_name != time_var:
+                                try:
+                                    # Check if this is a frequency/metadata variable
+                                    var_info = cdf_file.varinq(var_name)
+                                    var_shape = var_info.Dim_Sizes
+                                    is_metadata = len(var_shape) > 0 and var_shape[0] <= 1000
+
+                                    if is_metadata:
+                                        # Only load metadata once
+                                        if var_name not in metadata_vars:
+                                            metadata_vars[var_name] = cdf_file.varget(var_name)
+                                    else:
+                                        # Time-dependent data - load with filtering and accumulate
+                                        if start_idx < end_idx and end_idx <= len(times):
+                                            var_data = cdf_file.varget(var_name, startrec=start_idx, endrec=end_idx-1)
+                                        else:
+                                            var_data = cdf_file.varget(var_name)
+
+                                        if var_name not in all_data:
+                                            all_data[var_name] = []
+                                        all_data[var_name].append(var_data)
+
+                                except Exception as e:
+                                    print_manager.warning(f"Failed to load variable {var_name} from {os.path.basename(cdf_file_path)}: {e}")
+
                 except Exception as e:
-                    print_manager.warning(f"Time filtering failed, loading all data: {e}")
-                    start_idx = 0
-                    end_idx = len(times)
-                    times_filtered = times
-                
-                # Load all other variables with time filtering
-                data_dict = {time_var: times_filtered}
-                for var_name in all_variables:
-                    if var_name != time_var:
-                        try:
-                            # Check if this is a frequency/metadata variable (1D, doesn't change with time)
-                            var_info = cdf_file.varinq(var_name)
-                            var_shape = var_info.Dim_Sizes
-                            
-                            # CRITICAL FIX: Dim_Sizes=[] means RECORD-VARYING (time-dependent) - MUST FILTER!
-                            # Dim_Sizes=[n] means NON-RECORD-VARYING (static metadata) - DON'T filter
-                            # Logic was backwards before, causing shape mismatch crashes!
-                            is_metadata = len(var_shape) > 0 and var_shape[0] <= 1000
-                            
-                            if is_metadata:
-                                # Static metadata (like frequency arrays) - load full array
-                                print_manager.debug(f"Loading {var_name} as metadata variable (no time filtering)")
-                                var_data = cdf_file.varget(var_name)
-                            else:
-                                # Time-dependent data (Dim_Sizes=[]) - MUST apply time filtering!
-                                if start_idx < end_idx and end_idx <= len(times):
-                                    var_data = cdf_file.varget(var_name, startrec=start_idx, endrec=end_idx-1)
-                                    print_manager.debug(f"Loaded {var_name} with time filtering: shape {var_data.shape}")
-                                else:
-                                    var_data = cdf_file.varget(var_name)
-                                    print_manager.debug(f"Loaded {var_name} without filtering (fallback): shape {var_data.shape}")
-                            
-                            data_dict[var_name] = var_data
-                            
-                        except Exception as e:
-                            print_manager.warning(f"Failed to load variable {var_name}: {e}")
-                            # Add placeholder for missing variables to prevent KeyError
-                            data_dict[var_name] = None
-                
-                # Create DataObject
-                data_object = DataObject(times=times_filtered, data=data_dict)
-                
-                # Update tracker
-                global_tracker.update_imported_range(trange, data_type)
-                print_manager.status(f"✅ Custom CDF data import complete for {data_type}")
-                
-                # Debug output
-                print_manager.debug(f"*** IMPORT_DATA_DEBUG (Custom CDF Path) for data_type '{data_type}' ***")
-                print_manager.debug(f"    Loaded {len(data_dict)} variables from {os.path.basename(cdf_file_path)}")
-                print_manager.debug(f"    Time range: {len(times_filtered)} points")
-                
-                data_obj_to_return = data_object
-                end_step(step_key, step_start, {"data_object": data_object})
-                return data_obj_to_return
-                
+                    print_manager.warning(f"Failed to process CDF file {os.path.basename(cdf_file_path)}: {e}")
+                    continue
+
+            # Check if we got any data
+            if not all_times:
+                print_manager.warning(f"No data found in any CDF files for {data_type}")
+                end_step(step_key, step_start, {"error": "no data in range"})
+                return None
+
+            # Merge all accumulated data
+            merged_times = np.concatenate(all_times) if len(all_times) > 1 else all_times[0]
+
+            # Build final data dictionary
+            data_dict = {time_var: merged_times}
+
+            # Add merged time-dependent variables
+            for var_name, var_arrays in all_data.items():
+                if len(var_arrays) > 1:
+                    data_dict[var_name] = np.concatenate(var_arrays)
+                elif len(var_arrays) == 1:
+                    data_dict[var_name] = var_arrays[0]
+                else:
+                    data_dict[var_name] = None
+
+            # Add metadata variables
+            for var_name, var_data in metadata_vars.items():
+                data_dict[var_name] = var_data
+
+            # Create DataObject
+            data_object = DataObject(times=merged_times, data=data_dict)
+
+            # Update tracker
+            global_tracker.update_imported_range(trange, data_type)
+            print_manager.status(f"✅ Custom CDF data import complete for {data_type}")
+
+            # Debug output
+            print_manager.debug(f"*** IMPORT_DATA_DEBUG (Custom CDF Path) for data_type '{data_type}' ***")
+            print_manager.debug(f"    Loaded {len(data_dict)} variables from {len(cdf_files)} files")
+            print_manager.debug(f"    Time range: {len(merged_times)} total points")
+            # HAM-specific debugging
+            if data_type == 'ham':
+                print_manager.ham_debugging(f"IMPORT COMPLETE: trange={trange}, files={len(cdf_files)}, total_time_points={len(merged_times)}")
+
+            data_obj_to_return = data_object
+            end_step(step_key, step_start, {"data_object": data_object})
+            return data_obj_to_return
+
         except Exception as e:
-            print_manager.error(f"Failed to load CDF file {cdf_file_path}: {e}")
+            print_manager.error(f"Failed to load CDF files for {data_type}: {e}")
             import traceback
             traceback.print_exc()
             end_step(step_key, step_start, {"error": "cdf load failed"})

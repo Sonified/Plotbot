@@ -654,6 +654,16 @@ def filter_cdf_files_by_time(file_paths: List[str], start_time: datetime, end_ti
             print_manager.debug(f"    ❌ {os.path.basename(file_path)}: Metadata error, including")
     
     print_manager.debug(f"🎯 Filtered to {len(relevant_files)}/{len(file_paths)} files with time overlap")
+
+    # CRITICAL: Sort files by date so the earliest file comes first
+    # This ensures we load the file that contains data for the START of the requested trange
+    def get_file_date(filepath):
+        filename = os.path.basename(filepath)
+        file_date = _extract_date_from_filename(filename)
+        return file_date if file_date else datetime.max  # Put files without dates at the end
+
+    relevant_files.sort(key=get_file_date)
+
     return relevant_files
 
 

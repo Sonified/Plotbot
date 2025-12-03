@@ -306,8 +306,10 @@ class DataTracker:
         current_start, current_end = ranges_dict[data_type][0]
 
         for next_start, next_end in ranges_dict[data_type][1:]:
-            # Check if the next range overlaps or is adjacent to the current merged range
-            if next_start <= current_end:
+            # Check if the next range overlaps with the current merged range
+            # Use < (not <=) to prevent adjacent ranges from merging prematurely
+            # e.g., [00:00, 24:00] and [24:00, 48:00] should NOT merge until both are loaded
+            if next_start < current_end:
                 # Merge by extending the current end time if the next range ends later
                 current_end = max(current_end, next_end)
             else:

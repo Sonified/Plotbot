@@ -122,7 +122,8 @@ class print_manager_class:
     SPEED_TEST = False # New category for performance timing tests
     STYLE_PRESERVATION = False # New category for styling preservation debugging
     DOWNLOAD_DEBUG = False # New category for download debugging
-    
+    HAM_DEBUGGING = False # New category for ham data debugging
+
     # Colors for class-level access
     BLACK = '\033[30m'
     RED = '\033[31m'
@@ -164,6 +165,7 @@ class print_manager_class:
         self.speed_test_enabled = False # Flag for performance timing tests
         self.style_preservation_enabled = False # Flag for style preservation debugging
         self.download_debug_enabled = False # Flag for download debugging
+        self.ham_debugging_enabled = False # Flag for ham data debugging
         # print(f"[RAW_PM_INIT] Initial self.processing_enabled: {self.processing_enabled}") # ADDED DIAGNOSTIC
         # print(f"[PM_DEBUG] __init__: Default _pyspedas_verbose = {self._pyspedas_verbose}") # Remove print
         
@@ -181,6 +183,7 @@ class print_manager_class:
         self.speed_test_prefix = "[SPEED] " # Prefix for performance timing tests
         self.style_preservation_prefix = "[STYLE_PRESERVATION] " # Prefix for style preservation debugging
         self.download_debug_prefix = "[DOWNLOAD_DEBUG] " # Prefix for download debugging
+        self.ham_debugging_prefix = "[HAM] " # Prefix for ham data debugging
         
         # Severity levels
         self.level_warning = "[WARNING] "    # Warnings
@@ -741,6 +744,25 @@ class print_manager_class:
             print("[PRINT_MANAGER_WARNING] show_download_debug must be set to True or False.")
             return
         self.download_debug_enabled = value
+
+    def ham_debugging(self, msg):
+        """Print ham data debugging messages if enabled."""
+        if self.ham_debugging_enabled:
+            prefix = self.ham_debugging_prefix if self.category_prefix_enabled else ""
+            print(self._format_message(f"{prefix}{msg}"))
+
+    @property
+    def show_ham_debugging(self):
+        """Get the current state of ham debugging output."""
+        return self.ham_debugging_enabled
+
+    @show_ham_debugging.setter
+    def show_ham_debugging(self, value):
+        """Set whether ham debugging output is enabled."""
+        if not isinstance(value, bool):
+            print("[PRINT_MANAGER_WARNING] show_ham_debugging must be set to True or False.")
+            return
+        self.ham_debugging_enabled = value
 
 # Create a singleton instance
 print_manager = print_manager_class()

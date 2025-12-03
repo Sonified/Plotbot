@@ -433,12 +433,15 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
         cache_step_key, cache_step_start = next_step("Check calculation cache", data_type)
         
         # DEBUGGING: Print tracker state before check
-        print_manager.speed_test(f"TRACKER STATE BEFORE CHECK: {global_tracker.calculated_ranges}")
-        
+        print_manager.debug(f"🔎 TRACKER STATE BEFORE CHECK for {data_type}: {global_tracker.calculated_ranges.get(data_type, 'EMPTY')}")
+
         calculation_needed = global_tracker.is_calculation_needed(trange, data_type)
-        
+
         # DEBUGGING: Print actual tracker check result
-        print_manager.speed_test(f"TRACKER CHECK: data_type={data_type}, calculation_needed={calculation_needed}")
+        print_manager.debug(f"🔎 TRACKER CHECK: data_type={data_type}, trange={trange}, calculation_needed={calculation_needed}")
+        # HAM-specific debugging
+        if data_type == 'ham':
+            print_manager.ham_debugging(f"TRACKER CHECK: trange={trange}, calculation_needed={calculation_needed}, tracker_state={global_tracker.calculated_ranges.get('ham', 'EMPTY')}")
         
         end_step(cache_step_key, cache_step_start, {"calculation_needed": calculation_needed})
 
@@ -497,8 +500,11 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
             
             end_step(import_step_key, import_step_start, {"duration_ms": duration_ms, "success": data_obj is not None})
 
-            if data_obj is None: 
+            if data_obj is None:
                 print_manager.warning(f"Import returned no data for {data_type}, skipping update.")
+                # HAM-specific debugging
+                if data_type == 'ham':
+                    print_manager.ham_debugging(f"IMPORT FAILED: trange={trange}, import_data_function returned None!")
                 # Ensure we don't proceed with a None data_obj to DataCubby for this trange
                 # If get_data is called for multiple types in *variables, it will proceed to the next
                 # If only one type was requested and it failed, get_data effectively does nothing more for it.
@@ -532,13 +538,19 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
                 # DEBUGGING: Verify tracker was updated
                 print_manager.speed_test(f"TRACKER UPDATED: {data_type} for {trange}")
                 print_manager.speed_test(f"TRACKER STATE AFTER UPDATE: {global_tracker.calculated_ranges}")
+                # HAM-specific debugging
+                if data_type == 'ham':
+                    print_manager.ham_debugging(f"TRACKER UPDATED: trange={trange}, new_state={global_tracker.calculated_ranges.get('ham', 'EMPTY')}")
             else:
                 pm.warning(f"DataCubby failed to process update for {cubby_key}. Tracker not updated.")
-            # --- End Import/Update Data --- 
+            # --- End Import/Update Data ---
 
         else: # Calculation NOT needed
              # Use canonical key in status message
             print_manager.status(f"📤 Using existing {data_type} data, calculation/import not needed.")
+            # HAM-specific debugging
+            if data_type == 'ham':
+                print_manager.ham_debugging(f"SKIPPED IMPORT: trange={trange}, tracker says not needed. State={global_tracker.calculated_ranges.get('ham', 'EMPTY')}")
         
         end_step(step_key, step_start, {"calculation_needed": calculation_needed})
     

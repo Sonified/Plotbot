@@ -646,11 +646,11 @@ class ham_class:
                 plot_type='time_series',
                 time=self.time if hasattr(self, 'time') else None,
                 datetime_array=self.datetime_array,
-                y_label='n_ham (cm^-3)',
-                legend_label='Density of hammerhead proton population',
+                y_label='n_ham (cm⁻³)',
+                legend_label='n_ham',
                 color=None,
                 y_scale='linear',
-                y_limit=None,
+                y_limit=[0, 10],
                 line_width=1,
                 line_style='-'
             )

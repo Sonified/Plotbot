@@ -16,6 +16,10 @@ data/windwind_masters/
 data/cdf_files/TEST_CDF_METADATA/
 data/cdf_files/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf
 
+# Ignore CDF data files in Hamstrings
+data/psp/Hamstrings/cdf/
+data/psp/Hamstrings/*.zip
+
 # Ignore specific HAM files (keeping only the 19th)
 data/psp/Hamstrings/2025/03/2025-03-25_v00.csv
 data/psp/Hamstrings/2025/03/2025-03-24_v00.csv
@@ -72,6 +76,9 @@ magnetic_hole_finder/high_res_mag_data.pkl
 
 tests/archive/
 
+# Top-level archive folder
+archive/
+
 *.pkl
 
 .specstory/
@@ -84,6 +91,9 @@ plotbot_grid_composer_examples.ipynb
 tests/data/
 
 plotly_tests/
+
+# Srijan's analysis code (separate repo)
+srijan/
 
 # Python environments and package metadata (should not be committed)
 plotbot_venv/
