@@ -539,24 +539,85 @@ class CDFMetadataScanner:
             return None
 
 
+def _extract_date_from_filename(filename: str) -> Optional[datetime]:
+    """
+    Extract date from CDF filename using common patterns.
+
+    Supports patterns like:
+    - hamstring_2020-01-29_v02.cdf (YYYY-MM-DD)
+    - psp_fld_l2_mag_2021-04-29_v02.cdf
+    - data_20210429_v01.cdf (YYYYMMDD)
+
+    Returns:
+        datetime object for the file's date, or None if no date found
+    """
+    # Try YYYY-MM-DD pattern first (most common)
+    match = re.search(r'(\d{4})-(\d{2})-(\d{2})', filename)
+    if match:
+        try:
+            return datetime(int(match.group(1)), int(match.group(2)), int(match.group(3)))
+        except ValueError:
+            pass
+
+    # Try YYYYMMDD pattern
+    match = re.search(r'(\d{4})(\d{2})(\d{2})', filename)
+    if match:
+        try:
+            return datetime(int(match.group(1)), int(match.group(2)), int(match.group(3)))
+        except ValueError:
+            pass
+
+    return None
+
+
 def filter_cdf_files_by_time(file_paths: List[str], start_time: datetime, end_time: datetime) -> List[str]:
     """
     Filter CDF files by time range using cached metadata for lightning-fast filtering.
-    
+
+    OPTIMIZATION: First tries to extract date from filename (instant!), only falls back
+    to opening CDF files if filename doesn't contain a date.
+
     Args:
         file_paths: List of CDF file paths to check
         start_time: Start of requested time range
         end_time: End of requested time range
-        
+
     Returns:
         List of file paths that contain data in the requested time range
     """
     scanner = CDFMetadataScanner()
     relevant_files = []
-    
+    files_needing_scan = []
+
     print_manager.debug(f"🔍 Filtering {len(file_paths)} CDF files by time range")
-    
+
+    # PHASE 1: Fast filename-based filtering (no file I/O!)
     for file_path in file_paths:
+        filename = os.path.basename(file_path)
+        file_date = _extract_date_from_filename(filename)
+
+        if file_date:
+            # For daily files, check if the file's date overlaps with requested range
+            # File covers file_date 00:00:00 to file_date 23:59:59
+            file_start = file_date
+            file_end = datetime(file_date.year, file_date.month, file_date.day, 23, 59, 59)
+
+            has_overlap = file_start <= end_time and file_end >= start_time
+
+            if has_overlap:
+                relevant_files.append(file_path)
+                print_manager.debug(f"    ✅ {filename}: Date {file_date.strftime('%Y-%m-%d')} overlaps (filename match)")
+            else:
+                print_manager.debug(f"    ❌ {filename}: Date {file_date.strftime('%Y-%m-%d')} no overlap (filename match)")
+        else:
+            # No date in filename - need to scan the file
+            files_needing_scan.append(file_path)
+
+    if files_needing_scan:
+        print_manager.debug(f"📂 {len(files_needing_scan)} files need metadata scan (no date in filename)")
+
+    # PHASE 2: Scan files without dates in filename (fallback)
+    for file_path in files_needing_scan:
         try:
             # Try to get cached metadata first (super fast!)
             metadata = scanner.scan_cdf_file(file_path, force_rescan=False)
