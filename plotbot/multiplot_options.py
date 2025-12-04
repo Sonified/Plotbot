@@ -315,6 +315,7 @@ class MultiplotOptions:
         self.ham_var = None  # Will hold the actual plot_manager object
         self.ham_opacity = 1.0  # New: Opacity for HAM data (default 1.0)
         self.r_hand_single_color = None  # New: Single color for right axis in rainbow mode (hex color string)
+        self.show_right_axis_label = True  # Show/hide the right y-axis label (e.g., n_ham)
         
         # New color mode options
         self.color_mode = 'default'  # Options: 'default', 'rainbow', 'single'

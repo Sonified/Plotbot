@@ -81,6 +81,7 @@ class MultiplotOptions:
     # HAM-specific options
     hamify: bool
     ham_var: Any  # Will be a plot_manager object
+    show_right_axis_label: bool  # Show/hide the right y-axis label (e.g., n_ham)
     color_mode: str
     single_color: Optional[str]
     save_output: bool

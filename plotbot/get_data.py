@@ -439,9 +439,9 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
 
         # DEBUGGING: Print actual tracker check result
         print_manager.debug(f"🔎 TRACKER CHECK: data_type={data_type}, trange={trange}, calculation_needed={calculation_needed}")
-        # HAM-specific debugging
-        if data_type == 'ham':
-            print_manager.ham_debugging(f"TRACKER CHECK: trange={trange}, calculation_needed={calculation_needed}, tracker_state={global_tracker.calculated_ranges.get('ham', 'EMPTY')}")
+        # HAM-specific debugging (commented out - too verbose)
+        # if data_type == 'ham':
+        #     print_manager.ham_debugging(f"TRACKER CHECK: trange={trange}, calculation_needed={calculation_needed}, tracker_state={global_tracker.calculated_ranges.get('ham', 'EMPTY')}")
         
         end_step(cache_step_key, cache_step_start, {"calculation_needed": calculation_needed})
 
@@ -548,9 +548,9 @@ def get_data(trange: List[str], *variables, skip_refresh_check=False):
         else: # Calculation NOT needed
              # Use canonical key in status message
             print_manager.status(f"📤 Using existing {data_type} data, calculation/import not needed.")
-            # HAM-specific debugging
-            if data_type == 'ham':
-                print_manager.ham_debugging(f"SKIPPED IMPORT: trange={trange}, tracker says not needed. State={global_tracker.calculated_ranges.get('ham', 'EMPTY')}")
+            # HAM-specific debugging (commented out - too verbose)
+            # if data_type == 'ham':
+            #     print_manager.ham_debugging(f"SKIPPED IMPORT: trange={trange}, tracker says not needed. State={global_tracker.calculated_ranges.get('ham', 'EMPTY')}")
         
         end_step(step_key, step_start, {"calculation_needed": calculation_needed})
     

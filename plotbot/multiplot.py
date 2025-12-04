@@ -817,34 +817,32 @@ def multiplot(plot_list, **kwargs):
                             ax2.set_ylim(single_var.y_limit)
                         
                         # --- NEW: Apply rainbow color to all right axis elements ---
-                        if right_axis_color is not None:
+                        # Use panel_color for axis styling (rainbow), not right_axis_color (which may be dark grey for bars)
+                        axis_style_color = panel_color if panel_color else right_axis_color
+                        if axis_style_color is not None:
                             # Set y-axis label color and font weight
-                            ax2.yaxis.label.set_color(right_axis_color)
+                            ax2.yaxis.label.set_color(axis_style_color)
                             if hasattr(options, 'bold_y_axis_label') and options.bold_y_axis_label:
                                 ax2.yaxis.label.set_weight('bold')
                             else:
                                 ax2.yaxis.label.set_weight('normal')
                             # Set tick color and label size
-                            ax2.tick_params(axis='y', colors=right_axis_color, which='both', labelsize=options.y_tick_label_font_size)
-                            # Set all spines to right axis color
+                            ax2.tick_params(axis='y', colors=axis_style_color, which='both', labelsize=options.y_tick_label_font_size)
+                            # Make ax2 spines invisible so they don't cover the main axis panel colors
                             for spine in ax2.spines.values():
-                                spine.set_color(right_axis_color)
+                                spine.set_visible(False)
+                            print_manager.ham_debugging(f"🎨 Panel {i+1}: ax2 styled with color={axis_style_color}, spines invisible")
                         # --- END NEW ---
-                        
+
                         # Set the right y-axis label to match the panel color and style
                         ham_ylabel = getattr(ham_var, 'y_label', 'HAM')
                         ax2.set_ylabel(ham_ylabel,
                                     fontsize=options.y_axis_label_font_size,
                                     labelpad=options.y_label_pad,
                                     fontweight='bold' if options.bold_y_axis_label else 'normal',
-                                    ha=options.y_label_alignment)
-                        # Force all right axis elements to rainbow color
-                        print(f"DEBUG: Panel {i+1} right axis label is: '{ax2.get_ylabel()}'")
-                        # Set right y-axis tick params and spine colors to match right axis color
-                        if right_axis_color is not None:
-                            ax2.tick_params(axis='y', colors=right_axis_color, which='both')
-                            for spine in ax2.spines.values():
-                                spine.set_color(right_axis_color)
+                                    ha=options.y_label_alignment,
+                                    color=axis_style_color if axis_style_color else 'black')
+                        print_manager.ham_debugging(f"🎨 Panel {i+1} right axis label: '{ax2.get_ylabel()}'")
                         # Now apply the panel color to ax2 (for y-label, etc.)
                     
                     else:
@@ -911,8 +909,9 @@ def multiplot(plot_list, **kwargs):
                                 color=plot_color)
                         
                         if panel_color:
+                            print_manager.ham_debugging(f"🎨 Panel {i+1}: Calling apply_panel_color (list var)")
                             apply_panel_color(axs[i], panel_color, options)
-            
+
             if len(var) > 1:
                 lines_left, labels_left = axs[i].get_legend_handles_labels()
                 if options.second_variable_on_right_axis:
@@ -1222,8 +1221,9 @@ def multiplot(plot_list, **kwargs):
                                        ha='center', va='center', transform=axs[i].transAxes,
                                        fontsize=10, color='gray', style='italic')
                         if panel_color:
+                            print_manager.ham_debugging(f"🎨 Panel {i+1}: Calling apply_panel_color (time_series)")
                             apply_panel_color(axs[i], panel_color, options)
-    
+
                     elif var.plot_type == 'scatter':
                         # Handle scatter plots
                         if len(indices) > 0:
@@ -1354,6 +1354,7 @@ def multiplot(plot_list, **kwargs):
 
                             # Apply panel color formatting if needed
                             if panel_color:
+                                print_manager.ham_debugging(f"🎨 Panel {i+1}: Calling apply_panel_color (scatter)")
                                 apply_panel_color(axs[i], panel_color, options)
                         else:
                             # Handle empty data case for scatter plots
@@ -1364,8 +1365,9 @@ def multiplot(plot_list, **kwargs):
 
                             # Apply panel color formatting if needed (even for empty plots)
                             if panel_color:
+                                print_manager.ham_debugging(f"🎨 Panel {i+1}: Calling apply_panel_color (scatter empty)")
                                 apply_panel_color(axs[i], panel_color, options)
-                    
+
                     elif var.plot_type == 'spectral':
                         print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: SPECTRAL PLOT TYPE DETECTED")
                         print_manager.test(f"[TEST SPECTRAL] Panel {i+1}: Variable: {var.class_name}.{var.subclass_name}")
@@ -1564,6 +1566,7 @@ def multiplot(plot_list, **kwargs):
                         
                         # Apply panel color formatting if needed
                         if panel_color:
+                            print_manager.ham_debugging(f"🎨 Panel {i+1}: Calling apply_panel_color (spectral)")
                             apply_panel_color(axs[i], panel_color, options)
                 else: # Default plot type (treat as time_series)
                     print('THIS IS A DEFAULT PLOT🍀🍀🍀🍀🍀🍀')
@@ -1714,13 +1717,14 @@ def multiplot(plot_list, **kwargs):
                     else:
                         # Handle empty data case
                         print_manager.warning(f"No data to plot for panel {i+1} - skipping plot")
-                        axs[i].text(0.5, 0.5, 'No data for this time range', 
+                        axs[i].text(0.5, 0.5, 'No data for this time range',
                                 ha='center', va='center', transform=axs[i].transAxes,
                                 fontsize=10, color='gray', style='italic')
-                    
+
                     if panel_color:
+                        print_manager.ham_debugging(f"🎨 Panel {i+1}: Calling apply_panel_color (default)")
                         apply_panel_color(axs[i], panel_color, options)
-        
+
         # Add HAM data plotting on right axis (if enabled)
         # print_manager.debug(f"Panel {i+1}: Checking HAM plotting conditions: hamify={options.hamify}, ham_var={options.ham_var is not None}, second_variable_on_right_axis={options.second_variable_on_right_axis}") # COMMENTED OUT
         if options.hamify and options.ham_var is not None and not options.second_variable_on_right_axis:
@@ -1850,35 +1854,40 @@ def multiplot(plot_list, **kwargs):
                         ax2.set_ylim(0, data_max * 1.1)  # 10% margin above max
                         print_manager.debug(f"Panel {i+1}: Auto-scaled right axis y-limits to [0, {data_max * 1.1:.1f}] based on data_slice max={data_max:.1f}")
                     
-                    # --- NEW: Apply rainbow color to all right axis elements ---
-                    if right_axis_color is not None:
-                        # Set y-axis label color and font weight
-                        ax2.yaxis.label.set_color(right_axis_color)
+                    # --- NEW: Apply styling to right axis ---
+                    # Make ax2 spines invisible so they don't cover the main axis panel colors
+                    for spine in ax2.spines.values():
+                        spine.set_visible(False)
+                    print_manager.ham_debugging(f"🎨 Panel {i+1}: HAM ax2 spines set to invisible")
+
+                    # Apply rainbow color to all right axis elements
+                    # Use panel_color for axis styling (rainbow), not right_axis_color (which may be dark grey for bars)
+                    axis_style_color = panel_color if panel_color else right_axis_color
+                    if axis_style_color is not None:
+                        ax2.yaxis.label.set_color(axis_style_color)
                         if hasattr(options, 'bold_y_axis_label') and options.bold_y_axis_label:
                             ax2.yaxis.label.set_weight('bold')
                         else:
                             ax2.yaxis.label.set_weight('normal')
-                        # Set tick color and label size
-                        ax2.tick_params(axis='y', colors=right_axis_color, which='both', labelsize=options.y_tick_label_font_size)
-                        # Set all spines to right axis color
-                        for spine in ax2.spines.values():
-                            spine.set_color(right_axis_color)
+                        ax2.tick_params(axis='y', colors=axis_style_color, which='both', labelsize=options.y_tick_label_font_size)
+                        print_manager.ham_debugging(f"🎨 Panel {i+1}: HAM right axis styled with color {axis_style_color}")
                     # --- END NEW ---
-                    
-                    # Include HAM in legend
-                    lines_left, labels_left = axs[i].get_legend_handles_labels()
-                    lines_right, labels_right = ax2.get_legend_handles_labels()
-                    axs[i].legend(lines_left + lines_right, 
-                                labels_left + labels_right,
-                                bbox_to_anchor=(1.025, 1),
-                                loc='upper left')
-                    # Set legend label color to rainbow if in rainbow mode
-                    if options.color_mode == 'rainbow' and panel_color is not None:
-                        leg = axs[i].get_legend()
-                        for text in leg.get_texts():
-                            text.set_color(panel_color)
-                        # Set the legend border (frame) color to match the panel color
-                        leg.get_frame().set_edgecolor(panel_color)
+
+                    # Include HAM in legend (only if show_right_axis_label is True)
+                    if options.show_right_axis_label:
+                        lines_left, labels_left = axs[i].get_legend_handles_labels()
+                        lines_right, labels_right = ax2.get_legend_handles_labels()
+                        axs[i].legend(lines_left + lines_right,
+                                    labels_left + labels_right,
+                                    bbox_to_anchor=(1.025, 1),
+                                    loc='upper left')
+                        # Set legend label color to rainbow if in rainbow mode
+                        if options.color_mode == 'rainbow' and panel_color is not None:
+                            leg = axs[i].get_legend()
+                            for text in leg.get_texts():
+                                text.set_color(panel_color)
+                            # Set the legend border (frame) color to match the panel color
+                            leg.get_frame().set_edgecolor(panel_color)
                 else:
                     print_manager.debug(f"Panel {i+1}: No HAM data points found in time range {trange[0]} to {trange[1]}")
             else:

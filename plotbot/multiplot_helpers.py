@@ -1,6 +1,7 @@
 #plotbot/multiplot_helpers.py
 
 import matplotlib.colors as colors
+from .print_manager import print_manager
 
 def get_plot_colors(n_panels, color_mode='default', single_color=None):
     """
@@ -89,12 +90,15 @@ def get_plot_colors(n_panels, color_mode='default', single_color=None):
 def apply_panel_color(ax, color, options=None):
     """
     Apply a color to all elements of a panel
-    
+
     Args:
         ax: The matplotlib axis
         color: The color to apply
         options: The MultiplotOptions instance (for accessing settings)
     """
+    # Debug print for panel coloring
+    print_manager.ham_debugging(f"🎨 apply_panel_color called: color={color}")
+
     # Store original y-limits before any modifications
     original_ylim = ax.get_ylim()
     
@@ -115,7 +119,8 @@ def apply_panel_color(ax, color, options=None):
     # Color all spines
     for spine in ax.spines.values():
         spine.set_color(color)
-    
+    print_manager.ham_debugging(f"🎨 Spines colored to {color}")
+
     # Update vertical line if it exists
     if options and options.draw_vertical_line:
         for line in ax.get_lines():
