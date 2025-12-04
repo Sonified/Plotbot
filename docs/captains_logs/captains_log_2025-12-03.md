@@ -186,3 +186,132 @@ These are from earlier work with ±10 day windows:
   - `0ba9398` - Add remaining ham binning test files and ±10 day data
 - **Date:** 2025-12-03
 - **Status:** ✅ Successfully pushed to origin/main
+
+---
+
+## Rainbow Mode HAM Plotting Fixes
+
+### Summary
+Fixed multiple issues with HAM (hammerhead) data overlay in rainbow color mode multiplots, and added support for `degrees_from_perihelion` x-axis mode with HAM data.
+
+---
+
+### Issue 1: Panel Border Colors Overwritten by ax2 Spines
+
+**The Problem:**
+In rainbow mode, panel borders should show the rainbow colors (red, gold, blue, violet). But when HAM data was plotted on a twinx axis (`ax2`), the ax2 spines were drawn on top of the main axis spines with dark grey color, overwriting the rainbow panel colors.
+
+**The Fix:**
+Made ax2 spines invisible so they don't cover the main axis panel colors:
+```python
+# Make ax2 spines invisible so they don't cover the main axis panel colors
+for spine in ax2.spines.values():
+    spine.set_visible(False)
+```
+
+**File:** `plotbot/multiplot.py` (lines ~1858-1861)
+
+---
+
+### Issue 2: Right Axis Tick Colors Not Matching Rainbow
+
+**The Problem:**
+The right axis tick marks and tick labels were using `right_axis_color` which was set to `r_hand_single_color` (#363737 - dark grey for HAM bars). In rainbow mode, we want the axis styling to use the rainbow panel color, not the bar color.
+
+**The Fix:**
+Separated bar color from axis styling color:
+```python
+# Use panel_color for axis styling (rainbow), not right_axis_color (which may be dark grey for bars)
+axis_style_color = panel_color if panel_color else right_axis_color
+if axis_style_color is not None:
+    ax2.yaxis.label.set_color(axis_style_color)
+    ax2.tick_params(axis='y', colors=axis_style_color, which='both', labelsize=options.y_tick_label_font_size)
+```
+
+**File:** `plotbot/multiplot.py` (lines ~1863-1873)
+
+---
+
+### Issue 3: Need to Hide HAM Legend
+
+**The Problem:**
+User wanted the ability to hide the HAM legend (e.g., "n_ham" label) without hiding the axis ticks and tick labels.
+
+**The Fix:**
+Added new option `show_right_axis_label` that controls ONLY the legend visibility:
+```python
+# In multiplot_options.py
+self.show_right_axis_label = True  # Show/hide the right y-axis label (e.g., n_ham)
+
+# In multiplot.py - legend creation is now conditional
+if options.show_right_axis_label:
+    lines_left, labels_left = axs[i].get_legend_handles_labels()
+    lines_right, labels_right = ax2.get_legend_handles_labels()
+    axs[i].legend(lines_left + lines_right, labels_left + labels_right, ...)
+```
+
+**Files:**
+- `plotbot/multiplot_options.py` (line ~318)
+- `plotbot/multiplot_options.pyi` (type hints)
+- `plotbot/multiplot.py` (lines ~1876-1890)
+
+---
+
+### Issue 4: HAM Plotting Fails with `degrees_from_perihelion` X-Axis
+
+**The Problem:**
+When `use_degrees_from_perihelion = True`, multiplot crashed with:
+```
+UFuncTypeError: ufunc 'greater' did not contain a loop with signature matching types
+(<class 'numpy.dtypes.TimeDelta64DType'>, <class 'numpy.dtypes.Float64DType'>) -> None
+```
+
+**Root Cause:**
+The HAM code called `positional_mapper.map_to_position(time_slice, data_type)` with `data_type='degrees_from_perihelion'`. But `map_to_position()` only supports `'r_sun'`, `'carrington_lon'`, and `'carrington_lat'` - it returns `None` for unsupported types.
+
+When the mapping failed, `x_data` stayed as datetime objects. Then the bar width calculation tried to compare a `timedelta64` with a float:
+```python
+time_range = np.nanmax(x_data) - np.nanmin(x_data)  # timedelta64!
+max_width = min(time_range * 0.05, 0.2)  # Can't compare timedelta with float!
+```
+
+**The Fix:**
+Added special handling for `degrees_from_perihelion` in the HAM code section, mirroring what the main plot code does:
+```python
+if current_panel_use_degrees and perihelion_time_str and data_type == 'degrees_from_perihelion':
+    # 1. Map HAM time slice to Carrington longitude
+    carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon', unwrap_angles=True)
+
+    # 2. Map perihelion time to its longitude
+    perihelion_dt = datetime.strptime(perihelion_time_str, '%Y/%m/%d %H:%M:%S.%f')
+    perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
+    perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon', unwrap_angles=True)
+
+    # 3. Calculate relative degrees
+    relative_degrees = carrington_lons_valid - perihelion_lon_val
+
+    # 4. Wrap to [-180, 180] range
+    relative_degrees_wrapped = (relative_degrees + 180) % 360 - 180
+
+    x_data = relative_degrees_wrapped
+```
+
+**File:** `plotbot/multiplot.py` (lines ~1777-1832)
+
+---
+
+### Commits for These Fixes
+- `f483c21` - Fix rainbow mode HAM plotting: panel borders, legend control, axis colors
+- `cfa8284` - Fix HAM plotting with degrees_from_perihelion axis
+
+---
+
+### Key Learnings
+
+1. **twinx() axes have their own spines** - These can visually override the parent axis. Make them invisible if you want the parent styling to show through.
+
+2. **Separate styling concerns** - Bar color (data representation) should be separate from axis styling color (visual theme). Don't conflate `r_hand_single_color` with `panel_color`.
+
+3. **Test all axis modes with all features** - The `degrees_from_perihelion` mode worked fine for main plots but wasn't implemented for HAM overlays. Each new feature combination needs explicit testing.
+
+4. **Read the error message carefully** - `TimeDelta64DType` vs `Float64DType` immediately tells you there's a datetime vs numeric type mismatch somewhere in the pipeline.
