@@ -1775,20 +1775,61 @@ def multiplot(plot_list, **kwargs):
                     x_data = time_slice # Default to time
 
                     if using_positional_axis and positional_mapper is not None:
-                        positional_vals = positional_mapper.map_to_position(time_slice, data_type)
-                        if positional_vals is not None:
-                            # --- NEW: Create mask for successful mapping --- 
-                            valid_mask = ~np.isnan(positional_vals) 
-                            num_valid = np.sum(valid_mask)
-                            
-                            if num_valid > 0:
-                                x_data = positional_vals[valid_mask]
-                                data_slice = data_slice[valid_mask] 
-                                print_manager.debug(f"Panel {i+1}: Successfully mapped HAM data to {data_type} coordinates ({num_valid} points)")
-                            else:
-                                print_manager.debug(f"Panel {i+1}: HAM positional mapping resulted in no valid points. Using time.")
+                        # --- Special handling for degrees_from_perihelion (HAM) ---
+                        if current_panel_use_degrees and perihelion_time_str and data_type == 'degrees_from_perihelion':
+                            print_manager.debug(f"Panel {i+1} (HAM): Calculating Degrees from Perihelion.")
+                            try:
+                                # 1. Map HAM time slice to Carrington longitude
+                                carrington_lons_slice = positional_mapper.map_to_position(time_slice, 'carrington_lon', unwrap_angles=True)
+
+                                # 2. Map perihelion time to its longitude
+                                perihelion_dt = datetime.strptime(perihelion_time_str, '%Y/%m/%d %H:%M:%S.%f')
+                                perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
+                                perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon', unwrap_angles=True)
+
+                                if carrington_lons_slice is not None and perihelion_lon_arr is not None and len(perihelion_lon_arr) > 0:
+                                    perihelion_lon_val = perihelion_lon_arr[0]
+
+                                    # Create mask for valid longitude values
+                                    valid_lon_mask = ~np.isnan(carrington_lons_slice)
+                                    num_valid_lons = np.sum(valid_lon_mask)
+
+                                    if num_valid_lons > 0:
+                                        carrington_lons_valid = carrington_lons_slice[valid_lon_mask]
+                                        data_slice_filtered = data_slice[valid_lon_mask]
+
+                                        # 3. Calculate relative degrees
+                                        relative_degrees = carrington_lons_valid - perihelion_lon_val
+
+                                        # 4. Wrap to [-180, 180] range
+                                        relative_degrees_wrapped = (relative_degrees + 180) % 360 - 180
+
+                                        # 5. Set x_data and data_slice
+                                        x_data = relative_degrees_wrapped
+                                        data_slice = data_slice_filtered
+                                        print_manager.debug(f"Panel {i+1} (HAM): Successfully calculated degrees from perihelion. Range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
+                                    else:
+                                        print_manager.warning(f"Panel {i+1} (HAM): No valid longitudes found. Falling back to time axis.")
+                                else:
+                                    print_manager.warning(f"Panel {i+1} (HAM): Failed to map to longitude. Falling back to time axis.")
+                            except Exception as e:
+                                print_manager.error(f"Panel {i+1} (HAM): Error during degrees from perihelion calculation: {e}")
+                        # --- Generic positional mapping for other types ---
                         else:
-                            print_manager.debug(f"Panel {i+1}: HAM positional mapping failed (returned None). Using time.")
+                            positional_vals = positional_mapper.map_to_position(time_slice, data_type)
+                            if positional_vals is not None:
+                                # --- NEW: Create mask for successful mapping ---
+                                valid_mask = ~np.isnan(positional_vals)
+                                num_valid = np.sum(valid_mask)
+
+                                if num_valid > 0:
+                                    x_data = positional_vals[valid_mask]
+                                    data_slice = data_slice[valid_mask]
+                                    print_manager.debug(f"Panel {i+1}: Successfully mapped HAM data to {data_type} coordinates ({num_valid} points)")
+                                else:
+                                    print_manager.debug(f"Panel {i+1}: HAM positional mapping resulted in no valid points. Using time.")
+                            else:
+                                print_manager.debug(f"Panel {i+1}: HAM positional mapping failed (returned None). Using time.")
                     
                     # --- Transform to relative time if use_relative_time is True (HAM) ---
                     if options.use_relative_time and not using_positional_axis:
