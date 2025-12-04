@@ -1959,7 +1959,7 @@ def multiplot(plot_list, **kwargs):
                     json_path = options.ham_binned_json_path
                 else:
                     # Default path relative to plotbot package
-                    json_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'psp', 'ham_angular_bins', 'ham_bin_data_plus_minus_3_days.json')
+                    json_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'psp', 'ham_angular_bins', 'ham_bin_data_plus_minus_3_days_corrected.json')
 
                 # Load JSON data (cache it to avoid reloading for each panel)
                 if not hasattr(options, '_ham_binned_json_cache') or options._ham_binned_json_cache is None:
@@ -2001,6 +2001,8 @@ def multiplot(plot_list, **kwargs):
                                 start_lons = np.array([b['start_lon'] for b in bins])
                                 end_lons = np.array([b['end_lon'] for b in bins])
                                 ham_frac = np.array([b['ham_frac'] for b in bins])
+                                # Cap ham_frac at 1.0 for visualization (raw data preserved in JSON)
+                                ham_frac = np.clip(ham_frac, 0, 1)
 
                                 # Calculate bin centers (handle wrap-around)
                                 bar_centers_abs = np.zeros(len(start_lons))
@@ -2463,11 +2465,15 @@ def multiplot(plot_list, **kwargs):
                             
                         # Apply panel-specific range immediately if not using common x-axis
                         if not options.use_single_x_axis:
-                            # Add reasonable padding
-                            data_range = max_val - min_val
-                            padding = data_range * 0.05  # 5% padding
-                            ax.set_xlim(min_val - padding, max_val + padding)
-                            print_manager.debug(f"Set individual range for axis {i}: {min_val-padding:.2f} to {max_val+padding:.2f}")
+                            # Only add padding if x_axis_tight is NOT set
+                            if options.x_axis_tight:
+                                ax.set_xlim(min_val, max_val)
+                                print_manager.debug(f"Set individual range for axis {i} (tight): {min_val:.2f} to {max_val:.2f}")
+                            else:
+                                data_range = max_val - min_val
+                                padding = data_range * 0.05  # 5% padding
+                                ax.set_xlim(min_val - padding, max_val + padding)
+                                print_manager.debug(f"Set individual range for axis {i}: {min_val-padding:.2f} to {max_val+padding:.2f}")
                     else:
                         print_manager.warning(f"No {data_type} data found for axis {i}, using default limits")
                         # Default range depends on data type
@@ -2508,15 +2514,21 @@ def multiplot(plot_list, **kwargs):
         if numeric_mins and numeric_maxs:
             global_min = min(numeric_mins)
             global_max = max(numeric_maxs)
-            data_range = global_max - global_min
-            padding = data_range * 0.05  # 5% padding
-            global_min -= padding
-            global_max += padding
-            
+
+            # Only add padding if x_axis_tight is NOT set
+            if not options.x_axis_tight:
+                data_range = global_max - global_min
+                padding = data_range * 0.05  # 5% padding
+                global_min -= padding
+                global_max += padding
+                print_manager.debug(f"Applied 5% padding to global range")
+            else:
+                print_manager.debug(f"x_axis_tight=True: no padding applied to global range")
+
             # Apply the global range to all axes
             for ax in axs:
                 ax.set_xlim(global_min, global_max)
-            
+
             print_manager.debug(f"Applied common x-axis range to all panels: {global_min:.2f} to {global_max:.2f}")
             
     # --- Final plot adjustments (Labels, titles, legends, grid) ---
@@ -2640,7 +2652,8 @@ def multiplot(plot_list, **kwargs):
         ax.tick_params(axis='y', labelsize=options.y_tick_label_font_size)
 
         # Apply x_axis_tight AFTER all limit-setting - removes padding between data and axis edges
-        if options.x_axis_tight:
+        # BUT only when NOT using single x-axis - otherwise x_axis_tight affects the global range calculation
+        if options.x_axis_tight and not options.use_single_x_axis:
             ax.autoscale(enable=True, axis='x', tight=True)
 
     print_manager.processing("[XAXIS_FORMATTING] Exiting consolidated x-axis formatting block.")
