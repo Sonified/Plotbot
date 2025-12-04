@@ -879,6 +879,56 @@ class MultiplotOptions:
     @r_hand_single_color.setter
     def r_hand_single_color(self, value: Optional[str]):
         self.__dict__['r_hand_single_color'] = value
+
+    # --- HAM BINNED DEGREES OVERLAY PROPERTIES ---
+    @property
+    def ham_binned_degrees_overlay(self) -> bool:
+        """Whether to overlay pre-computed HAM occurrence rate bars from JSON (for degrees_from_perihelion mode)."""
+        return self.__dict__.get('ham_binned_degrees_overlay', False)
+
+    @ham_binned_degrees_overlay.setter
+    def ham_binned_degrees_overlay(self, value: bool):
+        self.__dict__['ham_binned_degrees_overlay'] = value
+
+    @property
+    def ham_binned_json_path(self) -> Optional[str]:
+        """Path to the pre-computed HAM bin JSON file. If None, uses default location."""
+        return self.__dict__.get('ham_binned_json_path', None)
+
+    @ham_binned_json_path.setter
+    def ham_binned_json_path(self, value: Optional[str]):
+        self.__dict__['ham_binned_json_path'] = value
+
+    @property
+    def ham_binned_y_limit(self) -> Optional[Tuple[float, float]]:
+        """Y-axis limits for the HAM binned overlay (min, max). None for auto-scaling."""
+        return self.__dict__.get('ham_binned_y_limit', None)
+
+    @ham_binned_y_limit.setter
+    def ham_binned_y_limit(self, value: Optional[Tuple[float, float]]):
+        if value is not None and not (isinstance(value, (tuple, list)) and len(value) == 2):
+            print_manager.warning(f"Invalid ham_binned_y_limit format: {value}. Expected (min, max) tuple or None.")
+            return
+        self.__dict__['ham_binned_y_limit'] = value
+
+    @property
+    def ham_binned_bar_color(self) -> Optional[str]:
+        """Color for HAM binned overlay bars. If None, uses r_hand_single_color or panel color."""
+        return self.__dict__.get('ham_binned_bar_color', None)
+
+    @ham_binned_bar_color.setter
+    def ham_binned_bar_color(self, value: Optional[str]):
+        self.__dict__['ham_binned_bar_color'] = value
+
+    @property
+    def ham_binned_bar_opacity(self) -> float:
+        """Opacity for HAM binned overlay bars (0.0=transparent, 1.0=opaque)."""
+        return self.__dict__.get('ham_binned_bar_opacity', 0.7)
+
+    @ham_binned_bar_opacity.setter
+    def ham_binned_bar_opacity(self, value: float):
+        self.__dict__['ham_binned_bar_opacity'] = value
+    # --- END HAM BINNED DEGREES OVERLAY PROPERTIES ---
     # --- END HAM DATA PROPERTIES ---
 
     # Keep these for backward compatibility (but they're deprecated now)

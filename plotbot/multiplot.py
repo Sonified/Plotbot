@@ -1944,7 +1944,138 @@ def multiplot(plot_list, **kwargs):
         else:
             # print_manager.status(f"Panel {i+1}: Not plotting HAM data - conditions not met: hamify={options.hamify}, ham_var={options.ham_var is not None}, second_variable_on_right_axis={options.second_variable_on_right_axis}") # COMMENTED OUT
             pass # Keep pass to avoid syntax error
-        
+
+        # === HAM BINNED DEGREES OVERLAY (pre-computed from JSON) ===
+        # This plots pre-computed HAM occurrence rate data binned by Carrington longitude
+        # Only works with degrees_from_perihelion mode
+        if options.ham_binned_degrees_overlay and current_panel_use_degrees:
+            print_manager.debug(f"Panel {i+1}: HAM binned degrees overlay enabled")
+            try:
+                import json
+
+                # Determine JSON path - use custom path or default
+                if options.ham_binned_json_path:
+                    json_path = options.ham_binned_json_path
+                else:
+                    # Default path relative to plotbot package
+                    json_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'psp', 'ham_angular_bins', 'ham_bin_data_plus_minus_3_days.json')
+
+                # Load JSON data (cache it to avoid reloading for each panel)
+                if not hasattr(options, '_ham_binned_json_cache') or options._ham_binned_json_cache is None:
+                    if os.path.exists(json_path):
+                        with open(json_path, 'r') as f:
+                            options._ham_binned_json_cache = json.load(f)
+                        print_manager.debug(f"Loaded HAM binned JSON from: {json_path}")
+                    else:
+                        print_manager.warning(f"HAM binned JSON file not found: {json_path}")
+                        options._ham_binned_json_cache = {}
+
+                ham_binned_data = options._ham_binned_json_cache
+
+                # Get encounter key for this panel
+                # enc_num comes as "E4", "E18" etc but JSON uses "E04", "E18" format
+                # Normalize to zero-padded format for lookup
+                if enc_num and enc_num.startswith('E'):
+                    enc_number = int(enc_num[1:])
+                    enc_key = f"E{enc_number:02d}" if enc_number < 10 else f"E{enc_number}"
+                else:
+                    enc_key = enc_num
+
+                if enc_key in ham_binned_data:
+                    enc_data = ham_binned_data[enc_key]
+                    bins = enc_data.get('bins', [])
+
+                    if bins:
+                        # Get perihelion longitude for this encounter
+                        perihelion_str = enc_data.get('perihelion')
+                        if perihelion_str and positional_mapper is not None:
+                            perihelion_dt = datetime.strptime(perihelion_str, '%Y/%m/%d %H:%M:%S.%f')
+                            perihelion_time_np = np.array([np.datetime64(perihelion_dt)])
+                            perihelion_lon_arr = positional_mapper.map_to_position(perihelion_time_np, 'carrington_lon', unwrap_angles=True)
+
+                            if perihelion_lon_arr is not None and len(perihelion_lon_arr) > 0 and not np.isnan(perihelion_lon_arr[0]):
+                                perihelion_lon = perihelion_lon_arr[0]
+
+                                # Extract bin data
+                                start_lons = np.array([b['start_lon'] for b in bins])
+                                end_lons = np.array([b['end_lon'] for b in bins])
+                                ham_frac = np.array([b['ham_frac'] for b in bins])
+
+                                # Calculate bin centers (handle wrap-around)
+                                bar_centers_abs = np.zeros(len(start_lons))
+                                for bi in range(len(start_lons)):
+                                    if abs(end_lons[bi] - start_lons[bi]) > 180:
+                                        if start_lons[bi] > end_lons[bi]:
+                                            bar_centers_abs[bi] = (start_lons[bi] + end_lons[bi] + 360) / 2
+                                        else:
+                                            bar_centers_abs[bi] = (start_lons[bi] + end_lons[bi] - 360) / 2
+                                    else:
+                                        bar_centers_abs[bi] = (start_lons[bi] + end_lons[bi]) / 2
+
+                                # Convert to degrees from perihelion
+                                degrees_from_peri = bar_centers_abs - perihelion_lon
+                                # Wrap to [-180, 180]
+                                degrees_from_peri = (degrees_from_peri + 180) % 360 - 180
+
+                                # Calculate bar widths (handle wrap-around)
+                                raw_widths = end_lons - start_lons
+                                bar_widths = np.zeros_like(raw_widths)
+                                for bi in range(len(raw_widths)):
+                                    w = raw_widths[bi]
+                                    if w > 180:
+                                        w = w - 360
+                                    elif w < -180:
+                                        w = w + 360
+                                    bar_widths[bi] = abs(w)
+                                bar_widths = np.maximum(bar_widths, 1.0)  # Minimum width of 1 degree
+
+                                # Create twinx axis for the overlay
+                                ax2_binned = axs[i].twinx()
+
+                                # Determine bar color
+                                if options.ham_binned_bar_color:
+                                    bar_color = options.ham_binned_bar_color
+                                elif options.r_hand_single_color:
+                                    bar_color = options.r_hand_single_color
+                                elif panel_color:
+                                    bar_color = panel_color
+                                else:
+                                    bar_color = 'steelblue'
+
+                                # Plot the bars
+                                ax2_binned.bar(degrees_from_peri, ham_frac, width=bar_widths,
+                                               alpha=options.ham_binned_bar_opacity,
+                                               edgecolor='black', linewidth=0.5,
+                                               color=bar_color, label='HAM Rate')
+
+                                # Apply y-limits
+                                if options.ham_binned_y_limit:
+                                    ax2_binned.set_ylim(options.ham_binned_y_limit)
+                                else:
+                                    # Auto-scale with 10% margin
+                                    max_val = np.nanmax(ham_frac) if len(ham_frac) > 0 else 1
+                                    ax2_binned.set_ylim(0, max_val * 1.1)
+
+                                # Style the right axis
+                                for spine in ax2_binned.spines.values():
+                                    spine.set_visible(False)
+
+                                axis_style_color = panel_color if panel_color else 'black'
+                                ax2_binned.tick_params(axis='y', colors=axis_style_color, which='both', labelsize=options.y_tick_label_font_size)
+
+                                print_manager.debug(f"Panel {i+1}: Plotted {len(bins)} HAM binned bars for {enc_key}")
+                            else:
+                                print_manager.warning(f"Panel {i+1}: Could not map perihelion longitude for {enc_key}")
+                        else:
+                            print_manager.warning(f"Panel {i+1}: No perihelion time in JSON or positional_mapper unavailable for {enc_key}")
+                    else:
+                        print_manager.debug(f"Panel {i+1}: No bins in JSON for {enc_key}")
+                else:
+                    print_manager.debug(f"Panel {i+1}: Encounter {enc_key} not found in HAM binned JSON")
+            except Exception as e:
+                print_manager.error(f"Panel {i+1}: Error plotting HAM binned overlay: {e}")
+        # === END HAM BINNED DEGREES OVERLAY ===
+
         if axis_options.y_limit:
             # Determine the y_scale
             current_y_scale = None
@@ -2365,35 +2496,38 @@ def multiplot(plot_list, **kwargs):
         for i, ax in enumerate(axs):
             apply_bottom_axis_color(ax, color_scheme['panel_colors'][i])
     
-    # --- Figure-Level Title Setting (when using single title) --- 
+    # --- Figure-Level Title Setting (when using single title) ---
     if options.use_single_title:
-        if options.single_title_text:
+        if options.single_title_text is not None:
+            # Use explicit title (including empty string for no title)
             title_text = options.single_title_text
         else:
-            # Construct default title
+            # Construct default title only if single_title_text is None
             enc_nums = []
             for center_time, _ in plot_list:
                 time_dt = str_to_datetime(center_time) if isinstance(center_time, str) else center_time
                 enc_num = get_encounter_number(time_dt)
                 if enc_num not in enc_nums:
                     enc_nums.append(enc_num)
-                    
+
             enc_nums_str = ", ".join(enc_nums)
             title_text = f"{enc_nums_str} - {pos_desc[options.position]}"
 
-        # Add title color if using rainbow color mode
-        title_kwargs = {
-            'fontsize': options.title_font_size,
-            'pad': options.title_pad,
-            'fontweight': 'bold' if options.bold_title else 'normal'
-        }
-        
-        if options.color_mode == 'rainbow' and color_scheme and color_scheme['panel_colors']:
-            title_kwargs['color'] = color_scheme['panel_colors'][0]  # Use color of first panel
-            
-        # Place title on the top axis instead of using suptitle
-        # This keeps it properly aligned with the plots regardless of panel count
-        axs[0].set_title(title_text, y=options.title_y_position, **title_kwargs)
+        # Only set title if there's actually text to display
+        if title_text:
+            # Add title color if using rainbow color mode
+            title_kwargs = {
+                'fontsize': options.title_font_size,
+                'pad': options.title_pad,
+                'fontweight': 'bold' if options.bold_title else 'normal'
+            }
+
+            if options.color_mode == 'rainbow' and color_scheme and color_scheme['panel_colors']:
+                title_kwargs['color'] = color_scheme['panel_colors'][0]  # Use color of first panel
+
+            # Place title on the top axis instead of using suptitle
+            # This keeps it properly aligned with the plots regardless of panel count
+            axs[0].set_title(title_text, y=options.title_y_position, **title_kwargs)
         print_manager.debug(f"Added title to top axis with pad={options.title_pad}")
     
     print_manager.status("Generating multiplot...\n")
