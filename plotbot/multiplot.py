@@ -2315,10 +2315,14 @@ def multiplot(plot_list, **kwargs):
 
         # Check for global horizontal line
         if plt.options.draw_horizontal_line:
+            # Determine color: use panel_color if requested and in rainbow mode
+            hline_color = plt.options.horizontal_line_color
+            if plt.options.horizontal_line_use_panel_color and panel_color:
+                hline_color = panel_color
             axs[i].axhline(
                 y=plt.options.horizontal_line_value,
                 linewidth=plt.options.horizontal_line_width,
-                color=plt.options.horizontal_line_color,
+                color=hline_color,
                 linestyle=plt.options.horizontal_line_style,
                 alpha=plt.options.horizontal_line_alpha
             )
@@ -2326,10 +2330,14 @@ def multiplot(plot_list, **kwargs):
         # Check for axis-specific horizontal line
         axis_options = getattr(options, f'ax{i+1}')
         if axis_options and axis_options.draw_horizontal_line:
+            # Determine color: use panel_color if requested and in rainbow mode
+            hline_color = axis_options.horizontal_line_color
+            if axis_options.horizontal_line_use_panel_color and panel_color:
+                hline_color = panel_color
             axs[i].axhline(
                 y=axis_options.horizontal_line_value,
                 linewidth=axis_options.horizontal_line_width,
-                color=axis_options.horizontal_line_color,
+                color=hline_color,
                 linestyle=axis_options.horizontal_line_style,
                 alpha=axis_options.horizontal_line_alpha
             )

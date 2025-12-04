@@ -43,6 +43,7 @@ class AxisOptions:
         self.horizontal_line_color = 'black'
         self.horizontal_line_style = '-'
         self.horizontal_line_alpha = 1.0
+        self.horizontal_line_use_panel_color = False  # If True, use panel color in rainbow mode
         # Drop shadow options (left axis only)
         self.use_drop_shadow = False
         self.drop_shadow_offset = (2, -2)
@@ -133,6 +134,15 @@ class AxisOptions:
     @horizontal_line_alpha.setter
     def horizontal_line_alpha(self, value: float):
         self.__dict__['horizontal_line_alpha'] = value
+
+    @property
+    def horizontal_line_use_panel_color(self) -> bool:
+        """If True, use panel color for horizontal line in rainbow mode."""
+        return self.__dict__['horizontal_line_use_panel_color']
+
+    @horizontal_line_use_panel_color.setter
+    def horizontal_line_use_panel_color(self, value: bool):
+        self.__dict__['horizontal_line_use_panel_color'] = value
 
     # Drop shadow properties (left axis only)
     @property
@@ -346,6 +356,7 @@ class MultiplotOptions:
         self.horizontal_line_color = 'black'
         self.horizontal_line_style = '-'
         self.horizontal_line_alpha = 1.0
+        self.horizontal_line_use_panel_color = False  # If True, use panel color in rainbow mode
 
         # Drop shadow options (global, left axis only)
         self.use_drop_shadow = False
