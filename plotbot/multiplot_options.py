@@ -400,6 +400,9 @@ class MultiplotOptions:
         self.tick_length = 10.0
         self.tick_width = 1.0
 
+        # X-axis margin control - remove gap between data and axis edges
+        self.x_axis_tight = False  # If True, removes padding between data and x-axis edges
+
         # User-facing options for controlling boldness of plot text
         # House style: bold title for clarity, regular axis labels for tradition
         self.bold_title = True   # If True, plot titles are bold (default: True)

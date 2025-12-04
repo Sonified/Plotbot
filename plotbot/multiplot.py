@@ -2639,6 +2639,10 @@ def multiplot(plot_list, **kwargs):
         ax.tick_params(axis='x', labelsize=options.x_tick_label_font_size)
         ax.tick_params(axis='y', labelsize=options.y_tick_label_font_size)
 
+        # Apply x_axis_tight AFTER all limit-setting - removes padding between data and axis edges
+        if options.x_axis_tight:
+            ax.autoscale(enable=True, axis='x', tight=True)
+
     print_manager.processing("[XAXIS_FORMATTING] Exiting consolidated x-axis formatting block.")
     
     print_manager.debug("=== Multiplot Complete ===\n")

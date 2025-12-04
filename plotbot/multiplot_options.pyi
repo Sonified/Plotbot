@@ -108,6 +108,7 @@ class MultiplotOptions:
     magnetic_field_line_width: float
     tick_length: float
     tick_width: float
+    x_axis_tight: bool  # Remove padding between data and x-axis edges
     # Positional X-Axis Properties
     x_axis_r_sun: bool
     x_axis_carrington_lon: bool
