@@ -1134,7 +1134,13 @@ class data_cubby:
             
         pm.status(f"   🔀 Taking MERGE PATH for '{data_type_str}'")
         pm.datacubby("Global instance has existing data. Attempting merge...")
-        
+
+        # CRITICAL FIX: Update _current_operation_trange on global instance for merge path
+        # This ensures br_norm and other calculated properties use the correct trange
+        if original_requested_trange is not None and hasattr(global_instance, '_current_operation_trange'):
+            pm.dependency_management(f"[MERGE PATH] Updating _current_operation_trange from {global_instance._current_operation_trange} to {original_requested_trange}")
+            global_instance._current_operation_trange = original_requested_trange
+
         # STYLE_PRESERVATION: Before entering merge path
         pm.style_preservation(f"🔄 MERGE_PATH_ENTRY for '{data_type_str}' (class: {type(global_instance).__name__}, ID: {id(global_instance)})")
         if hasattr(global_instance, '__dict__'):

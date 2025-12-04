@@ -29,6 +29,11 @@ class AxisOptions:
     horizontal_line_width: float
     horizontal_line_color: str
     horizontal_line_style: str
+    horizontal_line_alpha: float
+    use_drop_shadow: bool
+    drop_shadow_offset: Tuple[float, float]
+    drop_shadow_color: str
+    drop_shadow_alpha: float
     r: RightAxisOptions
 
     # --- Methods ---
@@ -63,6 +68,11 @@ class MultiplotOptions:
     horizontal_line_width: float # Global default
     horizontal_line_color: str # Global default
     horizontal_line_style: str # Global default
+    horizontal_line_alpha: float # Global default
+    use_drop_shadow: bool # Global default
+    drop_shadow_offset: Tuple[float, float] # Global default
+    drop_shadow_color: str # Global default
+    drop_shadow_alpha: float # Global default
     use_relative_time: bool
     relative_time_step_units: str
     relative_time_step: int

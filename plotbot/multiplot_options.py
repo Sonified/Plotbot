@@ -42,6 +42,12 @@ class AxisOptions:
         self.horizontal_line_width = 1.0
         self.horizontal_line_color = 'black'
         self.horizontal_line_style = '-'
+        self.horizontal_line_alpha = 1.0
+        # Drop shadow options (left axis only)
+        self.use_drop_shadow = False
+        self.drop_shadow_offset = (2, -2)
+        self.drop_shadow_color = 'gray'
+        self.drop_shadow_alpha = 0.3
         self.r = RightAxisOptions()  # Add right axis options
     
     # Properties for IDE autocompletion
@@ -118,7 +124,53 @@ class AxisOptions:
     @horizontal_line_style.setter
     def horizontal_line_style(self, value: str):
         self.__dict__['horizontal_line_style'] = value
-        
+
+    @property
+    def horizontal_line_alpha(self) -> float:
+        """Alpha/opacity of the horizontal line (0.0 to 1.0)."""
+        return self.__dict__['horizontal_line_alpha']
+
+    @horizontal_line_alpha.setter
+    def horizontal_line_alpha(self, value: float):
+        self.__dict__['horizontal_line_alpha'] = value
+
+    # Drop shadow properties (left axis only)
+    @property
+    def use_drop_shadow(self) -> bool:
+        """Whether to add drop shadow to left axis lines."""
+        return self.__dict__['use_drop_shadow']
+
+    @use_drop_shadow.setter
+    def use_drop_shadow(self, value: bool):
+        self.__dict__['use_drop_shadow'] = value
+
+    @property
+    def drop_shadow_offset(self) -> Tuple[float, float]:
+        """Offset of drop shadow in points (x, y)."""
+        return self.__dict__['drop_shadow_offset']
+
+    @drop_shadow_offset.setter
+    def drop_shadow_offset(self, value: Tuple[float, float]):
+        self.__dict__['drop_shadow_offset'] = value
+
+    @property
+    def drop_shadow_color(self) -> str:
+        """Color of the drop shadow."""
+        return self.__dict__['drop_shadow_color']
+
+    @drop_shadow_color.setter
+    def drop_shadow_color(self, value: str):
+        self.__dict__['drop_shadow_color'] = value
+
+    @property
+    def drop_shadow_alpha(self) -> float:
+        """Alpha/opacity of the drop shadow (0.0 to 1.0)."""
+        return self.__dict__['drop_shadow_alpha']
+
+    @drop_shadow_alpha.setter
+    def drop_shadow_alpha(self, value: float):
+        self.__dict__['drop_shadow_alpha'] = value
+
     @property
     def r(self) -> RightAxisOptions:
         """Right axis options."""
@@ -293,7 +345,14 @@ class MultiplotOptions:
         self.horizontal_line_width = 1.0
         self.horizontal_line_color = 'black'
         self.horizontal_line_style = '-'
-        
+        self.horizontal_line_alpha = 1.0
+
+        # Drop shadow options (global, left axis only)
+        self.use_drop_shadow = False
+        self.drop_shadow_offset = (2, -2)
+        self.drop_shadow_color = 'gray'
+        self.drop_shadow_alpha = 0.3
+
         self._use_relative_time = False  # Now use internal variable
         self.relative_time_step_units = 'hours'
         self.relative_time_step = 2
@@ -506,6 +565,7 @@ class MultiplotOptions:
                 print(f"  horizontal_line_width: {axis_opts.horizontal_line_width}")
                 print(f"  horizontal_line_color: {axis_opts.horizontal_line_color}")
                 print(f"  horizontal_line_style: {axis_opts.horizontal_line_style}")
+                print(f"  horizontal_line_alpha: {axis_opts.horizontal_line_alpha}")
             print(f"  right y_limit: {axis_opts.r.y_limit}")
             print(f"  right color: {axis_opts.r.color}")
 
@@ -928,6 +988,24 @@ class MultiplotOptions:
     @ham_binned_bar_opacity.setter
     def ham_binned_bar_opacity(self, value: float):
         self.__dict__['ham_binned_bar_opacity'] = value
+
+    @property
+    def ham_binned_degrees_color(self) -> str:
+        """Color for HAM binned degrees overlay bars (hex color string). Default: #363737 (dark grey)."""
+        return self.__dict__.get('ham_binned_degrees_color', '#363737')
+
+    @ham_binned_degrees_color.setter
+    def ham_binned_degrees_color(self, value: str):
+        self.__dict__['ham_binned_degrees_color'] = value
+
+    @property
+    def ham_binned_degrees_overlay_opacity(self) -> float:
+        """Opacity for HAM binned degrees overlay bars (0.0=transparent, 1.0=opaque). Default: 0.7."""
+        return self.__dict__.get('ham_binned_degrees_overlay_opacity', 0.7)
+
+    @ham_binned_degrees_overlay_opacity.setter
+    def ham_binned_degrees_overlay_opacity(self, value: float):
+        self.__dict__['ham_binned_degrees_overlay_opacity'] = value
     # --- END HAM BINNED DEGREES OVERLAY PROPERTIES ---
     # --- END HAM DATA PROPERTIES ---
 

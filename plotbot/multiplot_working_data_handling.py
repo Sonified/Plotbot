@@ -30,6 +30,7 @@ from datetime import datetime, timedelta
 import os
 from PIL import Image   
 import matplotlib.pyplot as mpl_plt
+import matplotlib.patheffects as path_effects
 import matplotlib.dates as mdates
 from matplotlib.ticker import FuncFormatter
 import matplotlib.ticker as mticker
@@ -1816,15 +1817,19 @@ def multiplot(plot_list, **kwargs):
                                pad=options.title_pad, fontweight='bold' if options.bold_title else 'normal',
                                y=options.title_y_position)
     
+        # Track data lines BEFORE adding horizontal lines (for drop shadow)
+        data_line_count = len(axs[i].lines)
+
         # Check for global horizontal line
         if plt.options.draw_horizontal_line:
             axs[i].axhline(
                 y=plt.options.horizontal_line_value,
                 linewidth=plt.options.horizontal_line_width,
                 color=plt.options.horizontal_line_color,
-                linestyle=plt.options.horizontal_line_style
+                linestyle=plt.options.horizontal_line_style,
+                alpha=plt.options.horizontal_line_alpha
             )
-    
+
         # Check for axis-specific horizontal line
         axis_options = getattr(options, f'ax{i+1}')
         if axis_options and axis_options.draw_horizontal_line:
@@ -1832,13 +1837,44 @@ def multiplot(plot_list, **kwargs):
                 y=axis_options.horizontal_line_value,
                 linewidth=axis_options.horizontal_line_width,
                 color=axis_options.horizontal_line_color,
-                linestyle=axis_options.horizontal_line_style
+                linestyle=axis_options.horizontal_line_style,
+                alpha=axis_options.horizontal_line_alpha
             )
-    
+
         # Apply border line width to all spines (top, bottom, left, right)
         for spine_name, spine in axs[i].spines.items():
             spine.set_linewidth(plt.options.border_line_width)
-    
+
+        # Apply drop shadow to left axis DATA lines only (not horizontal reference lines)
+        # Check for axis-specific setting first, then fall back to global
+        axis_options = getattr(options, f'ax{i+1}', None)
+        use_shadow = axis_options.use_drop_shadow if axis_options else plt.options.use_drop_shadow
+        if not use_shadow:
+            use_shadow = plt.options.use_drop_shadow  # Fall back to global if axis-specific is False
+
+        if use_shadow:
+            # Get shadow parameters (prefer axis-specific, fall back to global)
+            if axis_options and axis_options.use_drop_shadow:
+                shadow_offset = axis_options.drop_shadow_offset
+                shadow_color = axis_options.drop_shadow_color
+                shadow_alpha = axis_options.drop_shadow_alpha
+            else:
+                shadow_offset = plt.options.drop_shadow_offset
+                shadow_color = plt.options.drop_shadow_color
+                shadow_alpha = plt.options.drop_shadow_alpha
+
+            # Apply path effects only to DATA lines (exclude horizontal reference lines)
+            for line in axs[i].lines[:data_line_count]:
+                line.set_path_effects([
+                    path_effects.SimpleLineShadow(
+                        offset=shadow_offset,
+                        shadow_color=shadow_color,
+                        alpha=shadow_alpha
+                    ),
+                    path_effects.Normal()
+                ])
+            print_manager.debug(f"Applied drop shadow to {data_line_count} data lines on axis {i+1}")
+
     if not options.use_relative_time or using_positional_axis: # If NOT relative time, OR if using longitude (which disables relative)
         for i, ax in enumerate(axs):
             if options.use_single_x_axis:
