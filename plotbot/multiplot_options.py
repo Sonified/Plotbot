@@ -914,6 +914,45 @@ class MultiplotOptions:
             print_manager.warning(f"Invalid degrees_from_perihelion_tick_step format: {value}. Expected number or None.")
             return
         self.__dict__['degrees_from_perihelion_tick_step'] = value
+
+    @property
+    def degrees_from_perihelion_clip_at_reversal(self) -> bool:
+        """
+        If True, clips data where |degrees_from_perihelion| stops increasing monotonically.
+
+        When the spacecraft passes perihelion and moves away, |degrees| increases. At some point
+        in the orbit, it may start coming back toward perihelion, causing |degrees| to decrease
+        (the "curl back" or "reversal"). This option clips the data at that reversal point to
+        prevent the plot from overlapping on itself.
+
+        Default: False (allows data to curl back and potentially overlap)
+        """
+        return self.__dict__.get('degrees_from_perihelion_clip_at_reversal', False)
+
+    @degrees_from_perihelion_clip_at_reversal.setter
+    def degrees_from_perihelion_clip_at_reversal(self, value: bool):
+        """Set whether to clip data at the reversal point in degrees_from_perihelion mode."""
+        self.__dict__['degrees_from_perihelion_clip_at_reversal'] = value
+
+    @property
+    def degrees_from_perihelion_clip_tolerance(self) -> float:
+        """
+        Tolerance factor for detecting reversal in degrees_from_perihelion clipping.
+
+        A value of 1.0 means strict monotonic (any decrease triggers clipping).
+        A value of 0.99 means 1% tolerance (allows small fluctuations before clipping).
+        A value of 0.95 means 5% tolerance (more permissive).
+
+        Default: 1.0 (strict - no tolerance for any decrease in |degrees|)
+        """
+        return self.__dict__.get('degrees_from_perihelion_clip_tolerance', 1.0)
+
+    @degrees_from_perihelion_clip_tolerance.setter
+    def degrees_from_perihelion_clip_tolerance(self, value: float):
+        """Set the tolerance factor for reversal detection (0.0 to 1.0, where 1.0 is strictest)."""
+        if not 0.0 <= value <= 1.0:
+            print_manager.warning(f"degrees_from_perihelion_clip_tolerance should be between 0.0 and 1.0, got {value}")
+        self.__dict__['degrees_from_perihelion_clip_tolerance'] = value
     # --- END NEW PROPERTIES --- 
 
     # --- HAM DATA PROPERTIES ---

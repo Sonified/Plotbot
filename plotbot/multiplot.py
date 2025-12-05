@@ -84,6 +84,68 @@ def debug_variable_time_ranges(var, trange, label=""):
     else:
         print_manager.custom_debug(f"[DEBUG {label}] Invalid trange format: {trange}")
 
+
+def compute_monotonic_degrees_mask(degrees_array, tolerance_factor=1.0):
+    """
+    Compute a mask for the "monotonic" portion of degrees_from_perihelion data.
+
+    The spacecraft approaches perihelion (|degrees| decreases), crosses it (degrees ≈ 0),
+    then moves away (|degrees| increases). At some point it may curl back toward
+    perihelion (|degrees| starts decreasing again).
+
+    This function finds the portion where |degrees| is monotonically increasing from
+    the perihelion crossing - the single pass through perihelion without curl-back.
+
+    Args:
+        degrees_array: Array of degrees from perihelion values (can be negative/positive)
+        tolerance_factor: Tolerance for fluctuations (default 1.0 = strict, no tolerance).
+                         0.99 = 1% tolerance, 0.95 = 5% tolerance, etc.
+
+    Returns:
+        Boolean mask where True = keep this data point (monotonic region)
+    """
+    if len(degrees_array) < 2:
+        return np.ones(len(degrees_array), dtype=bool)
+
+    abs_degrees = np.abs(degrees_array)
+    n = len(abs_degrees)
+
+    # Find the index closest to perihelion (minimum |degrees|)
+    perihelion_idx = np.argmin(abs_degrees)
+
+    # Initialize mask - everything starts as valid
+    mask = np.ones(n, dtype=bool)
+
+    # Forward from perihelion: find where |degrees| stops increasing
+    running_max = abs_degrees[perihelion_idx]
+    for j in range(perihelion_idx + 1, n):
+        if abs_degrees[j] >= running_max * tolerance_factor:
+            # Still increasing (or within tolerance) - update running max
+            running_max = max(running_max, abs_degrees[j])
+        else:
+            # |degrees| has started decreasing significantly - clip from here onward
+            mask[j:] = False
+            print_manager.debug(f"  Monotonic clip: Forward reversal at index {j}, |degrees|={abs_degrees[j]:.2f} < running_max={running_max:.2f}")
+            break
+
+    # Backward from perihelion: find where |degrees| stops increasing (going back in time)
+    running_max = abs_degrees[perihelion_idx]
+    for j in range(perihelion_idx - 1, -1, -1):
+        if abs_degrees[j] >= running_max * tolerance_factor:
+            # Still increasing (or within tolerance) - update running max
+            running_max = max(running_max, abs_degrees[j])
+        else:
+            # |degrees| has started decreasing - clip from here backward
+            mask[:j + 1] = False
+            print_manager.debug(f"  Monotonic clip: Backward reversal at index {j}, |degrees|={abs_degrees[j]:.2f} < running_max={running_max:.2f}")
+            break
+
+    kept_count = np.sum(mask)
+    print_manager.debug(f"  Monotonic mask: keeping {kept_count}/{n} points ({100*kept_count/n:.1f}%)")
+
+    return mask
+
+
 def multiplot(plot_list, **kwargs):
     """
     Create multiple time-series plots centered around specific times.
@@ -1044,14 +1106,22 @@ def multiplot(plot_list, **kwargs):
                                             # 4. CRITICAL FIX: Wrap the difference to the [-180, 180] range
                                             relative_degrees_wrapped = (relative_degrees + 180) % 360 - 180
 
-                                            # 5. Set x_data & filtered data_slice
+                                            # 5. Apply monotonic clipping if option is enabled
+                                            if getattr(options, 'degrees_from_perihelion_clip_at_reversal', False):
+                                                print_manager.debug(f"Panel {i+1}: Applying monotonic clipping to degrees data")
+                                                monotonic_mask = compute_monotonic_degrees_mask(relative_degrees_wrapped, getattr(options, 'degrees_from_perihelion_clip_tolerance', 1.0))
+                                                relative_degrees_wrapped = relative_degrees_wrapped[monotonic_mask]
+                                                data_slice_filtered_lon = data_slice_filtered_lon[monotonic_mask]
+                                                print_manager.debug(f"  After clipping: {len(relative_degrees_wrapped)} points")
+
+                                            # 6. Set x_data & filtered data_slice
                                             x_data = relative_degrees_wrapped # Use the WRAPPED version
                                             data_slice = data_slice_filtered_lon
 
-                                            # 6. Set flags
+                                            # 7. Set flags
                                             panel_actually_uses_degrees = True
                                             print_manager.debug(f"  Successfully calculated relative degrees. Wrapped Range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
-                                            # 7. Store flag on axis
+                                            # 8. Store flag on axis
                                             axs[i]._panel_actually_used_degrees = True
                                             print_manager.debug(f"--> Stored _panel_actually_used_degrees=True on axis {i} (Time Series)")
                                         else:
@@ -1280,10 +1350,17 @@ def multiplot(plot_list, **kwargs):
                                             # 4. CRITICAL FIX: Wrap the difference to the [-180, 180] range
                                             relative_degrees_wrapped = (relative_degrees + 180) % 360 - 180
 
-                                            # 5. Set x_data & filtered data_slice
+                                            # 5. Apply monotonic clipping if option is enabled
+                                            if getattr(options, 'degrees_from_perihelion_clip_at_reversal', False):
+                                                print_manager.debug(f"Panel {i+1}: Applying monotonic clipping to degrees data (Scatter)")
+                                                monotonic_mask = compute_monotonic_degrees_mask(relative_degrees_wrapped, getattr(options, 'degrees_from_perihelion_clip_tolerance', 1.0))
+                                                relative_degrees_wrapped = relative_degrees_wrapped[monotonic_mask]
+                                                data_slice_filtered_lon = data_slice_filtered_lon[monotonic_mask]
+
+                                            # 6. Set x_data & filtered data_slice
                                             x_data = relative_degrees_wrapped # Use the WRAPPED version
                                             data_slice = data_slice_filtered_lon
-                                            # 6. Set flags
+                                            # 7. Set flags
                                             panel_actually_uses_degrees = True
                                             axs[i]._panel_actually_used_degrees = True
                                             print_manager.debug(f"--> Stored _panel_actually_used_degrees=True on axis {i} (Scatter)")
@@ -1462,6 +1539,13 @@ def multiplot(plot_list, **kwargs):
                                         
                                         # 3. Calculate relative degrees
                                         relative_degrees = carrington_lons_slice_valid - perihelion_lon_val
+
+                                        # 4. Apply monotonic clipping if option is enabled
+                                        if getattr(options, 'degrees_from_perihelion_clip_at_reversal', False):
+                                            print_manager.debug(f"Panel {i+1}: Applying monotonic clipping to degrees data (Spectral)")
+                                            monotonic_mask = compute_monotonic_degrees_mask(relative_degrees, getattr(options, 'degrees_from_perihelion_clip_tolerance', 1.0))
+                                            relative_degrees = relative_degrees[monotonic_mask]
+                                            data_slice_filtered_lon = data_slice_filtered_lon[monotonic_mask, :]
 
                                         # 5. Set x_data & filtered data_slice
                                         x_data = relative_degrees
@@ -1644,13 +1728,18 @@ def multiplot(plot_list, **kwargs):
                                         # 4. CRITICAL FIX: Wrap the difference to the [-180, 180] range
                                         relative_degrees_wrapped = (relative_degrees + 180) % 360 - 180
 
-                                        # 5. Set x_data & filtered data_slice
+                                        # 5. Apply monotonic clipping if option is enabled
+                                        if getattr(options, 'degrees_from_perihelion_clip_at_reversal', False):
+                                            print_manager.debug(f"Panel {i+1}: Applying monotonic clipping to degrees data (Default)")
+                                            monotonic_mask = compute_monotonic_degrees_mask(relative_degrees_wrapped, getattr(options, 'degrees_from_perihelion_clip_tolerance', 1.0))
+                                            relative_degrees_wrapped = relative_degrees_wrapped[monotonic_mask]
+                                            data_slice_filtered_lon = data_slice_filtered_lon[monotonic_mask]
+
+                                        # 6. Set x_data & filtered data_slice
                                         x_data = relative_degrees_wrapped # Use the WRAPPED version
                                         data_slice = data_slice_filtered_lon
-                                        x_data = relative_degrees
-                                        data_slice = data_slice_filtered_lon
-                                        
-                                        # 6. Set flags
+
+                                        # 7. Set flags
                                         panel_actually_uses_degrees = True
                                         axs[i]._panel_actually_used_degrees = True
                                         print_manager.debug(f"--> Stored _panel_actually_used_degrees=True on axis {i} (Default)")
@@ -1805,7 +1894,14 @@ def multiplot(plot_list, **kwargs):
                                         # 4. Wrap to [-180, 180] range
                                         relative_degrees_wrapped = (relative_degrees + 180) % 360 - 180
 
-                                        # 5. Set x_data and data_slice
+                                        # 5. Apply monotonic clipping if option is enabled
+                                        if getattr(options, 'degrees_from_perihelion_clip_at_reversal', False):
+                                            print_manager.debug(f"Panel {i+1}: Applying monotonic clipping to HAM degrees data")
+                                            monotonic_mask = compute_monotonic_degrees_mask(relative_degrees_wrapped, getattr(options, 'degrees_from_perihelion_clip_tolerance', 1.0))
+                                            relative_degrees_wrapped = relative_degrees_wrapped[monotonic_mask]
+                                            data_slice_filtered = data_slice_filtered[monotonic_mask]
+
+                                        # 6. Set x_data and data_slice
                                         x_data = relative_degrees_wrapped
                                         data_slice = data_slice_filtered
                                         print_manager.debug(f"Panel {i+1} (HAM): Successfully calculated degrees from perihelion. Range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
@@ -2019,6 +2115,16 @@ def multiplot(plot_list, **kwargs):
                                 degrees_from_peri = bar_centers_abs - perihelion_lon
                                 # Wrap to [-180, 180]
                                 degrees_from_peri = (degrees_from_peri + 180) % 360 - 180
+
+                                # Apply monotonic clipping if option is enabled
+                                if getattr(options, 'degrees_from_perihelion_clip_at_reversal', False):
+                                    print_manager.debug(f"Panel {i+1}: Applying monotonic clipping to HAM binned overlay data")
+                                    monotonic_mask = compute_monotonic_degrees_mask(degrees_from_peri, getattr(options, 'degrees_from_perihelion_clip_tolerance', 1.0))
+                                    degrees_from_peri = degrees_from_peri[monotonic_mask]
+                                    ham_frac = ham_frac[monotonic_mask]
+                                    start_lons = start_lons[monotonic_mask]
+                                    end_lons = end_lons[monotonic_mask]
+                                    print_manager.debug(f"  After clipping: {len(degrees_from_peri)} bins (from {len(monotonic_mask)} original)")
 
                                 # Calculate bar widths (handle wrap-around)
                                 raw_widths = end_lons - start_lons
