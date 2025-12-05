@@ -2116,15 +2116,44 @@ def multiplot(plot_list, **kwargs):
                                 # Wrap to [-180, 180]
                                 degrees_from_peri = (degrees_from_peri + 180) % 360 - 180
 
+                                # Also convert bin edges to degrees from perihelion (for edge-aware clipping)
+                                start_degrees = (start_lons - perihelion_lon + 180) % 360 - 180
+                                end_degrees = (end_lons - perihelion_lon + 180) % 360 - 180
+
                                 # Apply monotonic clipping if option is enabled
                                 if getattr(options, 'degrees_from_perihelion_clip_at_reversal', False):
                                     print_manager.debug(f"Panel {i+1}: Applying monotonic clipping to HAM binned overlay data")
+                                    # Get the monotonic mask based on bin centers
                                     monotonic_mask = compute_monotonic_degrees_mask(degrees_from_peri, getattr(options, 'degrees_from_perihelion_clip_tolerance', 1.0))
-                                    degrees_from_peri = degrees_from_peri[monotonic_mask]
-                                    ham_frac = ham_frac[monotonic_mask]
-                                    start_lons = start_lons[monotonic_mask]
-                                    end_lons = end_lons[monotonic_mask]
-                                    print_manager.debug(f"  After clipping: {len(degrees_from_peri)} bins (from {len(monotonic_mask)} original)")
+
+                                    # Find the valid range (max |degrees| in the monotonic region)
+                                    valid_degrees = degrees_from_peri[monotonic_mask]
+                                    if len(valid_degrees) > 0:
+                                        max_valid_abs_degrees = np.max(np.abs(valid_degrees))
+
+                                        # Also exclude bins whose EDGES extend past the valid range
+                                        # A bin is valid only if BOTH edges are within [-max, +max]
+                                        edge_valid_mask = (np.abs(start_degrees) <= max_valid_abs_degrees) & \
+                                                         (np.abs(end_degrees) <= max_valid_abs_degrees)
+
+                                        # Combine with the center-based monotonic mask
+                                        combined_mask = monotonic_mask & edge_valid_mask
+
+                                        print_manager.debug(f"  Center-based mask: {np.sum(monotonic_mask)} bins")
+                                        print_manager.debug(f"  Edge-aware mask: {np.sum(edge_valid_mask)} bins")
+                                        print_manager.debug(f"  Combined mask: {np.sum(combined_mask)} bins")
+                                        print_manager.debug(f"  Max valid |degrees|: {max_valid_abs_degrees:.2f}")
+
+                                        degrees_from_peri = degrees_from_peri[combined_mask]
+                                        ham_frac = ham_frac[combined_mask]
+                                        start_lons = start_lons[combined_mask]
+                                        end_lons = end_lons[combined_mask]
+                                        start_degrees = start_degrees[combined_mask]
+                                        end_degrees = end_degrees[combined_mask]
+                                    else:
+                                        print_manager.warning(f"Panel {i+1}: No valid bins after monotonic clipping")
+
+                                    print_manager.debug(f"  After clipping: {len(degrees_from_peri)} bins")
 
                                 # Calculate bar widths (handle wrap-around)
                                 raw_widths = end_lons - start_lons
