@@ -1121,9 +1121,12 @@ def multiplot(plot_list, **kwargs):
                                             # 7. Set flags
                                             panel_actually_uses_degrees = True
                                             print_manager.debug(f"  Successfully calculated relative degrees. Wrapped Range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
-                                            # 8. Store flag on axis
+                                            # 8. Store flag on axis AND the clipped x_data range
                                             axs[i]._panel_actually_used_degrees = True
+                                            axs[i]._degrees_x_min = np.nanmin(x_data)
+                                            axs[i]._degrees_x_max = np.nanmax(x_data)
                                             print_manager.debug(f"--> Stored _panel_actually_used_degrees=True on axis {i} (Time Series)")
+                                            print_manager.debug(f"--> Stored clipped x range: [{axs[i]._degrees_x_min:.2f}, {axs[i]._degrees_x_max:.2f}]")
                                         else:
                                             print_manager.warning(f"Panel {i+1} (Time Series): No valid longitudes found in time slice after mapping. Falling back to time axis.")
                                             panel_actually_uses_degrees = False
@@ -2120,51 +2123,35 @@ def multiplot(plot_list, **kwargs):
                                 start_degrees = (start_lons - perihelion_lon + 180) % 360 - 180
                                 end_degrees = (end_lons - perihelion_lon + 180) % 360 - 180
 
-                                # Apply monotonic clipping if option is enabled
+                                # Apply clipping if option is enabled
+                                # Simple and elegant: keep bins where end_degrees > start_degrees
+                                # This filters out ANY bin drawing right-to-left (curl-back)
                                 if getattr(options, 'degrees_from_perihelion_clip_at_reversal', False):
-                                    print_manager.debug(f"Panel {i+1}: Applying monotonic clipping to HAM binned overlay data")
-                                    # Get the monotonic mask based on bin centers
-                                    monotonic_mask = compute_monotonic_degrees_mask(degrees_from_peri, getattr(options, 'degrees_from_perihelion_clip_tolerance', 1.0))
+                                    total_before = len(degrees_from_peri)
 
-                                    # Find the valid range (max |degrees| in the monotonic region)
-                                    valid_degrees = degrees_from_peri[monotonic_mask]
-                                    if len(valid_degrees) > 0:
-                                        max_valid_abs_degrees = np.max(np.abs(valid_degrees))
+                                    # SIMPLE: Keep bins where end is further from perihelion than start
+                                    # In degrees-from-perihelion space, forward motion = increasing degrees
+                                    keep = end_degrees > start_degrees
 
-                                        # Also check bin edges - keep bins where at least ONE edge is valid
-                                        # Combined with center check, this means: center valid AND at least one edge valid
-                                        edge_valid_mask = (np.abs(start_degrees) <= max_valid_abs_degrees) | \
-                                                         (np.abs(end_degrees) <= max_valid_abs_degrees)
+                                    # Apply mask
+                                    degrees_from_peri = degrees_from_peri[keep]
+                                    ham_frac = ham_frac[keep]
+                                    start_lons = start_lons[keep]
+                                    end_lons = end_lons[keep]
 
-                                        # Combine with the center-based monotonic mask
-                                        combined_mask = monotonic_mask & edge_valid_mask
-
-                                        print_manager.debug(f"  Center-based mask: {np.sum(monotonic_mask)} bins")
-                                        print_manager.debug(f"  Edge-aware mask: {np.sum(edge_valid_mask)} bins")
-                                        print_manager.debug(f"  Combined mask: {np.sum(combined_mask)} bins")
-                                        print_manager.debug(f"  Max valid |degrees|: {max_valid_abs_degrees:.2f}")
-
-                                        degrees_from_peri = degrees_from_peri[combined_mask]
-                                        ham_frac = ham_frac[combined_mask]
-                                        start_lons = start_lons[combined_mask]
-                                        end_lons = end_lons[combined_mask]
-                                        start_degrees = start_degrees[combined_mask]
-                                        end_degrees = end_degrees[combined_mask]
-                                    else:
-                                        print_manager.warning(f"Panel {i+1}: No valid bins after monotonic clipping")
-
-                                    print_manager.debug(f"  After clipping: {len(degrees_from_peri)} bins")
+                                    print_manager.ham_debugging(f"HAM bins: kept {np.sum(keep)}/{total_before} (removed {total_before - np.sum(keep)} curl-back bins)")
 
                                 # Calculate bar widths (handle wrap-around)
-                                raw_widths = end_lons - start_lons
-                                bar_widths = np.zeros_like(raw_widths)
-                                for bi in range(len(raw_widths)):
-                                    w = raw_widths[bi]
-                                    if w > 180:
-                                        w = w - 360
-                                    elif w < -180:
-                                        w = w + 360
-                                    bar_widths[bi] = abs(w)
+                                if len(end_lons) > 0:
+                                    raw_widths = end_lons - start_lons
+                                    bar_widths = np.zeros_like(raw_widths)
+                                    for bi in range(len(raw_widths)):
+                                        w = raw_widths[bi]
+                                        if w > 180:
+                                            w = w - 360
+                                        elif w < -180:
+                                            w = w + 360
+                                        bar_widths[bi] = abs(w)
                                 bar_widths = np.maximum(bar_widths, 1.0)  # Minimum width of 1 degree
 
                                 # Create twinx axis for the overlay
