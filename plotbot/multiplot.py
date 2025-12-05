@@ -2131,9 +2131,9 @@ def multiplot(plot_list, **kwargs):
                                     if len(valid_degrees) > 0:
                                         max_valid_abs_degrees = np.max(np.abs(valid_degrees))
 
-                                        # Also exclude bins whose EDGES extend past the valid range
-                                        # A bin is valid only if BOTH edges are within [-max, +max]
-                                        edge_valid_mask = (np.abs(start_degrees) <= max_valid_abs_degrees) & \
+                                        # Also check bin edges - keep bins where at least ONE edge is valid
+                                        # Combined with center check, this means: center valid AND at least one edge valid
+                                        edge_valid_mask = (np.abs(start_degrees) <= max_valid_abs_degrees) | \
                                                          (np.abs(end_degrees) <= max_valid_abs_degrees)
 
                                         # Combine with the center-based monotonic mask
