@@ -2166,7 +2166,7 @@ def multiplot(plot_list, **kwargs):
         if options.y_label_uses_encounter:
             if options.y_label_includes_time:
                 y_label = f"{enc_num} Around\n{pd.Timestamp(center_time).strftime('%Y-%m-%d')}\n{pd.Timestamp(center_time).strftime('%H:%M')}"
-                axs[i].set_ylabel(y_label, fontsize=options.y_axis_label_font_size, 
+                axs[i].set_ylabel(y_label, fontsize=options.y_axis_label_font_size,
                                 labelpad=options.y_label_pad, fontweight='bold' if options.bold_y_axis_label else 'normal',
                                 ha=options.y_label_alignment)
             else:
@@ -2181,6 +2181,11 @@ def multiplot(plot_list, **kwargs):
             axs[i].set_ylabel(y_label, fontsize=options.y_axis_label_font_size,
                             labelpad=options.y_label_pad, fontweight='bold' if options.bold_y_axis_label else 'normal',
                             ha=options.y_label_alignment)
+
+        # If y_label_x_position is set, position all y-labels at that fixed x coordinate
+        # This makes labels align in a column (left-justified appearance)
+        if options.y_label_x_position is not None:
+            axs[i].yaxis.set_label_coords(options.y_label_x_position, 0.5)
     
         if isinstance(var, list):
             if hasattr(var[0], 'y_scale') and var[0].y_scale:

@@ -375,6 +375,7 @@ class MultiplotOptions:
         self.y_axis_label_font_size = 16
         self.x_axis_label_font_size = 16
         self.y_label_pad = 12
+        self.y_label_x_position = None  # Fixed x position for y-labels (axes fraction, e.g., -0.05). If set, all labels align at this position.
         self.x_label_pad = 8
         self.x_tick_label_font_size = 14
         self.y_tick_label_font_size = 14
