@@ -2152,7 +2152,7 @@ def multiplot(plot_list, **kwargs):
                                         elif w < -180:
                                             w = w + 360
                                         bar_widths[bi] = abs(w)
-                                bar_widths = np.maximum(bar_widths, 1.0)  # Minimum width of 1 degree
+                                # Use actual bin widths - no artificial minimum
 
                                 # Create twinx axis for the overlay
                                 ax2_binned = axs[i].twinx()
