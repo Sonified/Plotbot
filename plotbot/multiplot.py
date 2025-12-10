@@ -2792,9 +2792,33 @@ def multiplot(plot_list, **kwargs):
             ax.autoscale(enable=True, axis='x', tight=True)
 
     print_manager.processing("[XAXIS_FORMATTING] Exiting consolidated x-axis formatting block.")
-    
+
     print_manager.debug("=== Multiplot Complete ===\n")
-    
+
+    # === SAVE OUTPUT ===
+    # If save_output is True, save the figure to multiplot_output folder
+    if options.save_output:
+        # Create output directory if it doesn't exist
+        output_dir = "multiplot_output"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+            print_manager.status(f"Created output directory: {output_dir}")
+
+        # Generate filename with timestamp: multiplot_output_MM_DD_YYYY_HHMM.png
+        timestamp = datetime.now().strftime("%m_%d_%Y_%H%M")
+        filename = f"multiplot_output_{timestamp}.png"
+        filepath = os.path.join(output_dir, filename)
+
+        # Determine DPI (use preset DPI if set, otherwise default to 300)
+        save_dpi = options.save_dpi if options.save_dpi else 300
+
+        # Determine bbox_inches setting
+        bbox_setting = options.bbox_inches_save_crop_mode
+
+        # Save the figure
+        fig.savefig(filepath, dpi=save_dpi, bbox_inches=bbox_setting)
+        print_manager.status(f"✅ Saved multiplot to: {filepath} (dpi={save_dpi})")
+
     # Handle figure display and return based on ploptions
     if ploptions.display_figure:
         plt.show()
