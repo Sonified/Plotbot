@@ -2805,9 +2805,17 @@ def multiplot(plot_list, **kwargs):
             print_manager.status(f"Created output directory: {output_dir}")
 
         # Generate filename with timestamp: multiplot_output_MM_DD_YYYY_HHMM.png
+        # If file exists, add incrementing suffix: _01, _02, etc.
         timestamp = datetime.now().strftime("%m_%d_%Y_%H%M")
-        filename = f"multiplot_output_{timestamp}.png"
-        filepath = os.path.join(output_dir, filename)
+        base_filename = f"multiplot_output_{timestamp}"
+        filepath = os.path.join(output_dir, f"{base_filename}.png")
+
+        # Check if file exists and increment suffix if needed
+        if os.path.exists(filepath):
+            counter = 1
+            while os.path.exists(filepath):
+                filepath = os.path.join(output_dir, f"{base_filename}_{counter:02d}.png")
+                counter += 1
 
         # Determine DPI (use preset DPI if set, otherwise default to 300)
         save_dpi = options.save_dpi if options.save_dpi else 300
