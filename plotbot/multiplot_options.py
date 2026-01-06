@@ -925,6 +925,15 @@ class MultiplotOptions:
         (the "curl back" or "reversal"). This option clips the data at that reversal point to
         prevent the plot from overlapping on itself.
 
+        For time series data: Uses the tolerance setting to detect when |degrees| stops increasing.
+
+        For HAM binned overlay: Each bin is checked individually. Bins moving away from
+        perihelion (|end_degrees| >= |start_degrees|) are kept as-is. Bins curling back
+        toward perihelion are handled with partial clipping:
+        - If the bin's inner edge is past the reversal boundary, the bin is excluded entirely
+        - If the bin straddles the boundary, it's clipped to show only the portion up to the edge
+        - This allows the HAM bars to fill up to the edge of the plot, with the last bin partial
+
         Default: False (allows data to curl back and potentially overlap)
         """
         return self.__dict__.get('degrees_from_perihelion_clip_at_reversal', False)

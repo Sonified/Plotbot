@@ -72,6 +72,9 @@ MH_Scan_Output/
 # Specific output directory within the magnetic_hole_finder module if used differently
 magnetic_hole_finder/MH_Scan_Output/
 
+# Multiplot output directory
+multiplot_output/
+
 # Specific large data files to ignore
 magnetic_hole_finder/high_res_mag_data.pkl
 

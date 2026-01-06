@@ -472,10 +472,10 @@ RESET = '\033[0m'
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
 
-__version__ = "2025_10_28_v3.73"
+__version__ = "2026_01_06_v3.74"
 
 # Commit message for this version
-__commit_message__ = "v3.73 Bugfix: Fixed WIND data local file detection and x-axis time formatting for short time ranges at midnight"
+__commit_message__ = "v3.74 Bugfix: Lazy clipping and overall clean up"
 
 # Print the version and commit message
 print(f"""

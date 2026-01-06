@@ -264,11 +264,19 @@ class plot_manager(np.ndarray):
     def data(self):
         """Return the time clipped numpy array data"""
         from .print_manager import print_manager
+        from .time_utils import TimeRangeTracker
+
+        # Auto-update if current trange differs from cached trange (LAZY CLIPPING!)
+        current_trange = TimeRangeTracker.get_current_trange()
+        if current_trange and current_trange != getattr(self, '_requested_trange', None):
+            print_manager.custom_debug(f"[DATA] Auto-updating requested_trange from {getattr(self, '_requested_trange', None)} to {current_trange}")
+            self.requested_trange = current_trange  # Triggers clipping via setter
+
         # Return pre-clipped data if available (ZERO CLIPPING OVERHEAD!)
         if hasattr(self, '_clipped_data') and self._clipped_data is not None:
             print_manager.custom_debug(f"[DATA] Returning clipped data: {len(self._clipped_data)} points")
             return self._clipped_data
-        
+
         # Otherwise return full array
         full_array = self.view(np.ndarray)
         print_manager.custom_debug(f"[DATA] No clipped data, returning full array: {len(full_array)} points")
@@ -429,10 +437,17 @@ class plot_manager(np.ndarray):
     @property
     def datetime_array(self):
         """Return the time clipped datetime array to match .data property"""
+        from .time_utils import TimeRangeTracker
+
+        # Auto-update if current trange differs from cached trange (LAZY CLIPPING!)
+        current_trange = TimeRangeTracker.get_current_trange()
+        if current_trange and current_trange != getattr(self, '_requested_trange', None):
+            self.requested_trange = current_trange  # Triggers clipping via setter
+
         # Return pre-clipped datetime array if available (ZERO CLIPPING OVERHEAD!)
         if hasattr(self, '_clipped_datetime_array') and self._clipped_datetime_array is not None:
             return self._clipped_datetime_array
-            
+
         # Otherwise return full datetime array
         return self.plot_config.datetime_array
 
@@ -457,10 +472,17 @@ class plot_manager(np.ndarray):
     @property
     def time(self):
         """Return the time clipped raw epoch time array to match .data property"""
+        from .time_utils import TimeRangeTracker
+
+        # Auto-update if current trange differs from cached trange (LAZY CLIPPING!)
+        current_trange = TimeRangeTracker.get_current_trange()
+        if current_trange and current_trange != getattr(self, '_requested_trange', None):
+            self.requested_trange = current_trange  # Triggers clipping via setter
+
         # Return pre-clipped time array if available (ZERO CLIPPING OVERHEAD!)
         if hasattr(self, '_clipped_time') and self._clipped_time is not None:
             return self._clipped_time
-            
+
         # Otherwise return full time array
         return self.plot_config.time
     
@@ -1124,22 +1146,11 @@ class plot_manager(np.ndarray):
             elif hasattr(other, 'class_name') and hasattr(other, 'subclass_name'):
                 source_vars.append(other)
             
-            # 🐛 CRITICAL FIX: Clear stale clipped data before performing operations
-            # When operations happen at definition time (direct expressions), source variables
-            # may have stale _clipped_data from previous test cases with different tranges.
-            # Clearing requested_trange ensures .data returns the full accumulated array consistently.
-            print_manager.custom_debug(f"[MATH] Clearing stale clipped data before operation")
-            if hasattr(self, '_requested_trange') and self._requested_trange is not None:
-                print_manager.custom_debug(f"[MATH]   Clearing self.requested_trange (was: {self._requested_trange})")
-                self._requested_trange = None
-                self._clipped_data = None
-                self._clipped_datetime_array = None
-            if hasattr(other, '_requested_trange') and other._requested_trange is not None:
-                print_manager.custom_debug(f"[MATH]   Clearing other.requested_trange (was: {other._requested_trange})")
-                other._requested_trange = None
-                other._clipped_data = None
-                other._clipped_datetime_array = None
-                
+            # ✨ NEW BEHAVIOR: Let variables auto-update to current trange
+            # With lazy clipping, stale data is automatically refreshed on access
+            # Math operations now work on current trange data consistently
+            print_manager.custom_debug(f"[MATH] Using current trange for math operations (lazy auto-clipping)")
+
             self_aligned, other_aligned, dt_array = self.align_variables(other)
 
             # Safety check after alignment

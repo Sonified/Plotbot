@@ -1350,7 +1350,7 @@ class Variable:
 
 # Create global instance
 data_cubby = data_cubby()
-print('initialized data_cubby.')
+print('initialized data_cubby')
 
 # Add CDF classes to the type map after initialization
 data_cubby._add_cdf_classes_to_map()
