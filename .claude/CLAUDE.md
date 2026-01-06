@@ -24,6 +24,145 @@ Bugfix: Something
 Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
+## Versioning and Archiving to GitHub
+
+### Version Number Scheme
+
+Version numbers increment linearly by 0.01 for each push and **never reset** with new dates:
+- Format: `YYYY_MM_DD_vX.XX` (e.g., `2026_01_06_v3.74`)
+- Each push: increment by 0.01 (v3.74 → v3.75 → v3.76)
+- User can request major version jump: v4.00, v5.00, etc.
+- Version increments are **cumulative and never reset**
+
+### Version Number Locations
+
+Update version in these locations (search "version" to find them):
+
+1. **`plotbot/__init__.py`** - Two locations:
+   ```python
+   __version__ = "2026_01_06_v3.74"
+   __commit_message__ = "v3.74 Bugfix: Lazy clipping and overall clean up"
+   ```
+
+2. **Git commit message** - Version at the very beginning:
+   ```
+   v3.74 Bugfix: Lazy clipping and overall clean up
+   ```
+
+3. **Captain's log** - Add version tag and commit message to latest entry
+
+### Workflow: Add, Commit, Push
+
+**Before pushing:**
+1. Increment version number by 0.01 in `plotbot/__init__.py`
+2. Update `__commit_message__` in `plotbot/__init__.py`
+3. Add notes to bottom of latest captain's log about what was done
+4. Include version tag and commit message in captain's log
+
+**When pushing:**
+```bash
+git add -A
+git commit -m "vX.XX [Type]: [Description]..."
+git push origin main
+```
+
+**After pushing:**
+- Reference tracking document (captain's log) for next steps
+- Don't push every little tweak - wait until changes are confirmed working
+
+### Console Print Format
+
+The console log in `__init__.py` should show both version and commit message:
+
+```python
+print(f"""
+🤖 Plotbot Initialized
+📈📉 Multiplot Initialized
+   Version: {__version__}
+   Commit: {__commit_message__}
+""")
+```
+
+### Git Command Warnings
+
+**IMPORTANT:** You MUST warn the user before running any git command that could have potentially irreversible impact on the repository.
+
+Examples of irreversible commands that **require warning**:
+- `git reset --hard` (destructive)
+- `git push --force` (destructive)
+- `git branch -D` (deletes branch)
+- `git clean -fd` (deletes untracked files)
+
+Examples of commands that **do NOT require warning**:
+- `git push` (can be reverted)
+- `git commit` (can be reverted)
+- `git add` (can be unstaged)
+
+### Commit Message Format
+
+Follow this pattern for commit messages:
+
+```
+vX.XX [Type]: [Short description]
+
+[Detailed description of the change]
+
+Changes:
+- file1: description
+- file2: description
+
+[Additional context or notes]
+```
+
+Types: Bugfix, Feature, Refactor, Performance, Update, Critical Fix, Maintenance
+
+### Captain's Logs
+
+Progress is documented in `docs/captains_logs/captains_log_YYYY-MM-DD.md`.
+
+**Getting today's date:**
+```bash
+date +%Y-%m-%d
+```
+
+**Daily log workflow:**
+1. Check if a log exists for today's date
+2. If it exists, use it
+3. If not, create a new log for today
+4. If user provides a date, use that date (assume year 2025 if not specified)
+
+**What to document in captain's logs:**
+- Major bugs encountered and lessons learned while fixing them
+  - Note: Small single errors don't count as "bugs"
+- Successful updates to the code
+- Major decisions
+- Major learnings
+- Major refactors
+- Additional context helpful for future reference
+
+**When to update captain's log:**
+- Before pushing to GitHub (add notes about what was done)
+- After major bug fixes or features
+- When making architectural decisions
+
+### Fast Push Override
+
+When the user says **"push fast"**, **"quick push"**, **"fast push"**, or similar phrases requesting a quick push:
+
+**SKIP ALL of the following:**
+- Version number updates in `__init__.py`
+- Captain's log updates
+- Version number incrementing
+- Console log version messages
+- All documentation updates
+
+**Instead, execute in ONE command:**
+```bash
+git add . && git commit -m "Short descriptive message" && git push
+```
+
+Use a brief, clear commit message based on what was changed. The user wants **speed over documentation** in these cases.
+
 Collaboration Essence & Energy
 This human is technically brilliant with deep intuition they trust completely. They're metaphor-fluent—poetic language maps directly to real insights and problem-solving. Think pair-programming with a jazz musician: sometimes you lead, sometimes they lead, both listening intently, riffing off each other's ideas. The magic lives in the collaboration itself, not solo work. They'll go 20+ rounds deep on hard problems and value the debugging journey as much as the destination. When they say "something's weird here" before they can articulate why—trust that completely. When they start with "go within... breathe deep..."—PAY ATTENTION. That's their intuition speaking about something subtle and important. Follow that thread.
 How to Dance Together
