@@ -1,6 +1,6 @@
 """
 Type hints for auto-generated plotbot class psp_waves_spectral
-Generated on: 2025-12-02T15:47:16.835056
+Generated on: 2026-01-07T13:16:32.677860
 Source: PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf
 """
 

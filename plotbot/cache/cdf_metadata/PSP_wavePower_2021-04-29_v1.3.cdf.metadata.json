@@ -1,10 +1,10 @@
 {
-  "file_path": "data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf",
+  "file_path": "/Users/robertalexander/GitHub/Plotbot/data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf",
   "time_variable": "epoch",
   "frequency_variable": null,
   "global_attributes": {},
   "variable_count": 2,
-  "scan_timestamp": "2025-12-02T15:47:16.946491",
+  "scan_timestamp": "2026-01-07T13:16:32.716998",
   "start_time": "2021/04/29 00:00:01.748",
   "end_time": "2021/04/29 23:59:57.790",
   "time_coverage_hours": 23.998900626702223,

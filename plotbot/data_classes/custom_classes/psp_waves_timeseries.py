@@ -1,7 +1,7 @@
 """
 Auto-generated plotbot class for PSP_wavePower_2021-04-29_v1.3.cdf
-Generated on: 2025-12-02T15:47:16.946899
-Source: data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf
+Generated on: 2026-01-07T13:16:32.717469
+Source: /Users/robertalexander/GitHub/Plotbot/data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf
 
 This class contains 2 variables from the CDF file.
 """
@@ -43,7 +43,7 @@ class psp_waves_timeseries_class:
         
         
         # Store original CDF file path AND smart pattern for multi-file loading
-        object.__setattr__(self, '_original_cdf_file_path', 'data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf')
+        object.__setattr__(self, '_original_cdf_file_path', '/Users/robertalexander/GitHub/Plotbot/data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf')
         object.__setattr__(self, '_cdf_file_pattern', 'PSP_wavePower_2021-04-29_v1.3.cdf')
 
         if imported_data is None:

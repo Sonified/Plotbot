@@ -1,6 +1,6 @@
 """
 Type hints for auto-generated plotbot class psp_waves_timeseries
-Generated on: 2025-12-02T15:47:16.947130
+Generated on: 2026-01-07T13:16:32.717691
 Source: PSP_wavePower_2021-04-29_v1.3.cdf
 """
 
