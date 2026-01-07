@@ -1572,24 +1572,16 @@ def generate_file_pattern_from_cdf(cdf_file_path: str, search_directory: str = N
     
     # Add .cdf extension back
     pattern += '.cdf'
-    
-    # Validate pattern by checking if it finds other files (if search directory provided)
-    if search_directory and replacements_made:
-        validation_files = _find_files_matching_pattern(pattern, search_directory)
-        # Remove the original file from validation count
-        validation_files = [f for f in validation_files if not f.endswith(filename)]
-        
-        if len(validation_files) == 0:
-            print_manager.debug(f"  ⚠️  Pattern '{pattern}' found no other files, using exact filename")
-            pattern = filename  # Fall back to exact match
-        else:
-            print_manager.debug(f"  ✅ Pattern '{pattern}' found {len(validation_files)} additional files")
-    
+
+    # Trust the pattern we detected - no validation needed
+    # The time filter will ensure we only load relevant files
     if replacements_made:
-        print_manager.debug(f"  🎯 Generated pattern: {pattern}")
+        print(f"  🎯 Generated file pattern: {pattern}")
+        print(f"     This will match files with different dates/versions in: {os.path.dirname(cdf_file_path)}")
         print_manager.debug(f"  📝 Replaced: {', '.join(replacements_made)}")
     else:
-        print_manager.debug(f"  📌 No patterns detected, using exact filename: {pattern}")
+        print(f"  📌 No date/version pattern detected, will only load: {pattern}")
+        print(f"     Add more files with similar naming to enable multi-file loading")
     
     return pattern
 

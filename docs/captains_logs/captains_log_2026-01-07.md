@@ -94,3 +94,89 @@ Notebook now successfully:
 This update makes the CDF import workflow accessible for users like Jay who need to import Kristoff's wave files. The notebook now provides a clean, working example of the complete workflow from CDF file to plotbot visualization.
 
 **v3.75 Update: Fixed CDF import examples notebook paths and usage patterns**
+
+---
+
+## Version 3.76: Wildcard Pattern Generation for Single CDF Files
+
+### Overview
+Removed validation requirement that prevented wildcard patterns from being generated when only a single CDF file exists. Now trusts pattern detection and generates wildcards based on filename analysis alone.
+
+---
+
+## Problem
+
+Previously, when generating a class from a single CDF file:
+```python
+cdf_to_plotbot('PSP_wavePower_2021-04-29_v1.3.cdf', 'psp_waves')
+```
+
+The system would:
+1. Detect date/version patterns: `_2021-04-29`, `_v1.3`
+2. Generate wildcard pattern: `PSP_wavePower_*_v*.cdf`
+3. **Validate** by checking if other files exist
+4. If NO other files → **revert to exact filename** (no wildcards!)
+
+**Result:** Adding more wave files later wouldn't be detected without regenerating the class.
+
+## Solution
+
+Removed the validation step entirely. Now:
+1. Detects date/version patterns ✅
+2. Generates wildcard pattern ✅
+3. **Trusts the pattern** - uses wildcards regardless of how many files exist ✅
+
+The time filter during data loading ensures only relevant files are loaded, so there's no risk of loading wrong data.
+
+## Code Changes
+
+**File:** `plotbot/data_import_cdf.py` (lines 1576-1584)
+
+**Removed:**
+```python
+# Validate pattern by checking if it finds other files
+if len(validation_files) == 0:
+    pattern = filename  # Fall back to exact match
+```
+
+**Added user-facing messages:**
+```python
+if replacements_made:
+    print(f"  🎯 Generated file pattern: {pattern}")
+    print(f"     This will match files with different dates/versions in: {directory}")
+else:
+    print(f"  📌 No date/version pattern detected, will only load: {pattern}")
+    print(f"     Add more files with similar naming to enable multi-file loading")
+```
+
+## Testing
+
+```bash
+$ python -c "from plotbot.data_import_cdf import generate_file_pattern_from_cdf; \
+  generate_file_pattern_from_cdf('data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf', 'data/cdf_files')"
+
+🔍 Analyzing filename: PSP_wavePower_2021-04-29_v1.3.cdf
+  🎯 Generated file pattern: PSP_wavePower_*_v*.cdf
+     This will match files with different dates/versions in: data/cdf_files
+```
+
+## Benefits
+
+- ✅ Users can add more CDF files without regenerating classes
+- ✅ Clear feedback about what pattern was generated
+- ✅ Works for single-file or multi-file scenarios
+- ✅ Time filtering prevents loading wrong data
+
+## Pattern Detection Coverage
+
+Automatically detects:
+- Date formats: `YYYY-MM-DD`, `YYYYMMDD`, `YYYY_DDD`
+- Time formats: `HHMM`, `HHMMSS`
+- Versions: `v1.2`, `v01`, `version1`
+- Sequential: `_001`, `_02`
+
+Custom naming conventions can be handled by users understanding the pattern and adding matching files.
+
+---
+
+**v3.76 Feature: CDF wildcard patterns now generated from single files**
