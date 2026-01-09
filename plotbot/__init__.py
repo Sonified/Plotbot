@@ -472,10 +472,10 @@ RESET = '\033[0m'
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
 
-__version__ = "2026_01_08_v3.77"
+__version__ = "2026_01_09_v3.78"
 
 # Commit message for this version
-__commit_message__ = "v3.77 Feature: Dual-axis multiplot + Bugfix: Fixed stale variable reference bug"
+__commit_message__ = "v3.78 Bugfix: Fixed .time property not updating when trange changes"
 
 # Print the version and commit message
 print(f"""

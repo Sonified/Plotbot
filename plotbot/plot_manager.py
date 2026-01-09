@@ -224,7 +224,7 @@ class plot_manager(np.ndarray):
         """Get the currently set time range"""
         return getattr(self, '_requested_trange', None)
     
-    @requested_trange.setter 
+    @requested_trange.setter
     def requested_trange(self, value):
         """Set time range and perform clipping ONCE when set"""
         if value is None:
@@ -232,33 +232,43 @@ class plot_manager(np.ndarray):
             self._requested_trange = None
             self._clipped_data = None
             self._clipped_datetime_array = None
+            self._clipped_time = None  # BUGFIX: Also clear _clipped_time
             return
-        
+
         # Only clip if the trange has actually changed
         if getattr(self, '_requested_trange', None) == value:
             return  # No change, don't reclip
-        
+
         self._requested_trange = value
-        
+
         # 🚀 PERFORMANCE FIX: Clip ONCE when trange is set, not on every property access
         from .print_manager import print_manager
         print_manager.debug(f"⚡ [CLIP_ONCE] Clipping data ONCE for trange: {value}")
-        
+
         # Debug: Check sizes before clipping
         raw_data = self.view(np.ndarray)
         print_manager.custom_debug(f"[CLIP] Setting requested_trange: {value}")
         print_manager.custom_debug(f"[CLIP]   Raw data size: {len(raw_data)}")
         print_manager.custom_debug(f"[CLIP]   datetime_array size: {len(self.plot_config.datetime_array) if self.plot_config.datetime_array is not None else 0}")
-        
+
         # Perform clipping once and store results
         self._clipped_data = self.clip_to_original_trange(raw_data, value)
         print_manager.custom_debug(f"[CLIP]   Clipped data size: {len(self._clipped_data) if self._clipped_data is not None else 0}")
-        
+
         if self.plot_config.datetime_array is not None:
-            self._clipped_datetime_array = self._clip_datetime_array(self.plot_config.datetime_array, value)
+            # Clip datetime_array and get indices
+            self._clipped_datetime_array, time_indices = self._clip_datetime_array_with_indices(self.plot_config.datetime_array, value)
             print_manager.custom_debug(f"[CLIP]   Clipped datetime_array size: {len(self._clipped_datetime_array) if self._clipped_datetime_array is not None else 0}")
+
+            # BUGFIX: Also clip .time using same indices as datetime_array
+            if self.plot_config.time is not None and time_indices is not None:
+                self._clipped_time = self.plot_config.time[time_indices]
+                print_manager.custom_debug(f"[CLIP]   Clipped time size: {len(self._clipped_time) if self._clipped_time is not None else 0}")
+            else:
+                self._clipped_time = None
         else:
             self._clipped_datetime_array = None
+            self._clipped_time = None
     
     @property
     def data(self):
@@ -333,6 +343,48 @@ class plot_manager(np.ndarray):
             # For multidimensional arrays, use indices to prevent flattening
             time_indices = np.where(time_mask)[0]
             return datetime_array[time_indices, ...]  # Preserve all other dimensions
+
+    def _clip_datetime_array_with_indices(self, datetime_array, original_trange):
+        """Helper method to clip datetime array and return indices for clipping other arrays"""
+        from dateutil.parser import parse
+        import pandas as pd
+        import numpy as np
+        from datetime import timezone
+        from .print_manager import print_manager
+
+        if datetime_array is None:
+            return None, None
+
+        # Parse time range strings to UTC-aware datetimes
+        start_time = parse(original_trange[0]).replace(tzinfo=timezone.utc)
+        end_time = parse(original_trange[1]).replace(tzinfo=timezone.utc)
+
+        # Handle 2D datetime arrays (meshgrids) correctly
+        if datetime_array.ndim == 2:
+            datetime_array_1d = datetime_array[:, 0]
+        else:
+            datetime_array_1d = datetime_array
+
+        datetime_array_pd = pd.to_datetime(datetime_array_1d, utc=True)
+
+        # Create boolean mask for the time range
+        time_mask = (datetime_array_pd >= start_time) & (datetime_array_pd <= end_time)
+
+        if not np.any(time_mask):
+            # Return empty datetime array with proper shape
+            if datetime_array.ndim == 1:
+                return np.array([], dtype=datetime_array.dtype), np.array([], dtype=np.int64)
+            else:
+                empty_shape = (0,) + datetime_array.shape[1:]
+                return np.empty(empty_shape, dtype=datetime_array.dtype), np.array([], dtype=np.int64)
+
+        # Get indices and apply to datetime array
+        time_indices = np.where(time_mask)[0]
+
+        if datetime_array.ndim == 1:
+            return datetime_array[time_mask], time_indices
+        else:
+            return datetime_array[time_indices, ...], time_indices
 
     def clip_to_original_trange(self, data_array, original_trange, datetime_array=None):
         """Clip data array to the specified time range using ChatGPT's improved approach"""
@@ -479,7 +531,7 @@ class plot_manager(np.ndarray):
         if current_trange and current_trange != getattr(self, '_requested_trange', None):
             self.requested_trange = current_trange  # Triggers clipping via setter
 
-        # Return pre-clipped time array if available (ZERO CLIPPING OVERHEAD!)
+        # BUGFIX: Return clipped time array (now properly cached in setter)
         if hasattr(self, '_clipped_time') and self._clipped_time is not None:
             return self._clipped_time
 
