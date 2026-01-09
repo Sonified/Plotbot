@@ -478,11 +478,18 @@ def multiplot(plot_list, **kwargs):
                 else:
                     print_manager.warning(f"Cannot update custom variable - no update method available")
                 
+        # NEW: Handle LISTS of variables (e.g., dual-axis plotting)
+        # For lists, we DON'T load data in Loop 1 because it will get overwritten
+        # Data loading happens in Loop 2 right before plotting
+        elif isinstance(var, list):
+            print(f"DEBUG: Panel {i+1} - List of {len(var)} variables (data will be loaded in Loop 2)")
+            # Lists just pass through to Loop 2 unchanged
+
         # NEW: Handle REGULAR variables (non-custom) by fetching fresh data for each time range
         elif hasattr(var, 'data_type') and hasattr(var, 'class_name') and hasattr(var, 'subclass_name'):
             print_manager.custom_debug(f"Regular variable detected: {var.class_name}.{var.subclass_name} - fetching data for time range: {trange}")
             print_manager.time_tracking(f"Panel {i+1} regular variable {var.class_name}.{var.subclass_name} processing with trange: {trange[0]} to {trange[1]}")
-            
+
             try:
                 # Use get_data to handle loading for all regular types (including FITS)
                 # <<< NEW DEBUG >>>
@@ -490,12 +497,12 @@ def multiplot(plot_list, **kwargs):
                 # <<< END NEW DEBUG >>>
                 print_manager.custom_debug(f"Calling get_data for {var.class_name}.{var.subclass_name} for time range: {trange}")
                 print_manager.time_tracking(f"Panel {i+1} calling get_data for {var.class_name}.{var.subclass_name} with trange: {trange[0]} to {trange[1]}")
-                
+
                 # 🚀 CRITICAL FIX: Set TimeRangeTracker for this specific panel's time range
                 # This ensures data classes get the correct time range for this panel
                 from .time_utils import TimeRangeTracker
                 TimeRangeTracker.set_current_trange(trange)
-                
+
                 get_data(trange, var) # <<< USE CENTRAL get_data function >>>
 
                 # After get_data, the variable instance in data_cubby should be updated.
@@ -646,7 +653,14 @@ def multiplot(plot_list, **kwargs):
         # <<< END MODIFIED DEBUG >>>
         
         # CRITICAL DEBUG: Check if variable has data before plotting
-        if hasattr(var, 'datetime_array') and var.datetime_array is not None:
+        if isinstance(var, list):
+            # For lists, check the first variable
+            if len(var) > 0 and hasattr(var[0], 'datetime_array') and var[0].datetime_array is not None:
+                data_points = len(var[0].datetime_array)
+                print_manager.status(f"✅ ENCOUNTER {enc_num}: Ready to plot {len(var)} variables with {data_points} data points each")
+            else:
+                print_manager.error(f"🚨 ENCOUNTER {enc_num}: NO DATA AVAILABLE FOR PLOTTING! This will show as BLACK/MISSING!")
+        elif hasattr(var, 'datetime_array') and var.datetime_array is not None:
             data_points = len(var.datetime_array)
             print_manager.status(f"✅ ENCOUNTER {enc_num}: Ready to plot with {data_points} data points")
         else:
@@ -733,19 +747,45 @@ def multiplot(plot_list, **kwargs):
         axis_options = getattr(options, f'ax{i+1}')
         
         if isinstance(var, list):
-            for idx, single_var in enumerate(var):
+            # Load data for this panel's time range
+            print(f"DEBUG Loop 2: Panel {i+1} - Loading data for list of {len(var)} variables, trange {trange}")
+            from .time_utils import TimeRangeTracker
+            TimeRangeTracker.set_current_trange(trange)
+            get_data(trange, *var)
+
+            # Grab refreshed variables from data_cubby
+            refreshed_vars = []
+            for single_var in var:
+                class_instance = data_cubby.grab(single_var.class_name)
+                if class_instance:
+                    updated_var = class_instance.get_subclass(single_var.subclass_name)
+                    if updated_var is not None:
+                        refreshed_vars.append(updated_var)
+                        has_dt = hasattr(updated_var, 'datetime_array') and updated_var.datetime_array is not None
+                        dt_len = len(updated_var.datetime_array) if has_dt else 0
+                        print(f"DEBUG Loop 2: Panel {i+1}, {single_var.subclass_name}: datetime_array len={dt_len}")
+                    else:
+                        refreshed_vars.append(single_var)
+                else:
+                    refreshed_vars.append(single_var)
+
+            # Use refreshed variables for plotting
+            var_list_to_plot = refreshed_vars
+
+            for idx, single_var in enumerate(var_list_to_plot):
+                print(f"DEBUG Loop 2: Panel {i+1}, idx={idx}, var={single_var.subclass_name}, second_variable_on_right_axis={options.second_variable_on_right_axis}")
                 indices = []
                 # Add a check for None datetime_array
                 if single_var is None:
                     print_manager.error(f"❌ ERROR: Variable is None, cannot plot")
                     continue
-                
+
                 if not hasattr(single_var, 'datetime_array') or single_var.datetime_array is None:
                     print_manager.error(f"❌ ERROR: Variable has no datetime_array, cannot plot")
                     print_manager.error(f"This might be caused by a problem with custom variable lookup.")
                     print_manager.error(f"Check that you're using the registered name of the variable (e.g., 'Hello') and not the operation string (e.g., 'anisotropy + bmag')")
                     continue
-                    
+
                 # Debug the time range
                 debug_variable_time_ranges(single_var, trange, f"Panel {i+1}")
                 
@@ -785,8 +825,10 @@ def multiplot(plot_list, **kwargs):
 
                 if len(indices) > 0:
                     print_manager.time_tracking(f"Panel {i+1} time_clip returned {len(indices)} points: first={raw_datetime_array[indices[0]]}, last={raw_datetime_array[indices[-1]]}")
-                    
+
+                    print(f"DEBUG: Panel {i+1}, idx={idx}, checking if idx==1 and second_variable_on_right_axis={options.second_variable_on_right_axis}")
                     if idx == 1 and options.second_variable_on_right_axis:
+                        print(f"DEBUG: Panel {i+1} - Creating right axis (ax2)")
                         ax2 = axs[i].twinx()
                         
                         if options.color_mode in ['rainbow', 'single'] and panel_color:
@@ -807,11 +849,11 @@ def multiplot(plot_list, **kwargs):
                             positional_vals = positional_mapper.map_to_position(time_slice, data_type)
 
                             if positional_vals is not None:
-                                # --- NEW: Create mask for successful mapping --- 
+                                # --- NEW: Create mask for successful mapping ---
                                 # Assuming None or np.nan indicates a mapping failure
-                                valid_mask = ~np.isnan(positional_vals) 
+                                valid_mask = ~np.isnan(positional_vals)
                                 num_valid = np.sum(valid_mask)
-                                
+
                                 if num_valid > 0:
                                     x_data = positional_vals[valid_mask] # Use only valid positions
                                     data_slice = data_slice[valid_mask]   # Filter data slice accordingly
@@ -822,34 +864,36 @@ def multiplot(plot_list, **kwargs):
                             else:
                                 print_manager.status(f"Panel {i+1} (Right Axis): Positional mapping failed (returned None). Using time.")
                                 # x_data remains time_slice, data_slice remains original data_slice
-                            
-                            # --- Transform to relative time if use_relative_time is True (Right Axis) ---
-                            if options.use_relative_time and not using_positional_axis:
-                                # Convert datetime x_data to relative time (hours/days from center_time)
-                                if hasattr(x_data, '__iter__') and len(x_data) > 0:
-                                    # Convert to pandas Timestamp if needed, then calculate relative time
-                                    time_deltas = pd.to_datetime(x_data) - center_dt
-                                    if options.relative_time_step_units == 'days':
-                                        x_data = time_deltas.total_seconds() / (3600 * 24)
-                                    elif options.relative_time_step_units == 'hours':
-                                        x_data = time_deltas.total_seconds() / 3600
-                                    elif options.relative_time_step_units == 'minutes':
-                                        x_data = time_deltas.total_seconds() / 60
-                                    elif options.relative_time_step_units == 'seconds':
-                                        x_data = time_deltas.total_seconds()
-                                    else:
-                                        # Default to hours if unit not recognized
-                                        x_data = time_deltas.total_seconds() / 3600
-                                    print_manager.debug(f"Panel {i+1} (Right Axis): Transformed x_data to relative time ({options.relative_time_step_units}). Range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
 
-                        # --- Use filtered x_data and data_slice --- 
+                        # --- Transform to relative time if use_relative_time is True (Right Axis) ---
+                        if options.use_relative_time and not using_positional_axis:
+                            # Convert datetime x_data to relative time (hours/days from center_time)
+                            if hasattr(x_data, '__iter__') and len(x_data) > 0:
+                                # Convert to pandas Timestamp if needed, then calculate relative time
+                                time_deltas = pd.to_datetime(x_data) - center_dt
+                                if options.relative_time_step_units == 'days':
+                                    x_data = time_deltas.total_seconds() / (3600 * 24)
+                                elif options.relative_time_step_units == 'hours':
+                                    x_data = time_deltas.total_seconds() / 3600
+                                elif options.relative_time_step_units == 'minutes':
+                                    x_data = time_deltas.total_seconds() / 60
+                                elif options.relative_time_step_units == 'seconds':
+                                    x_data = time_deltas.total_seconds()
+                                else:
+                                    # Default to hours if unit not recognized
+                                    x_data = time_deltas.total_seconds() / 3600
+                                print_manager.debug(f"Panel {i+1} (Right Axis): Transformed x_data to relative time ({options.relative_time_step_units}). Range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
+
+                        # --- Use filtered x_data and data_slice ---
+                        print(f"DEBUG: Panel {i+1} RIGHT AXIS - About to plot: len(x_data)={len(x_data) if hasattr(x_data, '__len__') else 'scalar'}, len(data_slice)={len(data_slice) if hasattr(data_slice, '__len__') else 'scalar'}")
                         print_manager.processing(f"[PLOT_DEBUG Panel {i}] x_data type: {type(x_data).__name__}, first 5: {x_data[:5] if hasattr(x_data, '__getitem__') else x_data}")
-                        ax2.plot(x_data, 
+                        ax2.plot(x_data,
                                 data_slice, # Use filtered data_slice
                                 linewidth=options.magnetic_field_line_width if options.save_preset else single_var.line_width,
                                 linestyle=single_var.line_style,
                                 label=single_var.legend_label,
                                 color=plot_color)
+                        print(f"DEBUG: Panel {i+1} RIGHT AXIS - ax2.plot() executed")
                         
                         if hasattr(single_var, 'y_limit') and single_var.y_limit:
                             # Keep this functionality but remove the debug print
@@ -897,9 +941,10 @@ def multiplot(plot_list, **kwargs):
                             print_manager.ham_debugging(f"🎨 Panel {i+1}: ax2 styled with color={axis_style_color}, spines invisible")
                         # --- END NEW ---
 
-                        # Set the right y-axis label to match the panel color and style
-                        ham_ylabel = getattr(ham_var, 'y_label', 'HAM')
-                        ax2.set_ylabel(ham_ylabel,
+                        # Set the right y-axis label to match the panel color and style if enabled
+                        if options.show_right_axis_label:
+                            right_ylabel = getattr(single_var, 'y_label', single_var.subclass_name if hasattr(single_var, 'subclass_name') else 'Right Axis')
+                            ax2.set_ylabel(right_ylabel,
                                     fontsize=options.y_axis_label_font_size,
                                     labelpad=options.y_label_pad,
                                     fontweight='bold' if options.bold_y_axis_label else 'normal',
@@ -930,46 +975,48 @@ def multiplot(plot_list, **kwargs):
                             print_manager.debug(f"Panel {i+1} (List Var): Attempting positional mapping for {len(time_slice)} points")
                             positional_vals = positional_mapper.map_to_position(time_slice, data_type)
                             if positional_vals is not None:
-                                # --- NEW: Create mask for successful mapping --- 
-                                valid_mask = ~np.isnan(positional_vals) 
+                                # --- NEW: Create mask for successful mapping ---
+                                valid_mask = ~np.isnan(positional_vals)
                                 num_valid = np.sum(valid_mask)
-                                
+
                                 if num_valid > 0:
                                     x_data = positional_vals[valid_mask]
-                                    data_slice = data_slice[valid_mask] 
+                                    data_slice = data_slice[valid_mask]
                                     print_manager.debug(f"Panel {i+1} (List Var): Positional mapping successful, using {num_valid} valid points")
                                 else:
                                     print_manager.status(f"Panel {i+1} (List Var): Positional mapping resulted in no valid points. Using time.")
                             else:
                                 print_manager.status(f"Panel {i+1} (List Var): Positional mapping failed (returned None). Using time.")
-                            
-                            # --- Transform to relative time if use_relative_time is True (List Var) ---
-                            if options.use_relative_time and not using_positional_axis:
-                                # Convert datetime x_data to relative time (hours/days from center_time)
-                                if hasattr(x_data, '__iter__') and len(x_data) > 0:
-                                    # Convert to pandas Timestamp if needed, then calculate relative time
-                                    time_deltas = pd.to_datetime(x_data) - center_dt
-                                    if options.relative_time_step_units == 'days':
-                                        x_data = time_deltas.total_seconds() / (3600 * 24)
-                                    elif options.relative_time_step_units == 'hours':
-                                        x_data = time_deltas.total_seconds() / 3600
-                                    elif options.relative_time_step_units == 'minutes':
-                                        x_data = time_deltas.total_seconds() / 60
-                                    elif options.relative_time_step_units == 'seconds':
-                                        x_data = time_deltas.total_seconds()
-                                    else:
-                                        # Default to hours if unit not recognized
-                                        x_data = time_deltas.total_seconds() / 3600
-                                    print_manager.debug(f"Panel {i+1} (List Var): Transformed x_data to relative time ({options.relative_time_step_units}). Range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
+
+                        # --- Transform to relative time if use_relative_time is True (List Var) ---
+                        if options.use_relative_time and not using_positional_axis:
+                            # Convert datetime x_data to relative time (hours/days from center_time)
+                            if hasattr(x_data, '__iter__') and len(x_data) > 0:
+                                # Convert to pandas Timestamp if needed, then calculate relative time
+                                time_deltas = pd.to_datetime(x_data) - center_dt
+                                if options.relative_time_step_units == 'days':
+                                    x_data = time_deltas.total_seconds() / (3600 * 24)
+                                elif options.relative_time_step_units == 'hours':
+                                    x_data = time_deltas.total_seconds() / 3600
+                                elif options.relative_time_step_units == 'minutes':
+                                    x_data = time_deltas.total_seconds() / 60
+                                elif options.relative_time_step_units == 'seconds':
+                                    x_data = time_deltas.total_seconds()
+                                else:
+                                    # Default to hours if unit not recognized
+                                    x_data = time_deltas.total_seconds() / 3600
+                                print_manager.debug(f"Panel {i+1} (List Var): Transformed x_data to relative time ({options.relative_time_step_units}). Range: {np.nanmin(x_data):.2f} to {np.nanmax(x_data):.2f}")
                         
-                        # --- Use filtered x_data and data_slice --- 
+                        # --- Use filtered x_data and data_slice ---
+                        print(f"DEBUG: Panel {i+1} LEFT AXIS - About to plot: len(x_data)={len(x_data) if hasattr(x_data, '__len__') else 'scalar'}, len(data_slice)={len(data_slice) if hasattr(data_slice, '__len__') else 'scalar'}")
                         print_manager.processing(f"[PLOT_DEBUG Panel {i}] x_data type: {type(x_data).__name__}, first 5: {x_data[:5] if hasattr(x_data, '__getitem__') else x_data}")
-                        axs[i].plot(x_data, 
+                        axs[i].plot(x_data,
                                 data_slice, # Use filtered data_slice
                                 linewidth=options.magnetic_field_line_width if options.save_preset else single_var.line_width,
                                 linestyle=single_var.line_style,
                                 label=single_var.legend_label,
                                 color=plot_color)
+                        print(f"DEBUG: Panel {i+1} LEFT AXIS - axs[i].plot() executed")
                         
                         if panel_color:
                             print_manager.ham_debugging(f"🎨 Panel {i+1}: Calling apply_panel_color (list var)")
