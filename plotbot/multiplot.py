@@ -1041,6 +1041,24 @@ def multiplot(plot_list, **kwargs):
                     axs[i].legend(bbox_to_anchor=(1.025, 1),
                                 loc='upper left')
         else:
+            # CRITICAL FIX: Refresh single variable reference to avoid stale data after Loop 1 merges
+            print(f"DEBUG Loop 2: Panel {i+1} - Loading data for single variable '{var.subclass_name}', trange {trange}")
+            from .time_utils import TimeRangeTracker
+            TimeRangeTracker.set_current_trange(trange)
+            get_data(trange, var)
+
+            # Grab refreshed variable from data_cubby
+            class_instance = data_cubby.grab(var.class_name)
+            if class_instance:
+                refreshed_var = class_instance.get_subclass(var.subclass_name)
+                if refreshed_var is not None:
+                    var = refreshed_var
+                    print(f"DEBUG Loop 2: Panel {i+1} - Refreshed variable, now has {len(var.datetime_array) if var.datetime_array is not None else 0} data points")
+                else:
+                    print(f"WARNING Loop 2: Panel {i+1} - Could not refresh variable, using original")
+            else:
+                print(f"WARNING Loop 2: Panel {i+1} - Could not find class instance in data_cubby")
+
             indices = []
             # Add a check for None datetime_array
             if var is None:
