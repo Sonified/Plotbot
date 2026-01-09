@@ -472,10 +472,10 @@ RESET = '\033[0m'
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
 
-__version__ = "2026_01_07_v3.76"
+__version__ = "2026_01_08_v3.77"
 
 # Commit message for this version
-__commit_message__ = "v3.76 Feature: CDF wildcard patterns now generated from single files"
+__commit_message__ = "v3.77 Feature: Dual-axis multiplot + Bugfix: Fixed stale variable reference bug"
 
 # Print the version and commit message
 print(f"""
