@@ -472,10 +472,10 @@ RESET = '\033[0m'
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
 
-__version__ = "2026_01_09_v3.78"
+__version__ = "2026_01_12_v3.79"
 
 # Commit message for this version
-__commit_message__ = "v3.78 Bugfix: Fixed .time property not updating when trange changes"
+__commit_message__ = "v3.79 Performance: br_norm caching with TimeRangeTracker"
 
 # Print the version and commit message
 print(f"""

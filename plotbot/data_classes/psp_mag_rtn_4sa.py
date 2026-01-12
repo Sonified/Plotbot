@@ -224,13 +224,30 @@ class mag_rtn_4sa_class:
             )
             print_manager.dependency_management(f"[BR_NORM_PROPERTY] Initial _br_norm_manager.plot_config.datetime_array len: {len(self._br_norm_manager.plot_config.datetime_array) if self._br_norm_manager.plot_config.datetime_array is not None else 'None'}")
 
-        # If data is available, try to calculate
+        # 🚀 PERFORMANCE FIX: Only calculate br_norm if trange changed or br_norm doesn't exist yet
+        from plotbot.time_utils import TimeRangeTracker
+        current_trange = TimeRangeTracker.get_current_trange()
+        cached_trange = getattr(self, '_br_norm_calculated_for_trange', None)
+
         br_exists_and_populated = hasattr(self, 'raw_data') and 'br' in self.raw_data and self.raw_data['br'] is not None and len(self.raw_data['br']) > 0
-        print_manager.dependency_management(f"[BR_NORM_PROPERTY] Check for calculation: hasattr(self, 'raw_data'): {hasattr(self, 'raw_data')}, 'br' in raw_data: {'br' in self.raw_data if hasattr(self, 'raw_data') else 'N/A'}, raw_data['br'] is not None: {self.raw_data.get('br') is not None if hasattr(self, 'raw_data') else 'N/A'}, len(raw_data['br']) > 0: {len(self.raw_data.get('br')) > 0 if hasattr(self, 'raw_data') and self.raw_data.get('br') is not None else 'N/A'}")
+        br_norm_needs_calculation = (
+            self.raw_data.get('br_norm') is None or  # br_norm not calculated yet
+            current_trange != cached_trange           # trange changed since last calculation
+        )
+
+        print_manager.dependency_management(f"[BR_NORM_PROPERTY] Check: br exists: {br_exists_and_populated}, br_norm exists: {self.raw_data.get('br_norm') is not None if hasattr(self, 'raw_data') else False}, current_trange: {current_trange}, cached_trange: {cached_trange}, needs_calculation: {br_norm_needs_calculation}")
 
         if hasattr(self, 'raw_data') and self.raw_data.get('br') is not None and len(self.raw_data['br']) > 0 : # Check if 'br' data exists and is populated
-            print_manager.dependency_management("[BR_NORM_PROPERTY] Parent raw_data['br'] exists and is populated. Attempting calculation.")
-            success = self._calculate_br_norm()
+            if br_norm_needs_calculation:
+                print_manager.dependency_management("[BR_NORM_PROPERTY] Parent raw_data['br'] exists and br_norm needs calculation. Calling _calculate_br_norm().")
+                success = self._calculate_br_norm()
+                if success:
+                    # Cache the trange this calculation was for
+                    object.__setattr__(self, '_br_norm_calculated_for_trange', current_trange)
+                    print_manager.dependency_management(f"[BR_NORM_PROPERTY] Cached trange for br_norm: {current_trange}")
+            else:
+                print_manager.dependency_management("[BR_NORM_PROPERTY] br_norm already calculated for current trange, skipping recalculation.")
+                success = True  # Already calculated
             if success and self.raw_data.get('br_norm') is not None:
                 print_manager.dependency_management("[BR_NORM_PROPERTY] _calculate_br_norm successful, updating _br_norm_manager.")
                 options = self._br_norm_manager.plot_config

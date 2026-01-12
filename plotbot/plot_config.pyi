@@ -18,6 +18,9 @@ class plot_config:
     y_limit: Optional[Tuple[float, float]]
     line_width: float
     line_style: str
+    marker_size: float
+    marker_style: str | Tuple[int, int]
+    alpha: float
     colormap: str
     colorbar_scale: str
     colorbar_limits: Optional[Tuple[float, float]]

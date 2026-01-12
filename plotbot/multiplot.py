@@ -487,35 +487,44 @@ def multiplot(plot_list, **kwargs):
 
         # NEW: Handle REGULAR variables (non-custom) by fetching fresh data for each time range
         elif hasattr(var, 'data_type') and hasattr(var, 'class_name') and hasattr(var, 'subclass_name'):
-            print_manager.custom_debug(f"Regular variable detected: {var.class_name}.{var.subclass_name} - fetching data for time range: {trange}")
-            print_manager.time_tracking(f"Panel {i+1} regular variable {var.class_name}.{var.subclass_name} processing with trange: {trange[0]} to {trange[1]}")
+            # 🎯 PERFORMANCE: Cache class_name/subclass_name to avoid repeated property getter calls on br_norm
+            var_class_name = var.class_name
+            var_subclass_name = var.subclass_name
+
+            print_manager.custom_debug(f"Regular variable detected: {var_class_name}.{var_subclass_name} - fetching data for time range: {trange}")
+            print_manager.time_tracking(f"Panel {i+1} regular variable {var_class_name}.{var_subclass_name} processing with trange: {trange[0]} to {trange[1]}")
 
             try:
                 # Use get_data to handle loading for all regular types (including FITS)
-                # <<< NEW DEBUG >>>
-                print_manager.debug(f"Loop 1, Panel {i+1} Pre-Grab: Checking var with class='{getattr(var, 'class_name', 'N/A')}', subclass='{getattr(var, 'subclass_name', 'N/A')}', ID={id(var)}")
-                # <<< END NEW DEBUG >>>
-                print_manager.custom_debug(f"Calling get_data for {var.class_name}.{var.subclass_name} for time range: {trange}")
-                print_manager.time_tracking(f"Panel {i+1} calling get_data for {var.class_name}.{var.subclass_name} with trange: {trange[0]} to {trange[1]}")
 
-                # 🚀 CRITICAL FIX: Set TimeRangeTracker for this specific panel's time range
-                # This ensures data classes get the correct time range for this panel
+                # <<< NEW DEBUG >>>
+                # print_manager.debug(f"Loop 1, Panel {i+1} Pre-Grab: Checking var with class='{getattr(var, 'class_name', 'N/A')}', subclass='{getattr(var, 'subclass_name', 'N/A')}', ID={id(var)}")
+                # <<< END NEW DEBUG >>>
+                # print_manager.custom_debug(f"Calling get_data for {var_class_name}.{var_subclass_name} for time range: {trange}")
+                # print_manager.time_tracking(f"Panel {i+1} calling get_data for {var_class_name}.{var_subclass_name} with trange: {trange[0]} to {trange[1]}")
+
+                # 🎯 ARCHITECTURAL FIX: Trust data_cubby to preserve state (like plotbot_main does)
+                # data_cubby.update() automatically saves _plot_state before calling set_plot_config() and restores after
+                # print(f"DEBUG Loop 1: Panel {i+1} BEFORE get_data - plot_type={var.plot_config.plot_type}, marker_size={getattr(var.plot_config, 'marker_size', 'N/A')}, alpha={getattr(var.plot_config, 'alpha', 'N/A')}")
+
+                # Set TimeRangeTracker for this specific panel's time range
                 from .time_utils import TimeRangeTracker
                 TimeRangeTracker.set_current_trange(trange)
 
-                get_data(trange, var) # <<< USE CENTRAL get_data function >>>
+                get_data(trange, var) # data_cubby.update() preserves custom settings automatically!
 
-                # After get_data, the variable instance in data_cubby should be updated.
-                # We need to retrieve the potentially updated variable to use for plotting.
-                class_instance = data_cubby.grab(var.class_name)
+                # Retrieve the updated variable from data_cubby (state already preserved by data_cubby.update())
+                class_instance = data_cubby.grab(var_class_name)
                 if class_instance:
-                    updated_var = class_instance.get_subclass(var.subclass_name)
+                    updated_var = class_instance.get_subclass(var_subclass_name)
                     if updated_var is not None:
-                        # Update the plot_list with the potentially updated variable instance
+                        # print(f"DEBUG Loop 1: Panel {i+1} AFTER get_data - plot_type={updated_var.plot_config.plot_type}, marker_size={getattr(updated_var.plot_config, 'marker_size', 'N/A')}, alpha={getattr(updated_var.plot_config, 'alpha', 'N/A')}")
+
+                        # Update the plot_list with the refreshed variable instance
                         plot_list[i] = (center_time, updated_var)
                         enc_num = get_encounter_number(center_time)  # Get encounter number for context
                         print_manager.status(f"✅ ENCOUNTER {enc_num} (Panel {i+1}) DATA SUCCESSFULLY LOADED!")
-                        print_manager.custom_debug(f"✅ Refreshed variable reference in plot_list for {var.class_name}.{var.subclass_name}")
+                        print_manager.custom_debug(f"✅ Refreshed variable reference in plot_list for {var_class_name}.{var_subclass_name}")
                         # <<< NEW DEBUG >>>
                         print_manager.debug(f"Loop 1, Panel {i+1}: Stored var ID in plot_list: {id(plot_list[i][1])}")
                         # <<< END NEW DEBUG >>>
@@ -527,16 +536,16 @@ def multiplot(plot_list, **kwargs):
                             print_manager.warning(f"⚠️ ENCOUNTER {enc_num}: Variable updated but has no datetime_array!")
                     else:
                         enc_num = get_encounter_number(center_time)
-                        print_manager.error(f"🚨 ENCOUNTER {enc_num} (Panel {i+1}): Failed to get updated subclass {var.subclass_name} after get_data")
+                        print_manager.error(f"🚨 ENCOUNTER {enc_num} (Panel {i+1}): Failed to get updated subclass {var_subclass_name} after get_data")
                 else:
                     enc_num = get_encounter_number(center_time)
-                    print_manager.error(f"🚨 ENCOUNTER {enc_num} (Panel {i+1}): Failed to get class instance {var.class_name} from data_cubby after get_data")
+                    print_manager.error(f"🚨 ENCOUNTER {enc_num} (Panel {i+1}): Failed to get class instance {var_class_name} from data_cubby after get_data")
             except Exception as e:
                 enc_num = get_encounter_number(center_time)  # Get encounter number for context
                 print_manager.error(f"🚨 CRITICAL: ENCOUNTER {enc_num} (Panel {i+1}) DATA FETCH FAILED!")
-                print_manager.error(f"❌ Error during get_data or variable update for {var.class_name}.{var.subclass_name}: {str(e)}")
+                print_manager.error(f"❌ Error during get_data or variable update for {var_class_name}.{var_subclass_name}: {str(e)}")
                 print_manager.error(f"❌ This encounter will show as BLACK/MISSING in the plot!")
-                print_manager.time_tracking(f"Panel {i+1} error during get_data for {var.class_name}.{var.subclass_name}: {str(e)}")
+                print_manager.time_tracking(f"Panel {i+1} error during get_data for {var_class_name}.{var_subclass_name}: {str(e)}")
                 # Continue to the next variable in the plot_list
                 continue 
     
@@ -748,7 +757,12 @@ def multiplot(plot_list, **kwargs):
         
         if isinstance(var, list):
             # Load data for this panel's time range
-            print(f"DEBUG Loop 2: Panel {i+1} - Loading data for list of {len(var)} variables, trange {trange}")
+            # print(f"DEBUG Loop 2: Panel {i+1} - Loading data for list of {len(var)} variables, trange {trange}")
+
+            # Save custom plot_configs BEFORE get_data (which resets them)
+            import copy
+            original_plot_configs = {single_var.subclass_name: copy.deepcopy(single_var.plot_config) for single_var in var}
+
             from .time_utils import TimeRangeTracker
             TimeRangeTracker.set_current_trange(trange)
             get_data(trange, *var)
@@ -756,14 +770,16 @@ def multiplot(plot_list, **kwargs):
             # Grab refreshed variables from data_cubby
             refreshed_vars = []
             for single_var in var:
+                original_plot_config = original_plot_configs[single_var.subclass_name]  # Get saved custom plot_config
                 class_instance = data_cubby.grab(single_var.class_name)
                 if class_instance:
                     updated_var = class_instance.get_subclass(single_var.subclass_name)
                     if updated_var is not None:
+                        updated_var.plot_config = original_plot_config  # Restore custom plot_config
                         refreshed_vars.append(updated_var)
                         has_dt = hasattr(updated_var, 'datetime_array') and updated_var.datetime_array is not None
                         dt_len = len(updated_var.datetime_array) if has_dt else 0
-                        print(f"DEBUG Loop 2: Panel {i+1}, {single_var.subclass_name}: datetime_array len={dt_len}")
+                        # print(f"DEBUG Loop 2: Panel {i+1}, {single_var.subclass_name}: datetime_array len={dt_len}")
                     else:
                         refreshed_vars.append(single_var)
                 else:
@@ -773,7 +789,7 @@ def multiplot(plot_list, **kwargs):
             var_list_to_plot = refreshed_vars
 
             for idx, single_var in enumerate(var_list_to_plot):
-                print(f"DEBUG Loop 2: Panel {i+1}, idx={idx}, var={single_var.subclass_name}, second_variable_on_right_axis={options.second_variable_on_right_axis}")
+                # print(f"DEBUG Loop 2: Panel {i+1}, idx={idx}, var={single_var.subclass_name}, second_variable_on_right_axis={options.second_variable_on_right_axis}")
                 indices = []
                 # Add a check for None datetime_array
                 if single_var is None:
@@ -1041,21 +1057,25 @@ def multiplot(plot_list, **kwargs):
                     axs[i].legend(bbox_to_anchor=(1.025, 1),
                                 loc='upper left')
         else:
-            # CRITICAL FIX: Refresh single variable reference to avoid stale data after Loop 1 merges
-            print(f"DEBUG Loop 2: Panel {i+1} - Loading data for single variable '{var.subclass_name}', trange {trange}")
+            # 🎯 ARCHITECTURAL FIX: Loop 2 just grabs from data_cubby - Loop 1 already called get_data!
+            # Don't call get_data() again - it returns early if cached, leaving datetime_array unpopulated
+            # Trust data_cubby's state preservation architecture (same pattern as plotbot_main)
+            # print(f"DEBUG Loop 2: Panel {i+1} - Getting variable '{var.subclass_name}' from data_cubby (Loop 1 already loaded data)")
+
             from .time_utils import TimeRangeTracker
             TimeRangeTracker.set_current_trange(trange)
-            get_data(trange, var)
 
-            # Grab refreshed variable from data_cubby
+            # Grab variable from data_cubby (Loop 1 loaded data, data_cubby preserved state via update())
             class_instance = data_cubby.grab(var.class_name)
             if class_instance:
                 refreshed_var = class_instance.get_subclass(var.subclass_name)
                 if refreshed_var is not None:
                     var = refreshed_var
-                    print(f"DEBUG Loop 2: Panel {i+1} - Refreshed variable, now has {len(var.datetime_array) if var.datetime_array is not None else 0} data points")
+                    # print(f"DEBUG Loop 2: Panel {i+1} - Got variable from data_cubby, has {len(var.datetime_array) if var.datetime_array is not None else 0} data points")
+                    # print(f"DEBUG Loop 2: Panel {i+1} - datetime_array in plot_config: {var.plot_config.datetime_array.shape if var.plot_config.datetime_array is not None else None}")
+                    # print(f"DEBUG Loop 2: Panel {i+1} - plot_type={var.plot_config.plot_type}, marker_size={getattr(var.plot_config, 'marker_size', 'N/A')}, alpha={getattr(var.plot_config, 'alpha', 'N/A')}")
                 else:
-                    print(f"WARNING Loop 2: Panel {i+1} - Could not refresh variable, using original")
+                    print(f"WARNING Loop 2: Panel {i+1} - Could not get subclass from data_cubby")
             else:
                 print(f"WARNING Loop 2: Panel {i+1} - Could not find class instance in data_cubby")
 
@@ -1104,24 +1124,37 @@ def multiplot(plot_list, **kwargs):
                 # print_manager.debug(f"Panel {i+1} pre-clip: Requested trange: {trange[0]} to {trange[1]}") # COMMENTED OUT
                 # <<< END ADDED DEBUG PRINTS >>>
                 raw_datetime_array = var.plot_config.datetime_array if hasattr(var, 'plot_options') else var.datetime_array
+
+                # 🔍 CRITICAL DEBUG: Check datetime_array before time_clip
+                # print(f"🔍 TIME_CLIP DEBUG Panel {i+1}:")
+                # print(f"   raw_datetime_array: shape={raw_datetime_array.shape if raw_datetime_array is not None else None}")
+                # if raw_datetime_array is not None and len(raw_datetime_array) > 0:
+                #     print(f"   raw_datetime_array range: {raw_datetime_array[0]} to {raw_datetime_array[-1]}")
+                #     print(f"   trange: {trange[0]} to {trange[1]}")
+
                 indices = time_clip(raw_datetime_array, trange[0], trange[1])
+                # print(f"   time_clip returned {len(indices)} indices")
             else:
                 print_manager.warning(f"Empty datetime_array for panel {i+1} - cannot clip times")
 
             if len(indices) > 0:
                 print_manager.time_tracking(f"Panel {i+1} time_clip returned {len(indices)} points: first={raw_datetime_array[indices[0]]}, last={raw_datetime_array[indices[-1]]}")
-                
+
+                # 🔍 CRITICAL DEBUG: Check if we reach the plotting section
+                # print(f"🔍 RENDER DEBUG Panel {i+1}: len(indices)={len(indices)}, plot_type={var.plot_type if hasattr(var, 'plot_type') else 'N/A'}")
+
                 # DEBUG: Track E14 and E15 specifically
                 if i+1 in [14, 15]:
                     print(f"🔍 DEBUG E{i+1}: Found {len(indices)} time indices")
                     print(f"🔍 DEBUG E{i+1}: Data shape: {np.array(var.all_data).shape}")
                     print(f"🔍 DEBUG E{i+1}: Time range: {raw_datetime_array[indices[0]]} to {raw_datetime_array[indices[-1]]}")
-                
+
                 if hasattr(var, 'y_limit') and var.y_limit:
                     # Keep functionality but remove debug print
                     pass
-                
+
                 if hasattr(var, 'plot_type'):
+                    # print(f"🔍 RENDER DEBUG Panel {i+1}: About to check plot_type branches")
                     if var.plot_type == 'time_series':
                         plot_color = panel_color
                         if not plot_color:
@@ -1490,6 +1523,13 @@ def multiplot(plot_list, **kwargs):
                                 print_manager.debug(f"  x_data range: {np.min(x_data)} to {np.max(x_data)}")
                             # <<< END DEBUG >>>
                             print_manager.processing(f"[PLOT_DEBUG Panel {i}] x_data type: {type(x_data).__name__}, first 5: {x_data[:5] if hasattr(x_data, '__getitem__') else x_data}")
+
+                            # 🔍 DEBUG: Show what we're about to plot
+                            # print(f"🔍 SCATTER DEBUG Panel {i+1}:")
+                            # print(f"   x_data: shape={np.array(x_data).shape}, min={np.nanmin(x_data):.2f}, max={np.nanmax(x_data):.2f}")
+                            # print(f"   data_slice: shape={data_slice.shape}, min={np.nanmin(data_slice):.2f}, max={np.nanmax(data_slice):.2f}, non-NaN={np.sum(~np.isnan(data_slice))}")
+                            # print(f"   marker_size={marker_size}, alpha={alpha}, marker_style={marker_style}, color={plot_color}")
+
                             axs[i].scatter(x_data,
                                           data_slice, # Use filtered data_slice
                                           color=plot_color,

@@ -27,6 +27,8 @@ class plot_config:
                  line_width=1.0,
                  line_style='-',
                  marker_size=1.0,
+                 marker_style='.',
+                 alpha=1.0,
                  colormap='viridis',
                  colorbar_scale='linear',
                  colorbar_limits=None,
@@ -57,6 +59,8 @@ class plot_config:
         self.line_width = line_width
         self.line_style = line_style
         self.marker_size = marker_size
+        self.marker_style = marker_style
+        self.alpha = alpha
         self.colormap = colormap
         self.colorbar_scale = colorbar_scale
         self.colorbar_limits = colorbar_limits
