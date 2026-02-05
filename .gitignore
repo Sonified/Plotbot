@@ -2,7 +2,7 @@ psp_data/
 ace_data/
 data_snapshots/
 
-# Ignore specific data subdirectories (but not Hamstrings)
+# Ignore specific data subdirectories
 data/psp/fields/*
 data/psp/fields/
 data/psp/sweap/*
@@ -12,24 +12,13 @@ data/wind/
 data/test_precise_dfb/
 data/windwind_masters/
 
-# CDF files - ignore specific large files and test metadata
+# CDF files - ignore test metadata and large science data
 data/cdf_files/TEST_CDF_METADATA/
-data/cdf_files/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf
+data/cdf_files/PSP_Waves/
 
-# Ignore CDF data files in Hamstrings
-data/psp/Hamstrings/cdf/
-data/psp/Hamstrings/*.zip
+# Ignore all Hamstrings CSV data (now using CDF format in data/cdf_files/Hamstrings/)
+data/psp/Hamstrings/
 data/cdf_files/Hamstrings/
-
-# Ignore specific HAM files (keeping only the 19th)
-data/psp/Hamstrings/2025/03/2025-03-25_v00.csv
-data/psp/Hamstrings/2025/03/2025-03-24_v00.csv
-data/psp/Hamstrings/2025/03/2025-03-26_v00.csv
-data/psp/Hamstrings/2025/03/2025-03-27_v00.csv
-data/psp/Hamstrings/2025/03/2025-03-22_v00.csv
-data/psp/Hamstrings/2025/03/2025-03-23_v00.csv
-data/psp/Hamstrings/2025/03/2025-03-21_v00.csv
-data/psp/Hamstrings/2025/03/2025-03-20_v00.csv
 
 .DS_Store
 .vscode/
@@ -107,3 +96,21 @@ plotbot_venv/
 *.backup
 *~
 data/psp/spice_data/
+
+# Runtime cache (regenerated automatically)
+plotbot/cache/cdf_metadata/
+
+# Test timing reports (one-off artifacts)
+tests/timing_reports/
+
+# Archived captains logs (dev history)
+docs/captains_logs/archive/
+
+# Archived docs (dev investigation notes, old to-dos)
+docs/archive/
+
+# Debug scripts (one-off diagnostics, not part of test suite)
+tests/debug_scripts/
+
+# Implementation plans (dev planning artifacts)
+docs/implementation_plans/

@@ -22,8 +22,8 @@ def test_pattern_detection():
     # Test cases found in our data directory
     test_cases = [
         # PSP Wave files (our original test cases)
-        ("../data/cdf_files/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf", "../data/cdf_files"),
-        ("../data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf", "../data/cdf_files"),
+        ("../data/cdf_files/PSP_Waves/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf", "../data/cdf_files/PSP_Waves"),
+        ("../data/cdf_files/PSP_Waves/PSP_wavePower_2021-04-29_v1.3.cdf", "../data/cdf_files/PSP_Waves"),
         
         # WIND master files (placeholder dates)
         ("../data/windwind_masters/wi_h5_swe_00000000_v01.cdf", "../data/windwind_masters"),

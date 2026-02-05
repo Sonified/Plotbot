@@ -1,3 +1,0 @@
-magnetic_hole_finder
-plotbot
-plotbot_venv

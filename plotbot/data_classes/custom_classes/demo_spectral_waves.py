@@ -1,7 +1,7 @@
 """
 Auto-generated plotbot class for PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf
 Generated on: 2025-07-23T17:28:11.535386
-Source: data/cdf_files/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf
+Source: data/cdf_files/PSP_Waves/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf
 
 This class contains 96 variables from the CDF file.
 """
@@ -230,7 +230,7 @@ class demo_spectral_waves_class:
         object.__setattr__(self, 'variable_meshes', {})
         
         # Store original CDF file path AND smart pattern for multi-file loading
-        object.__setattr__(self, '_original_cdf_file_path', 'data/cdf_files/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf')
+        object.__setattr__(self, '_original_cdf_file_path', 'data/cdf_files/PSP_Waves/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf')
         object.__setattr__(self, '_cdf_file_pattern', 'PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf')
 
         if imported_data is None:

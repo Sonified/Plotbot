@@ -2,19 +2,12 @@
 Plotbot Test Package
 
 This package contains tests for the Plotbot application.
-Tests are organized by functionality and can be run
-using the run_tests.py script at the project root.
+Tests are organized by functionality and can be run directly with pytest.
 
 Example usage:
-    python run_tests.py                    # Run all tests
-    python run_tests.py test_arithmetic.py # Run specific test file
-    python run_tests.py test_custom_variables.py::test_create_custom_variable # Run specific test
-
-Test files include:
-- test_arithmetic.py: Tests for arithmetic operations on variables
-- test_derived.py: Tests for derived variables functionality
-- test_global.py: Tests for global variable access
-- test_custom_variables.py: Tests for the custom variables system
+    python -m pytest tests/ -v                    # Run all tests
+    python -m pytest tests/test_stardust.py -v -s # Run the main comprehensive test suite
+    python -m pytest tests/test_plotbot.py -v     # Run a specific test file
 """
 
 import os

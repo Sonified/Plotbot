@@ -90,9 +90,12 @@ print_manager.show_debug = True      # Full debug output
 ## Testing
 ```bash
 # Master test suite (comprehensive functionality check)
+# With Conda:
 conda run -n plotbot_env python -m pytest tests/test_stardust.py -vv -s
+# With Micromamba:
+micromamba run -n plotbot_micromamba python -m pytest tests/test_stardust.py -vv -s
 
-# Specific test 
+# Specific test
 conda run -n plotbot_env python -m pytest tests/test_stardust.py::test_stardust_plotbot_basic -vv -s
 ```
 

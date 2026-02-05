@@ -851,11 +851,9 @@ For those interested in contributing or understanding the internals:
 *   **`data/`**: Unified location for downloaded data from all missions (PSP, WIND, etc.).
 *   **`docs/`**: Additional documentation (if any).
 *   **`environment.yml`**: Defines the Conda environment.
-*   **`run_tests.py`**: Convenience script for running tests.
-
 ## Running Tests
 
-Plotbot utilizes the `pytest` framework along with a custom space-themed runner (`plotbot/test_pilot.py`) for organized and informative testing. All tests reside in the `tests/` directory, categorized by the functionality they cover (e.g., `test_plotbot.py`, `test_multiplot.py`, `test_custom_variables.py`).
+Plotbot utilizes the `pytest` framework along with a custom space-themed runner (`plotbot/test_pilot.py`) for organized and informative testing. All tests reside in the `tests/` directory, categorized by the functionality they cover (e.g., `test_plotbot.py`, `test_multiplot.py`, `test_stardust.py`).
 
 ### Test Structure with `test_pilot.py`
 
@@ -868,33 +866,25 @@ This structure, visible in files like `tests/test_plotbot.py`, provides detailed
 
 ### Executing Tests
 
-You can run tests using the provided `run_tests.py` script or directly with `pytest`.
+Run tests directly with `pytest` using your environment:
 
-**Using `run_tests.py`:**
-
-```bash
-# Run all tests
-python run_tests.py
-
-# Run a specific test file (e.g., test_custom_variables.py)
-python run_tests.py test_custom_variables.py
-
-# Run a specific test function within a file
-python run_tests.py test_custom_variables.py::test_create_custom_variable
-```
-
-**Using `pytest` directly (often with Conda environment activation):**
-
-Make sure you're in the correct directory (`~/GitHub/Plotbot`) and using the `plotbot_env` conda environment.
+Make sure you're in the correct directory (`~/GitHub/Plotbot`) and using the appropriate Python environment. Plotbot supports both Conda and Micromamba installations:
 
 ```bash
-# Run all tests
+# --- With Conda (environment: plotbot_env) ---
 conda run -n plotbot_env python -m pytest tests/ -v
 
+# --- With Micromamba (environment: plotbot_micromamba) ---
+micromamba run -n plotbot_micromamba python -m pytest tests/ -v
+```
+
+Common test commands (substitute your environment prefix as needed):
+
+```bash
 # Run all tests in a specific file (e.g., test_multiplot.py)
 conda run -n plotbot_env python -m pytest tests/test_multiplot.py -v
 
-# Run a specific test function (e.g., test_multiplot_single_custom_variable)
+# Run a specific test function
 conda run -n plotbot_env python -m pytest tests/test_multiplot.py::test_multiplot_single_custom_variable -v
 
 # Run a specific mission
@@ -904,7 +894,15 @@ conda run -n plotbot_env python -m pytest tests/ -m "Custom Variable Time Range 
 The `-v` flag provides verbose output. Add the `-s` flag (`pytest -v -s`) if you want to see output from `print()` statements within the tests (including `print_manager.test()` output when tests are run).
 
 **Stardust Test Suite (`tests/test_stardust.py`):**
-This special test file aggregates key tests from various modules (basic plotting, multiplot, showdahodo, HAM data, FITS data, custom variables, audification). It serves as a rapid, catch-all check for core Plotbot functionality. Running `conda run -n plotbot_env python -m pytest tests/test_stardust.py -v -s` is a good way to quickly verify the system's health after making changes.
+This special test file aggregates key tests from various modules (basic plotting, multiplot, showdahodo, HAM data, FITS data, custom variables, audification). It serves as a rapid, catch-all check for core Plotbot functionality:
+
+```bash
+# Conda
+conda run -n plotbot_env python -m pytest tests/test_stardust.py -v -s
+
+# Micromamba
+micromamba run -n plotbot_micromamba python -m pytest tests/test_stardust.py -v -s
+```
 
 ## Exploratory New Features
 

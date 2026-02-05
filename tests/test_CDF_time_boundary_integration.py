@@ -33,13 +33,13 @@ def test_time_boundary_extraction():
     
     # Test files in our cdf_files directory
     test_files = [
-        '../data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf',
-        '../data/cdf_files/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf'
+        '../data/cdf_files/PSP_Waves/PSP_wavePower_2021-04-29_v1.3.cdf',
+        '../data/cdf_files/PSP_Waves/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf'
     ]
-    
+
     scanner = CDFMetadataScanner()
     results = {}
-    
+
     for file_path in test_files:
         if not os.path.exists(file_path):
             print(f"❌ File not found: {file_path}")
@@ -91,10 +91,10 @@ def test_time_based_filtering():
     
     # Test files
     test_files = [
-        '../data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf',
-        '../data/cdf_files/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf'
+        '../data/cdf_files/PSP_Waves/PSP_wavePower_2021-04-29_v1.3.cdf',
+        '../data/cdf_files/PSP_Waves/PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf'
     ]
-    
+
     # Define test time ranges
     test_scenarios = [
         {
@@ -174,7 +174,7 @@ def test_pattern_and_time_integration():
     print("=" * 65)
     
     # Test with our actual files
-    base_file = '../data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf'
+    base_file = '../data/cdf_files/PSP_Waves/PSP_wavePower_2021-04-29_v1.3.cdf'
     
     if not os.path.exists(base_file):
         print(f"❌ Base file not found: {base_file}")
@@ -184,11 +184,11 @@ def test_pattern_and_time_integration():
     
     try:
         # Step 1: Generate pattern
-        pattern = generate_file_pattern_from_cdf(base_file, '../data/cdf_files')
+        pattern = generate_file_pattern_from_cdf(base_file, '../data/cdf_files/PSP_Waves')
         print(f"🎯 Generated pattern: {pattern}")
         
         # Step 2: Find matching files (would be multiple in real scenario)
-        search_dir = '../data/cdf_files'
+        search_dir = '../data/cdf_files/PSP_Waves'
         import glob
         pattern_path = os.path.join(search_dir, pattern)
         matching_files = glob.glob(pattern_path)

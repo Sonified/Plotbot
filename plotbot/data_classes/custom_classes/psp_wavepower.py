@@ -1,7 +1,7 @@
 """
 Auto-generated plotbot class for PSP_wavePower_2021-04-29_v1.3.cdf
 Generated on: 2025-10-08T16:48:39.345858
-Source: data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf
+Source: data/cdf_files/PSP_Waves/PSP_wavePower_2021-04-29_v1.3.cdf
 
 This class contains 2 variables from the CDF file.
 """
@@ -43,7 +43,7 @@ class psp_wavepower_class:
         
         
         # Store original CDF file path AND smart pattern for multi-file loading
-        object.__setattr__(self, '_original_cdf_file_path', 'data/cdf_files/PSP_wavePower_2021-04-29_v1.3.cdf')
+        object.__setattr__(self, '_original_cdf_file_path', 'data/cdf_files/PSP_Waves/PSP_wavePower_2021-04-29_v1.3.cdf')
         object.__setattr__(self, '_cdf_file_pattern', 'PSP_wavePower_2021-04-29_v1.3.cdf')
 
         if imported_data is None:

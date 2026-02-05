@@ -472,10 +472,10 @@ RESET = '\033[0m'
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
 
-__version__ = "2026_01_12_v3.79"
+__version__ = "2026_02_02_v3.80"
 
 # Commit message for this version
-__commit_message__ = "v3.79 Performance: br_norm caching with TimeRangeTracker"
+__commit_message__ = "v3.80 Maintenance: Zenodo release prep - repo cleanup (751→362 files, 171MB→25MB)"
 
 # Print the version and commit message
 print(f"""

@@ -33,7 +33,7 @@ def test_cdf_to_plotbot_generation():
     print(f"📅 Time range: {trange[0]} to {trange[1]}")
     
     # Provide CDF file paths - corrected to data/cdf_files
-    cdf_dir = Path(__file__).parent.parent / "data" / "cdf_files"
+    cdf_dir = Path(__file__).parent.parent / "data" / "cdf_files" / "PSP_Waves"
     spectral_file = cdf_dir / "PSP_WaveAnalysis_2021-04-29_0600_v1.2.cdf"
     timeseries_file = cdf_dir / "PSP_wavePower_2021-04-29_v1.3.cdf"
     
