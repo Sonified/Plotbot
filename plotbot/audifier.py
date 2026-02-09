@@ -173,8 +173,8 @@ class Audifier:
         # Get indices for the time range
         try:
             # Use raw datetime array for clipping, not the property (which is now clipped)
-            datetime_array = components[0].plot_config.datetime_array if hasattr(components[0], 'plot_options') else components[0].datetime_array
-            indices = np.where((datetime_array >= start_dt) & 
+            datetime_array = components[0].plot_config.datetime_array if hasattr(components[0], 'plot_config') else components[0].datetime_array
+            indices = np.where((datetime_array >= start_dt) &
                               (datetime_array < stop_dt))[0]
         except TypeError as e:
             print(f"Error during datetime comparison: {e}. Returning empty indices.")
@@ -632,7 +632,7 @@ class Audifier:
                     print("Not enough components for stereo. Need at least 2.")
         
         # Show access buttons
-        show_directory_button(self.save_dir)
+        show_directory_button(output_dir)
         show_file_buttons(file_names)
         
         return file_names

@@ -273,6 +273,8 @@ class _LazyAudifier:
     """Proxy that loads audifier on first access."""
     def __getattr__(self, name):
         return getattr(_get_audifier(), name)
+    def __setattr__(self, name, value):
+        setattr(_get_audifier(), name, value)
     def __call__(self, *args, **kwargs):
         return _get_audifier()(*args, **kwargs)
     def __dir__(self):
@@ -472,10 +474,10 @@ RESET = '\033[0m'
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
 
-__version__ = "2026_02_02_v3.80"
+__version__ = "2026_02_09_v3.81"
 
 # Commit message for this version
-__commit_message__ = "v3.80 Maintenance: Zenodo release prep - repo cleanup (751→362 files, 171MB→25MB)"
+__commit_message__ = "v3.81 Bugfix: Fixed audifier lazy proxy, time clipping, and directory navigation"
 
 # Print the version and commit message
 print(f"""
