@@ -165,7 +165,7 @@ class epad_strahl_class:
         # Convert numpy.datetime64 to datetime before using strftime
         date_str = pd.Timestamp(self.datetime_array[0]).strftime('%Y-%m-%d')
         encounter_number = get_encounter_number(date_str)
-        if encounter_number in ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9']:
+        if encounter_number in ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9', 'E26']:
             self.energy_index = 8
         else:
             self.energy_index = 12
@@ -486,7 +486,7 @@ class epad_strahl_high_res_class:
         # Convert numpy.datetime64 to datetime before using strftime
         date_str = pd.Timestamp(self.datetime_array[0]).strftime('%Y-%m-%d')
         encounter_number = get_encounter_number(date_str)
-        if encounter_number in ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9']:
+        if encounter_number in ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9', 'E26']:
             self.energy_index = 8
         else:
             self.energy_index = 12
