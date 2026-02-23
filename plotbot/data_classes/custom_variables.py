@@ -834,65 +834,67 @@ class CustomVariablesContainer:
     
     def get_source_variables(self, name):
         """
-        Parse a custom variable's expression and return the source variables needed.
+        Identify a custom variable's source dependencies using bytecode inspection.
+        Uses __code__.co_names (compiled bytecode) instead of inspect.getsource() (source text),
+        so it works reliably in ALL contexts: notebooks, scripts, interactive, etc.
+
         Does NOT load any data - just identifies what's needed.
-        
+
         Returns: list of plot_manager objects that need data loaded
         """
-        import inspect
-        import re
-        
         print_manager.custom_debug(f"🔧 [GET_SOURCE] Getting source variables for '{name}'")
-        
+
         if name not in self.variables:
             print_manager.error(f"Custom variable '{name}' not found")
             return []
-        
+
         operation = self.operations.get(name)
-        
-        # LAMBDA VARIABLES: Parse to find variable references
+
+        # LAMBDA VARIABLES: Use bytecode to find variable references
         if operation == 'lambda' and hasattr(self, 'callables') and name in self.callables:
-            try:
-                lambda_func = self.callables[name]
-                source_code = inspect.getsource(lambda_func).strip()
-                print_manager.custom_debug(f"🔧 [GET_SOURCE] Lambda source: {source_code}")
-                
-                # Match patterns like: pb.mag_rtn_4sa.bn or plotbot.mag_rtn_4sa.bn or mag_rtn_4sa.bn (no prefix)
-                # We need to match class.variable with optional plotbot/pb prefix
-                pattern = r'(?:(?:pb|plotbot)\.)?(\w+)\.(\w+)'
-                matches = re.findall(pattern, source_code)
-                
-                # Filter out numpy functions and other non-plotbot variables
-                # Only keep matches that look like plotbot data class patterns
-                filtered_matches = []
-                for class_name, var_name in matches:
-                    # Skip if it's a numpy function or other common patterns
-                    if class_name not in ['np', 'numpy', 'plt', 'matplotlib']:
-                        filtered_matches.append((class_name, var_name))
-                matches = filtered_matches
-                print_manager.custom_debug(f"🔧 [GET_SOURCE] Found variable references: {matches}")
-            except (OSError, TypeError) as e:
-                # inspect.getsource() fails in interactive contexts (notebooks, -c flag)
-                # This is OK - lambda will evaluate without pre-loading deps
-                print_manager.custom_debug(f"🔧 [GET_SOURCE] Cannot parse lambda in interactive context")
-                print_manager.custom_debug(f"🔧 [GET_SOURCE] Lambda will evaluate and load dependencies on-the-fly")
-                return []  # Let evaluate() continue - dependencies will load when lambda executes
-            
-            # Get the variable objects
-            # STEP 2: Dependency Identification
-            print_manager.custom_debug(f"🔍 [STEP 2] Identified {len(matches)} source variables from lambda")
-            
-            vars_to_load = []
+            lambda_func = self.callables[name]
+
+            # co_names contains ALL names referenced in compiled bytecode
+            # For lambda: np.degrees(np.arctan2(mag_rtn_4sa.br, mag_rtn_4sa.bn))
+            # co_names = ('np', 'degrees', 'arctan2', 'mag_rtn_4sa', 'br', 'bn')
+            bytecode_names = set(lambda_func.__code__.co_names)
+
+            # Also check co_freevars for closure-captured variables
+            # (e.g., if user defined the data class reference in an enclosing scope)
+            closure_names = set(lambda_func.__code__.co_freevars)
+            all_names = bytecode_names | closure_names
+
+            print_manager.custom_debug(f"🔧 [GET_SOURCE] Bytecode names: {bytecode_names}")
+            if closure_names:
+                print_manager.custom_debug(f"🔧 [GET_SOURCE] Closure names: {closure_names}")
+
+            # Cross-reference names against registered data_cubby classes
             from ..data_cubby import data_cubby
-            for class_name, var_name in matches:
-                # class_name is now mag_rtn_4sa, var_name is bn ✅
-                print_manager.custom_debug(f"🔍 [STEP 2] Source: {class_name}.{var_name}")
-                class_instance = data_cubby.grab(class_name)
-                if class_instance:
-                    var = getattr(class_instance, var_name, None)
-                    if var is not None:
+            vars_to_load = []
+
+            # First pass: identify which names are data cubby classes
+            matched_classes = {}
+            for candidate_name in all_names:
+                class_instance = data_cubby.grab(candidate_name)
+                if class_instance and candidate_name != 'custom_variables':
+                    matched_classes[candidate_name] = class_instance
+
+            # Second pass: only try attribute names that AREN'T themselves class names
+            # This avoids triggering __getattr__ error messages for 'np', 'degrees', etc.
+            possible_attrs = all_names - set(matched_classes.keys())
+
+            for candidate_name, class_instance in matched_classes.items():
+                # Get known subclass names from raw_data keys (avoids __getattr__ noise)
+                known_attrs = set()
+                if hasattr(class_instance, 'raw_data') and class_instance.raw_data:
+                    known_attrs = set(class_instance.raw_data.keys())
+
+                for attr_name in possible_attrs & known_attrs:
+                    var = getattr(class_instance, attr_name, None)
+                    if var is not None and hasattr(var, 'class_name'):
                         vars_to_load.append(var)
-            
+                        print_manager.custom_debug(f"🔍 [STEP 2] Source: {candidate_name}.{attr_name}")
+
             print_manager.custom_debug(f"🔍 [STEP 2] Total sources to load: {len(vars_to_load)}")
             return vars_to_load
         
