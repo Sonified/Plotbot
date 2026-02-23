@@ -176,10 +176,8 @@ class epad_strahl_class:
         # Extract strahl flux for specific energy
         strahl = eflux[:, :, self.energy_index]
         
-        # Replace zeros and calculate log version
-        strahl = np.where(strahl == 0, 1e-10, strahl)  # Replace zeros
-        log_strahl = np.log10(strahl)
-        strahl = log_strahl
+        # Replace zeros with small value to avoid issues in weighted averages
+        strahl = np.where(strahl == 0, 1e-10, strahl)
 
         # Create time mesh to match strahl data dimensions
         self.times_mesh = np.meshgrid(
@@ -260,7 +258,7 @@ class epad_strahl_class:
             self.raw_data['strahl'],
             plot_config=plot_config(
                 data_type='spe_sf0_pad',
-                var_name='log_strahl',
+                var_name='strahl',
                 class_name='epad',
                 subclass_name='strahl',
                 plot_type='spectral',
@@ -497,9 +495,8 @@ class epad_strahl_high_res_class:
         # Extract strahl flux for specific energy
         strahl = eflux[:, :, self.energy_index]
         
-        # Calculate log version
-        log_strahl = np.log10(strahl)
-        strahl = log_strahl
+        # Replace zeros with small value to avoid issues in weighted averages
+        strahl = np.where(strahl == 0, 1e-10, strahl)
 
         # Create time mesh to match strahl data dimensions
         self.times_mesh = np.meshgrid(
@@ -553,7 +550,7 @@ class epad_strahl_high_res_class:
             self.raw_data['strahl'],
             plot_config=plot_config(
                 data_type='spe_af0_pad',
-                var_name='log_strahl_hr',
+                var_name='strahl_hr',
                 class_name='epad_hr',
                 subclass_name='strahl',
                 plot_type='spectral',
