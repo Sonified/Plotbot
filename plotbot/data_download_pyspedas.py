@@ -148,9 +148,14 @@ def _get_pyspedas_map():
     to ensure it reads the environment variables after config is set.
     """
     import pyspedas
+    # Compatibility shim: pyspedas 2.x moved mission modules under projects
+    if hasattr(pyspedas, 'projects'):
+        for _m in ['psp', 'wind']:
+            if not hasattr(pyspedas, _m) and hasattr(pyspedas.projects, _m):
+                setattr(pyspedas, _m, getattr(pyspedas.projects, _m))
     print_manager.debug(f"DEBUG: pyspedas module attributes: {[attr for attr in dir(pyspedas) if not attr.startswith('_')]}")
 
-    
+
     return {
     'mag_RTN_4sa': {
         'pyspedas_datatype': 'mag_rtn_4_sa_per_cyc',
@@ -436,7 +441,12 @@ def download_spdf_data(trange, plotbot_key):
 
     # Import pyspedas here so it reads the environment variables AFTER config is set
     import pyspedas
-    
+    # Compatibility shim: pyspedas 2.x moved mission modules under projects
+    if hasattr(pyspedas, 'projects'):
+        for _m in ['psp', 'wind']:
+            if not hasattr(pyspedas, _m) and hasattr(pyspedas.projects, _m):
+                setattr(pyspedas, _m, getattr(pyspedas.projects, _m))
+
     print_manager.status(f"📡 Local files not found, proceeding with pyspedas download for {plotbot_key}")
 
     PYSPEDAS_MAP = _get_pyspedas_map()

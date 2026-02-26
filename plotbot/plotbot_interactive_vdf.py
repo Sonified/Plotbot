@@ -91,6 +91,11 @@ def plotbot_interactive_vdf(trange, backend='auto', port=None, debug=None):
     
     # Import pyspedas here for lazy loading
     import pyspedas
+    # Compatibility shim: pyspedas 2.x moved mission modules under projects
+    if hasattr(pyspedas, 'projects'):
+        for _m in ['psp', 'wind']:
+            if not hasattr(pyspedas, _m) and hasattr(pyspedas.projects, _m):
+                setattr(pyspedas, _m, getattr(pyspedas.projects, _m))
     import cdflib
     import pandas as pd
     

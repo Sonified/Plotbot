@@ -130,7 +130,12 @@ def vdyes(trange, *variables, force_static=False):
         print_manager.status(f"📡 l2 VDF file not found locally, downloading: {expected_l2_path}")
         # Import pyspedas here for lazy loading
         import pyspedas
-        
+        # Compatibility shim: pyspedas 2.x moved mission modules under projects
+        if hasattr(pyspedas, 'projects'):
+            for _m in ['psp', 'wind']:
+                if not hasattr(pyspedas, _m) and hasattr(pyspedas.projects, _m):
+                    setattr(pyspedas, _m, getattr(pyspedas.projects, _m))
+
         # CRITICAL: no_update=False is required! 
         # no_update=True ignores the level='l2' parameter and returns ANY matching files
         VDfile = pyspedas.psp.spi(download_trange, datatype='spi_sf00_8dx32ex8a', level='l2', 
