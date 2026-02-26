@@ -474,10 +474,10 @@ RESET = '\033[0m'
 # Version, Date, and Welcome Message for Plotbot
 #------------------------------------------------------------------------------
 
-__version__ = "2026_02_26_v3.84"
+__version__ = "2026_02_26_v3.85"
 
 # Commit message for this version
-__commit_message__ = "v3.84 Bugfix: pyspedas 2.x compatibility shim and y_limit style sync fix"
+__commit_message__ = "v3.85 Bugfix: Smart download of missing CDF files for partial local coverage"
 
 # Print the version and commit message
 print(f"""
